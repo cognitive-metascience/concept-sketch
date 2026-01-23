@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Word Sketch Lucene Demo</title>
+    <style>
+        * { box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        h1 { color: #333; margin-bottom: 5px; }
+        .subtitle { color: #666; margin-bottom: 30px; }
+        .search-box {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 30px;
+        }
+        input[type="text"] {
+            flex: 1;
+            padding: 12px 16px;
+            font-size: 16px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+        }
+        input[type="text"]:focus {
+            outline: none;
+            border-color: #4a90d9;
+        }
+        select {
+            padding: 12px 16px;
+            font-size: 16px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            background: white;
+        }
+        button {
+            padding: 12px 24px;
+            font-size: 16px;
+            background: #4a90d9;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+        }
+        button:hover { background: #357abd; }
+        button:disabled { background: #ccc; }
+        .pos-filters {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+        .pos-filters label {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            padding: 8px 12px;
+            background: white;
+            border-radius: 6px;
+            cursor: pointer;
+            border: 1px solid #ddd;
+        }
+        .pos-filters input:checked + span {
+            font-weight: bold;
+            color: #4a90d9;
+        }
+        .results { display: grid; gap: 20px; }
+        .sketch-section {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        .sketch-section h3 {
+            margin: 0 0 15px 0;
+            color: #333;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .sketch-section .pos-tag {
+            background: #e8f4fd;
+            color: #4a90d9;
+            padding: 4px 10px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+        .collocation {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 12px;
+            border-bottom: 1px solid #eee;
+        }
+        .collocation:last-child { border-bottom: none; }
+        .collocation .word { font-weight: 500; }
+        .collocation .score {
+            color: #666;
+            font-size: 14px;
+        }
+        .collocation .freq { color: #999; font-size: 12px; }
+        .examples {
+            margin-top: 15px;
+            padding-top: 15px;
+            border-top: 1px solid #eee;
+        }
+        .examples h4 {
+            margin: 0 0 10px 0;
+            color: #666;
+            font-size: 14px;
+        }
+        .example {
+            padding: 8px 12px;
+            background: #f9f9f9;
+            border-radius: 6px;
+            margin-bottom: 8px;
+            font-size: 14px;
+        }
+        .example .highlight {
+            background: #fff3cd;
+            padding: 0 2px;
+            border-radius: 2px;
+        }
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+        }
+        .error {
+            background: #fee;
+            color: #c00;
+            padding: 20px;
+            border-radius: 8px;
+        }
+        .api-config {
+            background: #fff8e0;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        .api-config label {
+            display: block;
+            margin-bottom: 5px;
+            font-size: 14px;
+        }
+        .api-config input {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Word Sketch Lucene</h1>
+    <p class="subtitle">Corpus-based collocation analysis powered by Apache Lucene</p>
+
+    <div class="api-config">
+        <label>API URL:</label>
+        <input type="text" id="apiUrl" value="http://localhost:8080" placeholder="http://localhost:8080">
+    </div>
+
+    <div class="search-box">
+        <input type="text" id="wordInput" placeholder="Enter a word (e.g., 'problem', 'house', 'run')" autofocus>
+        <select id="posFilter">
+            <option value="">All POS</option>
+            <option value="noun">Nouns</option>
+            <option value="verb">Verbs</option>
+            <option value="adj">Adjectives</option>
+            <option value="adv">Adverbs</option>
+        </select>
+        <button id="searchBtn" onclick="search()">Search</button>
+    </div>
+
+    <div class="pos-filters">
+        <label><input type="checkbox" checked onchange="filterPos('noun')"> <span>Nouns (n)</span></label>
+        <label><input type="checkbox" checked onchange="filterPos('verb')"> <span>Verbs (v)</span></label>
+        <label><input type="checkbox" checked onchange="filterPos('adj')"> <span>Adjectives (adj)</span></label>
+        <label><input type="checkbox" checked onchange="filterPos('adv')"> <span>Adverbs (adv)</span></label>
+    </div>
+
+    <div id="results" class="results"></div>
+
+    <script>
+        let activeFilters = { noun: true, verb: true, adj: true, adv: true };
+        let currentWord = '';
+
+        async function search() {
+            const word = document.getElementById('wordInput').value.trim();
+            const apiUrl = document.getElementById('apiUrl').value.trim();
+            const resultsDiv = document.getElementById('results');
+            const btn = document.getElementById('searchBtn');
+
+            if (!word) return;
+
+            currentWord = word;
+            btn.disabled = true;
+            resultsDiv.innerHTML = '<div class="loading">Analyzing "' + word + '"...</div>';
+
+            try {
+                // Try different API endpoints
+                let data = null;
+                let errorMsg = '';
+
+                // Try the sketch API
+                try {
+                    const response = await fetch(`${apiUrl}/api/sketch/${word}`);
+                    if (response.ok) {
+                        data = await response.json();
+                    } else {
+                        errorMsg = `API returned ${response.status}`;
+                    }
+                } catch (e) {
+                    errorMsg = e.message;
+                }
+
+                // Fallback: try the problem endpoint
+                if (!data) {
+                    try {
+                        const response = await fetch(`${apiUrl}/api/sketch/problem?pos=noun`);
+                        if (response.ok) {
+                            data = await response.json();
+                        }
+                    } catch (e) {}
+                }
+
+                if (!data) {
+                    resultsDiv.innerHTML = `
+                        <div class="error">
+                            <strong>Could not connect to API</strong><br>
+                            Make sure the server is running at: ${apiUrl}<br>
+                            <small>${errorMsg}</small>
+                        </div>
+                    `;
+                } else {
+                    renderResults(data);
+                }
+            } catch (e) {
+                resultsDiv.innerHTML = `<div class="error">Error: ${e.message}</div>`;
+            }
+
+            btn.disabled = false;
+        }
+
+        function filterPos(pos) {
+            activeFilters[pos] = !activeFilters[pos];
+            if (currentWord) {
+                search();
+            }
+        }
+
+        function renderResults(data) {
+            const resultsDiv = document.getElementById('results');
+
+            if (!data || (!data.nouns && !data.verbs && !data.adjectives && !data.adverbs)) {
+                resultsDiv.innerHTML = `
+                    <div class="error">
+                        <strong>No results found</strong><br>
+                        Try a different word or check the API response.
+                    </div>
+                `;
+                return;
+            }
+
+            let html = '';
+
+            // Helper to render a section
+            function renderSection(title, posTag, collocations, examples, relation) {
+                if (!activeFilters[posTag.toLowerCase()] || !collocations || collocations.length === 0) {
+                    return '';
+                }
+
+                let sectionHtml = `
+                    <div class="sketch-section">
+                        <h3>
+                            ${title}
+                            <span class="pos-tag">${posTag}</span>
+                        </h3>
+                `;
+
+                // Render collocations
+                if (collocations && collocations.length > 0) {
+                    sectionHtml += '<div class="collocation-list">';
+                    collocations.slice(0, 15).forEach(c => {
+                        const score = c.score ? c.score.toFixed(2) : '-';
+                        const freq = c.frequency || c.count || c.freq || '-';
+                        const word = c.word || c.collocation || c.collocate || '-';
+                        sectionHtml += `
+                            <div class="collocation">
+                                <span class="word">${escapeHtml(word)}</span>
+                                <span>
+                                    <span class="score">logDice: ${score}</span>
+                                    <span class="freq">(${freq})</span>
+                                </span>
+                            </div>
+                        `;
+                    });
+                    sectionHtml += '</div>';
+                }
+
+                // Render examples
+                if (examples && examples.length > 0) {
+                    sectionHtml += '<div class="examples"><h4>Examples</h4>';
+                    examples.slice(0, 5).forEach(ex => {
+                        const sentence = ex.sentence || ex.example || ex.text || '';
+                        const highlighted = escapeHtml(sentence).replace(
+                            new RegExp(escapeRegExp(currentWord), 'gi'),
+                            '<span class="highlight">$&</span>'
+                        );
+                        sectionHtml += `<div class="example">${highlighted}</div>`;
+                    });
+                    sectionHtml += '</div>';
+                }
+
+                sectionHtml += '</div>';
+                return sectionHtml;
+            }
+
+            // Render noun sections
+            html += renderSection('What adjectives modify', 'Noun', data.nouns?.modifiers, data.nouns?.examples, 'amod');
+            html += renderSection('What verbs collocate with', 'Noun', data.nouns?.verbs, null, 'nsubj/obj');
+            html += renderSection('What nouns follow', 'Noun', data.nouns?.following, null, 'nn');
+
+            // Render verb sections
+            html += renderSection('What subjects', 'Verb', data.verbs?.subjects, null, 'nsubj');
+            html += renderSection('What objects', 'Verb', data.verbs?.objects, null, 'dobj');
+            html += renderSection('What adverbs modify', 'Verb', data.verbs?.adverbs, null, 'advmod');
+
+            // Render adjective sections
+            html += renderSection('What nouns follow', 'Adj', data.adjectives?.following, null, 'nn');
+            html += renderSection('What verbs follow', 'Adj', data.adjectives?.verbs, null, 'acl/rel');
+
+            // Render adverb sections
+            html += renderSection('What verbs modify', 'Adv', data.adverbs?.verbs, null, 'advmod');
+            html += renderSection('What adjectives modify', 'Adv', data.adjectives, null, 'advmod');
+
+            if (html === '') {
+                html = '<div class="error">No collocations found for the selected filters.</div>';
+            }
+
+            resultsDiv.innerHTML = html;
+        }
+
+        function escapeHtml(str) {
+            if (!str) return '';
+            return String(str)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;');
+        }
+
+        function escapeRegExp(str) {
+            return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        }
+
+        // Enter key to search
+        document.getElementById('wordInput').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') search();
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,32 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(mvn test)",
+      "Bash(java:*)",
+      "Bash(mvn:*)",
+      "Bash(set:*)",
+      "Bash(%PATH%)",
+      "Bash(export PATH=\"/c/Program Files/Java/jdk-22.0.1/bin:$PATH\":*)",
+      "Bash(powershell -Command:*)",
+      "Bash(where:*)",
+      "Bash(dir:*)",
+      "Bash(powershell:*)",
+      "Bash(Out-String:*)",
+      "Bash($env:JAVA_HOME=\"C:\\\\Program Files\\\\Java\\\\jdk-22\")",
+      "Bash(javac:*)",
+      "Bash(jar:*)",
+      "Bash(psql:*)",
+      "Bash(cmd /C:*)",
+      "Bash(cd:*)",
+      "Bash(JAVA_HOME=\"C:/Program Files/Java/jdk-17.0.2\" mvn:*)",
+      "Bash(findstr:*)",
+      "Bash(select-string:*)",
+      "Bash(select:*)",
+      "Bash(pwsh:*)",
+      "Bash(\"C:\\\\Program Files\\\\PostgreSQL\\\\17\\\\bin\\\\psql.exe\":*)",
+      "Bash(\"C:\\\\Program Files\\\\PostgreSQL\\\\17\\\\bin\\\\psql.exe\" -h localhost -p 5432 -U dict_user -d dictionary_analytics -t -A -c \"SELECT relname, reltuples::bigint FROM pg_class WHERE relkind = ''r'' AND relname !~ ''^pg_'' ORDER BY reltuples DESC LIMIT 10;\")",
+      "Bash(\"C:\\\\Program Files\\\\PostgreSQL\\\\17\\\\bin\\\\psql.exe\" -h localhost -p 5432 -U dict_user -d dictionary_analytics -d 1 -c \"\\\\dt\")",
+      "Bash(pg_isready:*)"
+    ]
+  }
+}
