@@ -231,7 +231,14 @@ public class ConllUProcessor {
      * Factory method to create a CoNLL-U processor.
      */
     public static ConllUProcessor create(String indexPath) throws IOException {
-        LuceneIndexer indexer = new LuceneIndexer(indexPath);
+        return create(indexPath, 1); // Default to 1 thread
+    }
+
+    /**
+     * Factory method to create a CoNLL-U processor with specified threads.
+     */
+    public static ConllUProcessor create(String indexPath, int numThreads) throws IOException {
+        LuceneIndexer indexer = new LuceneIndexer(indexPath, numThreads);
         return new ConllUProcessor(indexer);
     }
 

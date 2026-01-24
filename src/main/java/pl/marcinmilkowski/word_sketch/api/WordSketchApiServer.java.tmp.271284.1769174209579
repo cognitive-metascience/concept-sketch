@@ -84,19 +84,16 @@ public class WordSketchApiServer {
         server = com.sun.net.httpserver.HttpServer.create(new InetSocketAddress(port), 0);
 
         // Health check endpoint
-        server.createContext("/health", wrapHandler(this::handleHealth));
+        server.createContext("/health", this::handleHealth);
 
         // API endpoints
-        server.createContext("/api/relations", wrapHandler(this::handleRelations));
-        server.createContext("/api/sketch", wrapHandler(this::handleFullSketch));
-        server.createContext("/api/sketch/query", wrapHandler(this::handleQuery));
+        server.createContext("/api/relations", this::handleRelations);
+        server.createContext("/api/sketch", this::handleFullSketch);
+        server.createContext("/api/sketch/query", this::handleQuery);
 
         // Legacy endpoints (for backward compatibility)
-        server.createContext("/sketch", wrapHandler(this::handleLegacySketch));
-        server.createContext("/sketch/query", wrapHandler(this::handleLegacyQuery));
-
-        // CORS preflight handler
-        server.createContext("/api/sketch/options", wrapHandler(this::handleCorsOptions));
+        server.createContext("/sketch", this::handleLegacySketch);
+        server.createContext("/sketch/query", this::handleLegacyQuery);
 
         server.setExecutor(null);
         server.start();
@@ -106,34 +103,6 @@ public class WordSketchApiServer {
         System.out.println("  GET  /api/relations       - List available grammatical relations");
         System.out.println("  GET  /api/sketch/{lemma}  - Get full word sketch");
         System.out.println("  POST /api/sketch/query    - Execute custom CQL pattern");
-    }
-
-    /**
-     * Wrap a handler to catch all exceptions and return JSON error.
-     */
-    private com.sun.net.httpserver.HttpHandler wrapHandler(
-            com.sun.net.httpserver.HttpHandler handler) {
-        return exchange -> {
-            try {
-                handler.handle(exchange);
-            } catch (Throwable t) {
-                System.err.println("Unhandled exception: " + t.getMessage());
-                t.printStackTrace();
-                try {
-                    Map<String, Object> error = new HashMap<>();
-                    error.put("status", "error");
-                    error.put("message", t.getMessage());
-                    error.put("type", t.getClass().getSimpleName());
-                    String json = JSON.toJSONString(error);
-                    exchange.getResponseHeaders().set("Content-Type", "application/json; charset=UTF-8");
-                    exchange.getResponseHeaders().set("Access-Control-Allow-Origin", "*");
-                    exchange.sendResponseHeaders(500, json.getBytes("UTF-8").length);
-                    exchange.getResponseBody().write(json.getBytes("UTF-8"));
-                } catch (Exception e) {
-                    System.err.println("Failed to send error response: " + e.getMessage());
-                }
-            }
-        };
     }
 
     /**
@@ -161,16 +130,6 @@ public class WordSketchApiServer {
             server.stop(0);
             System.out.println("API server stopped");
         }
-    }
-
-    /**
-     * Handle CORS preflight (OPTIONS) requests.
-     */
-    private void handleCorsOptions(com.sun.net.httpserver.HttpExchange exchange) throws IOException {
-        exchange.getResponseHeaders().set("Access-Control-Allow-Origin", "*");
-        exchange.getResponseHeaders().set("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
-        exchange.getResponseHeaders().set("Access-Control-Allow-Headers", "Content-Type, Authorization");
-        exchange.sendResponseHeaders(204, -1);
     }
 
     private void handleHealth(com.sun.net.httpserver.HttpExchange exchange) throws IOException {
@@ -221,46 +180,45 @@ public class WordSketchApiServer {
             return;
         }
 
-        try {
-            String path = exchange.getRequestURI().getPath();
-            String[] parts = path.split("/");
+        String path = exchange.getRequestURI().getPath();
+        String[] parts = path.split("/");
 
-            // Extract lemma from path
-            String lemma = null;
-            for (int i = 0; i < parts.length; i++) {
-                if (parts[i].equals("sketch") && i + 1 < parts.length) {
-                    lemma = parts[i + 1];
-                    break;
-                }
+        // Extract lemma from path
+        String lemma = null;
+        for (int i = 0; i < parts.length; i++) {
+            if (parts[i].equals("sketch") && i + 1 < parts.length) {
+                lemma = parts[i + 1];
+                break;
+            }
+        }
+
+        if (lemma == null || lemma.isEmpty()) {
+            sendError(exchange, 400, "Missing lemma parameter");
+            return;
+        }
+
+        // Parse query parameters
+        String query = exchange.getRequestURI().getQuery();
+        Map<String, String> params = parseQueryParams(query);
+
+        // Filter relations by POS
+        String posFilter = params.getOrDefault("pos", "noun,verb,adj");
+        Set<String> allowedPos = new HashSet<>(Arrays.asList(posFilter.toLowerCase().split(",")));
+        int limit = Integer.parseInt(params.getOrDefault("limit", "10"));
+        double minLogDice = Double.parseDouble(params.getOrDefault("min_logdice", "0"));
+
+        Map<String, Object> response = new HashMap<>();
+        response.put("status", "ok");
+        response.put("lemma", lemma);
+
+        Map<String, Object> patterns = new HashMap<>();
+
+        for (RelationDefinition rel : RELATIONS) {
+            if (!allowedPos.contains(rel.posGroup())) {
+                continue;
             }
 
-            if (lemma == null || lemma.isEmpty()) {
-                sendError(exchange, 400, "Missing lemma parameter");
-                return;
-            }
-
-            // Parse query parameters
-            String query = exchange.getRequestURI().getQuery();
-            Map<String, String> params = parseQueryParams(query);
-
-            // Filter relations by POS
-            String posFilter = params.getOrDefault("pos", "noun,verb,adj");
-            Set<String> allowedPos = new HashSet<>(Arrays.asList(posFilter.toLowerCase().split(",")));
-            int limit = Integer.parseInt(params.getOrDefault("limit", "10"));
-            double minLogDice = Double.parseDouble(params.getOrDefault("min_logdice", "0"));
-
-            Map<String, Object> response = new HashMap<>();
-            response.put("status", "ok");
-            response.put("lemma", lemma);
-
-            Map<String, Object> patterns = new HashMap<>();
-
-            for (RelationDefinition rel : RELATIONS) {
-                if (!allowedPos.contains(rel.posGroup())) {
-                    continue;
-                }
-
-                try {
+            try {
                 List<WordSketchQueryExecutor.WordSketchResult> results =
                     executor.findCollocations(lemma, rel.pattern(), minLogDice, limit);
 
@@ -294,16 +252,6 @@ public class WordSketchApiServer {
 
         response.put("patterns", patterns);
         sendJson(exchange, 200, response);
-
-        } catch (Exception e) {
-            // Return error as JSON instead of crashing
-            Map<String, Object> error = new HashMap<>();
-            error.put("status", "error");
-            error.put("message", e.getMessage());
-            error.put("type", e.getClass().getSimpleName());
-            sendJson(exchange, 500, error);
-            e.printStackTrace();
-        }
     }
 
     /**
@@ -479,7 +427,6 @@ public class WordSketchApiServer {
             throws IOException {
         String json = JSON.toJSONString(data, com.alibaba.fastjson2.JSONWriter.Feature.WriteMapNullValue);
         exchange.getResponseHeaders().set("Content-Type", "application/json; charset=UTF-8");
-        exchange.getResponseHeaders().set("Access-Control-Allow-Origin", "*");
         exchange.sendResponseHeaders(status, json.getBytes("UTF-8").length);
 
         try (OutputStream os = exchange.getResponseBody()) {

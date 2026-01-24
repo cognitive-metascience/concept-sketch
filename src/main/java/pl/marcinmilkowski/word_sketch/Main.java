@@ -340,6 +340,7 @@ public class Main {
         String inputFile = null;
         String indexPath = null;
         int commitInterval = 10000;
+        int numThreads = 1;
 
         for (int i = 1; i < args.length; i++) {
             switch (args[i]) {
@@ -354,6 +355,9 @@ public class Main {
                 case "--commit":
                     commitInterval = Integer.parseInt(args[++i]);
                     break;
+                case "--threads":
+                    numThreads = Integer.parseInt(args[++i]);
+                    break;
                 default:
                     System.err.println("Unknown option: " + args[i]);
             }
@@ -361,15 +365,16 @@ public class Main {
 
         if (inputFile == null || indexPath == null) {
             System.err.println("Error: --input and --output are required");
-            System.err.println("Usage: java -jar word-sketch-lucene.jar conllu --input <file> --output <path>");
+            System.err.println("Usage: java -jar word-sketch-lucene.jar conllu --input <file> --output <path> [--threads <n>]");
             return;
         }
 
         System.out.println("Processing CoNLL-U file: " + inputFile);
         System.out.println("Output index: " + indexPath);
+        System.out.println("Threads: " + numThreads);
         System.out.println();
 
-        ConllUProcessor processor = ConllUProcessor.create(indexPath);
+        ConllUProcessor processor = ConllUProcessor.create(indexPath, numThreads);
         processor.processFile(inputFile, commitInterval);
 
         System.out.println("Indexing complete!");
@@ -523,7 +528,7 @@ public class Main {
         System.out.println("  java -jar word-sketch-lucene.jar index --corpus <file> --output <path> [--language <lang>]");
         System.out.println();
         System.out.println("CoNLL-U command (for pre-tagged files):");
-        System.out.println("  java -jar word-sketch-lucene.jar conllu --input <conllu-file> --output <path>");
+        System.out.println("  java -jar word-sketch-lucene.jar conllu --input <conllu-file> --output <path> [--threads <n>]");
         System.out.println();
         System.out.println("Convert command (tagged -> CoNLL-U):");
         System.out.println("  java -jar word-sketch-lucene.jar convert --input <file> --output <conllu-file>");

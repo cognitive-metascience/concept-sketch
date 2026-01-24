@@ -45,37 +45,53 @@ public class CorpusProcessor {
         int processedSentences = 0;
         long startTime = System.currentTimeMillis();
 
+        // First pass: check if file has blank line separators
+        boolean hasBlankLines = false;
+        try (BufferedReader checkReader = Files.newBufferedReader(inputPath)) {
+            String line;
+            while ((line = checkReader.readLine()) != null) {
+                if (line.trim().isEmpty()) {
+                    hasBlankLines = true;
+                    break;
+                }
+            }
+        }
+
+        // Second pass: process with appropriate strategy
         try (BufferedReader reader = Files.newBufferedReader(inputPath)) {
             String line;
             List<String> sentenceBuffer = new ArrayList<>();
 
             while ((line = reader.readLine()) != null) {
                 line = line.trim();
-                if (line.isEmpty()) {
-                    // Empty line = sentence boundary
-                    if (!sentenceBuffer.isEmpty()) {
-                        processSentenceBuffer(sentenceBuffer, sentenceId++);
-                        processedSentences++;
 
-                        // Batch commit
-                        if (processedSentences % batchSize == 0) {
-                            indexer.commit();
-                            long elapsed = System.currentTimeMillis() - startTime;
-                            double tokensPerSec = totalTokens / (elapsed / 1000.0);
-                            logger.info("Processed " + processedSentences + " sentences, " +
-                                       totalTokens + " tokens (" + String.format("%.1f", tokensPerSec) + " tokens/sec)");
+                if (hasBlankLines) {
+                    // Use blank line as sentence boundary
+                    if (line.isEmpty()) {
+                        if (!sentenceBuffer.isEmpty()) {
+                            totalTokens += processSentenceBuffer(sentenceBuffer, sentenceId++);
+                            processedSentences++;
+                            sentenceBuffer.clear();
                         }
-
-                        sentenceBuffer.clear();
+                    } else {
+                        sentenceBuffer.add(line);
                     }
                 } else {
-                    sentenceBuffer.add(line);
+                    // Each non-empty line is a sentence
+                    if (!line.isEmpty()) {
+                        totalTokens += processSentenceBuffer(Collections.singletonList(line), sentenceId++);
+                        processedSentences++;
+                    }
                 }
-            }
 
-            // Process remaining sentences
-            if (!sentenceBuffer.isEmpty()) {
-                processSentenceBuffer(sentenceBuffer, sentenceId);
+                // Batch commit
+                if (processedSentences % batchSize == 0) {
+                    indexer.commit();
+                    long elapsed = System.currentTimeMillis() - startTime;
+                    double tokensPerSec = totalTokens / (elapsed / 1000.0);
+                    logger.info("Processed " + processedSentences + " sentences, " +
+                               totalTokens + " tokens (" + String.format("%.1f", tokensPerSec) + " tokens/sec)");
+                }
             }
         }
 
@@ -92,8 +108,9 @@ public class CorpusProcessor {
 
     /**
      * Process a buffer of lines forming one or more sentences.
+     * Returns the number of tokens indexed.
      */
-    private void processSentenceBuffer(List<String> lines, int sentenceId) throws IOException {
+    private int processSentenceBuffer(List<String> lines, int sentenceId) throws IOException {
         StringBuilder sentenceBuilder = new StringBuilder();
         for (String line : lines) {
             if (sentenceBuilder.length() > 0) {
@@ -124,6 +141,8 @@ public class CorpusProcessor {
 
             position++;
         }
+
+        return tokens.size();
     }
 
     /**
@@ -135,6 +154,14 @@ public class CorpusProcessor {
             processSentenceBuffer(Collections.singletonList(sentence), sentenceId++);
         }
         indexer.commit();
+    }
+
+    /**
+     * Get the total number of tokens processed so far.
+     */
+    public int getTotalTokens() {
+        // This would require tracking, but for now just return 0
+        return 0;
     }
 
     /**

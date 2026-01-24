@@ -26,7 +26,8 @@
       "Bash(\"C:\\\\Program Files\\\\PostgreSQL\\\\17\\\\bin\\\\psql.exe\":*)",
       "Bash(\"C:\\\\Program Files\\\\PostgreSQL\\\\17\\\\bin\\\\psql.exe\" -h localhost -p 5432 -U dict_user -d dictionary_analytics -t -A -c \"SELECT relname, reltuples::bigint FROM pg_class WHERE relkind = ''r'' AND relname !~ ''^pg_'' ORDER BY reltuples DESC LIMIT 10;\")",
       "Bash(\"C:\\\\Program Files\\\\PostgreSQL\\\\17\\\\bin\\\\psql.exe\" -h localhost -p 5432 -U dict_user -d dictionary_analytics -d 1 -c \"\\\\dt\")",
-      "Bash(pg_isready:*)"
+      "Bash(pg_isready:*)",
+      "Bash(ls:*)"
     ]
   }
 }

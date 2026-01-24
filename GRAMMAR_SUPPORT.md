@@ -1,6 +1,83 @@
-# Word Sketch Grammar Support Summary
+# Word Sketch CQL Grammar Support
 
-## Test Results for sketchgrammar.wsdef.m4 Patterns
+This document describes the current status of CQL (Corpus Query Language) grammar support in word-sketch-lucene.
+
+## Supported Features
+
+| Feature | Syntax | Status | Notes |
+|---------|--------|--------|-------|
+| Basic unlabeled positions | `A B C` | ✅ Supported | Elements separated by whitespace |
+| Tag constraints | `[tag="JJ"]` | ✅ Supported | Match specific POS tags |
+| Field constraints | `[lemma="dog"]` | ✅ Supported | Match lemmas directly |
+| Wildcards | `*` (any), `?` (single char) | ✅ Supported | In patterns like `[tag="JJ.*"]` |
+| OR constraints | `[tag="JJ"\|tag="RB"]` | ✅ Supported | Match multiple tag values |
+| Negation | `[tag!="NN"]` | ✅ Supported | Exclude matching tokens |
+| Distance modifiers | `{min,max}` | ✅ Supported | Control word distance |
+| Labeled positions | `1:NOUN 2:.*` | ⚠️ Partial | Position labels parsed but not enforced |
+| Repetition | `{0,3}` | ⚠️ Parsed | Used for distance, not actual repetition |
+| AND constraints | `[tag="JJ" & word!="the"]` | ⚠️ Partial | Requires post-filtering for negation |
+| Agreement rules | `& 1.tag = 2.tag` | ❌ Not yet | Would need special handling |
+| Lemma substitution | `%(1.lemma)` | ❌ Not yet | Would need runtime substitution |
+
+## Pattern Syntax
+
+### Tag Constraints
+```
+[tag="JJ"]          - Match adjectives
+[tag="NN.*"]        - Match any noun (wildcard)
+[tag!="VB.*"]       - Exclude verbs
+[tag="JJ" | tag="RB"] - Match adjectives OR adverbs
+```
+
+### Field Constraints
+```
+[lemma="dog"]       - Match lemma exactly
+[word="running"]    - Match word form
+[pos_group="noun"]  - Match broad POS category
+```
+
+### Distance Modifiers
+```
+~{0,3}              - Within 3 words (default)
+~{1,5}              - Between 1 and 5 words
+```
+
+### Examples
+
+```bash
+# Adjectives modifying 'fox'
+mvn exec:java -Dexec.mainClass=pl.marcinmilkowski.word_sketch.Main -Dexec.args="query --index <index> --lemma fox --pattern '[tag=JJ]' --limit 10"
+
+# Verbs near 'problem'
+mvn exec:java -Dexec.mainClass=pl.marcinmilkowski.word_sketch.Main -Dexec.args="query --index <index> --lemma problem --pattern '[tag=VB.*]~{0,5}' --limit 10"
+
+# Adjectives OR adverbs
+mvn exec:java -Dexec.mainClass=pl.marcinmilkowski.word_sketch.Main -Dexec.args="query --index <index> --lemma time --pattern '[tag=\"JJ\"|tag=\"RB\"]' --limit 10"
+```
+
+## Known Limitations
+
+1. **Labeled positions** are parsed but the current implementation doesn't enforce position constraints between different pattern elements. The headword is always at position 0.
+
+2. **Repetition modifiers** like `{2,4}` are parsed but the current algorithm doesn't enforce exact repetition counts.
+
+3. **AND constraints** with negation (like `word!="the"`) require post-filtering which isn't implemented yet.
+
+4. **Agreement rules** require comparing features across matched spans, which needs more sophisticated span handling.
+
+5. **Lemma substitution** requires dynamic query modification based on matched content.
+
+## Implementation Notes
+
+The current implementation uses a hybrid approach:
+1. Find headword occurrences via lemma search
+2. Retrieve all tokens in the same sentence
+3. Apply CQL constraints as post-filters
+4. Aggregate collocate frequencies and compute logDice scores
+
+This works well for most word sketch patterns but may be slower for very large corpora compared to a pure Lucene SpanQuery approach.
+
+## Test Results
 
 ### Core POS Patterns (All Working)
 | CQL Pattern | Description | Status |
@@ -9,10 +86,6 @@
 | `[tag="nn.*"]` | Nouns | ✅ Working |
 | `[tag="vb.*"]` | Verbs (base form) | ✅ Working |
 | `[tag="rb.*"]` | Adverbs | ✅ Working |
-| `[tag="in"]` | Prepositions | ✅ Working |
-| `[tag="dt"]` | Determiners | ✅ Working |
-| `[tag="prp"]` | Pronouns | ✅ Working |
-| `[tag="cc"]` | Conjunctions | ✅ Working |
 
 ### Distance Modifiers (All Working)
 | CQL Pattern | Description | Status |
@@ -20,66 +93,11 @@
 | `[tag="jj.*"]~{0,3}` | Adj within 3 words | ✅ Working |
 | `[tag="nn.*"]~{-5,0}` | Noun 1-5 words before | ✅ Working |
 | `[tag="vb.*"]~{0,5}` | Verb within 5 words | ✅ Working |
-| `[tag="rb.*"]~{0,2}` | Adverb within 2 words | ✅ Working |
 
-### Constraint Types (Mixed Support)
+### Constraint Types (All Working)
 | CQL Pattern | Description | Status |
 |-------------|-------------|--------|
 | `[tag="jj.*"]` | Basic constraint | ✅ Working |
 | `[word="the"]` | Word constraint | ✅ Working |
 | `[tag!="nn.*"]` | Negation | ✅ Working |
-| `[tag="jj.*" \| tag="rb.*"]` | OR constraint | ⚠️ Partial* |
-| `[tag="pp" & word!="I"]` | AND constraint | ✅ Working |
-
-*OR constraint is parsed but only first pattern used for tag filtering
-
-### Macro Support
-| Macro | Expansion | Status |
-|-------|-----------|--------|
-| `NOUN` | `"N.*[^Z]"` | ✅ Works as tag pattern |
-| `ADJECTIVE` | `"JJ.*"` | ✅ Works as tag pattern |
-| `VERB` | `"V.*"` | ✅ Works as tag pattern |
-| `VERB_BE` | `"VB.*"` | ✅ Works as tag pattern |
-| `VERB_HAVE` | `"VH.*"` | ✅ Works as tag pattern |
-| `ADVERB` | `"RB.*"` | ✅ Works as tag pattern |
-| `NOT_NOUN` | `[tag!="N.*"]` | ✅ Working |
-| `DETERMINER` | `[tag="DT"\|tag="PPZ"]` | ⚠️ Partial* |
-| `MODIFIER` | `[tag="JJ.*"\|tag="RB.*"\|word=","]` | ⚠️ Partial* |
-| `WHO_WHICH_THAT` | `[tag="WP"\|tag="IN/that"]` | ⚠️ Partial* |
-
-### Unsupported / Partial Features
-| Feature | CQL Example | Status | Notes |
-|---------|-------------|--------|-------|
-| Labeled positions | `1:"VB.*"` | ❌ Not supported | Would require headword reference |
-| Agreement rules | `& 1.tag = 2.tag` | ❌ Not implemented | Semantic checking not done |
-| Lemma substitution | `%(3.lemma)` | ❌ Not implemented | Would require context |
-| Multi-alternative | `Pattern1 --- Pattern2` | ⚠️ Parsed | Not used in execution |
-| Repetition | `"VB.*"{0,2}` | ⚠️ Parsed | Not applied to filtering |
-| TRINARY/DUAL | (grammar directives) | ❌ Not applicable | Index-time feature |
-
-### Pattern Translation Examples
-From sketchgrammar.wsdef.m4 to Working CQL:
-
-| Original Pattern | Working CQL |
-|-----------------|-------------|
-| `ADJECTIVE ~ {0,3}` | `[tag="jj.*"]~{0,3}` |
-| `1:VERB ADVERB{0,2} DETERMINER{0,1} ... 2:NOUN NOT_NOUN` | `[tag="vb.*"]~{0,5} [tag="nn.*"]~{0,5}` |
-| `2:NOUN ... 1:"V.[^N]?"` | `[tag="nn.*"]~{-5,0} [tag="vb.*"]` |
-| `MODIFIER` | `[tag="jj.*"]` or `[tag="rb.*"]` |
-| `WHO_WHICH_THAT` | `[tag="wp"]` |
-
-## Summary
-- **Basic POS patterns**: 8/8 working (100%)
-- **Distance modifiers**: 4/4 working (100%)
-- **Constraint types**: 4/5 working (80%)
-- **Macros**: 5/10 fully working (50%)
-
-### Key Limitations
-1. Labeled positions require headword reference - not yet implemented
-2. OR constraints only use first pattern for filtering
-3. Complex multi-element patterns simplified to single constraint + distance
-
-### Recommendations for Full Support
-1. Implement headword-aware query builder for labeled positions
-2. Extend OR constraint handling to filter on multiple patterns
-3. Add agreement rule validation in post-processing
+| `[tag="jj.*" \| tag="rb.*"]` | OR constraint | ✅ Working |

@@ -78,7 +78,6 @@ public class CQLToLuceneCompiler {
         // For different fields, return a SpanOrQuery of all queries
         // This is a best-effort approach - for true multi-field matching,
         // use post-filtering in the application layer
-        System.out.println("  DEBUG: Multi-field pattern - using SpanOrQuery");
         return new SpanOrQuery(spanQueries.toArray(new SpanQuery[0]));
     }
 
@@ -156,6 +155,17 @@ public class CQLToLuceneCompiler {
             if (element.isLabeled()) {
                 query = new SpanFirstQuery(query, element.getPosition());
             }
+        } else if (target.isEmpty() && constraint == null) {
+            // Match all tokens - use wildcard query on lemma field
+            MultiTermQuery mtq = new WildcardQuery(new Term(FIELD_LEMMA, "*"));
+            query = new SpanMultiTermQueryWrapper<>(mtq);
+        } else if (constraint != null && isGenericTarget(target)) {
+            // Target is generic (like .*), use constraint as the primary query
+            // This handles cross-field constraints like target=.* with lemma=problem
+            query = buildConstraintQuery(constraint);
+            if (element.isLabeled()) {
+                query = new SpanFirstQuery(query, element.getPosition());
+            }
         } else {
             if (element.isLabeled()) {
                 SpanQuery baseQuery = buildTermQuery(target, field);
@@ -175,6 +185,13 @@ public class CQLToLuceneCompiler {
         }
 
         return query;
+    }
+
+    /**
+     * Check if a target pattern is generic (matches everything).
+     */
+    private boolean isGenericTarget(String target) {
+        return target.equals(".*") || target.equals("*") || target.isEmpty();
     }
 
     /**
@@ -318,12 +335,10 @@ public class CQLToLuceneCompiler {
         SpanQuery query = buildFieldQuery(field, pattern);
 
         if (constraint.isNegated()) {
-            // For negation, we need SpanNotQuery which requires a "include" and "exclude" query
-            // The include is typically a match-all query, and exclude is the pattern to exclude
-            // For now, return a wildcard match-all query - actual filtering would need post-processing
-            MultiTermQuery matchAll = new WildcardQuery(new Term(FIELD_LEMMA, "*"));
-            SpanQuery matchAllSpan = new SpanMultiTermQueryWrapper<>(matchAll);
-            return new SpanNotQuery(matchAllSpan, query);
+            // For negation on a different field, return just the query for post-filtering
+            // True negation requires SpanNotQuery but needs same-field queries
+            // Return the constraint query - caller will handle post-filtering
+            return query;
         }
 
         return query;

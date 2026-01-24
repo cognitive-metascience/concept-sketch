@@ -4,13 +4,17 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
+import org.apache.lucene.queries.spans.SpanMultiTermQueryWrapper;
+import org.apache.lucene.queries.spans.SpanNearQuery;
 import org.apache.lucene.queries.spans.SpanQuery;
-import org.apache.lucene.queries.spans.SpanTermQuery;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TopDocs;
+import org.apache.lucene.search.WildcardQuery;
 import org.apache.lucene.store.FSDirectory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import pl.marcinmilkowski.word_sketch.grammar.CQLParser;
 import pl.marcinmilkowski.word_sketch.grammar.CQLPattern;
 
@@ -20,16 +24,18 @@ import java.util.*;
 
 /**
  * Query executor that finds collocations and computes association scores.
- * Supports full CQL grammar including labeled positions, OR/AND constraints,
- * agreement rules, lemma substitution, and repetition.
  */
 public class WordSketchQueryExecutor {
 
+    private static final Logger logger = LoggerFactory.getLogger(WordSketchQueryExecutor.class);
+
     private final IndexSearcher searcher;
     private final CQLToLuceneCompiler compiler;
+    private final String indexPath;
     private final IndexReader reader;
 
     public WordSketchQueryExecutor(String indexPath) throws IOException {
+        this.indexPath = indexPath;
         this.reader = DirectoryReader.open(FSDirectory.open(Paths.get(indexPath)));
         this.searcher = new IndexSearcher(reader);
         this.compiler = new CQLToLuceneCompiler();
@@ -37,108 +43,134 @@ public class WordSketchQueryExecutor {
 
     /**
      * Find collocations for a headword using a CQL pattern.
-     * Uses CQLToLuceneCompiler for full pattern support.
-     *
-     * Supports:
-     * - Labeled positions: 1:NOUN, 2:"N.*"
-     * - OR constraints: [tag="JJ"|tag="RB"]
-     * - AND constraints: [tag="PP" & word!="I"]
-     * - Agreement rules: & 1.tag = 2.tag
-     * - Lemma substitution: %(3.lemma)
-     * - Repetition: {0,3}
+     * Uses SpanNearQuery for efficient pattern matching - O(1) query instead of O(n) scans.
      */
     public List<WordSketchResult> findCollocations(String headword, String cqlPattern,
                                                     double minLogDice, int maxResults)
             throws IOException {
 
-        if (headword == null || headword.isEmpty()) {
-            return Collections.emptyList();
-        }
-
         // Get headword frequency
-        long headwordFreq = getTotalFrequency(headword);
-        if (headwordFreq == 0) {
+        long headwordFreq = (headword == null || headword.isEmpty()) ? 1 : getTotalFrequency(headword);
+        if (headword != null && !headword.isEmpty() && headwordFreq == 0) {
             System.out.println(String.format("  Headword '%s' not found in corpus", headword));
             return Collections.emptyList();
         }
 
-        // Parse the collocate pattern
+        // Parse the collocate pattern to get constraints
         CQLPattern collocatePattern = new CQLParser().parse(cqlPattern);
 
-        // Build constraint patterns from CQL pattern
-        List<CQLPattern.Constraint> collocateConstraints = extractConstraints(collocatePattern);
+        System.out.println(String.format("  DEBUG: Pattern '%s' has %d elements",
+            cqlPattern, collocatePattern.getElements().size()));
 
-        // Find all headword positions
-        SpanTermQuery headwordQuery = new SpanTermQuery(new Term("lemma", headword.toLowerCase()));
-        TopDocs headwordDocs = searcher.search(headwordQuery, Math.toIntExact(Math.min(headwordFreq, 100000)));
+        // Get the constraint pattern (e.g., "jj.*" from [tag="jj.*"])
+        String constraintField = null;
+        String constraintPattern = null;
+        if (!collocatePattern.getElements().isEmpty()) {
+            var elem = collocatePattern.getElements().get(0);
+            if (elem.getConstraint() != null) {
+                constraintField = elem.getConstraint().getField();
+                constraintPattern = elem.getConstraint().getPattern();
+            } else if (elem.getTarget() != null && !elem.getTarget().isEmpty()) {
+                String target = elem.getTarget();
+                // If target looks like a tag pattern (contains wildcard), treat as tag constraint
+                if (target.contains(".*") || target.contains("?") || target.matches("^[a-zA-Z]+$")) {
+                    constraintField = "tag";
+                    constraintPattern = target;
+                } else {
+                    // Treat as word constraint
+                    constraintField = "word";
+                    constraintPattern = target;
+                }
+            }
+            System.out.println(String.format("  DEBUG: target='%s', minDist=%d, maxDist=%d, constraintField='%s', constraintPattern='%s'",
+                elem.getTarget(), elem.getMinDistance(), elem.getMaxDistance(), constraintField, constraintPattern));
+        }
 
-        // Aggregate collocate frequencies
+        if (headword == null || headword.isEmpty()) {
+            System.out.println("  No headword specified");
+            return Collections.emptyList();
+        }
+
+        // Build a SpanNearQuery: headword near (tagPattern | targetWord)
+        // Pattern: (headword) [tagPattern | targetWord]
+        int maxDist = 3;
+        if (!collocatePattern.getElements().isEmpty()) {
+            maxDist = collocatePattern.getElements().get(0).getMaxDistance();
+            if (maxDist < 0) maxDist = 3;
+        }
+
+        System.out.println(String.format("  Headword '%s' occurs in %,d positions", headword, headwordFreq));
+
+        // Create a SpanNearQuery for: headword NEAR collocate
+        SpanQuery headwordSpan = new org.apache.lucene.queries.spans.SpanMultiTermQueryWrapper<>(
+            new TermQuery(new Term("lemma", headword.toLowerCase())));
+
+        SpanQuery collocateSpan;
+        if (tagPattern != null) {
+            // Use tag pattern for collocate
+            WildcardQuery tagQuery = new WildcardQuery(new Term("tag", tagPattern.toLowerCase()));
+            collocateSpan = new SpanMultiTermQueryWrapper<>(tagQuery);
+        } else if (targetWord != null) {
+            // Use specific word as collocate
+            collocateSpan = new SpanMultiTermQueryWrapper<>(
+                new TermQuery(new Term("lemma", targetWord.toLowerCase())));
+        } else {
+            // No specific pattern - match any word
+            WildcardQuery anyQuery = new WildcardQuery(new Term("lemma", "*"));
+            collocateSpan = new SpanMultiTermQueryWrapper<>(anyQuery);
+        }
+
+        // Combine: headword NEAR collocate (inOrder=false to find both sides)
+        SpanQuery[] clauses = new SpanQuery[] { headwordSpan, collocateSpan };
+        SpanNearQuery nearQuery = new SpanNearQuery(clauses, maxDist, false, true);
+
+        System.out.println(String.format("  Executing SpanNearQuery for %s near %s...", headword, tagPattern != null ? tagPattern : targetWord));
+
+        TopDocs topDocs = searcher.search(nearQuery, 10000);
+
+        System.out.println(String.format("  Found %,d matches", topDocs.scoreDocs.length));
+
+        // Aggregate results from matches
         Map<String, Long> lemmaFreqs = new HashMap<>();
         Map<String, String> lemmaPos = new HashMap<>();
         Map<String, List<String>> examples = new HashMap<>();
 
-        // Calculate max distance from pattern
-        int maxDist = extractMaxDistance(collocatePattern);
-        if (maxDist <= 0) maxDist = 3; // Default
-
-        long collocateCount = 0;
-        int scanned = 0;
-
-        for (ScoreDoc hit : headwordDocs.scoreDocs) {
+        int matchCount = 0;
+        for (ScoreDoc hit : topDocs.scoreDocs) {
             Document doc = searcher.storedFields().document(hit.doc);
-            int headwordDocId = doc.getField("doc_id").numericValue().intValue();
-            int headwordPos = doc.getField("position").numericValue().intValue();
+            String lemma = doc.get("lemma");
+            String tag = doc.get("tag");
+            String sentence = doc.get("sentence");
 
-            // Find all documents in the same sentence (by doc_id)
-            TermQuery sentenceQuery = new TermQuery(new Term("doc_id", String.valueOf(headwordDocId)));
-            TopDocs sentenceDocs = searcher.search(sentenceQuery, 100);
+            if (lemma == null) continue;
+            if (lemma.equalsIgnoreCase(headword)) continue;
 
-            // Check each document in the sentence for position match
-            for (ScoreDoc sentHit : sentenceDocs.scoreDocs) {
-                Document sentDoc = searcher.storedFields().document(sentHit.doc);
-                int sentPos = Integer.parseInt(sentDoc.get("position"));
-                String nearbyLemma = sentDoc.get("lemma");
-                String nearbyTag = sentDoc.get("tag");
-                String sentence = sentDoc.get("sentence");
-
-                // Skip headword itself
-                if (sentPos == headwordPos) continue;
-
-                // Check position distance
-                if (Math.abs(sentPos - headwordPos) > maxDist) continue;
-
-                if (nearbyLemma == null) continue;
-                if (nearbyLemma.equalsIgnoreCase(headword)) continue;
-
-                // Check CQL constraints
-                if (!matchesConstraints(nearbyLemma, nearbyTag, collocateConstraints)) {
+            // Check tag pattern if specified
+            if (tagPattern != null && tag != null) {
+                if (!tag.toLowerCase().matches(tagPattern.toLowerCase())) {
                     continue;
-                }
-
-                collocateCount++;
-                String key = nearbyLemma.toLowerCase();
-
-                lemmaFreqs.merge(key, 1L, Long::sum);
-                lemmaPos.putIfAbsent(key, nearbyTag != null ? nearbyTag.toUpperCase() : "");
-
-                if (!examples.containsKey(key)) {
-                    examples.put(key, new ArrayList<>());
-                }
-                if (examples.get(key).size() < 3 && sentence != null) {
-                    examples.get(key).add(sentence.trim());
                 }
             }
 
-            scanned++;
+            matchCount++;
+            String key = lemma.toLowerCase();
 
-            // Limit scanned headwords for performance
-            if (scanned >= 50000) break;
+            lemmaFreqs.merge(key, 1L, Long::sum);
+            lemmaPos.putIfAbsent(key, tag != null ? tag.toLowerCase() : "");
+
+            if (!examples.containsKey(key)) {
+                examples.put(key, new ArrayList<>());
+            }
+            if (examples.get(key).size() < 5 && sentence != null) {
+                examples.get(key).add(sentence.trim());
+            }
         }
 
-        // Calculate logDice for each collocate
-        long totalMatches = Math.max(1, collocateCount);
-        List<WordSketchResult> results = new ArrayList<>();
+        System.out.println(String.format("  Processed: %d matches, unique collocates: %d", matchCount, lemmaFreqs.size()));
 
+        // Calculate logDice for each collocate
+        int totalMatches = Math.max(1, matchCount);
+        List<WordSketchResult> results = new ArrayList<>();
         for (Map.Entry<String, Long> entry : lemmaFreqs.entrySet()) {
             String lemma = entry.getKey();
             long freq = entry.getValue();
@@ -165,142 +197,6 @@ public class WordSketchQueryExecutor {
         results.sort((a, b) -> Double.compare(b.getLogDice(), a.getLogDice()));
 
         return results.subList(0, Math.min(maxResults, results.size()));
-    }
-
-    /**
-     * Extract max distance from CQL pattern.
-     */
-    private int extractMaxDistance(CQLPattern pattern) {
-        for (CQLPattern.PatternElement elem : pattern.getElements()) {
-            if (elem.getMaxDistance() > 0) {
-                return elem.getMaxDistance();
-            }
-        }
-        return 0;
-    }
-
-    /**
-     * Extract constraints from CQL pattern elements.
-     */
-    private List<CQLPattern.Constraint> extractConstraints(CQLPattern pattern) {
-        List<CQLPattern.Constraint> constraints = new ArrayList<>();
-        for (CQLPattern.PatternElement elem : pattern.getElements()) {
-            if (elem.getConstraint() != null) {
-                constraints.add(elem.getConstraint());
-            }
-        }
-        return constraints;
-    }
-
-    /**
-     * Check if a token matches all constraints.
-     */
-    private boolean matchesConstraints(String lemma, String tag, List<CQLPattern.Constraint> constraints) {
-        for (CQLPattern.Constraint constraint : constraints) {
-            if (!matchesConstraint(lemma, tag, constraint)) {
-                return false;
-            }
-        }
-        return true;
-    }
-
-    /**
-     * Check if a token matches a single constraint.
-     */
-    private boolean matchesConstraint(String lemma, String tag, CQLPattern.Constraint constraint) {
-        String field = constraint.getField();
-        String pattern = constraint.getPattern();
-
-        // Handle OR constraints
-        if (constraint.isOr()) {
-            // Check if any OR part matches
-            if (constraint.getOrConstraints().isEmpty()) {
-                // Single OR pattern like tag="JJ"|tag="RB"
-                String[] parts = pattern.split("\\|");
-                for (String part : parts) {
-                    if (matchesField(tag != null ? tag.toLowerCase() : "", field, part.trim())) {
-                        return !constraint.isNegated();
-                    }
-                }
-                return constraint.isNegated();
-            } else {
-                // Multiple OR constraints
-                for (CQLPattern.Constraint orConstraint : constraint.getOrConstraints()) {
-                    if (matchesConstraint(lemma, tag, orConstraint)) {
-                        return !constraint.isNegated();
-                    }
-                }
-                return constraint.isNegated();
-            }
-        }
-
-        // Handle AND constraints
-        if (constraint.isAnd() && !constraint.getAndConstraints().isEmpty()) {
-            // All AND parts must match
-            for (CQLPattern.Constraint andConstraint : constraint.getAndConstraints()) {
-                if (!matchesConstraint(lemma, tag, andConstraint)) {
-                    return constraint.isNegated();
-                }
-            }
-            return !constraint.isNegated();
-        }
-
-        // Simple constraint
-        String value = getFieldValue(lemma, tag, field);
-        boolean matches = matchesField(value, field, pattern);
-        return constraint.isNegated() ? !matches : matches;
-    }
-
-    /**
-     * Get field value from token.
-     */
-    private String getFieldValue(String lemma, String tag, String field) {
-        switch (field.toLowerCase()) {
-            case "lemma":
-                return lemma != null ? lemma.toLowerCase() : "";
-            case "tag":
-                return tag != null ? tag.toLowerCase() : "";
-            case "word":
-                return lemma != null ? lemma.toLowerCase() : ""; // word field not stored separately
-            default:
-                return lemma != null ? lemma.toLowerCase() : "";
-        }
-    }
-
-    /**
-     * Check if a field value matches a pattern.
-     * Handles wildcard patterns (glob): * matches any characters, ? matches single char.
-     * In glob patterns, . is just a literal character (like in tag patterns "JJ.*").
-     * Conversion: * -> .*, ? -> ., other chars literal.
-     */
-    private boolean matchesField(String value, String field, String pattern) {
-        if (pattern.startsWith("\"")) {
-            pattern = pattern.substring(1, pattern.length() - 1);
-        }
-
-        // Convert glob pattern to regex
-        // * -> .*  (match any characters)
-        // ? -> .   (match single character)
-        // All other characters (including .) are treated literally
-        StringBuilder regex = new StringBuilder();
-        for (int i = 0; i < pattern.length(); i++) {
-            char c = pattern.charAt(i);
-            if (c == '*') {
-                regex.append(".*");
-            } else if (c == '?') {
-                regex.append(".");
-            } else if ("\\^$|()[]{}+".indexOf(c) >= 0) {
-                // Escape regex special characters
-                regex.append("\\").append(c);
-            } else {
-                // All other characters (including .) are treated literally
-                // This means "JJ.*" matches tags starting with "JJ"
-                regex.append(c);
-            }
-        }
-
-        String fullRegex = "(?i)^" + regex + "$";
-        return value.matches(fullRegex);
     }
 
     private long getTotalFrequency(String lemma) throws IOException {
@@ -611,7 +507,6 @@ public class WordSketchQueryExecutor {
 
             List<WordSketchResult> results = executor.findCollocations(
                 "problem", "[tag=\"jj.*\"] ~ {0,3}", 0, 20);
-            System.out.println("Results size: " + results.size());
 
             for (int i = 0; i < Math.min(10, results.size()); i++) {
                 WordSketchResult r = results.get(i);
