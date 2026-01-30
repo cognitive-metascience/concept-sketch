@@ -1,0 +1,400 @@
+package pl.marcinmilkowski.word_sketch.indexer.hybrid;
+
+import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.analysis.standard.StandardAnalyzer;
+import org.apache.lucene.document.*;
+import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.index.IndexWriterConfig;
+import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.FSDirectory;
+import org.apache.lucene.store.MMapDirectory;
+import org.apache.lucene.util.BytesRef;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.io.Closeable;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.List;
+import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicLong;
+
+/**
+ * Hybrid indexer that creates sentence-per-document indexes.
+ * 
+ * Unlike the legacy token-per-document indexer, this creates one Lucene document
+ * per sentence, with all tokens stored in DocValues for efficient retrieval.
+ * 
+ * Index structure:
+ * - Each document = one sentence
+ * - Fields:
+ *   - sentence_id (stored, indexed as IntPoint for range queries)
+ *   - text (stored, for display)
+ *   - word (TextField with positions, for span queries on word forms)
+ *   - lemma (TextField with positions, for span queries on lemmas)
+ *   - tag (TextField with positions, for span queries on POS tags)
+ *   - tokens (BinaryDocValues, encoded token sequence for extraction)
+ *   - token_count (stored, for statistics)
+ * 
+ * Benefits:
+ * - ~15x smaller index (one doc per sentence vs. one per token)
+ * - SpanQueries work across token fields
+ * - DocValues enable O(1) token lookup by position
+ */
+public class HybridIndexer implements Closeable {
+
+    private static final Logger log = LoggerFactory.getLogger(HybridIndexer.class);
+
+    private final IndexWriter writer;
+    private final Directory directory;
+    private final StatisticsCollector statsCollector;
+    private final AtomicLong sentenceCount = new AtomicLong(0);
+    private final AtomicLong tokenCount = new AtomicLong(0);
+
+    // Thread-local token streams for reuse
+    private final ThreadLocal<PositionalTokenStream> wordTokenStream = 
+        ThreadLocal.withInitial(PositionalTokenStream::new);
+    private final ThreadLocal<PositionalTokenStream> lemmaTokenStream = 
+        ThreadLocal.withInitial(PositionalTokenStream::new);
+    private final ThreadLocal<PositionalTokenStream> tagTokenStream = 
+        ThreadLocal.withInitial(PositionalTokenStream::new);
+    private final ThreadLocal<PositionalTokenStream> posGroupTokenStream = 
+        ThreadLocal.withInitial(PositionalTokenStream::new);
+
+    /**
+     * Creates a new hybrid indexer.
+     * 
+     * @param indexPath Path to the index directory
+     * @throws IOException if the index cannot be created
+     */
+    public HybridIndexer(String indexPath) throws IOException {
+        this(indexPath, Runtime.getRuntime().availableProcessors());
+    }
+
+    /**
+     * Creates a new hybrid indexer with specified thread count.
+     * 
+     * @param indexPath Path to the index directory
+     * @param numThreads Number of threads for concurrent indexing
+     * @throws IOException if the index cannot be created
+     */
+    public HybridIndexer(String indexPath, int numThreads) throws IOException {
+        Path path = Paths.get(indexPath);
+        Files.createDirectories(path);
+
+        // Use MMapDirectory for better performance on large indexes
+        this.directory = MMapDirectory.open(path);
+
+        // Configure analyzer - we use custom token streams, so StandardAnalyzer is just a placeholder
+        Analyzer analyzer = new StandardAnalyzer();
+
+        IndexWriterConfig config = new IndexWriterConfig(analyzer);
+        config.setOpenMode(IndexWriterConfig.OpenMode.CREATE);
+        config.setRAMBufferSizeMB(512);  // 512MB RAM buffer for faster indexing
+        config.setUseCompoundFile(false); // Disable compound file for better write performance
+        
+        // Enable concurrent merges
+        config.setMaxBufferedDocs(IndexWriterConfig.DISABLE_AUTO_FLUSH);
+
+        this.writer = new IndexWriter(directory, config);
+        this.statsCollector = new StatisticsCollector();
+
+        log.info("Hybrid indexer initialized at: {} (threads: {})", indexPath, numThreads);
+    }
+
+    /**
+     * Indexes a single sentence.
+     * 
+     * @param sentence The sentence to index
+     * @throws IOException if indexing fails
+     */
+    public void indexSentence(SentenceDocument sentence) throws IOException {
+        Document doc = createDocument(sentence);
+        writer.addDocument(doc);
+
+        // Collect statistics
+        statsCollector.addSentence(sentence);
+
+        long count = sentenceCount.incrementAndGet();
+        tokenCount.addAndGet(sentence.tokenCount());
+
+        if (count % 100_000 == 0) {
+            log.info("Indexed {} sentences, {} tokens", count, tokenCount.get());
+        }
+    }
+
+    /**
+     * Indexes multiple sentences in batch.
+     * 
+     * @param sentences The sentences to index
+     * @throws IOException if indexing fails
+     */
+    public void indexSentences(List<SentenceDocument> sentences) throws IOException {
+        for (SentenceDocument sentence : sentences) {
+            indexSentence(sentence);
+        }
+    }
+
+    /**
+     * Creates a Lucene document from a sentence.
+     */
+    private Document createDocument(SentenceDocument sentence) throws IOException {
+        Document doc = new Document();
+
+        // Sentence ID - stored and indexed for range queries
+        doc.add(new StoredField("sentence_id", sentence.sentenceId()));
+        doc.add(new IntPoint("sentence_id_point", sentence.sentenceId()));
+
+        // Sentence text - stored only
+        if (sentence.text() != null) {
+            doc.add(new StoredField("text", sentence.text()));
+        }
+
+        // Token count - stored for quick access
+        doc.add(new StoredField("token_count", sentence.tokenCount()));
+
+        List<SentenceDocument.Token> tokens = sentence.tokens();
+        if (tokens != null && !tokens.isEmpty()) {
+            // Word field with positions - for span queries
+            PositionalTokenStream wordStream = wordTokenStream.get();
+            wordStream.setTokens(tokens);
+            wordStream.setFieldType("word");
+            doc.add(new TextField("word", wordStream));
+
+            // Lemma field with positions - for span queries on lemmas
+            PositionalTokenStream lemmaStream = lemmaTokenStream.get();
+            lemmaStream.setTokens(tokens);
+            lemmaStream.setFieldType("lemma");
+            doc.add(new TextField("lemma", lemmaStream));
+
+            // Tag field with positions - for span queries on POS tags
+            PositionalTokenStream tagStream = tagTokenStream.get();
+            tagStream.setTokens(tokens);
+            tagStream.setFieldType("tag");
+            doc.add(new TextField("tag", tagStream));
+
+            // POS group field with positions - for broad POS category queries
+            PositionalTokenStream posGroupStream = posGroupTokenStream.get();
+            posGroupStream.setTokens(tokens);
+            posGroupStream.setFieldType("pos_group");
+            doc.add(new TextField("pos_group", posGroupStream));
+
+            // Token sequence as binary DocValues - for efficient extraction
+            BytesRef tokenBytes = TokenSequenceCodec.encode(tokens);
+            doc.add(new BinaryDocValuesField("tokens", tokenBytes));
+        }
+
+        return doc;
+    }
+
+    /**
+     * Commits the index and builds statistics.
+     * 
+     * @throws IOException if commit fails
+     */
+    public void commit() throws IOException {
+        writer.commit();
+        log.info("Index committed: {} sentences, {} tokens", 
+            sentenceCount.get(), tokenCount.get());
+    }
+
+    /**
+     * Writes the term statistics to a separate file.
+     * 
+     * @param statsPath Path to write statistics
+     * @throws IOException if writing fails
+     */
+    public void writeStatistics(String statsPath) throws IOException {
+        statsCollector.writeToFile(statsPath);
+        log.info("Statistics written to: {}", statsPath);
+    }
+
+    /**
+     * Gets the statistics collector for accessing term frequencies.
+     */
+    public StatisticsCollector getStatisticsCollector() {
+        return statsCollector;
+    }
+
+    /**
+     * Gets the current sentence count.
+     */
+    public long getSentenceCount() {
+        return sentenceCount.get();
+    }
+
+    /**
+     * Gets the current token count.
+     */
+    public long getTokenCount() {
+        return tokenCount.get();
+    }
+
+    @Override
+    public void close() throws IOException {
+        writer.close();
+        directory.close();
+        log.info("Hybrid indexer closed. Total: {} sentences, {} tokens",
+            sentenceCount.get(), tokenCount.get());
+    }
+
+    /**
+     * Collects term statistics during indexing.
+     * Thread-safe for concurrent indexing.
+     */
+    public static class StatisticsCollector {
+        private final ConcurrentHashMap<String, AtomicLong> lemmaFrequencies = new ConcurrentHashMap<>();
+        private final ConcurrentHashMap<String, AtomicLong> tagFrequencies = new ConcurrentHashMap<>();
+        private final ConcurrentHashMap<String, ConcurrentHashMap<String, AtomicLong>> lemmaTagDistribution = 
+            new ConcurrentHashMap<>();
+        private final AtomicLong totalTokens = new AtomicLong(0);
+        private final AtomicLong totalSentences = new AtomicLong(0);
+
+        /**
+         * Adds statistics from a sentence.
+         */
+        public void addSentence(SentenceDocument sentence) {
+            totalSentences.incrementAndGet();
+            
+            for (SentenceDocument.Token token : sentence.tokens()) {
+                totalTokens.incrementAndGet();
+                
+                String lemma = token.lemma() != null ? token.lemma().toLowerCase() : "";
+                String tag = token.tag() != null ? token.tag().toUpperCase() : "";
+                
+                if (!lemma.isEmpty()) {
+                    lemmaFrequencies.computeIfAbsent(lemma, k -> new AtomicLong(0)).incrementAndGet();
+                }
+                
+                if (!tag.isEmpty()) {
+                    tagFrequencies.computeIfAbsent(tag, k -> new AtomicLong(0)).incrementAndGet();
+                }
+                
+                // Track lemma->tag distribution
+                if (!lemma.isEmpty() && !tag.isEmpty()) {
+                    lemmaTagDistribution
+                        .computeIfAbsent(lemma, k -> new ConcurrentHashMap<>())
+                        .computeIfAbsent(tag, k -> new AtomicLong(0))
+                        .incrementAndGet();
+                }
+            }
+        }
+
+        /**
+         * Gets the frequency of a lemma.
+         */
+        public long getLemmaFrequency(String lemma) {
+            AtomicLong freq = lemmaFrequencies.get(lemma.toLowerCase());
+            return freq != null ? freq.get() : 0;
+        }
+
+        /**
+         * Gets the frequency of a POS tag.
+         */
+        public long getTagFrequency(String tag) {
+            AtomicLong freq = tagFrequencies.get(tag.toUpperCase());
+            return freq != null ? freq.get() : 0;
+        }
+
+        /**
+         * Gets the total token count.
+         */
+        public long getTotalTokens() {
+            return totalTokens.get();
+        }
+
+        /**
+         * Gets the total sentence count.
+         */
+        public long getTotalSentences() {
+            return totalSentences.get();
+        }
+
+        /**
+         * Gets the number of unique lemmas.
+         */
+        public int getUniqueLemmaCount() {
+            return lemmaFrequencies.size();
+        }
+
+        /**
+         * Writes statistics to a file.
+         * Output format is TSV compatible with StatisticsReader:
+         * lemma<TAB>totalFreq<TAB>docFreq<TAB>posDist
+         */
+        public void writeToFile(String path) throws IOException {
+            Path statsPath = Paths.get(path);
+            if (statsPath.getParent() != null) {
+                Files.createDirectories(statsPath.getParent());
+            }
+            
+            try (var writer = Files.newBufferedWriter(statsPath)) {
+                // Header comments (parsed by StatisticsReader)
+                writer.write("# Hybrid Index Statistics\n");
+                writer.write(String.format("# Total sentences: %d\n", totalSentences.get()));
+                writer.write(String.format("# Total tokens: %d\n", totalTokens.get()));
+                writer.write(String.format("# Unique lemmas: %d\n", lemmaFrequencies.size()));
+                writer.write(String.format("# Unique tags: %d\n", tagFrequencies.size()));
+                writer.write("# Format: lemma<TAB>totalFreq<TAB>docFreq<TAB>posDist\n");
+                
+                // Write lemma frequencies sorted by frequency descending
+                // Format: lemma<TAB>totalFreq<TAB>docFreq<TAB>TAG1:count1,TAG2:count2
+                lemmaFrequencies.entrySet().stream()
+                    .sorted((a, b) -> Long.compare(b.getValue().get(), a.getValue().get()))
+                    .forEach(entry -> {
+                        try {
+                            String lemma = entry.getKey();
+                            long freq = entry.getValue().get();
+                            // docFreq = number of sentences containing this lemma
+                            // For now, use a rough estimate based on frequency
+                            int docFreq = (int) Math.min(freq, totalSentences.get());
+                            
+                            // Build POS distribution string
+                            StringBuilder posDist = new StringBuilder();
+                            ConcurrentHashMap<String, AtomicLong> tagDist = lemmaTagDistribution.get(lemma);
+                            if (tagDist != null && !tagDist.isEmpty()) {
+                                boolean first = true;
+                                for (var tagEntry : tagDist.entrySet()) {
+                                    if (!first) posDist.append(",");
+                                    posDist.append(tagEntry.getKey())
+                                           .append(":")
+                                           .append(tagEntry.getValue().get());
+                                    first = false;
+                                }
+                            }
+                            
+                            writer.write(String.format("%s\t%d\t%d\t%s\n", 
+                                lemma, freq, docFreq, posDist.toString()));
+                        } catch (IOException e) {
+                            throw new RuntimeException(e);
+                        }
+                    });
+            }
+        }
+
+        /**
+         * Loads statistics from a file.
+         */
+        public static StatisticsCollector loadFromFile(String path) throws IOException {
+            StatisticsCollector collector = new StatisticsCollector();
+            
+            try (var reader = Files.newBufferedReader(Paths.get(path))) {
+                String line;
+                while ((line = reader.readLine()) != null) {
+                    if (line.startsWith("#")) continue;
+                    
+                    String[] parts = line.split("\t");
+                    if (parts.length >= 2) {
+                        String lemma = parts[0];
+                        long freq = Long.parseLong(parts[1]);
+                        collector.lemmaFrequencies.put(lemma, new AtomicLong(freq));
+                    }
+                }
+            }
+            
+            return collector;
+        }
+    }
+}

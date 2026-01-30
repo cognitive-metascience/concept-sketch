@@ -3,6 +3,8 @@ package pl.marcinmilkowski.word_sketch;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import pl.marcinmilkowski.word_sketch.api.WordSketchApiServer;
+import pl.marcinmilkowski.word_sketch.indexer.hybrid.HybridConllUProcessor;
+import pl.marcinmilkowski.word_sketch.query.HybridQueryExecutor;
 import pl.marcinmilkowski.word_sketch.query.SnowballCollocations;
 import pl.marcinmilkowski.word_sketch.query.WordSketchQueryExecutor;
 import pl.marcinmilkowski.word_sketch.tagging.ConllUProcessor;
@@ -62,6 +64,12 @@ public class Main {
                     break;
                 case "snowball":
                     handleSnowballCommand(args);
+                    break;
+                case "hybrid-index":
+                    handleHybridIndexCommand(args);
+                    break;
+                case "hybrid-query":
+                    handleHybridQueryCommand(args);
                     break;
                 case "help":
                     showUsage();
@@ -128,6 +136,7 @@ public class Main {
         String cqlPattern = null;
         double minLogDice = 0;
         int limit = 50;
+        int sampleSize = 10_000;  // Default: fast mode
 
         for (int i = 1; i < args.length; i++) {
             switch (args[i]) {
@@ -149,6 +158,16 @@ public class Main {
                 case "--limit":
                     limit = Integer.parseInt(args[++i]);
                     break;
+                case "--sample":
+                case "-s":
+                    sampleSize = Integer.parseInt(args[++i]);
+                    break;
+                case "--accurate":
+                    sampleSize = 50_000;  // Accurate mode
+                    break;
+                case "--fast":
+                    sampleSize = 10_000;  // Fast mode (default)
+                    break;
                 default:
                     System.err.println("Unknown option: " + args[i]);
             }
@@ -157,6 +176,7 @@ public class Main {
         if (indexPath == null) {
             System.err.println("Error: --index is required");
             System.err.println("Usage: java -jar word-sketch-lucene.jar query --index <path> --lemma <word>");
+            System.err.println("       [--sample <n>] or [--fast] or [--accurate]");
             return;
         }
 
@@ -176,9 +196,11 @@ public class Main {
         System.out.println("Pattern: " + cqlPattern);
         System.out.println("Min logDice: " + minLogDice);
         System.out.println("Limit: " + limit);
+        System.out.println("Sample size: " + (sampleSize == 0 ? "unlimited" : sampleSize));
         System.out.println();
 
         WordSketchQueryExecutor executor = new WordSketchQueryExecutor(indexPath);
+        executor.setMaxSampleSize(sampleSize);
         var results = executor.findCollocations(lemma, cqlPattern, minLogDice, limit);
 
         System.out.println("Results:");
@@ -555,18 +577,161 @@ public class Main {
         }
     }
 
+    private static void handleHybridIndexCommand(String[] args) throws IOException {
+        String input = null;
+        String outputIndex = null;
+        String statsPath = null;
+        int commitInterval = 50_000;
+
+        for (int i = 1; i < args.length; i++) {
+            switch (args[i]) {
+                case "--input":
+                case "-i":
+                    input = args[++i];
+                    break;
+                case "--output":
+                case "-o":
+                    outputIndex = args[++i];
+                    break;
+                case "--stats":
+                    statsPath = args[++i];
+                    break;
+                case "--commit-interval":
+                    commitInterval = Integer.parseInt(args[++i]);
+                    break;
+                default:
+                    System.err.println("Unknown option: " + args[i]);
+            }
+        }
+
+        if (input == null || outputIndex == null) {
+            System.err.println("Error: --input and --output are required");
+            System.err.println("Usage: hybrid-index --input <conllu-file-or-dir> --output <index-path> [--stats <stats-file>]");
+            return;
+        }
+
+        if (statsPath == null) {
+            statsPath = outputIndex + "/stats.tsv";
+        }
+
+        System.out.println("=== Hybrid Index Builder ===");
+        System.out.println("Input: " + input);
+        System.out.println("Output: " + outputIndex);
+        System.out.println("Stats: " + statsPath);
+        System.out.println();
+
+        long startTime = System.currentTimeMillis();
+
+        try (HybridConllUProcessor processor = new HybridConllUProcessor(outputIndex)) {
+            processor.setCommitInterval(commitInterval);
+            
+            java.nio.file.Path inputPath = java.nio.file.Paths.get(input);
+            
+            if (java.nio.file.Files.isDirectory(inputPath)) {
+                processor.processDirectory(input, "*.conllu");
+            } else {
+                processor.processFile(input);
+            }
+
+            processor.writeStatistics(statsPath);
+
+            long elapsed = System.currentTimeMillis() - startTime;
+            System.out.println();
+            System.out.println("=== Complete ===");
+            System.out.println("Sentences: " + processor.getSentenceCount());
+            System.out.println("Tokens: " + processor.getTokenCount());
+            System.out.println("Time: " + (elapsed / 1000) + "s");
+            System.out.println("Rate: " + String.format("%.0f", processor.getTokenCount() / (elapsed / 1000.0)) + " tokens/s");
+        }
+    }
+
+    private static void handleHybridQueryCommand(String[] args) throws IOException {
+        String indexPath = null;
+        String lemma = null;
+        String cqlPattern = null;
+        double minLogDice = 0;
+        int limit = 50;
+        int sampleSize = 10_000;
+
+        for (int i = 1; i < args.length; i++) {
+            switch (args[i]) {
+                case "--index":
+                case "-i":
+                    indexPath = args[++i];
+                    break;
+                case "--lemma":
+                case "-w":
+                    lemma = args[++i];
+                    break;
+                case "--pattern":
+                case "-p":
+                    cqlPattern = args[++i];
+                    break;
+                case "--min-logdice":
+                    minLogDice = Double.parseDouble(args[++i]);
+                    break;
+                case "--limit":
+                    limit = Integer.parseInt(args[++i]);
+                    break;
+                case "--sample":
+                case "-s":
+                    sampleSize = Integer.parseInt(args[++i]);
+                    break;
+                case "--accurate":
+                    sampleSize = 50_000;
+                    break;
+                case "--fast":
+                    sampleSize = 10_000;
+                    break;
+                default:
+                    System.err.println("Unknown option: " + args[i]);
+            }
+        }
+
+        if (indexPath == null || lemma == null) {
+            System.err.println("Error: --index and --lemma are required");
+            System.err.println("Usage: hybrid-query --index <path> --lemma <word> [--pattern <cql>]");
+            return;
+        }
+
+        if (cqlPattern == null) {
+            cqlPattern = "[tag=\".*\"]";
+        }
+
+        System.out.println("Querying hybrid index: " + indexPath);
+        System.out.println("Lemma: " + lemma);
+        System.out.println("Pattern: " + cqlPattern);
+        System.out.println("Sample size: " + sampleSize);
+        System.out.println();
+
+        try (HybridQueryExecutor executor = new HybridQueryExecutor(indexPath)) {
+            executor.setMaxSampleSize(sampleSize);
+            var results = executor.findCollocations(lemma, cqlPattern, minLogDice, limit);
+
+            System.out.println("Results (" + results.size() + "):");
+            System.out.println("--------");
+            for (var result : results) {
+                System.out.printf("  %s (%s): freq=%d, logDice=%.2f%n",
+                    result.getLemma(), result.getPos(),
+                    result.getFrequency(), result.getLogDice());
+            }
+        }
+    }
+
     private static void showUsage() {
         System.out.println("Usage: java -jar word-sketch-lucene.jar <command> [options]");
         System.out.println();
         System.out.println("Available commands:");
-        System.out.println("  index     - Index a corpus for word sketch analysis");
-        System.out.println("  conllu    - Index a pre-tagged CoNLL-U file");
-        System.out.println("  convert   - Convert simple tagged format to CoNLL-U");
-        System.out.println("  query     - Query the word sketch index");
-        System.out.println("  server    - Start the REST API server");
-        System.out.println("  snowball  - Explore collocations recursively (snowball method)");
-        System.out.println("  tag       - Tag a corpus with POS tags (uses simple tagger)");
-        System.out.println("  help      - Show this help message");
+        System.out.println("  index        - Index a corpus for word sketch analysis");
+        System.out.println("  conllu       - Index a pre-tagged CoNLL-U file");
+        System.out.println("  convert      - Convert simple tagged format to CoNLL-U");
+        System.out.println("  query        - Query the word sketch index");
+        System.out.println("  server       - Start the REST API server");
+        System.out.println("  snowball     - Explore collocations recursively (snowball method)");
+        System.out.println("  tag          - Tag a corpus with POS tags (uses simple tagger)");
+        System.out.println("  hybrid-index - Build hybrid sentence-per-document index (faster queries)");
+        System.out.println("  hybrid-query - Query a hybrid index");
+        System.out.println("  help         - Show this help message");
         System.out.println();
         System.out.println("Index command (for raw text):");
         System.out.println("  java -jar word-sketch-lucene.jar index --corpus <file> --output <path> [--language <lang>]");
@@ -618,5 +783,14 @@ public class Main {
         System.out.println("  # Explore collocations recursively (snowball method):");
         System.out.println("  java -jar word-sketch-lucene.jar snowball --index data/index/ --seeds big,small,important");
         System.out.println("  java -jar word-sketch-lucene.jar snowball --index data/index/ --seeds problem,solution --mode linking --output viz/");
+        System.out.println();
+        System.out.println("Hybrid index commands (sentence-per-document, faster queries):");
+        System.out.println("  # Build hybrid index from CoNLL-U files:");
+        System.out.println("  java -jar word-sketch-lucene.jar hybrid-index --input corpus.conllu --output data/hybrid/");
+        System.out.println("  java -jar word-sketch-lucene.jar hybrid-index --input corpus_dir/ --output data/hybrid/");
+        System.out.println();
+        System.out.println("  # Query hybrid index:");
+        System.out.println("  java -jar word-sketch-lucene.jar hybrid-query --index data/hybrid/ --lemma house");
+        System.out.println("  java -jar word-sketch-lucene.jar hybrid-query --index data/hybrid/ --lemma house --pattern '[tag=\"JJ.*\"]'");
     }
 }

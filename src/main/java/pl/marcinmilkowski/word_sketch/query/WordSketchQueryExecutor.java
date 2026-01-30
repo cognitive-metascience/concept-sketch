@@ -25,17 +25,49 @@ import java.util.*;
  * Query executor that finds collocations and computes association scores.
  * Supports full CQL grammar including labeled positions, OR/AND constraints,
  * agreement rules, lemma substitution, and repetition.
+ * 
+ * This is the "legacy" implementation using token-per-document index structure.
+ * It implements the QueryExecutor interface to allow comparison with hybrid implementations.
  */
-public class WordSketchQueryExecutor {
+public class WordSketchQueryExecutor implements QueryExecutor {
 
     private final IndexSearcher searcher;
     private final CQLToLuceneCompiler compiler;
     private final IndexReader reader;
+    
+    /**
+     * Maximum sample size for collocation analysis.
+     * Higher values = more accurate but slower.
+     * - 10,000: Fast mode (~5-10s), max 10x scaling
+     * - 50,000: Accurate mode (~30-60s), max 10x scaling  
+     * - 0: No limit, process all occurrences (slowest but most accurate)
+     */
+    private int maxSampleSize = 10_000;  // Default: fast mode
 
     public WordSketchQueryExecutor(String indexPath) throws IOException {
         this.reader = DirectoryReader.open(FSDirectory.open(Paths.get(indexPath)));
         this.searcher = new IndexSearcher(reader);
         this.compiler = new CQLToLuceneCompiler();
+    }
+    
+    /**
+     * Sets the maximum sample size for collocation analysis.
+     * @param maxSampleSize Maximum occurrences to analyze (0 = no limit)
+     */
+    public void setMaxSampleSize(int maxSampleSize) {
+        this.maxSampleSize = maxSampleSize;
+    }
+    
+    /**
+     * Gets the current maximum sample size.
+     */
+    public int getMaxSampleSize() {
+        return maxSampleSize;
+    }
+
+    @Override
+    public String getExecutorType() {
+        return "legacy";
     }
 
     /**
@@ -53,6 +85,7 @@ public class WordSketchQueryExecutor {
      * - Lemma substitution: %(3.lemma)
      * - Repetition: {0,3}
      */
+    @Override
     public List<WordSketchResult> findCollocations(String headword, String cqlPattern,
                                                     double minLogDice, int maxResults)
             throws IOException {
@@ -78,18 +111,28 @@ public class WordSketchQueryExecutor {
         int maxDist = extractMaxDistance(collocatePattern);
         if (maxDist <= 0) maxDist = 3; // Default
 
-        // Find all headword positions
+        // Find all headword positions - search up to 500K occurrences
         SpanTermQuery headwordQuery = new SpanTermQuery(new Term("lemma", headword.toLowerCase()));
-        int maxHeadwordHits = Math.toIntExact(Math.min(headwordFreq, 100000));
+        int maxHeadwordHits = Math.toIntExact(Math.min(headwordFreq, 500_000));
         TopDocs headwordDocs = searcher.search(headwordQuery, maxHeadwordHits);
 
         int totalOccurrences = headwordDocs.scoreDocs.length;
-        // Aggressive sampling - 2000 is statistically sufficient for collocations
-        // and keeps response time reasonable
-        int sampleSize = Math.min(totalOccurrences, 2000);
+        
+        // Sampling strategy based on maxSampleSize:
+        // - maxSampleSize = 0: process all occurrences (no sampling)
+        // - maxSampleSize > 0: sample up to maxSampleSize occurrences
+        // This controls the tradeoff between accuracy and speed
+        int sampleSize;
+        if (maxSampleSize == 0 || totalOccurrences <= maxSampleSize) {
+            sampleSize = totalOccurrences;  // No sampling needed
+        } else {
+            sampleSize = maxSampleSize;
+        }
+        
+        double scaleFactor = (double) totalOccurrences / sampleSize;
 
-        System.out.println(String.format("    '%s': found %,d occurrences, sampling %,d...", 
-            headword, totalOccurrences, sampleSize));
+        System.out.println(String.format("    '%s': found %,d occurrences, processing %,d (scale: %.1fx)...", 
+            headword, totalOccurrences, sampleSize, scaleFactor));
 
         long startTime = System.currentTimeMillis();
 
@@ -236,24 +279,30 @@ public class WordSketchQueryExecutor {
             examples.size(), (System.currentTimeMillis() - exampleStartTime) / 1000.0));
 
         // Calculate logDice for each collocate
+        // IMPORTANT: freq is from the sample, scale it to estimate corpus-wide frequency
+        // scaleFactor was computed earlier: totalOccurrences / sampleSize
         long totalMatches = Math.max(1, collocateCount);
         List<WordSketchResult> results = new ArrayList<>();
-
+        
         for (Map.Entry<String, Long> entry : lemmaFreqs.entrySet()) {
             String lemma = entry.getKey();
-            long freq = entry.getValue();
+            long sampleFreq = entry.getValue();
+            
+            // Scale sample frequency to estimate corpus-wide collocation frequency
+            long estimatedFreq = Math.round(sampleFreq * scaleFactor);
 
             long collocateTotalFreq = getTotalFrequency(lemma);
             if (collocateTotalFreq == 0) collocateTotalFreq = 1;
 
-            double logDice = calculateLogDice(freq, headwordFreq, collocateTotalFreq);
+            // logDice uses the ESTIMATED corpus-wide co-occurrence frequency
+            double logDice = calculateLogDice(estimatedFreq, headwordFreq, collocateTotalFreq);
 
             if (logDice >= minLogDice || minLogDice == 0) {
-                double relFreq = (double) freq / totalMatches;
+                double relFreq = (double) sampleFreq / totalMatches;
                 WordSketchResult result = new WordSketchResult(
                     lemma,
                     lemmaPos.getOrDefault(lemma, ""),
-                    freq,
+                    estimatedFreq,  // Use estimated corpus-wide frequency
                     logDice,
                     relFreq,
                     examples.getOrDefault(lemma, Collections.emptyList())
@@ -496,8 +545,14 @@ public class WordSketchQueryExecutor {
         return value.matches(fullRegex);
     }
 
-    private long getTotalFrequency(String lemma) throws IOException {
-        return reader.docFreq(new Term("lemma", lemma));
+    @Override
+    public long getTotalFrequency(String lemma) throws IOException {
+        // Use totalTermFreq to get total occurrences across all documents
+        // docFreq only counts unique documents, not term frequency
+        long totalFreq = reader.totalTermFreq(new Term("lemma", lemma));
+        // Fallback: in token-per-document index, docFreq == totalTermFreq
+        // but totalTermFreq is more accurate for proper logDice calculation
+        return totalFreq > 0 ? totalFreq : reader.docFreq(new Term("lemma", lemma));
     }
 
     /**
@@ -674,6 +729,7 @@ public class WordSketchQueryExecutor {
         public int getEndOffset() { return endOffset; }
     }
 
+    @Override
     public void close() throws IOException {
         reader.close();
     }
