@@ -39,10 +39,10 @@ import java.util.stream.Collectors;
  */
 public class SnowballCollocations implements AutoCloseable {
 
-    private final WordSketchQueryExecutor executor;
+    private final QueryExecutor executor;
 
     public SnowballCollocations(String indexPath) throws IOException {
-        this.executor = new WordSketchQueryExecutor(indexPath);
+        this.executor = QueryExecutorFactory.createAutoDetect(indexPath);
     }
 
     /**
@@ -192,8 +192,27 @@ public class SnowballCollocations implements AutoCloseable {
             // OPTIMIZATION: Instead of scanning all occurrences of each noun,
             // search for the linking verb + adjective pattern directly, then check for nouns
             System.out.println("  Searching for linking verb + adjective patterns...");
-            Map<String, List<String>> nounToAdjectives = executor.findLinkingVerbPredicates(
-                currentNouns, minLogDice, maxPerIteration);
+            
+            Map<String, List<String>> nounToAdjectives;
+            if (executor instanceof WordSketchQueryExecutor) {
+                // Use optimized method for legacy index
+                WordSketchQueryExecutor wsExecutor = (WordSketchQueryExecutor) executor;
+                nounToAdjectives = wsExecutor.findLinkingVerbPredicates(
+                    currentNouns, minLogDice, maxPerIteration);
+            } else {
+                // Fall back to manual pattern search for hybrid index
+                nounToAdjectives = new LinkedHashMap<>();
+                for (String noun : currentNouns) {
+                    String pattern = "[word=\"be|is|are|was|were|been|being|remain|remains|seem|seems\"] [tag=\"JJ.*\"]";
+                    List<WordSketchResult> results = executor.findCollocations(noun, pattern, minLogDice, maxPerIteration);
+                    List<String> adjectives = results.stream()
+                        .map(WordSketchResult::getLemma)
+                        .collect(Collectors.toList());
+                    if (!adjectives.isEmpty()) {
+                        nounToAdjectives.put(noun, adjectives);
+                    }
+                }
+            }
             
             for (Map.Entry<String, List<String>> entry : nounToAdjectives.entrySet()) {
                 String noun = entry.getKey();
@@ -220,8 +239,27 @@ public class SnowballCollocations implements AutoCloseable {
 
             // Now for each new adjective, find related nouns (attributive use)
             System.out.println("  Searching for nouns modified by adjectives...");
-            Map<String, List<String>> adjectiveToNouns = executor.findAttributiveNouns(
-                newAdjectives, minLogDice, maxPerIteration);
+            
+            Map<String, List<String>> adjectiveToNouns;
+            if (executor instanceof WordSketchQueryExecutor) {
+                // Use optimized method for legacy index
+                WordSketchQueryExecutor wsExecutor = (WordSketchQueryExecutor) executor;
+                adjectiveToNouns = wsExecutor.findAttributiveNouns(
+                    newAdjectives, minLogDice, maxPerIteration);
+            } else {
+                // Fall back to manual pattern search for hybrid index
+                adjectiveToNouns = new LinkedHashMap<>();
+                for (String adj : newAdjectives) {
+                    String pattern = "[tag=\"NN.*\"]~{0,3}";
+                    List<WordSketchResult> results = executor.findCollocations(adj, pattern, minLogDice, maxPerIteration);
+                    List<String> nouns = results.stream()
+                        .map(WordSketchResult::getLemma)
+                        .collect(Collectors.toList());
+                    if (!nouns.isEmpty()) {
+                        adjectiveToNouns.put(adj, nouns);
+                    }
+                }
+            }
             
             Set<String> newNouns = new LinkedHashSet<>();
             for (Map.Entry<String, List<String>> entry : adjectiveToNouns.entrySet()) {

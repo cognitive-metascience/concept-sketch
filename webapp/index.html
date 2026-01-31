@@ -154,6 +154,75 @@
             border: 1px solid #ddd;
             border-radius: 4px;
         }
+        .tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #ddd;
+        }
+        .tab {
+            padding: 12px 24px;
+            background: none;
+            border: none;
+            border-bottom: 3px solid transparent;
+            cursor: pointer;
+            font-size: 16px;
+            color: #666;
+        }
+        .tab.active {
+            color: #4a90d9;
+            border-bottom-color: #4a90d9;
+            font-weight: 500;
+        }
+        .tab-content {
+            display: none;
+        }
+        .tab-content.active {
+            display: block;
+        }
+        .snowball-controls {
+            display: grid;
+            grid-template-columns: 2fr 1fr 1fr 1fr;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        .snowball-controls input,
+        .snowball-controls select {
+            padding: 12px;
+            font-size: 14px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+        }
+        #snowballGraph {
+            width: 100%;
+            height: 600px;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        .snowball-stats {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+            margin-top: 20px;
+        }
+        .stat-card {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        .stat-card h4 {
+            margin: 0 0 5px 0;
+            color: #666;
+            font-size: 12px;
+            text-transform: uppercase;
+        }
+        .stat-card .value {
+            font-size: 28px;
+            font-weight: bold;
+            color: #4a90d9;
+        }
     </style>
 </head>
 <body>
@@ -165,30 +234,67 @@
         <input type="text" id="apiUrl" value="http://localhost:8080" placeholder="http://localhost:8080">
     </div>
 
-    <div class="search-box">
-        <input type="text" id="wordInput" placeholder="Enter a word (e.g., 'problem', 'house', 'run')" autofocus>
-        <select id="posFilter">
-            <option value="">All POS</option>
-            <option value="noun">Nouns</option>
-            <option value="verb">Verbs</option>
-            <option value="adj">Adjectives</option>
-            <option value="adv">Adverbs</option>
-        </select>
-        <button id="searchBtn" onclick="search()">Search</button>
+    <div class="tabs">
+        <button class="tab active" onclick="switchTab('sketch')">Word Sketch</button>
+        <button class="tab" onclick="switchTab('semantic')">Semantic Field Explorer</button>
     </div>
 
-    <div class="pos-filters">
-        <label><input type="checkbox" checked onchange="filterPos('noun')"> <span>Nouns (n)</span></label>
-        <label><input type="checkbox" checked onchange="filterPos('verb')"> <span>Verbs (v)</span></label>
-        <label><input type="checkbox" checked onchange="filterPos('adj')"> <span>Adjectives (adj)</span></label>
-        <label><input type="checkbox" checked onchange="filterPos('adv')"> <span>Adverbs (adv)</span></label>
+    <div id="sketchTab" class="tab-content active">
+        <div class="search-box">
+            <input type="text" id="wordInput" placeholder="Enter a word (e.g., 'problem', 'house', 'run')" autofocus>
+            <select id="posFilter">
+                <option value="">All POS</option>
+                <option value="noun">Nouns</option>
+                <option value="verb">Verbs</option>
+                <option value="adj">Adjectives</option>
+                <option value="adv">Adverbs</option>
+            </select>
+            <button id="searchBtn" onclick="search()">Search</button>
+        </div>
+
+        <div class="pos-filters">
+            <label><input type="checkbox" checked onchange="filterPos('noun')"> <span>Nouns (n)</span></label>
+            <label><input type="checkbox" checked onchange="filterPos('verb')"> <span>Verbs (v)</span></label>
+            <label><input type="checkbox" checked onchange="filterPos('adj')"> <span>Adjectives (adj)</span></label>
+            <label><input type="checkbox" checked onchange="filterPos('adv')"> <span>Adverbs (adv)</span></label>
+        </div>
+
+        <div id="results" class="results"></div>
     </div>
 
-    <div id="results" class="results"></div>
+    <div id="semanticTab" class="tab-content">
+        <div class="snowball-controls">
+            <input type="text" id="semanticNouns" placeholder="Nouns to compare (comma-separated, e.g., theory,model,hypothesis)">
+            <input type="number" id="semanticMinLogDice" value="3.0" step="0.5" min="0" placeholder="Min LogDice">
+            <input type="number" id="semanticMaxPerNoun" value="50" min="10" max="100" placeholder="Max per noun" title="Maximum adjectives per noun">
+        </div>
+        <button onclick="runSemanticField()" style="width: 100%; margin-bottom: 20px;">Compare Noun Profiles</button>
+        
+        <div id="semanticGraph"></div>
+        
+        <div class="snowball-stats">
+            <div class="stat-card">
+                <h4>Fully Shared</h4>
+                <div class="value" id="statFullyShared">-</div>
+            </div>
+            <div class="stat-card">
+                <h4>Partially Shared</h4>
+                <div class="value" id="statPartiallyShared">-</div>
+            </div>
+            <div class="stat-card">
+                <h4>Specific</h4>
+                <div class="value" id="statSpecific">-</div>
+            </div>
+        </div>
+        
+        <div id="semanticDetails" class="results" style="margin-top: 20px;"></div>
+    </div>
 
+    <script src="https://d3js.org/d3.v7.min.js"></script>
     <script>
         let activeFilters = { noun: true, verb: true, adj: true, adv: true };
         let currentWord = '';
+        let currentTab = 'sketch';
 
         async function search() {
             const word = document.getElementById('wordInput').value.trim();
@@ -257,7 +363,7 @@
         function renderResults(data) {
             const resultsDiv = document.getElementById('results');
 
-            if (!data || (!data.nouns && !data.verbs && !data.adjectives && !data.adverbs)) {
+            if (!data || !data.patterns || Object.keys(data.patterns).length === 0) {
                 resultsDiv.innerHTML = `
                     <div class="error">
                         <strong>No results found</strong><br>
@@ -269,75 +375,68 @@
 
             let html = '';
 
-            // Helper to render a section
-            function renderSection(title, posTag, collocations, examples, relation) {
-                if (!activeFilters[posTag.toLowerCase()] || !collocations || collocations.length === 0) {
-                    return '';
+            // Process patterns from the API
+            const patterns = data.patterns;
+            
+            for (const [patternId, patternData] of Object.entries(patterns)) {
+                if (patternData.error) {
+                    continue; // Skip patterns with errors
                 }
-
-                let sectionHtml = `
+                
+                const collocations = patternData.collocations || [];
+                if (collocations.length === 0) {
+                    continue;
+                }
+                
+                // Determine POS from pattern
+                const posGroup = patternData.pos_group || '';
+                if (!activeFilters[posGroup]) {
+                    continue;
+                }
+                
+                // Render section
+                html += `
                     <div class="sketch-section">
                         <h3>
-                            ${title}
-                            <span class="pos-tag">${posTag}</span>
+                            ${patternData.name}
+                            <span class="pos-tag">${posGroup.toUpperCase()}</span>
                         </h3>
+                        <div class="collocation-list">
                 `;
-
-                // Render collocations
-                if (collocations && collocations.length > 0) {
-                    sectionHtml += '<div class="collocation-list">';
-                    collocations.slice(0, 15).forEach(c => {
-                        const score = c.score ? c.score.toFixed(2) : '-';
-                        const freq = c.frequency || c.count || c.freq || '-';
-                        const word = c.word || c.collocation || c.collocate || '-';
-                        sectionHtml += `
-                            <div class="collocation">
-                                <span class="word">${escapeHtml(word)}</span>
-                                <span>
-                                    <span class="score">logDice: ${score}</span>
-                                    <span class="freq">(${freq})</span>
-                                </span>
-                            </div>
-                        `;
-                    });
-                    sectionHtml += '</div>';
-                }
-
-                // Render examples
-                if (examples && examples.length > 0) {
-                    sectionHtml += '<div class="examples"><h4>Examples</h4>';
-                    examples.slice(0, 5).forEach(ex => {
-                        const sentence = ex.sentence || ex.example || ex.text || '';
-                        const highlighted = escapeHtml(sentence).replace(
+                
+                collocations.slice(0, 15).forEach(c => {
+                    const score = c.logDice ? c.logDice.toFixed(2) : '-';
+                    const freq = c.frequency || '-';
+                    const word = c.lemma || '-';
+                    html += `
+                        <div class="collocation">
+                            <span class="word">${escapeHtml(word)}</span>
+                            <span>
+                                <span class="score">logDice: ${score}</span>
+                                <span class="freq">(${freq})</span>
+                            </span>
+                        </div>
+                    `;
+                });
+                
+                html += '</div>';
+                
+                // Render examples if available
+                const firstWithExamples = collocations.find(c => c.examples && c.examples.length > 0);
+                if (firstWithExamples && firstWithExamples.examples.length > 0) {
+                    html += '<div class="examples"><h4>Examples</h4>';
+                    firstWithExamples.examples.slice(0, 5).forEach(ex => {
+                        const highlighted = escapeHtml(ex).replace(
                             new RegExp(escapeRegExp(currentWord), 'gi'),
                             '<span class="highlight">$&</span>'
                         );
-                        sectionHtml += `<div class="example">${highlighted}</div>`;
+                        html += `<div class="example">${highlighted}</div>`;
                     });
-                    sectionHtml += '</div>';
+                    html += '</div>';
                 }
-
-                sectionHtml += '</div>';
-                return sectionHtml;
+                
+                html += '</div>';
             }
-
-            // Render noun sections
-            html += renderSection('What adjectives modify', 'Noun', data.nouns?.modifiers, data.nouns?.examples, 'amod');
-            html += renderSection('What verbs collocate with', 'Noun', data.nouns?.verbs, null, 'nsubj/obj');
-            html += renderSection('What nouns follow', 'Noun', data.nouns?.following, null, 'nn');
-
-            // Render verb sections
-            html += renderSection('What subjects', 'Verb', data.verbs?.subjects, null, 'nsubj');
-            html += renderSection('What objects', 'Verb', data.verbs?.objects, null, 'dobj');
-            html += renderSection('What adverbs modify', 'Verb', data.verbs?.adverbs, null, 'advmod');
-
-            // Render adjective sections
-            html += renderSection('What nouns follow', 'Adj', data.adjectives?.following, null, 'nn');
-            html += renderSection('What verbs follow', 'Adj', data.adjectives?.verbs, null, 'acl/rel');
-
-            // Render adverb sections
-            html += renderSection('What verbs modify', 'Adv', data.adverbs?.verbs, null, 'advmod');
-            html += renderSection('What adjectives modify', 'Adv', data.adjectives, null, 'advmod');
 
             if (html === '') {
                 html = '<div class="error">No collocations found for the selected filters.</div>';
@@ -359,9 +458,311 @@
             return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
         }
 
+        function switchTab(tabName) {
+            currentTab = tabName;
+            
+            // Update tab buttons
+            document.querySelectorAll('.tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            event.target.classList.add('active');
+            
+            // Update tab content
+            document.querySelectorAll('.tab-content').forEach(content => {
+                content.classList.remove('active');
+            });
+            document.getElementById(tabName + 'Tab').classList.add('active');
+        }
+
+        async function runSemanticField() {
+            const nouns = document.getElementById('semanticNouns').value.trim();
+            const minLogDice = document.getElementById('semanticMinLogDice').value;
+            const maxPerNoun = document.getElementById('semanticMaxPerNoun').value;
+            const apiUrl = document.getElementById('apiUrl').value.trim();
+            
+            if (!nouns) {
+                alert('Please enter nouns to compare (e.g., theory, model, hypothesis)');
+                return;
+            }
+            
+            document.getElementById('semanticGraph').innerHTML = '<div class="loading">Comparing noun profiles...</div>';
+            document.getElementById('semanticDetails').innerHTML = '';
+            
+            try {
+                const url = `${apiUrl}/api/semantic-field?nouns=${encodeURIComponent(nouns)}&min_logdice=${minLogDice}&max_per_noun=${maxPerNoun}`;
+                const response = await fetch(url);
+                
+                if (!response.ok) {
+                    throw new Error(`API returned ${response.status}`);
+                }
+                
+                const data = await response.json();
+                
+                // Update stats
+                document.getElementById('statFullyShared').textContent = data.fully_shared || 0;
+                document.getElementById('statPartiallyShared').textContent = data.partially_shared || 0;
+                document.getElementById('statSpecific').textContent = data.specific || 0;
+                
+                // Visualize graph
+                visualizeSemanticField(data);
+                
+                // Show details panel with graded comparison
+                renderSemanticDetails(data);
+                
+            } catch (e) {
+                document.getElementById('semanticGraph').innerHTML = `
+                    <div class="error">
+                        <strong>Semantic field comparison failed</strong><br>
+                        ${e.message}<br>
+                        <small>Make sure the API server is running at: ${apiUrl}</small>
+                    </div>
+                `;
+            }
+        }
+
+        function renderSemanticDetails(data) {
+            const detailsDiv = document.getElementById('semanticDetails');
+            const nouns = data.nouns || [];
+            
+            let html = '';
+            
+            // Fully shared adjectives
+            const fullyShared = (data.adjectives || []).filter(a => a.category === 'fully_shared');
+            if (fullyShared.length > 0) {
+                html += '<div class="sketch-section"><h3>🟢 Fully Shared (all nouns)</h3>';
+                html += renderComparisonTable(fullyShared, nouns);
+                html += '</div>';
+            }
+            
+            // Partially shared adjectives  
+            const partiallyShared = (data.adjectives || []).filter(a => a.category === 'partially_shared');
+            if (partiallyShared.length > 0) {
+                html += '<div class="sketch-section"><h3>🟡 Partially Shared (2+ nouns)</h3>';
+                html += renderComparisonTable(partiallyShared, nouns);
+                html += '</div>';
+            }
+            
+            // Specific adjectives - group by noun
+            const specific = (data.adjectives || []).filter(a => a.category === 'specific');
+            if (specific.length > 0) {
+                html += '<div class="sketch-section"><h3>🔵 Specific (one noun only)</h3>';
+                
+                // Group by the noun they're specific to
+                const byNoun = {};
+                for (const adj of specific) {
+                    const noun = adj.specific_to || '?';
+                    if (!byNoun[noun]) byNoun[noun] = [];
+                    byNoun[noun].push(adj);
+                }
+                
+                for (const noun of nouns) {
+                    if (byNoun[noun] && byNoun[noun].length > 0) {
+                        html += `<h4 style="margin: 15px 0 5px 0; color: #666;">Specific to "${noun}":</h4>`;
+                        byNoun[noun].slice(0, 10).forEach(adj => {
+                            const score = adj.max_logdice || 0;
+                            html += `
+                                <div class="collocation">
+                                    <span class="word">${escapeHtml(adj.word)}</span>
+                                    <span class="score">logDice: ${score.toFixed(1)}</span>
+                                </div>
+                            `;
+                        });
+                    }
+                }
+                html += '</div>';
+            }
+            
+            if (!html) {
+                html = '<div class="error">No adjectives found. Try lowering min_logdice.</div>';
+            }
+            
+            detailsDiv.innerHTML = html;
+        }
+        
+        function renderComparisonTable(adjectives, nouns) {
+            let html = '<table style="width: 100%; border-collapse: collapse; font-size: 14px;">';
+            html += '<tr style="background: #f5f5f5;"><th style="text-align: left; padding: 8px;">Adjective</th>';
+            for (const noun of nouns) {
+                html += `<th style="padding: 8px; text-align: center;">${escapeHtml(noun)}</th>`;
+            }
+            html += '</tr>';
+            
+            adjectives.slice(0, 20).forEach(adj => {
+                html += '<tr style="border-bottom: 1px solid #eee;">';
+                html += `<td style="padding: 8px; font-weight: 500;">${escapeHtml(adj.word)}</td>`;
+                
+                const scores = adj.noun_scores || {};
+                for (const noun of nouns) {
+                    const score = scores[noun] || 0;
+                    const intensity = score > 0 ? Math.min(1, score / 10) : 0;
+                    const bgColor = score > 0 
+                        ? `rgba(74, 144, 217, ${intensity * 0.3})` 
+                        : '#f9f9f9';
+                    html += `<td style="padding: 8px; text-align: center; background: ${bgColor};">`;
+                    html += score > 0 ? score.toFixed(1) : '-';
+                    html += '</td>';
+                }
+                html += '</tr>';
+            });
+            
+            html += '</table>';
+            return html;
+        }
+
+        function visualizeSemanticField(data) {
+            const container = document.getElementById('semanticGraph');
+            container.innerHTML = '';
+            
+            const width = container.clientWidth;
+            const height = 600;
+            
+            // Create SVG
+            const svg = d3.select('#semanticGraph')
+                .append('svg')
+                .attr('width', width)
+                .attr('height', height);
+            
+            // Prepare graph data
+            const nodes = [];
+            const links = [];
+            const nounList = data.nouns || [];
+            
+            // Add nouns as nodes (positioned around center)
+            nounList.forEach((noun, i) => {
+                nodes.push({
+                    id: noun,
+                    type: 'noun',
+                    isSeed: true
+                });
+            });
+            
+            // Add adjectives as nodes - use category for coloring
+            (data.adjectives || []).forEach(adj => {
+                nodes.push({
+                    id: adj.word,
+                    type: 'adjective',
+                    category: adj.category,
+                    presentIn: adj.present_in,
+                    totalNouns: adj.total_nouns,
+                    commonalityScore: adj.commonality_score
+                });
+            });
+            
+            // Add edges as links
+            (data.edges || []).forEach(edge => {
+                links.push({
+                    source: edge.source,
+                    target: edge.target,
+                    logDice: edge.logDice
+                });
+            });
+            
+            // Create force simulation
+            const simulation = d3.forceSimulation(nodes)
+                .force('link', d3.forceLink(links).id(d => d.id).distance(100))
+                .force('charge', d3.forceManyBody().strength(-300))
+                .force('center', d3.forceCenter(width / 2, height / 2))
+                .force('collision', d3.forceCollide().radius(30));
+            
+            // Draw links
+            const link = svg.append('g')
+                .selectAll('line')
+                .data(links)
+                .join('line')
+                .attr('stroke', '#999')
+                .attr('stroke-opacity', d => Math.min(1, d.logDice / 10))
+                .attr('stroke-width', d => Math.max(1, d.logDice / 3));
+            
+            // Draw nodes - color by category
+            const node = svg.append('g')
+                .selectAll('circle')
+                .data(nodes)
+                .join('circle')
+                .attr('r', d => {
+                    if (d.type === 'noun') return 12;
+                    // Adjectives sized by presentIn count
+                    return 4 + (d.presentIn || 1) * 2;
+                })
+                .attr('fill', d => {
+                    if (d.type === 'noun') {
+                        return '#d94a4a';  // Nouns in red
+                    }
+                    // Color adjectives by category
+                    if (d.category === 'fully_shared') return '#2ecc71';   // Green
+                    if (d.category === 'partially_shared') return '#f1c40f'; // Yellow
+                    return '#3498db';  // Blue for specific
+                })
+                .attr('stroke', '#fff')
+                .attr('stroke-width', 2)
+                .call(d3.drag()
+                    .on('start', dragstarted)
+                    .on('drag', dragged)
+                    .on('end', dragended));
+            
+            // Add labels
+            const label = svg.append('g')
+                .selectAll('text')
+                .data(nodes)
+                .join('text')
+                .text(d => d.id)
+                .attr('font-size', d => d.type === 'noun' ? 13 : 10)
+                .attr('font-weight', d => (d.type === 'noun' || d.category === 'fully_shared') ? 'bold' : 'normal')
+                .attr('dx', 12)
+                .attr('dy', 4);
+            
+            // Add tooltips
+            node.append('title')
+                .text(d => {
+                    if (d.type === 'noun') return d.id + ' (noun)';
+                    const cat = d.category === 'fully_shared' ? 'all nouns' 
+                        : d.category === 'partially_shared' ? 'some nouns' : 'specific';
+                    return `${d.id} (${cat}, ${d.presentIn}/${d.totalNouns})`;
+                });
+            
+            // Update positions on tick
+            simulation.on('tick', () => {
+                link
+                    .attr('x1', d => d.source.x)
+                    .attr('y1', d => d.source.y)
+                    .attr('x2', d => d.target.x)
+                    .attr('y2', d => d.target.y);
+                
+                node
+                    .attr('cx', d => d.x)
+                    .attr('cy', d => d.y);
+                
+                label
+                    .attr('x', d => d.x)
+                    .attr('y', d => d.y);
+            });
+            
+            // Drag functions
+            function dragstarted(event) {
+                if (!event.active) simulation.alphaTarget(0.3).restart();
+                event.subject.fx = event.subject.x;
+                event.subject.fy = event.subject.y;
+            }
+            
+            function dragged(event) {
+                event.subject.fx = event.x;
+                event.subject.fy = event.y;
+            }
+            
+            function dragended(event) {
+                if (!event.active) simulation.alphaTarget(0);
+                event.subject.fx = null;
+                event.subject.fy = null;
+            }
+        }
+
         // Enter key to search
         document.getElementById('wordInput').addEventListener('keypress', function(e) {
             if (e.key === 'Enter') search();
+        });
+        
+        // Enter key for semantic field
+        document.getElementById('semanticNouns').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') runSemanticField();
         });
     </script>
 </body>

@@ -203,13 +203,28 @@ public class HybridIndexer implements Closeable {
     /**
      * Writes the term statistics to a separate file.
      * 
-     * @param statsPath Path to write statistics
+     * @param statsPath Path to write statistics (supports .tsv or .bin extension)
      * @throws IOException if writing fails
      */
     public void writeStatistics(String statsPath) throws IOException {
+        // Always write TSV (human-readable)
         statsCollector.writeToFile(statsPath);
         log.info("Statistics written to: {}", statsPath);
+        
+        // Also write binary format for fast loading
+        String binPath = statsPath.endsWith(".tsv") 
+            ? statsPath.replace(".tsv", ".bin")
+            : statsPath + ".bin";
+        
+        try {
+            statsCollector.writeBinaryFile(binPath);
+            log.info("Binary statistics written to: {}", binPath);
+        } catch (Exception e) {
+            log.warn("Failed to write binary statistics: {}", e.getMessage());
+        }
     }
+    
+    // Remove old convertTsvToBinary method
 
     /**
      * Gets the statistics collector for accessing term frequencies.
@@ -367,6 +382,64 @@ public class HybridIndexer implements Closeable {
                             
                             writer.write(String.format("%s\t%d\t%d\t%s\n", 
                                 lemma, freq, docFreq, posDist.toString()));
+                        } catch (IOException e) {
+                            throw new RuntimeException(e);
+                        }
+                    });
+            }
+        }
+        
+        /**
+         * Writes statistics to a binary file for fast loading.
+         * Uses the same format as StatisticsIndexBuilder for compatibility.
+         */
+        public void writeBinaryFile(String path) throws IOException {
+            Path binPath = Paths.get(path);
+            if (binPath.getParent() != null) {
+                Files.createDirectories(binPath.getParent());
+            }
+            
+            try (var dos = new java.io.DataOutputStream(
+                    new java.io.BufferedOutputStream(new java.io.FileOutputStream(binPath.toFile())))) {
+                
+                // Header (compatible with StatisticsReader)
+                dos.writeInt(0x57534C53); // Magic: "WSLS"
+                dos.writeInt(1);            // Version
+                dos.writeLong(totalTokens.get());
+                dos.writeLong(totalSentences.get());
+                dos.writeInt(lemmaFrequencies.size());
+                
+                // Entries sorted by frequency descending
+                lemmaFrequencies.entrySet().stream()
+                    .sorted((a, b) -> Long.compare(b.getValue().get(), a.getValue().get()))
+                    .forEach(entry -> {
+                        try {
+                            String lemma = entry.getKey();
+                            long freq = entry.getValue().get();
+                            int docFreq = (int) Math.min(freq, totalSentences.get());
+                            
+                            // Lemma
+                            byte[] lemmaBytes = lemma.getBytes("UTF-8");
+                            dos.writeShort(lemmaBytes.length);
+                            dos.write(lemmaBytes);
+                            
+                            // Frequencies
+                            dos.writeLong(freq);
+                            dos.writeInt(docFreq);
+                            
+                            // POS distribution
+                            ConcurrentHashMap<String, AtomicLong> tagDist = lemmaTagDistribution.get(lemma);
+                            if (tagDist != null && !tagDist.isEmpty()) {
+                                dos.writeShort(tagDist.size());
+                                for (var tagEntry : tagDist.entrySet()) {
+                                    byte[] tagBytes = tagEntry.getKey().getBytes("UTF-8");
+                                    dos.writeByte(tagBytes.length);
+                                    dos.write(tagBytes);
+                                    dos.writeLong(tagEntry.getValue().get());
+                                }
+                            } else {
+                                dos.writeShort(0); // No POS distribution
+                            }
                         } catch (IOException e) {
                             throw new RuntimeException(e);
                         }

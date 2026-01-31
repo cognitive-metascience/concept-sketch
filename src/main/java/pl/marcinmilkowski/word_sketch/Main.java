@@ -5,6 +5,8 @@ import org.slf4j.LoggerFactory;
 import pl.marcinmilkowski.word_sketch.api.WordSketchApiServer;
 import pl.marcinmilkowski.word_sketch.indexer.hybrid.HybridConllUProcessor;
 import pl.marcinmilkowski.word_sketch.query.HybridQueryExecutor;
+import pl.marcinmilkowski.word_sketch.query.QueryExecutor;
+import pl.marcinmilkowski.word_sketch.query.QueryExecutorFactory;
 import pl.marcinmilkowski.word_sketch.query.SnowballCollocations;
 import pl.marcinmilkowski.word_sketch.query.WordSketchQueryExecutor;
 import pl.marcinmilkowski.word_sketch.tagging.ConllUProcessor;
@@ -255,9 +257,10 @@ public class Main {
         System.out.println("Press Ctrl+C to stop the server.");
         System.out.println();
 
-        WordSketchQueryExecutor executor = new WordSketchQueryExecutor(indexPath);
+        QueryExecutor executor = QueryExecutorFactory.createAutoDetect(indexPath);
         WordSketchApiServer server = WordSketchApiServer.builder()
             .withExecutor(executor)
+            .withIndexPath(indexPath)
             .withPort(port)
             .build();
 

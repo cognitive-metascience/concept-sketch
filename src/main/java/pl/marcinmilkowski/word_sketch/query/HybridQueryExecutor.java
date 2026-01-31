@@ -53,7 +53,15 @@ public class HybridQueryExecutor implements QueryExecutor {
      * @throws IOException if index cannot be opened
      */
     public HybridQueryExecutor(String indexPath) throws IOException {
-        this(indexPath, indexPath + "/stats.bin");
+        this(indexPath, resolveStatsPath(indexPath));
+    }
+    
+    private static String resolveStatsPath(String indexPath) {
+        String binPath = indexPath + "/stats.bin";
+        if (java.nio.file.Files.exists(java.nio.file.Paths.get(binPath))) {
+            return binPath;
+        }
+        return indexPath + "/stats.tsv";
     }
 
     /**
@@ -136,8 +144,8 @@ public class HybridQueryExecutor implements QueryExecutor {
             ? totalSentences : maxSampleSize;
         double scaleFactor = (double) totalSentences / sampleSize;
 
-        logger.info("'{}': found {} sentences, processing {} (scale: {:.1f}x)",
-            headword, totalSentences, sampleSize, scaleFactor);
+        logger.info("'{}': found {} sentences, processing {} (scale: {}x)",
+            headword, totalSentences, sampleSize, String.format("%.1f", scaleFactor));
 
         // Get sample of sentences
         TopDocs topDocs = searcher.search(headwordQuery, sampleSize);
@@ -158,6 +166,9 @@ public class HybridQueryExecutor implements QueryExecutor {
             List<SentenceDocument.Token> tokens = loadTokensFromDoc(docId);
             if (tokens.isEmpty()) continue;
 
+            // Load text once per sentence for example collection
+            String sentenceText = null;
+            
             // Find headword positions in this sentence
             List<Integer> headwordPositions = new ArrayList<>();
             for (SentenceDocument.Token token : tokens) {
@@ -186,19 +197,21 @@ public class HybridQueryExecutor implements QueryExecutor {
                     lemmaFreqs.merge(key, 1L, Long::sum);
                     lemmaPos.putIfAbsent(key, tag != null ? tag.toUpperCase() : "");
 
-                    // Collect examples
+                    // Collect examples (load text lazily, once per sentence)
                     if (!examples.containsKey(key) || examples.get(key).size() < 3) {
-                        try {
-                            Document doc = storedFields.document(docId, Set.of("text"));
-                            String text = doc.get("text");
-                            if (text != null) {
-                                examples.computeIfAbsent(key, k -> new ArrayList<>());
-                                if (examples.get(key).size() < 3) {
-                                    examples.get(key).add(text);
-                                }
+                        if (sentenceText == null) {
+                            try {
+                                Document doc = storedFields.document(docId, Set.of("text"));
+                                sentenceText = doc.get("text");
+                            } catch (IOException e) {
+                                sentenceText = ""; // Mark as attempted
                             }
-                        } catch (IOException e) {
-                            // Ignore example loading errors
+                        }
+                        if (sentenceText != null && !sentenceText.isEmpty()) {
+                            examples.computeIfAbsent(key, k -> new ArrayList<>());
+                            if (examples.get(key).size() < 3) {
+                                examples.get(key).add(sentenceText);
+                            }
                         }
                     }
                 }
@@ -238,7 +251,7 @@ public class HybridQueryExecutor implements QueryExecutor {
         results.sort((a, b) -> Double.compare(b.getLogDice(), a.getLogDice()));
 
         double elapsed = (System.currentTimeMillis() - startTime) / 1000.0;
-        logger.info("Query completed in {:.2f}s, returned {} results", elapsed, results.size());
+        logger.info("Query completed in {}s, returned {} results", String.format("%.2f", elapsed), results.size());
 
         return results.subList(0, Math.min(maxResults, results.size()));
     }

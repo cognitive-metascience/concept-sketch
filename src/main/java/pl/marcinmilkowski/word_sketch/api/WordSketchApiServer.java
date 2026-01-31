@@ -2,7 +2,11 @@ package pl.marcinmilkowski.word_sketch.api;
 
 import com.alibaba.fastjson2.JSON;
 import com.alibaba.fastjson2.JSONObject;
+import pl.marcinmilkowski.word_sketch.query.QueryExecutor;
 import pl.marcinmilkowski.word_sketch.query.WordSketchQueryExecutor;
+import pl.marcinmilkowski.word_sketch.query.SemanticFieldExplorer;
+import pl.marcinmilkowski.word_sketch.query.SemanticFieldExplorer.ComparisonResult;
+import pl.marcinmilkowski.word_sketch.query.SemanticFieldExplorer.AdjectiveProfile;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -18,10 +22,12 @@ import java.util.*;
  * - GET /api/sketch/{lemma}/{relation} - Get specific grammatical relation
  * - POST /api/sketch/query - Execute custom CQL pattern
  * - GET /api/relations - List available grammatical relations
+ * - GET /api/snowball?seeds=word1,word2&depth=2 - Run snowball collocation exploration
  */
 public class WordSketchApiServer {
 
-    private final WordSketchQueryExecutor executor;
+    private final QueryExecutor executor;
+    private final String indexPath;
     private final int port;
     private com.sun.net.httpserver.HttpServer server;
 
@@ -72,8 +78,9 @@ public class WordSketchApiServer {
             "[word=very]~{0,1} [tag=jj.*]", "adj")
     );
 
-    public WordSketchApiServer(WordSketchQueryExecutor executor, int port) {
+    public WordSketchApiServer(QueryExecutor executor, String indexPath, int port) {
         this.executor = executor;
+        this.indexPath = indexPath;
         this.port = port;
     }
 
@@ -90,6 +97,7 @@ public class WordSketchApiServer {
         server.createContext("/api/relations", wrapHandler(this::handleRelations));
         server.createContext("/api/sketch", wrapHandler(this::handleFullSketch));
         server.createContext("/api/sketch/query", wrapHandler(this::handleQuery));
+        server.createContext("/api/semantic-field", wrapHandler(this::handleSemanticField));
 
         // Legacy endpoints (for backward compatibility)
         server.createContext("/sketch", wrapHandler(this::handleLegacySketch));
@@ -102,10 +110,11 @@ public class WordSketchApiServer {
         server.start();
         System.out.println("API server started on http://localhost:" + port);
         System.out.println("Endpoints:");
-        System.out.println("  GET  /health              - Health check");
-        System.out.println("  GET  /api/relations       - List available grammatical relations");
-        System.out.println("  GET  /api/sketch/{lemma}  - Get full word sketch");
-        System.out.println("  POST /api/sketch/query    - Execute custom CQL pattern");
+        System.out.println("  GET  /health                 - Health check");
+        System.out.println("  GET  /api/relations          - List available grammatical relations");
+        System.out.println("  GET  /api/sketch/{lemma}     - Get full word sketch");
+        System.out.println("  POST /api/sketch/query       - Execute custom CQL pattern");
+        System.out.println("  GET  /api/semantic-field     - Semantic field exploration (shared adjective predicates)");
     }
 
     /**
@@ -371,6 +380,104 @@ public class WordSketchApiServer {
     }
 
     /**
+     * Handle semantic field comparison.
+     * Compares adjective collocate profiles across related nouns, showing both shared and specific adjectives.
+     * GET /api/semantic-field?nouns=theory,model,hypothesis&min_logdice=3.0&max_per_noun=50
+     */
+    private void handleSemanticField(com.sun.net.httpserver.HttpExchange exchange) throws IOException {
+        if (!"GET".equalsIgnoreCase(exchange.getRequestMethod())) {
+            sendError(exchange, 405, "Method not allowed");
+            return;
+        }
+
+        try {
+            String query = exchange.getRequestURI().getQuery();
+            Map<String, String> params = parseQueryParams(query);
+
+            // Parse parameters
+            String nounsParam = params.getOrDefault("nouns", "");
+            if (nounsParam.isEmpty()) {
+                sendError(exchange, 400, "Missing required parameter: nouns");
+                return;
+            }
+
+            Set<String> nouns = new LinkedHashSet<>(Arrays.asList(nounsParam.split(",")));
+            double minLogDice = Double.parseDouble(params.getOrDefault("min_logdice", "3.0"));
+            int maxPerNoun = Integer.parseInt(params.getOrDefault("max_per_noun", "50"));
+
+            // Run semantic field comparison
+            SemanticFieldExplorer explorer = new SemanticFieldExplorer(indexPath);
+            ComparisonResult result = explorer.compare(nouns, minLogDice, maxPerNoun);
+            explorer.close();
+
+            // Format response
+            Map<String, Object> response = new HashMap<>();
+            response.put("status", "ok");
+            response.put("nouns", new ArrayList<>(result.getNouns()));
+            response.put("min_logdice", minLogDice);
+
+            // Convert adjective profiles - show graded scores for each noun
+            List<Map<String, Object>> adjectives = new ArrayList<>();
+            for (AdjectiveProfile adj : result.getAllAdjectives()) {
+                Map<String, Object> adjMap = new HashMap<>();
+                adjMap.put("word", adj.adjective);
+                adjMap.put("present_in", adj.presentInCount);
+                adjMap.put("total_nouns", adj.totalNouns);
+                adjMap.put("avg_logdice", Math.round(adj.avgLogDice * 100.0) / 100.0);
+                adjMap.put("max_logdice", Math.round(adj.maxLogDice * 100.0) / 100.0);
+                adjMap.put("variance", Math.round(adj.variance * 100.0) / 100.0);
+                adjMap.put("commonality_score", Math.round(adj.commonalityScore * 100.0) / 100.0);
+                adjMap.put("distinctiveness_score", Math.round(adj.distinctivenessScore * 100.0) / 100.0);
+                
+                // Category: fully_shared, partially_shared, specific
+                String category = adj.isFullyShared() ? "fully_shared" 
+                    : adj.isPartiallyShared() ? "partially_shared" : "specific";
+                adjMap.put("category", category);
+                
+                // Per-noun scores (graded comparison)
+                Map<String, Double> scores = new HashMap<>();
+                for (Map.Entry<String, Double> entry : adj.nounScores.entrySet()) {
+                    scores.put(entry.getKey(), Math.round(entry.getValue() * 100.0) / 100.0);
+                }
+                adjMap.put("noun_scores", scores);
+                
+                if (adj.isSpecific()) {
+                    adjMap.put("specific_to", adj.getStrongestNoun());
+                }
+                
+                adjectives.add(adjMap);
+            }
+            response.put("adjectives", adjectives);
+
+            // Summary counts
+            response.put("total_adjectives", result.getAllAdjectives().size());
+            response.put("fully_shared", result.getFullyShared().size());
+            response.put("partially_shared", result.getPartiallyShared().size());
+            response.put("specific", result.getSpecific().size());
+
+            // Convert edges for visualization
+            List<Map<String, Object>> edges = new ArrayList<>();
+            for (SemanticFieldExplorer.Edge edge : result.getEdges()) {
+                Map<String, Object> edgeMap = new HashMap<>();
+                edgeMap.put("source", edge.source);
+                edgeMap.put("target", edge.target);
+                edgeMap.put("logDice", Math.round(edge.weight * 100.0) / 100.0);
+                edges.add(edgeMap);
+            }
+            response.put("edges", edges);
+            response.put("total_edges", edges.size());
+
+            sendJson(exchange, 200, response);
+
+        } catch (NumberFormatException e) {
+            sendError(exchange, 400, "Invalid numeric parameter: " + e.getMessage());
+        } catch (Exception e) {
+            e.printStackTrace();
+            sendError(exchange, 500, "Semantic field comparison failed: " + e.getMessage());
+        }
+    }
+
+    /**
      * Legacy sketch handler for backward compatibility.
      */
     private void handleLegacySketch(com.sun.net.httpserver.HttpExchange exchange) throws IOException {
@@ -515,11 +622,17 @@ public class WordSketchApiServer {
      * Builder for the API server.
      */
     public static class Builder {
-        private WordSketchQueryExecutor executor;
+        private QueryExecutor executor;
+        private String indexPath;
         private int port = 8080;
 
-        public Builder withExecutor(WordSketchQueryExecutor executor) {
+        public Builder withExecutor(QueryExecutor executor) {
             this.executor = executor;
+            return this;
+        }
+
+        public Builder withIndexPath(String indexPath) {
+            this.indexPath = indexPath;
             return this;
         }
 
@@ -529,7 +642,7 @@ public class WordSketchApiServer {
         }
 
         public WordSketchApiServer build() {
-            return new WordSketchApiServer(executor, port);
+            return new WordSketchApiServer(executor, indexPath, port);
         }
     }
 
