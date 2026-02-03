@@ -29,11 +29,9 @@ A high-performance corpus-based collocation analysis tool built on Apache Lucene
 mvn clean package
 ```
 
-### 2. Download Example Index
+### 2. Create an Index
 
-A precomputed 74M-sentence English corpus index is available in `d:\corpus_74m\index-hybrid/` (already set up if you're reading this).
-
-Or create a small index:
+To create an index:
 ```bash
 # Tag corpus with UDPipe
 udpipe --tokenize --tag --lemma --output=conllu english-model.udpipe corpus.txt > corpus.conllu
@@ -107,7 +105,7 @@ java -jar word-sketch-lucene.jar precomputed --index data/index/
 #### From Raw Text
 
 ```bash
-# Uses simple rule-based POS tagger (limited coverage)
+# Uses simple rule-based POS tagger (very limited coverage)
 java -jar word-sketch-lucene.jar index --corpus sentences.txt --output data/index/
 ```
 
@@ -191,7 +189,7 @@ curl "http://localhost:8080/api/semantic-field/explore?seed=theory&relation=adj_
 }
 ```
 
-#### Multi-Seed Semantic Field Exploration (NEW)
+#### Multi-Seed Semantic Field Exploration
 ```bash
 curl "http://localhost:8080/api/semantic-field/explore-multi?seeds=theory,model,hypothesis&relation=adj_predicate&top=10"
 ```
