@@ -13,6 +13,8 @@
 .PARAMETER StatsPath
     Path to stats.bin or stats.tsv (default: <IndexPath>/stats.bin)
 
+    Note: CollocationsBuilder auto-detects stats from IndexPath; this is used for validation only.
+
 .PARAMETER OutputPath
     Output path for collocations.bin (default: <IndexPath>/collocations.bin)
 
@@ -30,6 +32,12 @@
 
 .PARAMETER Threads
     Number of parallel threads (default: CPU cores)
+
+.PARAMETER CheckpointEvery
+    Update resume checkpoint every N written headwords (default: 5000)
+
+.PARAMETER Resume
+    Resume from a previous interrupted run using <OutputPath>.offsets.tmp
 
 .PARAMETER JarPath
     Path to word-sketch-lucene JAR (default: target/word-sketch-lucene-*.jar)
@@ -58,6 +66,10 @@ param(
     [int]$MinCooccurrence = 2,
     
     [int]$Threads = 0,
+
+    [int]$CheckpointEvery = 5000,
+
+    [switch]$Resume,
     
     [string]$JarPath = ""
 )
@@ -134,8 +146,8 @@ Write-Info "Min cooccur:    $MinCooccurrence"
 Write-Info "Threads:        $Threads"
 Write-Host ""
 
-# Confirm if output exists
-if (Test-Path $OutputPath) {
+# Confirm if output exists (unless resuming)
+if (-not $Resume -and (Test-Path $OutputPath)) {
     $size = (Get-Item $OutputPath).Length / 1MB
     Write-Host "⚠️  Output file exists: $OutputPath ($([math]::Round($size, 1)) MB)" -ForegroundColor Yellow
     $response = Read-Host "Overwrite? (y/N)"
@@ -153,7 +165,6 @@ $cmd = @(
     "`"$JarPath`""
     "pl.marcinmilkowski.word_sketch.indexer.hybrid.CollocationsBuilder"
     "`"$IndexPath`""
-    "`"$StatsPath`""
     "`"$OutputPath`""
     "--window"
     "$WindowSize"
@@ -165,7 +176,13 @@ $cmd = @(
     "$MinCooccurrence"
     "--threads"
     "$Threads"
+    "--checkpoint"
+    "$CheckpointEvery"
 )
+
+if ($Resume) {
+    $cmd += @("--resume", "true")
+}
 
 # Execute
 Write-Step "Building collocations index..."

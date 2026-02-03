@@ -77,6 +77,45 @@ java -jar word-sketch-lucene.jar conllu --input corpus.conllu --output data/inde
 java -jar word-sketch-lucene.jar query --index data/index/ --lemma house --pattern "[tag=\"jj.*\"]"
 ```
 
+### Building with Precomputed Collocations (Recommended)
+
+Precomputed collocations enable **instant O(1) lookups** - 100x+ faster than on-the-fly computation. This is the recommended approach for production deployments.
+
+**Step-by-step:**
+
+```bash
+# 1. Index the corpus (creates Lucene index + stats.bin)
+java -jar word-sketch-lucene.jar conllu --input corpus.conllu --output data/index/
+
+# 2. Build precomputed collocations (single-pass scan + spill-to-disk)
+# This is included when running `mvn package`, but you can also run it manually:
+mvn exec:java -Dexec.mainClass="pl.marcinmilkowski.word_sketch.indexer.hybrid.CollocationsBuilderV2" \
+  -Dexec.args="data/index/ data/index/collocations.bin"
+
+# 3. (Optional) Migrate existing index to add lexicon.bin for fallback mode
+# Only needed if you have an existing index built without lemma_ids
+mvn exec:java -Dexec.mainClass="pl.marcinmilkowski.word_sketch.indexer.hybrid.LexiconFromStatsMigrator" \
+  -Dexec.args="data/index/stats.bin data/index/lexicon.bin"
+
+# 4. Query using precomputed collocations (default)
+java -jar word-sketch-lucene.jar query --index data/index/ --lemma house
+```
+
+**Performance characteristics:**
+
+| Algorithm | Lookup Time | Memory | Notes |
+|-----------|------------|--------|-------|
+| PRECOMPUTED | **0-1 ms** | ~700 MB (cached) | Recommended, default |
+| SAMPLE_SCAN | 50-300 ms | Minimal | Deprecated, on-the-fly |
+| SPAN_COUNT | 50-300 ms | Minimal | Deprecated, requires stats.bin |
+
+**Build times for 1B token corpus:**
+
+- Indexing: ~2 hours
+- Collocation building: ~8 hours (single-pass, spill-to-disk)
+- Total: ~10 hours
+- Result: 740 MB collocations.bin with 547k+ headwords
+
 ### Index Raw Text (Simple Tagger)
 
 ```bash
@@ -104,7 +143,94 @@ java -jar word-sketch-lucene.jar query --index data/index/ --lemma problem --pat
 java -jar word-sketch-lucene.jar server --index data/index/ --port 8080
 ```
 
+The server will output:
+```
+API server started on http://localhost:8080
+Endpoints:
+  GET  /health                 - Health check
+  GET  /api/relations          - List available grammatical relations
+  GET  /api/sketch/{lemma}     - Get full word sketch
+  POST /api/sketch/query       - Execute custom CQL pattern
+  GET  /api/semantic-field     - Semantic field exploration
+  GET/POST /api/algorithm      - Get/set algorithm (PRECOMPUTED, SAMPLE_SCAN, SPAN_COUNT)
+```
+
+### Access the Web Interface (Semantic Field Explorer)
+
+The project includes a web-based Semantic Field Explorer in the `webapp/` directory. To run it:
+
+**In a separate terminal (from the project root):**
+
+```bash
+# Python 3 (recommended)
+python -m http.server 3000 --directory webapp
+
+# Or Python 2
+python -m SimpleHTTPServer 3000 --cwd webapp
+
+# Or Node.js
+npx http-server webapp -p 3000
+
+# Or any other static HTTP server
+```
+
+Then open your browser to: **http://localhost:3000**
+
+**Architecture:**
+- REST API Server runs on `http://localhost:8080` (queries and collocations)
+- Web interface runs on `http://localhost:3000` (static HTML/CSS/JavaScript)
+- The webapp automatically connects to the API and displays results
+
+**Quick Start (both services):**
+
+```bash
+# Terminal 1: Start REST API server
+java -jar target/word-sketch-lucene-1.0.0.jar server --index data/index/ --port 8080
+
+# Terminal 2: Start web server for the UI
+python -m http.server 3000 --directory webapp
+
+# Terminal 3: Open browser
+# Navigate to http://localhost:3000
+```
+
 ## REST API Reference
+
+### Algorithm Selection
+
+The REST API supports three query algorithms (accessible via `/api/algorithm` endpoint):
+
+- **PRECOMPUTED** (recommended, default): O(1) instant lookup from `collocations.bin`
+  - Requires: Pre-built `collocations.bin` file
+  - Performance: 0-1 ms per query
+  - Best for: Production, high-volume queries
+  
+- **SAMPLE_SCAN** (deprecated): Random sampling + sequential scan
+  - Performance: 50-300 ms per query depending on word frequency
+  - Fallback: Automatic if collocations not available
+  - Warning: Marked for removal in v3.0
+
+- **SPAN_COUNT** (deprecated): Statistics-based with SpanNear
+  - Requires: `stats.bin` file
+  - Performance: 50-300 ms per query
+  - Warning: Marked for removal in v3.0
+
+**Selecting an algorithm via API:**
+
+```bash
+curl -X POST http://localhost:8080/api/algorithm \
+  -H "Content-Type: application/json" \
+  -d '{"algorithm":"PRECOMPUTED"}'
+```
+
+Response:
+```json
+{
+  "status": "ok",
+  "algorithm": "PRECOMPUTED",
+  "min_candidate_frequency": 1
+}
+```
 
 ### Endpoints
 
@@ -356,6 +482,8 @@ word-sketch-lucene/
 - JUnit 5.9.0 (for testing)
 
 ## Performance
+
+On a 1-billion token testing corpus, the results are the following:
 
 | Metric | Target | Notes |
 |--------|--------|-------|

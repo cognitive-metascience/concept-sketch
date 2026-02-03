@@ -25,6 +25,16 @@ public interface QueryExecutor extends Closeable {
                                              double minLogDice, int maxResults) throws IOException;
 
     /**
+     * Execute a general CQL query and return concordance results.
+     *
+     * @param cqlPattern CQL pattern to search for
+     * @param maxResults Maximum number of results to return
+     * @return List of concordance results
+     * @throws IOException if index access fails
+     */
+    List<WordSketchQueryExecutor.ConcordanceResult> executeQuery(String cqlPattern, int maxResults) throws IOException;
+
+    /**
      * Get the total frequency of a lemma in the corpus.
      *
      * @param lemma The lemma to look up

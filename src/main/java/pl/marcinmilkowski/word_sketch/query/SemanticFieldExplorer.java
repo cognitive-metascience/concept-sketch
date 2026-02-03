@@ -37,21 +37,17 @@ import java.util.stream.Collectors;
  */
 public class SemanticFieldExplorer implements AutoCloseable {
 
-    private final WordSketchQueryExecutor executor;
+    private final QueryExecutor executor;
     
     // Simple adjective pattern - find adjectives modifying nouns within a small window
     private static final String ADJECTIVE_PATTERN = "[tag=\"JJ.*\"]";
 
     public SemanticFieldExplorer(String indexPath) throws IOException {
-        QueryExecutor exec = QueryExecutorFactory.createAutoDetect(indexPath);
-        if (!(exec instanceof WordSketchQueryExecutor)) {
-            throw new IllegalStateException("Expected WordSketchQueryExecutor, got: " + exec.getClass());
-        }
-        this.executor = (WordSketchQueryExecutor) exec;
+        this.executor = QueryExecutorFactory.createAutoDetect(indexPath);
     }
     
     // Constructor for testing with mock executor
-    SemanticFieldExplorer(WordSketchQueryExecutor executor) {
+    public SemanticFieldExplorer(QueryExecutor executor) {
         this.executor = executor;
     }
 

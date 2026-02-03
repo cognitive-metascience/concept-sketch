@@ -41,8 +41,9 @@ import java.util.concurrent.atomic.LongAdder;
  * - SpanNear/SpanOr for native positional matching
  * 
  * Algorithm modes:
- * - SAMPLE_SCAN: Sample sentences, scan tokens (original algorithm)
- * - SPAN_COUNT: Iterate candidates, count via SpanNear (inverted index direct)
+ * - PRECOMPUTED: Fast O(1) lookup of precomputed collocations (recommended)
+ * - SAMPLE_SCAN: Sample sentences, scan tokens (original algorithm, deprecated)
+ * - SPAN_COUNT: Iterate candidates, count via SpanNear (inverted index direct, deprecated)
  */
 public class HybridQueryExecutor implements QueryExecutor {
 
@@ -50,12 +51,14 @@ public class HybridQueryExecutor implements QueryExecutor {
      * Algorithm mode for finding collocations.
      */
     public enum Algorithm {
-        /** Sample sentences, scan tokens within. O(S·H·L) complexity. */
+        /** Precomputed collocations with O(1) lookup. Recommended for production use. */
+        PRECOMPUTED,
+        /** Sample sentences, scan tokens within. O(S·H·L) complexity. @deprecated Use PRECOMPUTED instead. */
+        @Deprecated(since = "2.0", forRemoval = true)
         SAMPLE_SCAN,
-        /** Iterate candidates from stats, count via SpanNear. O(C·log N) complexity. */
-        SPAN_COUNT,
-        /** Precomputed collocations with O(1) lookup. */
-        PRECOMPUTED
+        /** Iterate candidates from stats, count via SpanNear. O(C·log N) complexity. @deprecated Use PRECOMPUTED instead. */
+        @Deprecated(since = "2.0", forRemoval = true)
+        SPAN_COUNT
     }
 
     private static final Logger logger = LoggerFactory.getLogger(HybridQueryExecutor.class);
@@ -75,7 +78,7 @@ public class HybridQueryExecutor implements QueryExecutor {
     private final ThreadLocal<QueryReport> lastQueryReport = new ThreadLocal<>();
     
     private int maxSampleSize = 10_000;
-    private Algorithm algorithm = Algorithm.SAMPLE_SCAN;
+    private Algorithm algorithm = Algorithm.PRECOMPUTED;
     private int minCandidateFrequency = 2;  // Minimum frequency for span-based candidates
 
     /**
@@ -193,6 +196,31 @@ public class HybridQueryExecutor implements QueryExecutor {
             case SAMPLE_SCAN -> findCollocationsSampleScan(headword, cqlPattern, minLogDice, maxResults);
             case PRECOMPUTED -> findCollocationsPrecomputed(headword, cqlPattern, minLogDice, maxResults);
         };
+    }
+
+    @Override
+    public List<WordSketchQueryExecutor.ConcordanceResult> executeQuery(String cqlPattern, int maxResults) throws IOException {
+        CQLPattern pattern = new CQLParser().parse(cqlPattern);
+        SpanQuery query = compiler.compile(pattern);
+
+        TopDocs topDocs = searcher.search(query, maxResults);
+        ScoreDoc[] hits = topDocs.scoreDocs;
+
+        List<WordSketchQueryExecutor.ConcordanceResult> results = new ArrayList<>();
+
+        for (ScoreDoc hit : hits) {
+            Document doc = searcher.storedFields().document(hit.doc);
+            results.add(new WordSketchQueryExecutor.ConcordanceResult(
+                doc.get("sentence"),
+                doc.get("lemma"),
+                doc.get("tag"),
+                doc.get("word"),
+                doc.get("start_offset") != null ? Integer.parseInt(doc.get("start_offset")) : 0,
+                doc.get("end_offset") != null ? Integer.parseInt(doc.get("end_offset")) : 0
+            ));
+        }
+
+        return results;
     }
 
     /**
@@ -881,19 +909,24 @@ public class HybridQueryExecutor implements QueryExecutor {
         return results;
     }
 
+    /**
+     * Match a token field against a pattern.
+     * Patterns support regex syntax: .* means "any characters", . means "any single character".
+     * This matches the CQL convention where [tag="JJ.*"] matches JJ, JJS, JJR, etc.
+     */
     private boolean matchesField(String value, String field, String pattern) {
         if (value == null) value = "";
         pattern = pattern.replace("\"", "").toLowerCase().trim();
         value = value.toLowerCase();
 
-        // Regex/wildcard patterns
-        if (pattern.contains(".*") || pattern.contains("*") || pattern.contains("?")) {
-            String regex = pattern.replace(".*", ".*").replace("*", ".*").replace("?", ".");
-            return value.matches(regex);
+        // Use pattern as regex directly (case-insensitive)
+        // Common patterns like "jj.*" or "nn.*" work as expected
+        try {
+            return value.matches(pattern);
+        } catch (java.util.regex.PatternSyntaxException e) {
+            // If pattern isn't valid regex, try exact match
+            return value.equals(pattern);
         }
-
-        // Exact match
-        return value.equals(pattern);
     }
 
     @Override

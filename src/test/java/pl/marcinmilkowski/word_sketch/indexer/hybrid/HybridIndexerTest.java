@@ -1,6 +1,5 @@
 package pl.marcinmilkowski.word_sketch.indexer.hybrid;
 
-import org.apache.lucene.document.Document;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
@@ -10,6 +9,7 @@ import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.io.TempDir;
 
 import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 
@@ -61,6 +61,53 @@ class HybridIndexerTest {
             // Search for lemma "sit" (lemma of "sat")
             results = searcher.search(new TermQuery(new Term("lemma", "sit")), 10);
             assertEquals(1, results.totalHits.value());
+        }
+    }
+
+    @Test
+    @DisplayName("Index writes lemma_ids DocValues and lexicon.bin")
+    void indexWritesLemmaIdsAndLexicon() throws IOException {
+        Path indexPath = tempDir.resolve("index");
+        Path statsPath = indexPath.resolve("stats.tsv");
+
+        try (HybridIndexer indexer = new HybridIndexer(indexPath.toString())) {
+            SentenceDocument sentence = SentenceDocument.builder()
+                .sentenceId(1)
+                .text("The cat sat on the mat.")
+                .addToken(0, "The", "the", "DT", 0, 3)
+                .addToken(1, "cat", "cat", "NN", 4, 7)
+                .addToken(2, "sat", "sit", "VBD", 8, 11)
+                .addToken(3, "on", "on", "IN", 12, 14)
+                .addToken(4, "the", "the", "DT", 15, 18)
+                .addToken(5, "mat", "mat", "NN", 19, 22)
+                .addToken(6, ".", ".", ".", 22, 23)
+                .build();
+
+            indexer.indexSentence(sentence);
+            indexer.commit();
+            indexer.writeStatistics(statsPath.toString());
+        }
+
+        // Verify lemma_ids DocValues exist
+        try (IndexReader reader = DirectoryReader.open(FSDirectory.open(indexPath))) {
+            assertEquals(1, reader.numDocs());
+
+            var leaf = reader.leaves().get(0);
+            var dv = leaf.reader().getBinaryDocValues("lemma_ids");
+            assertNotNull(dv);
+            assertTrue(dv.advanceExact(0));
+
+            int[] ids = LemmaIdsCodec.decode(dv.binaryValue());
+            assertEquals(7, ids.length);
+        }
+
+        // Verify lexicon is written and readable
+        Path lexiconPath = indexPath.resolve("lexicon.bin");
+        assertTrue(Files.exists(lexiconPath));
+
+        try (LemmaLexiconReader lex = new LemmaLexiconReader(lexiconPath.toString())) {
+            assertTrue(lex.size() >= 6);
+            assertTrue(lex.getTotalTokens() >= 7);
         }
     }
 

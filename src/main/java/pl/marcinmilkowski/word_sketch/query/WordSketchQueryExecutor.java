@@ -510,39 +510,22 @@ public class WordSketchQueryExecutor implements QueryExecutor {
     }
 
     /**
-     * Check if a field value matches a pattern.
-     * Handles wildcard patterns (glob): * matches any characters, ? matches single char.
-     * In glob patterns, . is just a literal character (like in tag patterns "JJ.*").
-     * Conversion: * -> .*, ? -> ., other chars literal.
+     * Check if a field value matches a regex pattern.
+     * CQL uses standard regex: .* means "any characters", [SR]? means optional S or R, etc.
      */
     private boolean matchesField(String value, String field, String pattern) {
         if (pattern.startsWith("\"")) {
             pattern = pattern.substring(1, pattern.length() - 1);
         }
 
-        // Convert glob pattern to regex
-        // * -> .*  (match any characters)
-        // ? -> .   (match single character)
-        // All other characters (including .) are treated literally
-        StringBuilder regex = new StringBuilder();
-        for (int i = 0; i < pattern.length(); i++) {
-            char c = pattern.charAt(i);
-            if (c == '*') {
-                regex.append(".*");
-            } else if (c == '?') {
-                regex.append(".");
-            } else if ("\\^$|()[]{}+".indexOf(c) >= 0) {
-                // Escape regex special characters
-                regex.append("\\").append(c);
-            } else {
-                // All other characters (including .) are treated literally
-                // This means "JJ.*" matches tags starting with "JJ"
-                regex.append(c);
-            }
+        // Standard regex matching (case-insensitive)
+        String fullRegex = "(?i)^" + pattern + "$";
+        try {
+            return value.matches(fullRegex);
+        } catch (java.util.regex.PatternSyntaxException e) {
+            // Fallback to exact match if pattern is invalid regex
+            return value.equalsIgnoreCase(pattern);
         }
-
-        String fullRegex = "(?i)^" + regex + "$";
-        return value.matches(fullRegex);
     }
 
     @Override

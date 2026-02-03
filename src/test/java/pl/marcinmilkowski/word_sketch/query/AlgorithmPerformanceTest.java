@@ -1,6 +1,7 @@
 package pl.marcinmilkowski.word_sketch.query;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Disabled;
 import pl.marcinmilkowski.word_sketch.query.HybridQueryExecutor.Algorithm;
 import pl.marcinmilkowski.word_sketch.query.WordSketchQueryExecutor.WordSketchResult;
 
@@ -18,6 +19,7 @@ import java.util.*;
  * 
  * Uses diverse test cases across frequency ranges to expose algorithm differences.
  */
+@Disabled("Long-running performance benchmark - skipped by default")
 public class AlgorithmPerformanceTest {
 
     // Path to test indices

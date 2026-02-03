@@ -6,7 +6,6 @@ import org.apache.lucene.document.*;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.store.MMapDirectory;
 import org.apache.lucene.util.BytesRef;
 import org.slf4j.Logger;
@@ -50,6 +49,7 @@ public class HybridIndexer implements Closeable {
     private final IndexWriter writer;
     private final Directory directory;
     private final StatisticsCollector statsCollector;
+    private final LemmaIdAssigner lemmaIdAssigner;
     private final AtomicLong sentenceCount = new AtomicLong(0);
     private final AtomicLong tokenCount = new AtomicLong(0);
 
@@ -100,6 +100,7 @@ public class HybridIndexer implements Closeable {
 
         this.writer = new IndexWriter(directory, config);
         this.statsCollector = new StatisticsCollector();
+        this.lemmaIdAssigner = new LemmaIdAssigner();
 
         log.info("Hybrid indexer initialized at: {} (threads: {})", indexPath, numThreads);
     }
@@ -184,6 +185,16 @@ public class HybridIndexer implements Closeable {
             // Token sequence as binary DocValues - for efficient extraction
             BytesRef tokenBytes = TokenSequenceCodec.encode(tokens);
             doc.add(new BinaryDocValuesField("tokens", tokenBytes));
+
+            // Compact lemma ID sequence as binary DocValues - for single-pass collocation builds
+            int[] lemmaIds = new int[tokens.size()];
+            for (int i = 0; i < tokens.size(); i++) {
+                String lemma = tokens.get(i).lemma();
+                String normalized = lemma != null ? lemma.toLowerCase() : "";
+                lemmaIds[i] = lemmaIdAssigner.getOrAssignId(normalized);
+            }
+            BytesRef lemmaIdBytes = LemmaIdsCodec.encode(lemmaIds);
+            doc.add(new BinaryDocValuesField("lemma_ids", lemmaIdBytes));
         }
 
         return doc;
@@ -222,6 +233,21 @@ public class HybridIndexer implements Closeable {
         } catch (Exception e) {
             log.warn("Failed to write binary statistics: {}", e.getMessage());
         }
+
+        // Write lemma lexicon (IDs + frequencies + most frequent POS) for single-pass collocations
+        try {
+            java.nio.file.Path statsFile = java.nio.file.Paths.get(statsPath);
+            java.nio.file.Path lexiconPath = (statsFile.getParent() != null)
+                ? statsFile.getParent().resolve("lexicon.bin")
+                : java.nio.file.Paths.get("lexicon.bin");
+            LemmaLexiconWriter.writeBinaryFile(
+                lexiconPath.toString(),
+                lemmaIdAssigner,
+                statsCollector);
+            log.info("Lexicon written to: {}", lexiconPath);
+        } catch (Exception e) {
+            log.warn("Failed to write lexicon: {}", e.getMessage());
+        }
     }
     
     // Remove old convertTsvToBinary method
@@ -231,6 +257,10 @@ public class HybridIndexer implements Closeable {
      */
     public StatisticsCollector getStatisticsCollector() {
         return statsCollector;
+    }
+
+    public LemmaIdAssigner getLemmaIdAssigner() {
+        return lemmaIdAssigner;
     }
 
     /**
@@ -311,6 +341,20 @@ public class HybridIndexer implements Closeable {
         public long getTagFrequency(String tag) {
             AtomicLong freq = tagFrequencies.get(tag.toUpperCase());
             return freq != null ? freq.get() : 0;
+        }
+
+        /**
+         * Returns the most frequent POS tag observed for a lemma.
+         * Lemma lookup is case-insensitive.
+         */
+        public String getMostFrequentPos(String lemma) {
+            if (lemma == null) return "";
+            ConcurrentHashMap<String, AtomicLong> tagDist = lemmaTagDistribution.get(lemma.toLowerCase());
+            if (tagDist == null || tagDist.isEmpty()) return "";
+            return tagDist.entrySet().stream()
+                .max(java.util.Map.Entry.comparingByValue(java.util.Comparator.comparingLong(AtomicLong::get)))
+                .map(java.util.Map.Entry::getKey)
+                .orElse("");
         }
 
         /**

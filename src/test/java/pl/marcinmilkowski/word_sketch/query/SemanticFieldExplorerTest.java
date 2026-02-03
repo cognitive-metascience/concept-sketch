@@ -317,6 +317,11 @@ class SemanticFieldExplorerTest {
                 .limit(maxResults)
                 .toList();
         }
+
+        @Override
+        public List<WordSketchQueryExecutor.ConcordanceResult> executeQuery(String cqlPattern, int maxResults) {
+            return Collections.emptyList();
+        }
         
         @Override
         public long getTotalFrequency(String lemma) {

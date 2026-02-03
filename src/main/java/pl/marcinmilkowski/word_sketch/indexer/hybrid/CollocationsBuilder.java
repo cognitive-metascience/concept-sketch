@@ -1,13 +1,14 @@
 package pl.marcinmilkowski.word_sketch.indexer.hybrid;
 
-import org.apache.lucene.document.Document;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.Term;
+import org.apache.lucene.index.BinaryDocValues;
 import org.apache.lucene.search.IndexSearcher;
-import org.apache.lucene.search.ScoreDoc;
+import org.apache.lucene.search.ScoreMode;
+import org.apache.lucene.search.SimpleCollector;
 import org.apache.lucene.search.TermQuery;
-import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.store.MMapDirectory;
 import org.apache.lucene.util.BytesRef;
 import org.slf4j.Logger;
@@ -15,7 +16,6 @@ import org.slf4j.LoggerFactory;
 import pl.marcinmilkowski.word_sketch.indexer.hybrid.SentenceDocument.Token;
 
 import java.io.*;
-import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
@@ -24,7 +24,6 @@ import java.nio.file.StandardOpenOption;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.stream.Collectors;
 
 /**
  * Builds precomputed collocations index from a hybrid Lucene index.
@@ -54,7 +53,7 @@ public class CollocationsBuilder {
     private final IndexReader reader;
     private final IndexSearcher searcher;
     private final StatisticsReader statsReader;
-    private final TokenSequenceCodec codec = new TokenSequenceCodec();
+    private static final long HEADER_SIZE = 64;
 
     // Configuration
     private int windowSize = 5;
@@ -63,6 +62,8 @@ public class CollocationsBuilder {
     private int minCooccurrence = 2;
     private int batchSize = 1000;
     private int threads = Runtime.getRuntime().availableProcessors();
+    private int checkpointEvery = 5_000;
+    private boolean resume = false;
 
     /**
      * Create a collocations builder.
@@ -89,6 +90,8 @@ public class CollocationsBuilder {
     public void setMinCooccurrence(int cooc) { this.minCooccurrence = cooc; }
     public void setBatchSize(int size) { this.batchSize = size; }
     public void setThreads(int n) { this.threads = n; }
+    public void setCheckpointEvery(int n) { this.checkpointEvery = Math.max(100, n); }
+    public void setResume(boolean resume) { this.resume = resume; }
 
     /**
      * Build collocations for all lemmas and write to binary file.
@@ -96,61 +99,172 @@ public class CollocationsBuilder {
     public void build(String outputPath) throws IOException, InterruptedException {
         long startTime = System.currentTimeMillis();
 
+        String offsetsTmpPath = outputPath + ".offsets.tmp";
+        Path outFile = Paths.get(outputPath);
+        Path offsetsTmpFile = Paths.get(offsetsTmpPath);
+
         // Get all lemmas meeting frequency threshold
         List<String> lemmas = statsReader.getLemmasByMinFrequency(minFrequency);
         logger.info("Building collocations for {} lemmas (freq >= {})", lemmas.size(), minFrequency);
         logger.info("Configuration: window={}, top-K={}, min-cooc={}, threads={}",
             windowSize, topK, minCooccurrence, threads);
 
-        // Process lemmas in parallel
-        List<CollocationEntry> entries = Collections.synchronizedList(new ArrayList<>());
-        AtomicInteger processed = new AtomicInteger(0);
-        AtomicInteger withResults = new AtomicInteger(0);
+        // Streaming build: write entries to output file as we go, and stream the offset table to a temp file.
+        // This avoids holding all CollocationEntry objects in memory and makes long builds recoverable.
+        final Object writeLock = new Object();
 
-        ExecutorService executor = Executors.newFixedThreadPool(threads);
-        List<Future<?>> futures = new ArrayList<>();
+        // Resume support: load already-written headwords from offsets tmp (if present)
+        final Set<String> alreadyDone;
+        final AtomicInteger entryCount;
+        if (resume && java.nio.file.Files.exists(outFile) && java.nio.file.Files.exists(offsetsTmpFile)) {
+            alreadyDone = new HashSet<>();
 
-        for (String lemma : lemmas) {
-            Future<?> future = executor.submit(() -> {
-                try {
-                    CollocationEntry entry = buildForLemma(lemma);
-                    if (entry != null && !entry.isEmpty()) {
-                        entries.add(entry);
-                        withResults.incrementAndGet();
+            int restoredCount = 0;
+            try (DataInputStream dis = new DataInputStream(new BufferedInputStream(java.nio.file.Files.newInputStream(offsetsTmpFile)))) {
+                // The first int is a checkpoint count, which may be stale if the process was killed.
+                // For robustness, scan until EOF and count actual records.
+                dis.readInt();
+                while (true) {
+                    try {
+                        int len = dis.readUnsignedShort();
+                        byte[] bytes = dis.readNBytes(len);
+                        alreadyDone.add(new String(bytes, StandardCharsets.UTF_8));
+                        dis.readLong();
+                        restoredCount++;
+                    } catch (EOFException eof) {
+                        break;
                     }
+                }
+            }
 
+            entryCount = new AtomicInteger(restoredCount);
+            logger.info("Resuming build: {} headwords already written (scanned {})", entryCount.get(), offsetsTmpPath);
+        } else {
+            alreadyDone = null;
+            entryCount = new AtomicInteger(0);
+        }
+
+        AtomicInteger processed = new AtomicInteger(0);
+        AtomicInteger withResults = new AtomicInteger(entryCount.get());
+
+        try (RandomAccessFile outRaf = new RandomAccessFile(outputPath, "rw");
+             FileChannel outChannel = outRaf.getChannel();
+             RandomAccessFile offsetsRaf = new RandomAccessFile(offsetsTmpPath, "rw")) {
+
+            if (resume && alreadyDone != null) {
+                // Append mode
+                if (outRaf.length() < HEADER_SIZE) {
+                    throw new IOException("Cannot resume: output file is too small: " + outputPath);
+                }
+                outChannel.position(outRaf.length());
+                offsetsRaf.seek(offsetsRaf.length());
+            } else {
+                // Fresh build: truncate and write placeholder header
+                outRaf.setLength(0);
+                outChannel.position(0);
+                writeHeader(outChannel, 0, 0L, 0L);
+                outChannel.position(HEADER_SIZE);
+
+                offsetsRaf.setLength(0);
+                offsetsRaf.seek(0);
+                offsetsRaf.writeInt(0); // placeholder count
+            }
+
+            ExecutorService executor = Executors.newFixedThreadPool(threads);
+            List<Future<?>> futures = new ArrayList<>();
+
+            for (String lemma : lemmas) {
+                if (alreadyDone != null && alreadyDone.contains(lemma)) {
                     int count = processed.incrementAndGet();
                     if (count % 1000 == 0) {
                         logger.info("Progress: {}/{} lemmas processed, {} with collocates",
                             count, lemmas.size(), withResults.get());
                     }
-                } catch (Exception e) {
-                    logger.error("Failed to build collocations for '{}'", lemma, e);
+                    continue;
                 }
-            });
-            futures.add(future);
-        }
 
-        // Wait for all tasks to complete
-        for (Future<?> future : futures) {
-            try {
-                future.get();
-            } catch (Exception e) {
-                logger.error("Task execution failed", e);
+                Future<?> future = executor.submit(() -> {
+                    try {
+                        CollocationEntry entry = buildForLemma(lemma);
+                        if (entry != null && !entry.isEmpty()) {
+                            synchronized (writeLock) {
+                                long offset = outChannel.position();
+                                writeEntry(outChannel, entry);
+                                writeOffsetRecord(offsetsRaf, entry.headword(), offset);
+
+                                int newCount = entryCount.incrementAndGet();
+                                withResults.incrementAndGet();
+
+                                // Periodically checkpoint the offset tmp count to enable resume after power loss
+                                if (newCount % checkpointEvery == 0) {
+                                    long pos = offsetsRaf.getFilePointer();
+                                    offsetsRaf.seek(0);
+                                    offsetsRaf.writeInt(newCount);
+                                    offsetsRaf.seek(pos);
+                                    outChannel.force(false);
+                                }
+                            }
+                        }
+
+                        int count = processed.incrementAndGet();
+                        if (count % 1000 == 0) {
+                            logger.info("Progress: {}/{} lemmas processed, {} with collocates",
+                                count, lemmas.size(), withResults.get());
+                        }
+                    } catch (Exception e) {
+                        logger.error("Failed to build collocations for '{}'", lemma, e);
+                    }
+                });
+                futures.add(future);
             }
+
+            for (Future<?> future : futures) {
+                try {
+                    future.get();
+                } catch (Exception e) {
+                    logger.error("Task execution failed", e);
+                }
+            }
+            executor.shutdown();
+
+            // Finalize offset tmp count
+            synchronized (writeLock) {
+                long pos = offsetsRaf.getFilePointer();
+                offsetsRaf.seek(0);
+                offsetsRaf.writeInt(entryCount.get());
+                offsetsRaf.seek(pos);
+                outChannel.force(false);
+            }
+
+            logger.info("Completed: {}/{} lemmas have collocates", withResults.get(), lemmas.size());
+
+            // Append offset table (temp file) to the output
+            long dataEnd = outChannel.position();
+            long offsetTableStart = dataEnd;
+            long offsetTableSize;
+            try (FileChannel offsetsChannel = java.nio.channels.FileChannel.open(offsetsTmpFile, StandardOpenOption.READ)) {
+                offsetTableSize = offsetsChannel.size();
+                long transferred = 0;
+                while (transferred < offsetTableSize) {
+                    transferred += offsetsChannel.transferTo(transferred, offsetTableSize - transferred, outChannel);
+                }
+            }
+
+            long fileEnd = outChannel.position();
+
+            // Write final header
+            outChannel.position(0);
+            writeHeader(outChannel, entryCount.get(), offsetTableStart, offsetTableSize);
+
+            logger.info("Written:");
+            logger.info("  Header: {} bytes", HEADER_SIZE);
+            logger.info("  Data: {} bytes", dataEnd - HEADER_SIZE);
+            logger.info("  Offset table: {} bytes", offsetTableSize);
+            logger.info("  Total: {} bytes ({} MB)", fileEnd, fileEnd / (1024 * 1024));
         }
-        executor.shutdown();
-
-        logger.info("Completed: {}/{} lemmas have collocates", withResults.get(), lemmas.size());
-
-        // Sort by headword for binary search
-        entries.sort(Comparator.comparing(CollocationEntry::headword));
-
-        // Write to binary file
-        writeCollocationsBinary(entries, outputPath);
 
         long elapsed = System.currentTimeMillis() - startTime;
-        logger.info("Build completed in {:.1f} minutes", elapsed / 60000.0);
+        logger.info("Build completed in {} minutes", String.format(Locale.ROOT, "%.1f", elapsed / 60000.0));
         logger.info("Output: {}", outputPath);
     }
 
@@ -161,43 +275,70 @@ public class CollocationsBuilder {
         long headwordFreq = statsReader.getFrequency(lemma);
         if (headwordFreq == 0) return null;
 
-        // Find all documents containing this lemma
+        // Find all documents containing this lemma.
+        // IMPORTANT: do NOT use searcher.search(..., Integer.MAX_VALUE) because it materializes a huge ScoreDoc[]
+        // for frequent lemmas (e.g., "the"), which can OOM the JVM. Stream matches via a collector.
         TermQuery query = new TermQuery(new Term("lemma", lemma.toLowerCase()));
-        TopDocs topDocs = searcher.search(query, Integer.MAX_VALUE);
-
-        if (topDocs.scoreDocs.length == 0) {
-            return null;
-        }
-
-        // Aggregate cooccurrence counts
         Map<String, Long> cooccurrences = new HashMap<>();
+        final String lemmaLower = lemma.toLowerCase(Locale.ROOT);
+        final int[] hitCount = new int[] {0};
 
-        for (ScoreDoc hit : topDocs.scoreDocs) {
-            List<Token> tokens = loadTokensFromDoc(hit.doc);
-            if (tokens.isEmpty()) continue;
+        searcher.search(query, new SimpleCollector() {
+            private BinaryDocValues tokensDv;
 
-            // Find all positions of headword
-            List<Integer> headwordPositions = new ArrayList<>();
-            for (int i = 0; i < tokens.size(); i++) {
-                if (lemma.equalsIgnoreCase(tokens.get(i).lemma())) {
-                    headwordPositions.add(i);
-                }
+            @Override
+            protected void doSetNextReader(LeafReaderContext context) throws IOException {
+                this.tokensDv = context.reader().getBinaryDocValues("tokens");
             }
 
-            // Collect collocates within window
-            for (int hwPos : headwordPositions) {
-                int start = Math.max(0, hwPos - windowSize);
-                int end = Math.min(tokens.size(), hwPos + windowSize + 1);
+            @Override
+            public ScoreMode scoreMode() {
+                return ScoreMode.COMPLETE_NO_SCORES;
+            }
 
-                for (int i = start; i < end; i++) {
-                    if (i == hwPos) continue; // Skip headword itself
+            @Override
+            public void collect(int doc) throws IOException {
+                if (tokensDv == null) return;
+                if (!tokensDv.advanceExact(doc)) return;
 
-                    String collocateLemma = tokens.get(i).lemma();
-                    if (collocateLemma == null || collocateLemma.equals(lemma)) continue;
+                hitCount[0]++;
 
-                    cooccurrences.merge(collocateLemma.toLowerCase(), 1L, Long::sum);
+                BytesRef bytesRef = tokensDv.binaryValue();
+                List<Token> tokens = TokenSequenceCodec.decode(bytesRef);
+                if (tokens.isEmpty()) return;
+
+                // Find all positions of headword in this sentence token sequence
+                List<Integer> headwordPositions = new ArrayList<>();
+                for (int i = 0; i < tokens.size(); i++) {
+                    String tLemma = tokens.get(i).lemma();
+                    if (tLemma != null && lemmaLower.equals(tLemma.toLowerCase(Locale.ROOT))) {
+                        headwordPositions.add(i);
+                    }
+                }
+
+                if (headwordPositions.isEmpty()) return;
+
+                // Collect collocates within window for each occurrence
+                for (int hwPos : headwordPositions) {
+                    int start = Math.max(0, hwPos - windowSize);
+                    int end = Math.min(tokens.size(), hwPos + windowSize + 1);
+
+                    for (int i = start; i < end; i++) {
+                        if (i == hwPos) continue;
+
+                        String collocateLemma = tokens.get(i).lemma();
+                        if (collocateLemma == null) continue;
+                        String collLower = collocateLemma.toLowerCase(Locale.ROOT);
+                        if (collLower.equals(lemmaLower)) continue;
+
+                        cooccurrences.merge(collLower, 1L, Long::sum);
+                    }
                 }
             }
+        });
+
+        if (hitCount[0] == 0) {
+            return null;
         }
 
         // Filter by minimum cooccurrence
@@ -235,24 +376,14 @@ public class CollocationsBuilder {
         return new CollocationEntry(lemma, headwordFreq, collocations);
     }
 
-    /**
-     * Load tokens from a document.
-     */
-    private List<Token> loadTokensFromDoc(int docId) throws IOException {
-        var leafReaders = reader.leaves();
-
-        for (var leafContext : leafReaders) {
-            int localDocId = docId - leafContext.docBase;
-            if (localDocId >= 0 && localDocId < leafContext.reader().maxDoc()) {
-                var binaryDocValues = leafContext.reader().getBinaryDocValues("tokens");
-                if (binaryDocValues != null && binaryDocValues.advanceExact(localDocId)) {
-                    BytesRef bytesRef = binaryDocValues.binaryValue();
-                    return TokenSequenceCodec.decode(bytesRef);
-                }
-            }
+    private void writeOffsetRecord(RandomAccessFile offsetsRaf, String headword, long offset) throws IOException {
+        byte[] headwordBytes = headword.getBytes(StandardCharsets.UTF_8);
+        if (headwordBytes.length > 65535) {
+            throw new IOException("Headword too long: " + headword);
         }
-
-        return Collections.emptyList();
+        offsetsRaf.writeShort(headwordBytes.length);
+        offsetsRaf.write(headwordBytes);
+        offsetsRaf.writeLong(offset);
     }
 
     /**
@@ -278,50 +409,6 @@ public class CollocationsBuilder {
             .max(Map.Entry.comparingByValue())
             .map(Map.Entry::getKey)
             .orElse("");
-    }
-
-    /**
-     * Write collocations to binary file with hash index.
-     */
-    private void writeCollocationsBinary(List<CollocationEntry> entries, String outputPath)
-            throws IOException {
-        logger.info("Writing {} entries to {}", entries.size(), outputPath);
-
-        try (RandomAccessFile raf = new RandomAccessFile(outputPath, "rw");
-             FileChannel channel = raf.getChannel()) {
-
-            // Reserve space for header (we'll write it at the end)
-            long headerSize = 64;
-            channel.position(headerSize);
-
-            // Write entries and build offset map
-            Map<String, Long> offsetMap = new HashMap<>();
-            long dataStart = headerSize;
-
-            for (CollocationEntry entry : entries) {
-                long offset = channel.position();
-                offsetMap.put(entry.headword(), offset);
-                writeEntry(channel, entry);
-            }
-
-            long dataEnd = channel.position();
-
-            // Write offset table
-            long offsetTableStart = dataEnd;
-            writeOffsetTable(channel, offsetMap);
-            long offsetTableEnd = channel.position();
-
-            // Now write header
-            channel.position(0);
-            writeHeader(channel, entries.size(), offsetTableStart, offsetTableEnd - offsetTableStart);
-
-            logger.info("Written:");
-            logger.info("  Header: {} bytes", headerSize);
-            logger.info("  Data: {} bytes", dataEnd - dataStart);
-            logger.info("  Offset table: {} bytes", offsetTableEnd - offsetTableStart);
-            logger.info("  Total: {} bytes ({} MB)", offsetTableEnd,
-                offsetTableEnd / (1024 * 1024));
-        }
     }
 
     private void writeHeader(FileChannel channel, int entryCount, long offsetTableOffset, long offsetTableSize)
@@ -372,22 +459,6 @@ public class CollocationsBuilder {
         channel.write(buffer);
     }
 
-    private void writeOffsetTable(FileChannel channel, Map<String, Long> offsetMap) throws IOException {
-        var buffer = java.nio.ByteBuffer.allocate(offsetMap.size() * 32);
-
-        // Write simple linear table (lemma → offset)
-        buffer.putInt(offsetMap.size());
-        for (Map.Entry<String, Long> entry : offsetMap.entrySet()) {
-            byte[] lemmaBytes = entry.getKey().getBytes(StandardCharsets.UTF_8);
-            buffer.putShort((short) lemmaBytes.length);
-            buffer.put(lemmaBytes);
-            buffer.putLong(entry.getValue());
-        }
-
-        buffer.flip();
-        channel.write(buffer);
-    }
-
     public void close() throws IOException {
         reader.close();
         statsReader.close();
@@ -405,6 +476,8 @@ public class CollocationsBuilder {
             System.err.println("  --min-freq N      Minimum headword frequency (default: 10)");
             System.err.println("  --min-cooc N      Minimum cooccurrence (default: 2)");
             System.err.println("  --threads N       Parallel threads (default: CPU cores)");
+            System.err.println("  --checkpoint N    Update resume checkpoint every N entries (default: 5000)");
+            System.err.println("  --resume true|false  Resume from existing outputPath.offsets.tmp (default: false)");
             System.exit(1);
         }
 
@@ -417,6 +490,8 @@ public class CollocationsBuilder {
         int minFreq = 10;
         int minCooc = 2;
         int threads = Runtime.getRuntime().availableProcessors();
+        int checkpointEvery = 5_000;
+        boolean resume = false;
 
         for (int i = 2; i < args.length; i += 2) {
             if (i + 1 >= args.length) break;
@@ -429,6 +504,8 @@ public class CollocationsBuilder {
                 case "--min-freq" -> minFreq = Integer.parseInt(val);
                 case "--min-cooc" -> minCooc = Integer.parseInt(val);
                 case "--threads" -> threads = Integer.parseInt(val);
+                case "--checkpoint" -> checkpointEvery = Integer.parseInt(val);
+                case "--resume" -> resume = Boolean.parseBoolean(val);
             }
         }
 
@@ -444,6 +521,8 @@ public class CollocationsBuilder {
         builder.setMinFrequency(minFreq);
         builder.setMinCooccurrence(minCooc);
         builder.setThreads(threads);
+        builder.setCheckpointEvery(checkpointEvery);
+        builder.setResume(resume);
 
         builder.build(outputPath);
         builder.close();

@@ -2,6 +2,8 @@ package pl.marcinmilkowski.word_sketch.api;
 
 import com.alibaba.fastjson2.JSON;
 import com.alibaba.fastjson2.JSONObject;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import pl.marcinmilkowski.word_sketch.query.QueryExecutor;
 import pl.marcinmilkowski.word_sketch.query.WordSketchQueryExecutor;
 import pl.marcinmilkowski.word_sketch.query.SemanticFieldExplorer;
@@ -27,6 +29,7 @@ import java.util.*;
  */
 public class WordSketchApiServer {
 
+    private static final Logger logger = LoggerFactory.getLogger(WordSketchApiServer.class);
     private final QueryExecutor executor;
     private final String indexPath;
     private final int port;
@@ -34,49 +37,77 @@ public class WordSketchApiServer {
 
     /**
      * Grammatical relation definitions based on sketchgrammar.wsdef.m4
+     * 
+     * IMPORTANT: For PRECOMPUTED algorithm, patterns must be SINGLE-TOKEN
+     * describing the collocate type only. Multi-token patterns work with
+     * SAMPLE_SCAN but not with PRECOMPUTED.
+     * 
+     * For nouns: we find verbs (subjects/objects), adjectives (modifiers),
+     *            prepositions, other nouns (compounds), etc.
+     * For verbs: we find nouns (objects/subjects), prepositions, particles,
+     *            adverbs (modifiers), etc.
+     * For adjectives: we find nouns, adverbs (intensifiers), verbs, etc.
      */
     private static final List<RelationDefinition> RELATIONS = Arrays.asList(
-        // Noun relations
-        new RelationDefinition("noun_modifiers", "Adjectives modifying (modifiers)",
-            "[tag=jj.*]~{0,3}", "noun"),
-        new RelationDefinition("noun_objects", "Verbs with as object",
-            "[tag=vb.*]~{0,5} [tag=nn.*]", "noun"),
-        new RelationDefinition("noun_subjects", "Verbs as subject",
-            "[tag=nn.*]~{-5,0} [tag=vb.*]", "noun"),
-        new RelationDefinition("noun_compound", "Nouns in compound (noun+noun)",
-            "[tag=nn.*]~{1,2} [tag=nn.*]", "noun"),
-        new RelationDefinition("noun_adverbs", "Adverbs modifying",
-            "[tag=rb.*]~{0,3}", "noun"),
-        new RelationDefinition("noun_determiners", "Determiners",
-            "[tag=dt]~{0,1}", "noun"),
-        new RelationDefinition("noun_prepositions", "Prepositions (of, for, etc.)",
-            "[word=of]~{0,3}", "noun"),
+        // ====== NOUN relations ======
+        // Adjectives modifying the noun (e.g., "big house", "red car")
+        new RelationDefinition("noun_modifiers", "Modifiers (adjectives)",
+            "[tag=jj.*]", "noun"),
+        // Verbs appearing near the noun (subjects/objects)
+        new RelationDefinition("noun_verbs", "Verbs (subject/object of)",
+            "[tag=vb.*]", "noun"),
+        // Other nouns (compounds like "coffee house", "house party")
+        new RelationDefinition("noun_compounds", "Nouns in compound",
+            "[tag=nn.*]", "noun"),
+        // Prepositions (e.g., "house of", "at the house")
+        new RelationDefinition("noun_prepositions", "Prepositions",
+            "[tag=in]", "noun"),
+        // Adverbs (rare, e.g., "almost home")
+        new RelationDefinition("noun_adverbs", "Adverbs",
+            "[tag=rb.*]", "noun"),
+        // Possessives ("house's")
+        new RelationDefinition("noun_possessives", "Possessive nouns",
+            "[tag=pos]", "noun"),
 
-        // Verb relations
-        new RelationDefinition("verb_objects", "Direct objects (what is VERBed)",
-            "[tag=vb.*]~{0,5} [tag=nn.*]", "verb"),
-        new RelationDefinition("verb_subjects", "Subjects (who VERBs)",
-            "[tag=nn.*]~{-5,0} [tag=vb.*]", "verb"),
-        new RelationDefinition("verb_particles", "Particles (verb+particle)",
-            "[tag=vb.*]~{0,2} [tag=rp]", "verb"),
-        new RelationDefinition("verb_infinitive", "Infinitive 'to'",
-            "[tag=vb.*]~{0,3} [word=to]~{0,2}", "verb"),
-        new RelationDefinition("verb_gerunds", "Gerunds (-ing)",
-            "[tag=vb.*]~{0,3} [tag=vbg]", "verb"),
-        new RelationDefinition("verb_passive", "Passive 'by' agent",
-            "[tag=vbn]~{0,3} [word=by]~{0,2}", "verb"),
+        // ====== VERB relations ======
+        // Nouns appearing near verbs (objects/subjects)
+        new RelationDefinition("verb_nouns", "Nouns (objects/subjects)",
+            "[tag=nn.*]", "verb"),
+        // Particles (e.g., "give up", "break down")
+        new RelationDefinition("verb_particles", "Particles",
+            "[tag=rp]", "verb"),
+        // Prepositions (e.g., "depend on", "look at")
+        new RelationDefinition("verb_prepositions", "Prepositions",
+            "[tag=in]", "verb"),
+        // Adverbs modifying verbs
+        new RelationDefinition("verb_adverbs", "Adverbs",
+            "[tag=rb.*]", "verb"),
+        // Adjectives (predicative, e.g., "become happy")
+        new RelationDefinition("verb_adjectives", "Adjectives (predicative)",
+            "[tag=jj.*]", "verb"),
+        // Infinitive marker (e.g., "want to", "need to")
+        new RelationDefinition("verb_to", "Infinitive 'to'",
+            "[word=to]", "verb"),
+        // Other verbs (chains, e.g., "try to make")
+        new RelationDefinition("verb_verbs", "Other verbs",
+            "[tag=vb.*]", "verb"),
 
-        // Adjective relations
-        new RelationDefinition("adj_nouns", "Nouns modified (predicates)",
-            "[tag=nn.*]~{-3,0} [tag=jj.*]", "adj"),
-        new RelationDefinition("adj_verbs", "Verbs with adjective complement",
-            "[tag=vb.*]~{0,5} [tag=jj.*]", "adj"),
-        new RelationDefinition("adj_adverbs", "Adverbs modifying",
-            "[tag=rb.*]~{0,2} [tag=jj.*]", "adj"),
-        new RelationDefinition("adj_postnominal", "After noun (postnominal)",
-            "[tag=nn.*]~{0,3} [tag=jj.*]", "adj"),
-        new RelationDefinition("adj_intensifiers", "With 'very' or 'too'",
-            "[word=very]~{0,1} [tag=jj.*]", "adj")
+        // ====== ADJECTIVE relations ======
+        // Nouns modified by the adjective
+        new RelationDefinition("adj_nouns", "Nouns modified",
+            "[tag=nn.*]", "adj"),
+        // Adverbs modifying the adjective (e.g., "very big")
+        new RelationDefinition("adj_adverbs", "Adverbs (intensifiers)",
+            "[tag=rb.*]", "adj"),
+        // Verbs (e.g., "be happy", "become sad")
+        new RelationDefinition("adj_verbs", "Verbs",
+            "[tag=vb.*]", "adj"),
+        // Prepositions (e.g., "afraid of", "good at")  
+        new RelationDefinition("adj_prepositions", "Prepositions",
+            "[tag=in]", "adj"),
+        // Coordinated adjectives (e.g., "big and red")
+        new RelationDefinition("adj_coordinated", "Coordinated adjectives (and/or)",
+            "[tag=jj.*]", "adj")
     );
 
     public WordSketchApiServer(QueryExecutor executor, String indexPath, int port) {
@@ -595,12 +626,15 @@ public class WordSketchApiServer {
         
         String algorithmName = request.getString("algorithm");
         if (algorithmName == null || algorithmName.isEmpty()) {
-            sendError(exchange, 400, "Missing 'algorithm' field. Use 'SAMPLE_SCAN' or 'SPAN_COUNT'");
+            sendError(exchange, 400, "Missing 'algorithm' field. Use 'PRECOMPUTED', 'SAMPLE_SCAN', or 'SPAN_COUNT'");
             return;
         }
 
         try {
             HybridQueryExecutor.Algorithm algo = HybridQueryExecutor.Algorithm.valueOf(algorithmName.toUpperCase());
+            if (algo == HybridQueryExecutor.Algorithm.SAMPLE_SCAN || algo == HybridQueryExecutor.Algorithm.SPAN_COUNT) {
+                logger.warn("Using deprecated algorithm: {}. Recommend switching to PRECOMPUTED.", algo);
+            }
             hybrid.setAlgorithm(algo);
 
             // Optionally set min candidate frequency
@@ -613,10 +647,13 @@ public class WordSketchApiServer {
             response.put("status", "ok");
             response.put("algorithm", algo.name());
             response.put("min_candidate_frequency", hybrid.getMinCandidateFrequency());
+            if (algo == HybridQueryExecutor.Algorithm.SAMPLE_SCAN || algo == HybridQueryExecutor.Algorithm.SPAN_COUNT) {
+                response.put("warning", "This algorithm is deprecated. Use PRECOMPUTED for 100x+ speedup.");
+            }
             sendJson(exchange, 200, response);
 
         } catch (IllegalArgumentException e) {
-            sendError(exchange, 400, "Invalid algorithm: " + algorithmName + ". Use 'SAMPLE_SCAN' or 'SPAN_COUNT'");
+            sendError(exchange, 400, "Invalid algorithm: " + algorithmName + ". Use 'PRECOMPUTED', 'SAMPLE_SCAN', or 'SPAN_COUNT'");
         }
     }
 
