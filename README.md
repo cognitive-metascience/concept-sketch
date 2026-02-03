@@ -637,4 +637,3 @@ Tests cover:
 
 ---
 
-## API Documentation
