@@ -207,6 +207,46 @@ curl "http://localhost:8080/api/semantic-field/explore-multi?seeds=theory,model,
 }
 ```
 
+#### Concordance Examples for Word Pairs (NEW)
+```bash
+curl "http://localhost:8080/api/concordance/examples?word1=house&word2=big&limit=10"
+```
+
+Get actual example sentences from the corpus containing both words. Useful for:
+- Seeing real usage contexts for collocations
+- Understanding frequency and patterns in the corpus
+- Validating collocations before academic use
+
+**Parameters:**
+- `word1` (required) - First word (lemma)
+- `word2` (required) - Second word (lemma)
+- `limit` (optional) - Number of examples to return (default: 10, max: 100)
+
+**Response:**
+```json
+{
+  "status": "ok",
+  "count": 42,
+  "word1": "house",
+  "word2": "big",
+  "examples": [
+    {
+      "sentence": "They built a big house near the lake.",
+      "highlighted": "They built a <mark>big</mark> <mark>house</mark> near the lake.",
+      "word1_positions": [2],
+      "word2_positions": [4],
+      "lemmas": ["they", "build", "a", "big", "house", "near", "the", "lake"],
+      "tags": ["PRP", "VBD", "DT", "JJ", "NN", "IN", "DT", "NN"]
+    }
+  ]
+}
+```
+
+**Integration with Web UI:**
+- In the "Word Sketch" tab: Click any collocation to see example sentences
+- In the "Semantic Field Explorer" tab: Click any edge in the graph to see examples
+- Examples panel shows up to 10 sentences with target words highlighted
+
 ---
 
 ## Web Interface (Semantic Field Explorer)
@@ -218,6 +258,8 @@ The `webapp/` directory contains an interactive web interface built with D3.js.
 1. **Word Sketch Search**
    - Browse collocations for any lemma
    - Filter by POS tags
+   - **Click any collocation to see example sentences** from the corpus
+   - Examples appear in a panel below with highlighted target words
    - Adjust logDice thresholds
 
 2. **Single-Seed Exploration**
