@@ -67,6 +67,16 @@ python -m http.server 3000 --directory webapp
 
 Open browser to: **http://localhost:3000**
 
+![Screenshot of the main screen](screenshot1.png)
+
+The web interface allows to produce some radial plots for collocates:
+
+![Screenshot of the plot](screenshot2.png)
+
+And you use some semantic exploration features:
+
+![Screenshot of the Semantic Field Explorer](semantic-exploration.png)
+
 ### 5. Try a Query
 
 ```bash
