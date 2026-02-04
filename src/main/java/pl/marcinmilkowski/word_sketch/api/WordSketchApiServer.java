@@ -2,8 +2,11 @@ package pl.marcinmilkowski.word_sketch.api;
 
 import com.alibaba.fastjson2.JSON;
 import com.alibaba.fastjson2.JSONObject;
+import com.alibaba.fastjson2.JSONArray;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import java.nio.charset.StandardCharsets;
+import pl.marcinmilkowski.word_sketch.viz.RadialPlot;
 import pl.marcinmilkowski.word_sketch.query.QueryExecutor;
 import pl.marcinmilkowski.word_sketch.query.WordSketchQueryExecutor;
 import pl.marcinmilkowski.word_sketch.query.WordSketchQueryExecutor.WordSketchResult;
@@ -141,6 +144,8 @@ public class WordSketchApiServer {
         server.createContext("/api/semantic-field/explore-multi", wrapHandler(this::handleSemanticFieldExploreMulti));
         server.createContext("/api/semantic-field", wrapHandler(this::handleSemanticField));
         server.createContext("/api/semantic-field/examples", wrapHandler(this::handleSemanticFieldExamples));
+        // Visualizations (SVG)
+        server.createContext("/api/visual/radial", wrapHandler(this::handleVisualRadial));
         server.createContext("/api/concordance/examples", wrapHandler(this::handleConcordanceExamples));
         server.createContext("/api/algorithm", wrapHandler(this::handleAlgorithm));
 
@@ -162,6 +167,7 @@ public class WordSketchApiServer {
         System.out.println("  GET  /api/semantic-field/explore - Explore semantic class from seed word");
         System.out.println("  GET  /api/semantic-field     - Compare adjective profiles across nouns");
         System.out.println("  GET  /api/semantic-field/examples - Get examples for adjective-noun pair");
+        System.out.println("  POST /api/visual/radial      - Render radial plot SVG (JSON body)");
         System.out.println("  GET  /api/concordance/examples - Get concordance examples for word pair");
         System.out.println("  GET/POST /api/algorithm      - Get/set algorithm (SAMPLE_SCAN, SPAN_COUNT, PRECOMPUTED)");
     }
@@ -172,7 +178,16 @@ public class WordSketchApiServer {
     private com.sun.net.httpserver.HttpHandler wrapHandler(
             com.sun.net.httpserver.HttpHandler handler) {
         return exchange -> {
+            String method = exchange.getRequestMethod();
+            // Handle CORS preflight universally
+            if ("OPTIONS".equalsIgnoreCase(method)) {
+                addCorsHeaders(exchange);
+                exchange.sendResponseHeaders(204, -1);
+                return;
+            }
             try {
+                // Ensure response has CORS headers for normal requests
+                addCorsHeaders(exchange);
                 handler.handle(exchange);
             } catch (Throwable t) {
                 System.err.println("Unhandled exception: " + t.getMessage());
@@ -305,7 +320,7 @@ public class WordSketchApiServer {
             // Filter relations by POS
             String posFilter = params.getOrDefault("pos", "noun,verb,adj");
             Set<String> allowedPos = new HashSet<>(Arrays.asList(posFilter.toLowerCase().split(",")));
-            int limit = Integer.parseInt(params.getOrDefault("limit", "10"));
+            int limit = Integer.parseInt(params.getOrDefault("limit", "20"));
             double minLogDice = Double.parseDouble(params.getOrDefault("min_logdice", "0"));
 
             Map<String, Object> response = new HashMap<>();
@@ -857,6 +872,50 @@ public class WordSketchApiServer {
         } catch (Exception e) {
             e.printStackTrace();
             sendError(exchange, 500, "Failed to fetch examples: " + e.getMessage());
+        }
+
+    /**
+     * POST /api/visual/radial
+     * Body JSON: { center: "word", width: 840, height: 520, items: [{label:"", score: 3.2}, ...] }
+     * Returns: image/svg+xml
+     */
+    private void handleVisualRadial(com.sun.net.httpserver.HttpExchange exchange) throws IOException {
+        if (!"POST".equalsIgnoreCase(exchange.getRequestMethod())) {
+            sendError(exchange, 405, "Method not allowed");
+            return;
+        }
+
+        try {
+            String body = new String(exchange.getRequestBody().readAllBytes(), StandardCharsets.UTF_8);
+            JSONObject obj = JSON.parseObject(body);
+            String center = obj.getString("center");
+            if (center == null) center = "";
+            int width = obj.getIntValue("width") == 0 ? 840 : obj.getIntValue("width");
+            int height = obj.getIntValue("height") == 0 ? 520 : obj.getIntValue("height");
+
+            JSONArray itemsArr = obj.getJSONArray("items");
+            List<RadialPlot.Item> items = new ArrayList<>();
+            if (itemsArr != null) {
+                int limit = Math.min(40, itemsArr.size());
+                for (int i = 0; i < limit; i++) {
+                    JSONObject it = itemsArr.getJSONObject(i);
+                    String label = it.getString("label");
+                    double score = it.getDoubleValue("score");
+                    items.add(new RadialPlot.Item(label, score));
+                }
+            }
+            String mode = obj.getString("mode");
+
+            String svg = RadialPlot.renderFromItems(center, items, width, height, mode);
+            byte[] bytes = svg.getBytes(StandardCharsets.UTF_8);
+            exchange.getResponseHeaders().set("Content-Type", "image/svg+xml; charset=utf-8");
+            exchange.sendResponseHeaders(200, bytes.length);
+            try (OutputStream os = exchange.getResponseBody()) {
+                os.write(bytes);
+            }
+        } catch (Exception e) {
+            logger.error("Error rendering radial", e);
+            sendError(exchange, 500, "Failed to render radial: " + e.getMessage());
         }
     }
 

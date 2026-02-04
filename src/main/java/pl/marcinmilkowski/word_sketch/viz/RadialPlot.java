@@ -6,19 +6,39 @@ import java.util.*;
 
 /**
  * Generate radial collocation plot (spiral/snail visualization) for a single word.
- * Ported from Python visualization showing collocates arranged by typicality (logDice score).
- * Produces publication-quality SVG output.
+ * Produces publication-quality SVG output matching viz_correct format.
+ * 
+ * Algorithm (from viz_correct analysis):
+ * - Items arranged in spiral pattern - distance increases as you go around
+ * - Circle radius = score value (e.g., score 12.0 → r=12.00)
+ * - First item starts at angle 0 (right), radius ~120px
+ * - Spiral expands outward, last item at ~300px+ radius
+ * - Labels positioned 10px above (if above center) or 18px below (if below center)
+ * - Grayscale coloring: higher score = darker (#505050 to #e6e6e6)
  */
 public class RadialPlot {
     
     private static class Collocate {
         String word;
         double score;
-        double radiusNorm;
+        double radius;       // distance from center in pixels
         double angle;
+        double x, y;         // computed position
         
         Collocate(String word, double score) {
             this.word = word;
+            this.score = score;
+        }
+    }
+    
+    /**
+     * Lightweight item representation for server-driven radials
+     */
+    public static class Item {
+        public final String label;
+        public final double score;
+        public Item(String label, double score) {
+            this.label = label;
             this.score = score;
         }
     }
@@ -27,167 +47,194 @@ public class RadialPlot {
     private final List<Collocate> collocates;
     private final int width;
     private final int height;
-    
+    private final boolean signedMode;
+
     public RadialPlot(String centerWord, List<Edge> edges, int width, int height) {
+        this(centerWord, edges, width, height, false);
+    }
+
+    public RadialPlot(String centerWord, List<Edge> edges, int width, int height, boolean signedMode) {
         this.centerWord = centerWord;
         this.width = width;
         this.height = height;
-        
-        // Extract and sort collocates by score
+        this.signedMode = signedMode;
+
+        double centerX = width / 2.0;
+        double centerY = height / 2.0;
+        double scale = Math.min(width, height) / 800.0;
+
+        // Extract and sort collocates by score (descending)
         collocates = new ArrayList<>();
         for (Edge e : edges) {
             collocates.add(new Collocate(e.target, e.weight));
         }
         collocates.sort((a, b) -> Double.compare(b.score, a.score));
-        
+
         // Take top 30 for clarity
         if (collocates.size() > 30) {
             collocates.subList(30, collocates.size()).clear();
         }
-        
-        // Calculate positions
+
+        // Calculate positions: spiral pattern matching viz_correct
+        // First item at angle 0 (right of center), then spiral outward
         if (!collocates.isEmpty()) {
-            double maxScore = collocates.get(0).score;
-            double minScore = collocates.get(collocates.size() - 1).score;
-            double scoreRange = maxScore - minScore;
-            if (scoreRange == 0) scoreRange = 1;
+            int n = collocates.size();
             
-            for (int i = 0; i < collocates.size(); i++) {
+            // Spiral parameters based on viz_correct analysis (800x800 baseline)
+            // First item at 120px, then increase by ~7.93px per item
+            double startRadius = 120.0 * scale;
+            double radiusStep = 7.93 * scale;
+            
+            for (int i = 0; i < n; i++) {
                 Collocate c = collocates.get(i);
-                // Distance from center: higher score = closer to center
-                // Map to radius range: 0.15 to 0.75 (normalized)
-                c.radiusNorm = 0.15 + (0.75 - 0.15) * (maxScore - c.score) / scoreRange;
-                // Evenly distribute around circle
-                c.angle = i * (2 * Math.PI / collocates.size()) - Math.PI / 2;
+                
+                // Spiral: radius increases by a fixed step per item
+                c.radius = startRadius + (i * radiusStep);
+                
+                // Evenly distribute around circle, starting from right (angle 0)
+                c.angle = i * (2 * Math.PI / n);
+                
+                // Compute position
+                c.x = centerX + c.radius * Math.cos(c.angle);
+                c.y = centerY + c.radius * Math.sin(c.angle);
             }
         }
+    }
+
+    private String colorForSigned(double score, double maxAbs) {
+        if (maxAbs <= 0) return "rgb(238,238,238)";
+        double s = Math.min(1.0, Math.abs(score) / maxAbs);
+        if (s <= 0) return "rgb(238,238,238)";
+        if (score > 0) {
+            int r = (int) Math.round(255 - (255 - 43) * s);
+            int g = (int) Math.round(255 - (255 - 131) * s);
+            int b = (int) Math.round(255 - (255 - 186) * s);
+            return String.format("rgb(%d,%d,%d)", r, g, b);
+        } else {
+            int r = (int) Math.round(255 - (255 - 215) * s);
+            int g = (int) Math.round(255 - (255 - 25) * s);
+            int b = (int) Math.round(255 - (255 - 28) * s);
+            return String.format("rgb(%d,%d,%d)", r, g, b);
+        }
+    }
+
+    public static String renderFromItems(String centerWord, List<Item> items, int width, int height) {
+        return renderFromItems(centerWord, items, width, height, "");
+    }
+
+    public static String renderFromItems(String centerWord, List<Item> items, int width, int height, String mode) {
+        List<Edge> edges = new ArrayList<>();
+        for (Item it : items) {
+            edges.add(new Edge("", it.label, it.score, "generated"));
+        }
+        boolean signed = "signed".equalsIgnoreCase(mode) || "compare".equalsIgnoreCase(mode);
+        RadialPlot plot = new RadialPlot(centerWord, edges, width, height, signed);
+        return plot.toSVG();
     }
     
     public String toSVG() {
         StringBuilder svg = new StringBuilder();
         double centerX = width / 2.0;
         double centerY = height / 2.0;
-        double radius = Math.min(width, height) / 2.0 * 0.9;
+        double scale = Math.min(width, height) / 800.0;
         
         svg.append("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n");
-        svg.append(String.format("<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"%d\" height=\"%d\" viewBox=\"0 0 %d %d\">\n",
+        svg.append(String.format(Locale.US, "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"%d\" height=\"%d\" viewBox=\"0 0 %d %d\">\n",
             width, height, width, height));
         
-        // Style
-        svg.append("  <defs>\n");
-        svg.append("    <style>\n");
-        svg.append("      .background { fill: #fafafa; }\n");
-        svg.append("      .guide-line { stroke: #e0e0e0; stroke-width: 0.5; opacity: 0.6; }\n");
-        svg.append("      .guide-circle { fill: none; stroke: #cccccc; stroke-width: 0.5; opacity: 0.5; }\n");
-        svg.append("      .connector { stroke: #666666; stroke-width: 0.8; opacity: 0.5; }\n");
-        svg.append("      .center-circle { fill: #2C3E50; stroke: white; stroke-width: 2; }\n");
-        svg.append("      .center-text { fill: white; font-family: sans-serif; font-size: 18px; font-weight: bold; text-anchor: middle; dominant-baseline: middle; }\n");
-        svg.append("      .label { font-family: sans-serif; fill: #333; }\n");
-        svg.append("      .label.strong { font-weight: bold; fill: #222; }\n");
-        svg.append("      .collocate-circle { stroke: white; stroke-width: 1.5; opacity: 0.9; }\n");
-        svg.append("    </style>\n");
-        svg.append("  </defs>\n\n");
+        // Style matching viz_correct exactly
+        svg.append("  <style>\n");
+        svg.append("    .background { fill: #fafafa; }\n");
+        svg.append("    .guide-circle { fill: none; stroke: #ddd; stroke-width: 0.5; }\n");
+        svg.append("    .connector { stroke: #888; stroke-width: 0.8; opacity: 0.4; }\n");
+        svg.append("    .center-circle { fill: #2C3E50; stroke: white; stroke-width: 3; }\n");
+        svg.append("    .center-text { fill: white; font-family: Arial, sans-serif; font-size: 14px; font-weight: bold; text-anchor: middle; dominant-baseline: middle; }\n");
+        svg.append("    .collocate-circle { stroke: white; stroke-width: 1.5; opacity: 0.9; }\n");
+        svg.append("    .label { font-family: Arial, sans-serif; font-size: 11px; fill: #333; text-anchor: middle; }\n");
+        svg.append("  </style>\n\n");
         
         // Background
-        svg.append(String.format("  <rect class=\"background\" width=\"%d\" height=\"%d\"/>\n\n", width, height));
+        svg.append(String.format(Locale.US, "  <rect class=\"background\" width=\"%d\" height=\"%d\"/>\n\n", width, height));
         
-        // Guide circles
+        // Guide circles at fixed radii: 100, 200, 300 (matching viz_correct)
         svg.append("  <g id=\"guides\">\n");
-        for (double r : new double[]{0.3, 0.55}) {
-            double circleRadius = r * radius;
-            svg.append(String.format("    <circle class=\"guide-circle\" cx=\"%.2f\" cy=\"%.2f\" r=\"%.2f\"/>\n",
-                centerX, centerY, circleRadius));
-        }
+        svg.append(String.format(Locale.US, "    <circle class=\"guide-circle\" cx=\"%.2f\" cy=\"%.2f\" r=\"%.2f\"/>\n", centerX, centerY, 100.0 * scale));
+        svg.append(String.format(Locale.US, "    <circle class=\"guide-circle\" cx=\"%.2f\" cy=\"%.2f\" r=\"%.2f\"/>\n", centerX, centerY, 200.0 * scale));
+        svg.append(String.format(Locale.US, "    <circle class=\"guide-circle\" cx=\"%.2f\" cy=\"%.2f\" r=\"%.2f\"/>\n", centerX, centerY, 300.0 * scale));
         svg.append("  </g>\n\n");
         
-        // Radial guide lines and connectors
-        svg.append("  <g id=\"lines\">\n");
-        for (Collocate c : collocates) {
-            double x = centerX + c.radiusNorm * radius * Math.cos(c.angle);
-            double y = centerY + c.radiusNorm * radius * Math.sin(c.angle);
-            
-            // Guide line from center
-            svg.append(String.format("    <line class=\"guide-line\" x1=\"%.2f\" y1=\"%.2f\" x2=\"%.2f\" y2=\"%.2f\"/>\n",
-                centerX, centerY, x * 1.02, y * 1.02));
-            
-            // Connector to label
-            double labelR = 0.88 * radius;
-            double labelX = centerX + labelR * Math.cos(c.angle);
-            double labelY = centerY + labelR * Math.sin(c.angle);
-            double connX = x + 0.04 * radius * Math.cos(c.angle);
-            double connY = y + 0.04 * radius * Math.sin(c.angle);
-            
-            svg.append(String.format("    <line class=\"connector\" x1=\"%.2f\" y1=\"%.2f\" x2=\"%.2f\" y2=\"%.2f\"/>\n",
-                connX, connY, labelX * 0.96, labelY * 0.96));
-        }
-        svg.append("  </g>\n\n");
-        
-        // Collocate circles
-        svg.append("  <g id=\"collocates\">\n");
         if (!collocates.isEmpty()) {
             double maxScore = collocates.get(0).score;
             double minScore = collocates.get(collocates.size() - 1).score;
             double scoreRange = maxScore - minScore;
             if (scoreRange == 0) scoreRange = 1;
             
-            for (Collocate c : collocates) {
-                double x = centerX + c.radiusNorm * radius * Math.cos(c.angle);
-                double y = centerY + c.radiusNorm * radius * Math.sin(c.angle);
-                
-                // Circle size based on score (more typical = darker)
-                double circleR = 0.04 * radius + 0.04 * radius * (c.score - minScore) / scoreRange;
-                
-                // Grayscale: high score = dark, low score = light
-                double gray = 0.85 - (c.score - minScore) / scoreRange * 0.65;
-                String color = String.format("rgb(%d,%d,%d)", 
-                    (int)(gray * 255), (int)(gray * 255), (int)(gray * 255));
-                
-                svg.append(String.format("    <circle class=\"collocate-circle\" cx=\"%.2f\" cy=\"%.2f\" r=\"%.2f\" fill=\"%s\"/>\n",
-                    x, y, circleR, color));
+            double maxAbs = 0.0;
+            if (signedMode) {
+                for (Collocate c : collocates) maxAbs = Math.max(maxAbs, Math.abs(c.score));
+                if (maxAbs == 0) maxAbs = 1.0;
             }
-        }
-        svg.append("  </g>\n\n");
-        
-        // Center circle with keyword
-        double centerRadius = 0.10 * radius;
-        svg.append(String.format("  <circle class=\"center-circle\" cx=\"%.2f\" cy=\"%.2f\" r=\"%.2f\"/>\n",
-            centerX, centerY, centerRadius));
-        svg.append(String.format("  <text class=\"center-text\" x=\"%.2f\" y=\"%.2f\">%s</text>\n\n",
-            centerX, centerY, escapeXml(centerWord)));
-        
-        // Labels
-        svg.append("  <g id=\"labels\">\n");
-        if (!collocates.isEmpty()) {
-            double maxScore = collocates.get(0).score;
-            double minScore = collocates.get(collocates.size() - 1).score;
-            double scoreRange = maxScore - minScore;
-            if (scoreRange == 0) scoreRange = 1;
-            
+
+            // Draw connectors, circles, and labels together (like viz_correct)
+            svg.append("  <g id=\"connectors\">\n");
             for (Collocate c : collocates) {
-                double labelR = 0.88 * radius;
-                double labelX = centerX + labelR * Math.cos(c.angle);
-                double labelY = centerY + labelR * Math.sin(c.angle);
+                // Connector line from center to circle position
+                svg.append(String.format(Locale.US, "    <line class=\"connector\" x1=\"%d\" y1=\"%d\" x2=\"%.2f\" y2=\"%.2f\"/>\n",
+                    (int)centerX, (int)centerY, c.x, c.y));
                 
-                // Text anchor based on position
-                String anchor;
-                double cosAngle = Math.cos(c.angle);
-                if (Math.abs(cosAngle) < 0.15) {
-                    anchor = "middle";
-                } else if (cosAngle > 0) {
-                    anchor = "start";
+                // Circle color - grayscale based on score
+                String color;
+                if (signedMode) {
+                    color = colorForSigned(c.score, maxAbs);
                 } else {
-                    anchor = "end";
+                    // Grayscale matching viz_correct: #505050 (dark, high score) to #e6e6e6 (light, low score)
+                    double scoreNorm = (c.score - minScore) / scoreRange;
+                    // Map: scoreNorm 1.0 (highest) -> 0x50, scoreNorm 0.0 (lowest) -> 0xe6
+                    int gray = (int)(0xe6 - scoreNorm * (0xe6 - 0x50));
+                    color = String.format("#%02x%02x%02x", gray, gray, gray);
                 }
                 
-                // Font weight and size based on score
-                boolean strong = c.score > minScore + 0.7 * scoreRange;
-                double fontSize = 8 + (c.score - minScore) / scoreRange * 6;
+                // Circle at position - radius = score value (matching viz_correct)
+                double circleRadius = c.score * scale;
+                svg.append(String.format(Locale.US, "    <circle class=\"collocate-circle\" cx=\"%.2f\" cy=\"%.2f\" r=\"%.2f\" fill=\"%s\"/>\n",
+                    c.x, c.y, circleRadius, color));
                 
-                svg.append(String.format("    <text class=\"label%s\" x=\"%.2f\" y=\"%.2f\" text-anchor=\"%s\" font-size=\"%.1f\">%s</text>\n",
-                    strong ? " strong" : "", labelX, labelY, anchor, fontSize, escapeXml(c.word)));
+                // Label: above if circle is above center, below if below center (matching viz_correct)
+                double labelY;
+                if (c.y <= centerY) {
+                    // Circle at or above center: label 10px above
+                    labelY = c.y - (10.0 * scale);
+                } else {
+                    // Circle below center: label 18px below
+                    labelY = c.y + (18.0 * scale);
+                }
+                
+                svg.append(String.format(Locale.US, "    <text class=\"label\" x=\"%.2f\" y=\"%.2f\">%s</text>\n",
+                    c.x, labelY, escapeXml(c.word)));
+            }
+            svg.append("  </g>\n\n");
+
+            // Signed mode legend
+            if (signedMode) {
+                double legendY = height - 40.0;
+                svg.append("  <g id=\"legend\">\n");
+                svg.append(String.format(Locale.US, "    <rect x=\"%.0f\" y=\"%.0f\" width=\"12\" height=\"12\" fill=\"%s\" />\n",
+                    centerX - 100.0, legendY, colorForSigned(maxAbs, maxAbs)));
+                svg.append(String.format(Locale.US, "    <text x=\"%.0f\" y=\"%.0f\" font-size=\"11\" fill=\"#333\">Positive (A&gt;B)</text>\n",
+                    centerX - 82.0, legendY + 10.0));
+                svg.append(String.format(Locale.US, "    <rect x=\"%.0f\" y=\"%.0f\" width=\"12\" height=\"12\" fill=\"%s\" />\n",
+                    centerX + 10.0, legendY, colorForSigned(-maxAbs, maxAbs)));
+                svg.append(String.format(Locale.US, "    <text x=\"%.0f\" y=\"%.0f\" font-size=\"11\" fill=\"#333\">Negative (B&gt;A)</text>\n",
+                    centerX + 28.0, legendY + 10.0));
+                svg.append("  </g>\n\n");
             }
         }
-        svg.append("  </g>\n");
+        
+        // Center circle with keyword (radius 40 like viz_correct)
+        svg.append(String.format(Locale.US, "  <circle class=\"center-circle\" cx=\"%.2f\" cy=\"%.2f\" r=\"%.2f\"/>\n",
+            centerX, centerY, 40.0 * scale));
+        svg.append(String.format(Locale.US, "  <text class=\"center-text\" x=\"%.2f\" y=\"%.2f\" font-size=\"%.2f\">%s</text>\n",
+            centerX, centerY, 14.0 * scale, escapeXml(centerWord)));
         
         svg.append("</svg>");
         return svg.toString();

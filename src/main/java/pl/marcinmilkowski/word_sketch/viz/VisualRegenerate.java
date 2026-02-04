@@ -187,86 +187,13 @@ public class VisualRegenerate {
     
     private static void generateRadialPlot(String centerWord, String wordType, List<EdgeData> edges, String outputPath) throws IOException {
         int size = 800;
-        int centerX = size / 2;
-        int centerY = size / 2;
-        
-        // Sort edges by weight (descending)
-        edges.sort((a, b) -> Double.compare(b.weight, a.weight));
-        List<EdgeData> top = edges.stream().limit(30).collect(Collectors.toList());
-        
-        StringBuilder svg = new StringBuilder();
-        svg.append("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n");
-        svg.append(String.format("<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"%d\" height=\"%d\" viewBox=\"0 0 %d %d\">\n",
-            size, size, size, size));
-        
-        svg.append("  <style>\n");
-        svg.append("    .background { fill: #fafafa; }\n");
-        svg.append("    .guide-circle { fill: none; stroke: #ddd; stroke-width: 0.5; }\n");
-        svg.append("    .connector { stroke: #888; stroke-width: 0.8; opacity: 0.4; }\n");
-        svg.append("    .center-circle { fill: #2C3E50; stroke: white; stroke-width: 3; }\n");
-        svg.append("    .center-text { fill: white; font-family: Arial, sans-serif; font-size: 16px; font-weight: bold; text-anchor: middle; dominant-baseline: middle; }\n");
-        svg.append("    .center-type { fill: white; font-family: Arial, sans-serif; font-size: 10px; text-anchor: middle; dominant-baseline: middle; opacity: 0.7; }\n");
-        svg.append("    .collocate-circle { stroke: white; stroke-width: 1.5; opacity: 0.9; }\n");
-        svg.append("    .label { font-family: Arial, sans-serif; font-size: 11px; fill: #333; text-anchor: middle; }\n");
-        svg.append("  </style>\n\n");
-        
-        svg.append(String.format("  <rect class=\"background\" width=\"%d\" height=\"%d\"/>\n\n", size, size));
-        
-        // Guide circles
-        svg.append("  <g id=\"guides\">\n");
-        for (int r = 100; r <= 300; r += 100) {
-            svg.append(String.format("    <circle class=\"guide-circle\" cx=\"%d\" cy=\"%d\" r=\"%d\"/>\n",
-                centerX, centerY, r));
-        }
-        svg.append("  </g>\n\n");
-        
-        // Connectors and collocates in spiral
-        svg.append("  <g id=\"connectors\">\n");
-        double angleStep = 360.0 / Math.max(top.size(), 1);
-        
-        for (int i = 0; i < top.size(); i++) {
-            EdgeData edge = top.get(i);
-            double angle = Math.toRadians(i * angleStep);
-            
-            // Distance from center based on rank (typicality)
-            // More typical (higher weight/lower rank) = closer to center
-            double minRadius = 120;
-            double maxRadius = 350;
-            double t = i / (double) Math.max(top.size() - 1, 1);
-            double radius = minRadius + t * (maxRadius - minRadius);
-            
-            double x = centerX + radius * Math.cos(angle);
-            double y = centerY + radius * Math.sin(angle);
-            
-            // Connector line
-            svg.append(String.format(Locale.US, "    <line class=\"connector\" x1=\"%d\" y1=\"%d\" x2=\"%.2f\" y2=\"%.2f\"/>\n",
-                centerX, centerY, x, y));
-            
-            // Collocate circle - grayscale based on typicality (darker = more typical)
-            double grayValue = 80 + (t * 150);  // 80-230 range
-            String fillColor = String.format("#%02x%02x%02x", (int)grayValue, (int)grayValue, (int)grayValue);
-            
-            double circleRadius = 12 - (t * 6);  // Larger circles for more typical
-            svg.append(String.format(Locale.US, "    <circle class=\"collocate-circle\" cx=\"%.2f\" cy=\"%.2f\" r=\"%.2f\" fill=\"%s\"/>\n",
-                x, y, circleRadius, fillColor));
-            
-            // Label
-            double labelY = y + (y > centerY ? 18 : -10);
-            svg.append(String.format(Locale.US, "    <text class=\"label\" x=\"%.2f\" y=\"%.2f\">%s</text>\n",
-                x, labelY, escapeXml(edge.target)));
-        }
-        svg.append("  </g>\n\n");
-        
-        // Center word with type label
-        svg.append(String.format("  <circle class=\"center-circle\" cx=\"%d\" cy=\"%d\" r=\"45\"/>\n", centerX, centerY));
-        svg.append(String.format("  <text class=\"center-text\" x=\"%d\" y=\"%d\">%s</text>\n", 
-            centerX, centerY - 5, escapeXml(centerWord)));
-        svg.append(String.format("  <text class=\"center-type\" x=\"%d\" y=\"%d\">%s</text>\n", 
-            centerX, centerY + 15, wordType));
-        
-        svg.append("</svg>\n");
-        
-        Files.writeString(Paths.get(outputPath), svg.toString());
+        // Convert EdgeData -> SnowballCollocations.Edge
+        List<SnowballCollocations.Edge> snowEdges = edges.stream()
+            .map(e -> new SnowballCollocations.Edge(e.source, e.target, e.weight, e.type))
+            .collect(Collectors.toList());
+
+        RadialPlot plot = new RadialPlot(centerWord, snowEdges, size, size);
+        Files.writeString(Paths.get(outputPath), plot.toSVG());
     }
     
     private static String escapeXml(String text) {

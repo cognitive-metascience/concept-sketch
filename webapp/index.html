@@ -297,6 +297,21 @@
             border-radius: 50%;
             display: inline-block;
         }
+        .radial-controls {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-top: 6px;
+            font-size: 12px;
+            color: #666;
+        }
+        .radial-controls input[type="number"] {
+            width: 70px;
+            padding: 4px 6px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 12px;
+        }
         .adj-row { cursor: pointer; }
         .adj-row:hover { background: #f7fbff; }
     </style>
@@ -417,7 +432,11 @@
                 <button class="radial-close" onclick="closeRadial(event)">✕</button>
             </div>
             <div class="radial-subtitle" id="radialSubtitle"></div>
-            <svg id="radialSvg" width="840" height="520"></svg>
+            <div class="radial-controls">
+                <label for="radialCount">Items</label>
+                <input type="number" id="radialCount" value="20" min="5" max="100">
+            </div>
+            <div id="radialSvgContainer" style="width:100%; height:520px; background: white; border-radius: 8px; overflow: auto; display:flex; align-items:center; justify-content:center;"></div>
             <div class="radial-legend" id="radialLegend"></div>
         </div>
     </div>
@@ -542,7 +561,7 @@
                         <div class="collocation-list">
                 `;
                 
-                collocations.slice(0, 15).forEach((c, idx) => {
+                collocations.slice(0, 20).forEach((c, idx) => {
                     const score = c.logDice ? c.logDice.toFixed(2) : '-';
                     const freq = c.frequency || '-';
                     const word = c.lemma || '-';
@@ -611,7 +630,7 @@
             const pattern = currentSketchData.patterns[patternId];
             if (!pattern || !pattern.collocations) return;
 
-            const items = pattern.collocations.slice(0, 28).map(c => ({
+            const items = pattern.collocations.map(c => ({
                 label: c.lemma,
                 score: c.logDice || 0,
                 meta: `freq ${c.frequency || 0}`,
@@ -648,94 +667,82 @@
             });
         }
 
-        function showRadialPlot({ title, subtitle, centerLabel, items }) {
+        // Store current plot data for re-rendering when item count changes
+        let currentRadialPlot = { title: '', subtitle: '', centerLabel: '', items: [], mode: '' };
+
+        async function renderRadialPlot() {
+            const { title, subtitle, centerLabel, items, mode } = currentRadialPlot;
             const modal = document.getElementById('radialModal');
-            const svg = document.getElementById('radialSvg');
+            const container = document.getElementById('radialSvgContainer');
             const legend = document.getElementById('radialLegend');
+
+            container.innerHTML = '<div class="loading">Rendering radial plot...</div>';
+            legend.innerHTML = '';
+
+            try {
+                const apiUrl = document.getElementById('apiUrl').value.trim();
+                const countInput = document.getElementById('radialCount');
+                const maxItems = Math.max(5, Math.min(100, parseInt(countInput?.value || '20', 10)));
+                const payload = { center: centerLabel || '', width: 840, height: 520, items: items.slice(0, maxItems) };
+                if (mode) payload.mode = mode;
+                const response = await fetch(`${apiUrl}/api/visual/radial`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                if (!response.ok) throw new Error(`Server returned ${response.status}`);
+                const svgText = await response.text();
+
+                // Insert server-rendered SVG
+                container.innerHTML = svgText;
+
+                // Simple legend
+                const maxScore = Math.max(1, ...items.map(i => Math.abs(i.score || 0)));
+                legend.innerHTML = mode === 'signed'
+                    ? `<span><span class="dot" style="background:rgb(43,131,186)"></span> positive (A&gt;B) &nbsp; <span><span class="dot" style="background:rgb(215,25,28)"></span> negative (B&gt;A)</span>`
+                    : `<span><span class="dot" style="background:${items[0]?.color || '#4a90d9'}"></span> max ${maxScore.toFixed(2)}</span>`;
+
+            } catch (err) {
+                container.innerHTML = `<div class="error">Failed to render radial plot: ${err.message}</div>`;
+            }
+        }
+
+        async function showRadialPlot({ title, subtitle, centerLabel, items, mode }) {
+            const modal = document.getElementById('radialModal');
 
             document.getElementById('radialTitle').textContent = title || 'Radial Plot';
             document.getElementById('radialSubtitle').textContent = subtitle || '';
 
-            const width = svg.clientWidth || 840;
-            const height = svg.clientHeight || 520;
-            svg.setAttribute('width', width);
-            svg.setAttribute('height', height);
-            svg.innerHTML = '';
-            legend.innerHTML = '';
+            // Store plot data for re-rendering when item count changes
+            currentRadialPlot = { title, subtitle, centerLabel, items, mode };
 
-            const centerX = width / 2;
-            const centerY = height / 2;
-            const baseRadius = 80;
-            const maxRadius = Math.min(width, height) / 2 - 60;
+            // Set up event listener for radialCount input changes
+            const countInput = document.getElementById('radialCount');
+            if (countInput && !countInput.dataset.listenerAttached) {
+                countInput.addEventListener('change', renderRadialPlot);
+                countInput.addEventListener('input', renderRadialPlot);
+                countInput.dataset.listenerAttached = 'true';
+            }
 
-            const maxScore = Math.max(1, ...items.map(i => i.score || 0));
-            const angleStep = (Math.PI * 2) / Math.max(1, items.length);
-
-            const ns = 'http://www.w3.org/2000/svg';
-
-            // Center node
-            const centerCircle = document.createElementNS(ns, 'circle');
-            centerCircle.setAttribute('cx', centerX);
-            centerCircle.setAttribute('cy', centerY);
-            centerCircle.setAttribute('r', 26);
-            centerCircle.setAttribute('fill', '#4a90d9');
-            svg.appendChild(centerCircle);
-
-            const centerText = document.createElementNS(ns, 'text');
-            centerText.setAttribute('x', centerX);
-            centerText.setAttribute('y', centerY + 5);
-            centerText.setAttribute('text-anchor', 'middle');
-            centerText.setAttribute('font-size', '12');
-            centerText.setAttribute('fill', '#fff');
-            centerText.textContent = centerLabel || 'center';
-            svg.appendChild(centerText);
-
-            items.forEach((item, idx) => {
-                const angle = idx * angleStep - Math.PI / 2;
-                const strength = (item.score || 0) / maxScore;
-                const radius = baseRadius + strength * (maxRadius - baseRadius);
-                const x = centerX + Math.cos(angle) * radius;
-                const y = centerY + Math.sin(angle) * radius;
-
-                const line = document.createElementNS(ns, 'line');
-                line.setAttribute('x1', centerX);
-                line.setAttribute('y1', centerY);
-                line.setAttribute('x2', x);
-                line.setAttribute('y2', y);
-                line.setAttribute('stroke', '#cbd5e1');
-                line.setAttribute('stroke-width', Math.max(1, 1 + strength * 3));
-                svg.appendChild(line);
-
-                const dot = document.createElementNS(ns, 'circle');
-                dot.setAttribute('cx', x);
-                dot.setAttribute('cy', y);
-                dot.setAttribute('r', 6 + strength * 6);
-                dot.setAttribute('fill', item.color || '#4a90d9');
-                svg.appendChild(dot);
-
-                const label = document.createElementNS(ns, 'text');
-                label.setAttribute('x', x + (x > centerX ? 10 : -10));
-                label.setAttribute('y', y + 4);
-                label.setAttribute('text-anchor', x > centerX ? 'start' : 'end');
-                label.setAttribute('font-size', '12');
-                label.textContent = item.label;
-                svg.appendChild(label);
-            });
-
-            const legendItems = [
-                { label: `max logDice ${maxScore.toFixed(2)}`, color: '#4a90d9' }
-            ];
-            legendItems.forEach(item => {
-                const span = document.createElement('span');
-                const dot = document.createElement('span');
-                dot.className = 'dot';
-                dot.style.background = item.color;
-                span.appendChild(dot);
-                span.appendChild(document.createTextNode(item.label));
-                legend.appendChild(span);
-            });
+            // Initial render
+            await renderRadialPlot();
 
             modal.classList.add('active');
+        }
+
+        function openRadialCompare(nounA, nounB) {
+            // Build items from currentSemanticData adjectives: label=adjective, score = nounA - nounB
+            if (!currentSemanticData || !currentSemanticData.adjectives) return;
+            const adjectives = currentSemanticData.adjectives || [];
+            const items = adjectives.map(adj => ({ label: adj.word, score: (adj.noun_scores?.[nounA] || 0) - (adj.noun_scores?.[nounB] || 0) }));
+            showRadialPlot({
+                title: `${nounA} vs ${nounB}`,
+                subtitle: `Difference in logDice: ${nounA} − ${nounB}`,
+                centerLabel: `${nounA} − ${nounB}`,
+                items,
+                mode: 'signed'
+            });
         }
 
         function closeRadial(event) {
@@ -1387,6 +1394,11 @@
                 html += '<div class="sketch-section"><h3>🟢 Fully Shared (all nouns)</h3>';
                 html += renderComparisonTable(fullyShared, nouns);
                 html += '</div>';
+            }
+
+            // If there are exactly two nouns, add a radial-difference quick button
+            if (nouns.length === 2) {
+                html += `<div style="margin-top:10px; display:flex; justify-content:flex-end;"><button onclick="openRadialCompare('${nouns[0]}','${nouns[1]}')">Radial: ${nouns[0]} − ${nouns[1]}</button></div>`;
             }
             
             // Partially shared adjectives  
