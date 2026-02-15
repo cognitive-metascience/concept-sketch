@@ -7,6 +7,7 @@ import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.*;
+import pl.marcinmilkowski.word_sketch.config.GrammarConfigLoader;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -172,4 +173,51 @@ class CollocationsBuilderTest {
         assertFalse(reader.hasLemma("zzz_nonexistent_word_zzz"));
         reader.close();
     }
-}
+
+    @Test
+    @DisplayName("Build supports resume: second run with resume=true does not duplicate entries")
+    void testResumeBehavior() throws IOException, InterruptedException {
+        if (!Files.exists(Path.of(testIndexPath))) {
+            return;
+        }
+
+        CollocationsBuilder builder = new CollocationsBuilder(testIndexPath, testIndexPath + "/stats.bin");
+        builder.setTopK(20);
+        builder.setMinFrequency(500);
+        builder.setThreads(1);
+
+        // First build
+        builder.build(testOutputPath);
+        CollocationsReader reader = new CollocationsReader(testOutputPath);
+        int firstCount = reader.getEntryCount();
+        reader.close();
+
+        // Second build with resume enabled should not add entries
+        builder.setResume(true);
+        builder.build(testOutputPath);
+
+        CollocationsReader reader2 = new CollocationsReader(testOutputPath);
+        int secondCount = reader2.getEntryCount();
+        reader2.close();
+
+        assertEquals(firstCount, secondCount, "Resume build should preserve entry count");
+    }
+
+    @Test
+    @DisplayName("Relation collocations build creates output file")
+    void testBuildRelationCollocationsCreatesFile() throws IOException, InterruptedException {
+        if (!Files.exists(Path.of(testIndexPath))) {
+            return;
+        }
+
+        CollocationsBuilder builder = new CollocationsBuilder(testIndexPath, testIndexPath + "/stats.bin");
+        String outRelPath = tempDir.resolve("relation_collocations.bin").toString();
+        var grammar = GrammarConfigLoader.createDefaultEnglish();
+
+        builder.setMinFrequency(100);
+        builder.setThreads(1);
+        builder.buildRelationCollocations(outRelPath, grammar);
+
+        assertTrue(Files.exists(Path.of(outRelPath)));
+        assertTrue(Files.size(Path.of(outRelPath)) > 100);
+    }}

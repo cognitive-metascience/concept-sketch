@@ -119,36 +119,11 @@ public class CollocationsBuilder {
         final Object writeLock = new Object();
 
         // Resume support: load already-written headwords from offsets tmp (if present)
-        final Set<String> alreadyDone;
-        final AtomicInteger entryCount;
-        if (resume && java.nio.file.Files.exists(outFile) && java.nio.file.Files.exists(offsetsTmpFile)) {
-            alreadyDone = new HashSet<>();
-
-            int restoredCount = 0;
-            try (DataInputStream dis = new DataInputStream(new BufferedInputStream(java.nio.file.Files.newInputStream(offsetsTmpFile)))) {
-                // The first int is a checkpoint count, which may be stale if the process was killed.
-                // For robustness, iterate until no more bytes remain (explicit end condition).
-                dis.readInt();
-                while (dis.available() > 0) {
-                    int len = dis.readUnsignedShort();
-                    byte[] bytes = dis.readNBytes(len);
-                    alreadyDone.add(new String(bytes, StandardCharsets.UTF_8));
-                    if (dis.available() >= Long.BYTES) {
-                        dis.readLong();
-                    } else {
-                        break; // truncated tail — stop reading
-                    }
-                    restoredCount++;
-                }
-            } catch (EOFException eof) {
-                // defensive: stop on EOF if file was truncated
-            }
-
-            entryCount = new AtomicInteger(restoredCount);
+        final ResumeState resumeState = loadResumeState(outFile, offsetsTmpFile);
+        final Set<String> alreadyDone = resumeState.alreadyDone();
+        final AtomicInteger entryCount = new AtomicInteger(resumeState.restoredCount());
+        if (alreadyDone != null) {
             logger.info("Resuming build: {} headwords already written (scanned {})", entryCount.get(), offsetsTmpPath);
-        } else {
-            alreadyDone = null;
-            entryCount = new AtomicInteger(0);
         }
 
         AtomicInteger processed = new AtomicInteger(0);
@@ -177,70 +152,8 @@ public class CollocationsBuilder {
                 offsetsRaf.writeInt(0); // placeholder count
             }
 
-            ExecutorService executor = Executors.newFixedThreadPool(threads);
-            List<Future<?>> futures = new ArrayList<>();
-            try {
-                for (String lemma : lemmas) {
-                    if (alreadyDone != null && alreadyDone.contains(lemma)) {
-                        int count = processed.incrementAndGet();
-                        if (count % 1000 == 0) {
-                            logger.info("Progress: {}/{} lemmas processed, {} with collocates",
-                                count, lemmas.size(), withResults.get());
-                        }
-                        continue;
-                    }
-
-                    Future<?> future = executor.submit(() -> {
-                        try {
-                            CollocationEntry entry = buildForLemma(lemma);
-                            if (entry != null && !entry.isEmpty()) {
-                                synchronized (writeLock) {
-                                    long offset = outChannel.position();
-                                    writeEntry(outChannel, entry);
-                                    writeOffsetRecord(offsetsRaf, entry.headword(), offset);
-
-                                    int newCount = entryCount.incrementAndGet();
-                                    withResults.incrementAndGet();
-
-                                    // Periodically checkpoint the offset tmp count to enable resume after power loss
-                                    if (newCount % checkpointEvery == 0) {
-                                        long pos = offsetsRaf.getFilePointer();
-                                        offsetsRaf.seek(0);
-                                        offsetsRaf.writeInt(newCount);
-                                        offsetsRaf.seek(pos);
-                                        outChannel.force(false);
-                                    }
-                                }
-                            }
-
-                            int count = processed.incrementAndGet();
-                            if (count % 1000 == 0) {
-                                logger.info("Progress: {}/{} lemmas processed, {} with collocates",
-                                    count, lemmas.size(), withResults.get());
-                            }
-                        } catch (Exception e) {
-                            logger.error("Failed to build collocations for '{}'", lemma, e);
-                        }
-                    });
-                    futures.add(future);
-                }
-
-                for (Future<?> future : futures) {
-                    try {
-                        future.get();
-                    } catch (InterruptedException ie) {
-                        Thread.currentThread().interrupt();
-                        throw ie;
-                    } catch (ExecutionException ee) {
-                        logger.error("Task execution failed", ee.getCause());
-                    }
-                }
-            } finally {
-                executor.shutdown();
-                if (!executor.awaitTermination(1, TimeUnit.MINUTES)) {
-                    executor.shutdownNow();
-                }
-            }
+            // Run parallel tasks that build per-lemma collocations and write results (extracted helper)
+            runLemmaBuildTasks(lemmas, alreadyDone, writeLock, outChannel, offsetsRaf, entryCount, processed, withResults);
 
             // Finalize offset tmp count
             synchronized (writeLock) {
@@ -741,6 +654,140 @@ public class CollocationsBuilder {
         return batches;
     }
 
+    /**
+     * Resume state holder (already-written headwords + restored count).
+     */
+    private static record ResumeState(Set<String> alreadyDone, int restoredCount) {}
+
+    /**
+     * Load resume state from offsets tmp file if present. Returns null-set/zero when resume is not possible.
+     */
+    private ResumeState loadResumeState(Path outFile, Path offsetsTmpFile) throws IOException {
+        if (!resume || !Files.exists(outFile) || !Files.exists(offsetsTmpFile)) {
+            return new ResumeState(null, 0);
+        }
+
+        Set<String> alreadyDone = new HashSet<>();
+        int restoredCount = 0;
+
+        try (DataInputStream dis = new DataInputStream(new BufferedInputStream(Files.newInputStream(offsetsTmpFile)))) {
+            // First int is checkpoint count (may be stale)
+            dis.readInt();
+            while (dis.available() > 0) {
+                int len = dis.readUnsignedShort();
+                byte[] bytes = dis.readNBytes(len);
+                alreadyDone.add(new String(bytes, StandardCharsets.UTF_8));
+                if (dis.available() >= Long.BYTES) {
+                    dis.readLong();
+                } else {
+                    break; // truncated tail — stop reading
+                }
+                restoredCount++;
+            }
+        } catch (EOFException eof) {
+            // defensive: stop on EOF if file was truncated
+        }
+
+        return new ResumeState(alreadyDone, restoredCount);
+    }
+
+    /**
+     * Run lemma-processing tasks in parallel and wait for completion. Extracted to reduce cognitive complexity in build().
+     */
+    private void runLemmaBuildTasks(
+            List<String> lemmas,
+            Set<String> alreadyDone,
+            Object writeLock,
+            FileChannel outChannel,
+            RandomAccessFile offsetsRaf,
+            AtomicInteger entryCount,
+            AtomicInteger processed,
+            AtomicInteger withResults) throws InterruptedException {
+
+        ExecutorService executor = Executors.newFixedThreadPool(threads);
+        List<Future<?>> futures = new ArrayList<>();
+
+        try {
+            for (String lemma : lemmas) {
+                if (alreadyDone != null && alreadyDone.contains(lemma)) {
+                    int count = processed.incrementAndGet();
+                    if (count % 1000 == 0) {
+                        logger.info("Progress: {}/{} lemmas processed, {} with collocates",
+                                count, lemmas.size(), withResults.get());
+                    }
+                    continue;
+                }
+
+                final String lemmaLocal = lemma;
+                Future<?> future = executor.submit(() -> {
+                    try {
+                        CollocationEntry entry = buildForLemma(lemmaLocal);
+                        if (entry != null && !entry.isEmpty()) {
+                            synchronized (writeLock) {
+                                long offset;
+                                try {
+                                    offset = outChannel.position();
+                                } catch (IOException ioe) {
+                                    throw new UncheckedIOException(ioe);
+                                }
+                                writeEntry(outChannel, entry);
+                                writeOffsetRecord(offsetsRaf, entry.headword(), offset);
+
+                                int newCount = entryCount.incrementAndGet();
+                                withResults.incrementAndGet();
+
+                                // Periodically checkpoint the offset tmp count to enable resume after power loss
+                                if (newCount % checkpointEvery == 0) {
+                                    try {
+                                        long pos = offsetsRaf.getFilePointer();
+                                        offsetsRaf.seek(0);
+                                        offsetsRaf.writeInt(newCount);
+                                        offsetsRaf.seek(pos);
+                                        outChannel.force(false);
+                                    } catch (IOException ioe) {
+                                        throw new UncheckedIOException(ioe);
+                                    }
+                                }
+                            }
+                        }
+
+                        int count = processed.incrementAndGet();
+                        if (count % 1000 == 0) {
+                            logger.info("Progress: {}/{} lemmas processed, {} with collocates",
+                                count, lemmas.size(), withResults.get());
+                        }
+                    } catch (UncheckedIOException uioe) {
+                        logger.error("I/O error building collocations for '{}'", lemmaLocal, uioe.getCause());
+                    } catch (Exception e) {
+                        logger.error("Failed to build collocations for '{}'", lemmaLocal, e);
+                    }
+                });
+                futures.add(future);
+            }
+
+            for (Future<?> future : futures) {
+                try {
+                    future.get();
+                } catch (InterruptedException ie) {
+                    Thread.currentThread().interrupt();
+                    throw ie;
+                } catch (ExecutionException ee) {
+                    logger.error("Task execution failed", ee.getCause());
+                }
+            }
+        } finally {
+            executor.shutdown();
+            try {
+                if (!executor.awaitTermination(1, TimeUnit.MINUTES)) {
+                    executor.shutdownNow();
+                }
+            } catch (InterruptedException ie) {
+                executor.shutdownNow();
+                Thread.currentThread().interrupt();
+                throw ie;
+            }
+        }
+    }
     /**
      * Convert UUID to 16-byte array.
      */
