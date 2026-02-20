@@ -15,8 +15,8 @@ class CollocationEntryTest {
     @DisplayName("CollocationEntry should store headword and collocates")
     void testBasicFields() {
         List<Collocation> collocates = List.of(
-            new Collocation("dog", "NOUN", 50, 1000, 8.5f),
-            new Collocation("cat", "NOUN", 40, 900, 7.8f)
+            new Collocation("dog", "NOUN", 50, 1000, 8.5f, 4.0f, 2.5f, 10.0f),
+            new Collocation("cat", "NOUN", 40, 900, 7.8f, 3.5f, 2.0f, 8.0f)
         );
 
         CollocationEntry entry = new CollocationEntry("animal", 5000, collocates);
@@ -30,9 +30,9 @@ class CollocationEntryTest {
     @DisplayName("size() should return collocate count")
     void testSize() {
         List<Collocation> collocates = List.of(
-            new Collocation("a", "DET", 100, 10000, 5.0f),
-            new Collocation("the", "DET", 150, 15000, 6.0f),
-            new Collocation("an", "DET", 80, 8000, 4.5f)
+            new Collocation("a", "DET", 100, 10000, 5.0f, 2.0f, 1.5f, 5.0f),
+            new Collocation("the", "DET", 150, 15000, 6.0f, 2.5f, 2.0f, 7.0f),
+            new Collocation("an", "DET", 80, 8000, 4.5f, 1.8f, 1.2f, 4.0f)
         );
 
         CollocationEntry entry = new CollocationEntry("word", 2000, collocates);
@@ -46,7 +46,7 @@ class CollocationEntryTest {
         assertTrue(empty.isEmpty());
 
         CollocationEntry notEmpty = new CollocationEntry("common", 10000,
-            List.of(new Collocation("test", "NOUN", 5, 100, 3.0f)));
+            List.of(new Collocation("test", "NOUN", 5, 100, 3.0f, 1.5f, 0.8f, 2.0f)));
         assertFalse(notEmpty.isEmpty());
     }
 
@@ -54,11 +54,11 @@ class CollocationEntryTest {
     @DisplayName("topN() should return top N collocates")
     void testTopN() {
         List<Collocation> collocates = List.of(
-            new Collocation("first", "ADJ", 100, 1000, 10.0f),
-            new Collocation("second", "ADJ", 90, 900, 9.0f),
-            new Collocation("third", "ADJ", 80, 800, 8.0f),
-            new Collocation("fourth", "ADJ", 70, 700, 7.0f),
-            new Collocation("fifth", "ADJ", 60, 600, 6.0f)
+            new Collocation("first", "ADJ", 100, 1000, 10.0f, 5.0f, 4.0f, 15.0f),
+            new Collocation("second", "ADJ", 90, 900, 9.0f, 4.5f, 3.5f, 12.0f),
+            new Collocation("third", "ADJ", 80, 800, 8.0f, 4.0f, 3.0f, 10.0f),
+            new Collocation("fourth", "ADJ", 70, 700, 7.0f, 3.5f, 2.5f, 8.0f),
+            new Collocation("fifth", "ADJ", 60, 600, 6.0f, 3.0f, 2.0f, 6.0f)
         );
 
         CollocationEntry entry = new CollocationEntry("word", 5000, collocates);
@@ -78,9 +78,9 @@ class CollocationEntryTest {
     @DisplayName("filterByLogDice() should filter by minimum logDice")
     void testFilterByLogDice() {
         List<Collocation> collocates = List.of(
-            new Collocation("high", "ADJ", 100, 1000, 9.5f),
-            new Collocation("medium", "ADJ", 80, 800, 7.0f),
-            new Collocation("low", "ADJ", 60, 600, 4.5f)
+            new Collocation("high", "ADJ", 100, 1000, 9.5f, 5.0f, 4.0f, 14.0f),
+            new Collocation("medium", "ADJ", 80, 800, 7.0f, 3.5f, 2.8f, 9.0f),
+            new Collocation("low", "ADJ", 60, 600, 4.5f, 2.0f, 1.5f, 4.0f)
         );
 
         CollocationEntry entry = new CollocationEntry("word", 3000, collocates);

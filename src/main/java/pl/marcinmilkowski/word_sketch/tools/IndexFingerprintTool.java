@@ -7,7 +7,6 @@ import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.store.MMapDirectory;
 import org.apache.lucene.util.Bits;
-import pl.marcinmilkowski.word_sketch.indexer.hybrid.CollocationsReader;
 import pl.marcinmilkowski.word_sketch.indexer.hybrid.StatisticsReader;
 
 import java.io.IOException;
@@ -31,7 +30,7 @@ public class IndexFingerprintTool {
 
         String indexArg = params.get("index");
         if (indexArg == null || indexArg.isBlank()) {
-            System.err.println("Usage: IndexFingerprintTool --index <path> [--collocations <path>] [--output <path>]");
+            System.err.println("Usage: IndexFingerprintTool --index <path> [--output <path>]");
             System.exit(1);
             return;
         }
@@ -41,9 +40,6 @@ public class IndexFingerprintTool {
             throw new IOException("Index path does not exist: " + indexPath);
         }
 
-        Path collocationsPath = params.containsKey("collocations")
-            ? Paths.get(params.get("collocations"))
-            : indexPath.resolve("collocations.bin");
         Path statsBinPath = indexPath.resolve("stats.bin");
         Path outputPath = params.containsKey("output") ? Paths.get(params.get("output")) : null;
 
@@ -84,17 +80,9 @@ public class IndexFingerprintTool {
         }
         out.put("stats", stats);
 
+        // Note: collocations.bin is no longer produced
         Map<String, Object> collocations = new LinkedHashMap<>();
-        collocations.put("path", collocationsPath.toAbsolutePath().toString());
-        collocations.put("exists", Files.exists(collocationsPath));
-        if (Files.exists(collocationsPath)) {
-            try (CollocationsReader cr = new CollocationsReader(collocationsPath.toString())) {
-                collocations.put("entry_count", cr.getEntryCount());
-                collocations.put("window", cr.getWindowSize());
-                collocations.put("top_k", cr.getTopK());
-                collocations.put("total_corpus_tokens", cr.getTotalCorpusTokens());
-            }
-        }
+        collocations.put("note", "Collocations are now computed at query time using CQL patterns");
         out.put("collocations", collocations);
 
         String pretty = JSON.toJSONString(out, com.alibaba.fastjson2.JSONWriter.Feature.PrettyFormat);
@@ -127,7 +115,7 @@ public class IndexFingerprintTool {
                 if (live != null && !live.get(doc)) {
                     continue;
                 }
-                Document d = leaf.reader().storedFields().document(doc);
+                Document d = leaf.reader().document(doc);
                 Map<String, Object> out = new LinkedHashMap<>();
                 out.put("leaf", leaf.ord);
                 out.put("doc", doc);

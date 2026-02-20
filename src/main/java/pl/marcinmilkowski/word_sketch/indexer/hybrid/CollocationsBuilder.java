@@ -220,48 +220,23 @@ public class CollocationsBuilder {
         // Generate corpus UUID
         UUID corpusUuid = UUID.randomUUID();
 
-        // Filter to simple POS-only relations (no copula handling for first implementation)
-        // Include all relations that have a simple CQL pattern with just POS tag
-        List<GrammarConfigLoader.RelationConfig> simpleRelations = grammarConfig.getRelations().stream()
-            .filter(r -> {
-                // Skip relations that require copula handling - they need special logic
-                if (Boolean.TRUE.equals(r.usesCopula())) {
-                    logger.debug("EXCLUDING relation {} - uses copula", r.id());
-                    return false;
-                }
-                // Include relations with simple POS patterns
-                String pattern = r.cqlPattern();
-                if (pattern == null || pattern.isEmpty()) {
-                    logger.debug("EXCLUDING relation {} - no pattern", r.id());
-                    return false;
-                }
-                // Skip patterns with multiple elements or special operators
-                // Simple pattern: just [tag=XX.*] with no alternation, optionals, or repetition
-                if (pattern.contains("?") || pattern.contains("{") || pattern.contains("|") || pattern.contains("[")) {
-                    // Check if it's a simple [tag=...] pattern without alternation
-                    if (!pattern.matches("\\[tag=[^\\]|]+\\]\\]?")) {
-                        logger.debug("EXCLUDING relation {} - complex pattern: {}", r.id(), pattern);
-                        return false;
-                    }
-                }
-                return true;
-            })
-            .toList();
+        // Relation precomputation is DISABLED.
+        // Word sketches require proper CQL pattern matching (grammatical relations),
+        // not window-based co-occurrence. Use CQL scan at query time instead.
+        List<GrammarConfigLoader.RelationConfig> simpleRelations = Collections.emptyList();
 
-        if (simpleRelations.isEmpty()) {
-            throw new IllegalArgumentException("No simple POS-only relations found in grammar config");
-        }
+        logger.info("Relation precomputation is DISABLED - using CQL scan at query time");
 
         logger.info("Building relation collocations for {} relations:", simpleRelations.size());
         for (var rel : simpleRelations) {
             logger.info("  {}: head={}, collocate={}, pattern={}",
-                rel.id(), rel.headPos(), rel.collocatePos(), rel.cqlPattern());
+                rel.id(), rel.headPosition(), rel.collocatePosition(), rel.pattern());
         }
 
         // Precompile POS patterns for each relation
         Map<String, Pattern> relationPatterns = new HashMap<>();
         for (var rel : simpleRelations) {
-            String posRegex = parsePosFromCql(rel.cqlPattern());
+            String posRegex = parsePosFromCql(rel.pattern());
             relationPatterns.put(rel.id(), Pattern.compile(posRegex, Pattern.CASE_INSENSITIVE));
         }
 
@@ -382,19 +357,18 @@ public class CollocationsBuilder {
                     int start = Math.max(0, hwPos - slop);
                     int end = Math.min(tokens.size(), hwPos + slop + 1);
 
+                    // Simple POS matching within window
                     for (int i = start; i < end; i++) {
-                        if (i != hwPos) {
-                            Token token = tokens.get(i);
-                            if (token.lemma() != null) {
-                                String collLower = token.lemma().toLowerCase(Locale.ROOT);
-                                if (!collLower.equals(lemmaLower)) {
-                                    // Check POS tag matches pattern
-                                    String posTag = token.tag();
-                                    if (posTag != null && posPattern.matcher(posTag).matches()) {
-                                        coocs.merge(collLower, 1L, Long::sum);
-                                    }
-                                }
-                            }
+                        if (i == hwPos) continue;
+                        Token token = tokens.get(i);
+                        if (token.lemma() == null) continue;
+                        String collLower = token.lemma().toLowerCase(Locale.ROOT);
+                        if (collLower.equals(lemmaLower)) continue;
+
+                        // Check POS tag matches pattern
+                        String posTag = token.tag();
+                        if (posTag != null && posPattern.matcher(posTag).matches()) {
+                            coocs.merge(collLower, 1L, Long::sum);
                         }
                     }
                 }
@@ -891,8 +865,9 @@ public class CollocationsBuilder {
             return null;
         }
 
-        // Compute logDice and create Collocation objects
+        // Compute all association scores and create Collocation objects
         List<Collocation> collocations = new ArrayList<>();
+        long totalTokens = statsReader.getTotalTokens();
         for (Map.Entry<String, Long> entry : cooccurrences.entrySet()) {
             String collocateLemma = entry.getKey();
             long coocCount = entry.getValue();
@@ -901,13 +876,17 @@ public class CollocationsBuilder {
             if (collocateFreq == 0) continue;
 
             double logDice = calculateLogDice(coocCount, headwordFreq, collocateFreq);
+            double mi3 = calculateMI3(coocCount, headwordFreq, collocateFreq, totalTokens);
+            double tScore = calculateTScore(coocCount, headwordFreq, collocateFreq, totalTokens);
+            double logLikelihood = calculateLogLikelihood(coocCount, headwordFreq, collocateFreq, totalTokens);
 
             // Get most frequent POS tag
             TermStatistics stats = statsReader.getStatistics(collocateLemma);
             String pos = getMostFrequentPos(stats);
 
             collocations.add(new Collocation(
-                collocateLemma, pos, coocCount, collocateFreq, (float) logDice));
+                collocateLemma, pos, coocCount, collocateFreq,
+                (float) logDice, (float) mi3, (float) tScore, (float) logLikelihood));
         }
 
         // Sort by logDice descending and keep top-K
@@ -939,6 +918,30 @@ public class CollocationsBuilder {
         double dice = (2.0 * cooccurrence) / (freq1 + freq2);
         double logDice = Math.log(dice) / Math.log(2) + 14;
         return Math.max(0, Math.min(14, logDice));
+    }
+
+    /**
+     * Calculate MI3 score.
+     */
+    private double calculateMI3(long cooccurrence, long headwordFreq, long collocateFreq, long totalTokens) {
+        return pl.marcinmilkowski.word_sketch.utils.LogDiceCalculator.computeMI3(
+            cooccurrence, headwordFreq, collocateFreq, totalTokens);
+    }
+
+    /**
+     * Calculate T-Score.
+     */
+    private double calculateTScore(long cooccurrence, long headwordFreq, long collocateFreq, long totalTokens) {
+        return pl.marcinmilkowski.word_sketch.utils.LogDiceCalculator.computeTScore(
+            cooccurrence, headwordFreq, collocateFreq, totalTokens);
+    }
+
+    /**
+     * Calculate Log-Likelihood.
+     */
+    private double calculateLogLikelihood(long cooccurrence, long headwordFreq, long collocateFreq, long totalTokens) {
+        return pl.marcinmilkowski.word_sketch.utils.LogDiceCalculator.computeLogLikelihood(
+            cooccurrence, headwordFreq, collocateFreq, totalTokens);
     }
 
     /**
@@ -996,6 +999,9 @@ public class CollocationsBuilder {
             buffer.putLong(c.cooccurrence());
             buffer.putLong(c.frequency());
             buffer.putFloat(c.logDice());
+            buffer.putFloat(c.mi3());
+            buffer.putFloat(c.tScore());
+            buffer.putFloat(c.logLikelihood());
         }
 
         buffer.flip();

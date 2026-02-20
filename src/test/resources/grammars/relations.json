@@ -455,6 +455,226 @@
       "cql_pattern": "[tag=jj.*]",
       "default_slop": 2,
       "relation_type": "COORDINATION"
+    },
+    {
+      "id": "dep_nsubj",
+      "name": "Dependency: nominal subject",
+      "description": "Noun as nominal subject (dependency relation via nsubj)",
+      "head_pos": "verb",
+      "collocate_pos": "noun",
+      "cql_pattern": "[deprel=nsubj]",
+      "default_slop": 0,
+      "relation_type": "DEP_SUBJECT",
+      "exploration_enabled": true
+    },
+    {
+      "id": "dep_nsubj_pass",
+      "name": "Dependency: passive nominal subject",
+      "description": "Noun as passive nominal subject (dependency relation via nsubj:pass)",
+      "head_pos": "verb",
+      "collocate_pos": "noun",
+      "cql_pattern": "[deprel=nsubj:pass]",
+      "default_slop": 0,
+      "relation_type": "DEP_SUBJECT_PASSIVE",
+      "exploration_enabled": true
+    },
+    {
+      "id": "dep_obj",
+      "name": "Dependency: direct object",
+      "description": "Noun as direct object (dependency relation via obj)",
+      "head_pos": "verb",
+      "collocate_pos": "noun",
+      "cql_pattern": "[deprel=obj]",
+      "default_slop": 0,
+      "relation_type": "DEP_OBJECT",
+      "exploration_enabled": true
+    },
+    {
+      "id": "dep_iobj",
+      "name": "Dependency: indirect object",
+      "description": "Noun as indirect object (dependency relation via iobj)",
+      "head_pos": "verb",
+      "collocate_pos": "noun",
+      "cql_pattern": "[deprel=iobj]",
+      "default_slop": 0,
+      "relation_type": "DEP_IOBJ",
+      "exploration_enabled": true
+    },
+    {
+      "id": "dep_amod",
+      "name": "Dependency: adjectival modifier",
+      "description": "Adjective as adjectival modifier (dependency relation via amod)",
+      "head_pos": "noun",
+      "collocate_pos": "adj",
+      "cql_pattern": "[deprel=amod]",
+      "default_slop": 0,
+      "relation_type": "DEP_MODIFIER",
+      "exploration_enabled": true
+    },
+    {
+      "id": "dep_nummod",
+      "name": "Dependency: numeric modifier",
+      "description": "Numeral as numeric modifier (dependency relation via nummod)",
+      "head_pos": "noun",
+      "collocate_pos": "num",
+      "cql_pattern": "[deprel=nummod]",
+      "default_slop": 0,
+      "relation_type": "DEP_MODIFIER",
+      "exploration_enabled": true
+    },
+    {
+      "id": "dep_det",
+      "name": "Dependency: determiner",
+      "description": "Determiner modifying noun (dependency relation via det)",
+      "head_pos": "noun",
+      "collocate_pos": "det",
+      "cql_pattern": "[deprel=det]",
+      "default_slop": 0,
+      "relation_type": "DEP_DET",
+      "exploration_enabled": true
+    },
+    {
+      "id": "dep_case",
+      "name": "Dependency: case marker",
+      "description": "Case marker (preposition) for noun (dependency relation via case)",
+      "head_pos": "noun",
+      "collocate_pos": "prep",
+      "cql_pattern": "[deprel=case]",
+      "default_slop": 0,
+      "relation_type": "DEP_CASE",
+      "exploration_enabled": true
+    },
+    {
+      "id": "dep_nmod",
+      "name": "Dependency: nominal modifier",
+      "description": "Noun as nominal modifier of another noun (dependency relation via nmod)",
+      "head_pos": "noun",
+      "collocate_pos": "noun",
+      "cql_pattern": "[deprel=nmod]",
+      "default_slop": 0,
+      "relation_type": "DEP_NMOD",
+      "exploration_enabled": true
+    },
+    {
+      "id": "dep_compound",
+      "name": "Dependency: compound",
+      "description": "Noun in compound with head noun (dependency relation via compound)",
+      "head_pos": "noun",
+      "collocate_pos": "noun",
+      "cql_pattern": "[deprel=compound]",
+      "default_slop": 0,
+      "relation_type": "DEP_COMPOUND",
+      "exploration_enabled": true
+    },
+    {
+      "id": "dep_advmod",
+      "name": "Dependency: adverbial modifier",
+      "description": "Adverb modifying verb/adj (dependency relation via advmod)",
+      "head_pos": "verb",
+      "collocate_pos": "adv",
+      "cql_pattern": "[deprel=advmod]",
+      "default_slop": 0,
+      "relation_type": "DEP_ADVMOD",
+      "exploration_enabled": true
+    },
+    {
+      "id": "dep_aux",
+      "name": "Dependency: auxiliary",
+      "description": "Auxiliary verb (dependency relation via aux)",
+      "head_pos": "verb",
+      "collocate_pos": "verb",
+      "cql_pattern": "[deprel=aux]",
+      "default_slop": 0,
+      "relation_type": "DEP_AUX",
+      "exploration_enabled": true
+    },
+    {
+      "id": "dep_cop",
+      "name": "Dependency: copula",
+      "description": "Copula verb 'be' (dependency relation via cop)",
+      "head_pos": "adj",
+      "collocate_pos": "verb",
+      "cql_pattern": "[deprel=cop]",
+      "default_slop": 0,
+      "relation_type": "DEP_COPULA",
+      "exploration_enabled": true
+    },
+    {
+      "id": "dep_mark",
+      "name": "Dependency: marker",
+      "description": "Subordinating conjunction/marker (dependency relation via mark)",
+      "head_pos": "verb",
+      "collocate_pos": "conj",
+      "cql_pattern": "[deprel=mark]",
+      "default_slop": 0,
+      "relation_type": "DEP_MARK",
+      "exploration_enabled": true
+    },
+    {
+      "id": "dep_cc",
+      "name": "Dependency: coordinating conjunction",
+      "description": "Coordinating conjunction (dependency relation via cc)",
+      "head_pos": "noun",
+      "collocate_pos": "conj",
+      "cql_pattern": "[deprel=cc]",
+      "default_slop": 0,
+      "relation_type": "DEP_CC",
+      "exploration_enabled": true
+    },
+    {
+      "id": "dep_ccomp",
+      "name": "Dependency: clausal complement",
+      "description": "Clausal complement of verb (dependency relation via ccomp)",
+      "head_pos": "verb",
+      "collocate_pos": "verb",
+      "cql_pattern": "[deprel=ccomp]",
+      "default_slop": 0,
+      "relation_type": "DEP_CCOMP",
+      "exploration_enabled": true
+    },
+    {
+      "id": "dep_xcomp",
+      "name": "Dependency: open clausal complement",
+      "description": "Open clausal complement of verb (dependency relation via xcomp)",
+      "head_pos": "verb",
+      "collocate_pos": "verb",
+      "cql_pattern": "[deprel=xcomp]",
+      "default_slop": 0,
+      "relation_type": "DEP_XCOMP",
+      "exploration_enabled": true
+    },
+    {
+      "id": "dep_flat",
+      "name": "Dependency: flat multiword expression",
+      "description": "Flat multiword expression (dependency relation via flat)",
+      "head_pos": "noun",
+      "collocate_pos": "noun",
+      "cql_pattern": "[deprel=flat]",
+      "default_slop": 0,
+      "relation_type": "DEP_FLAT",
+      "exploration_enabled": true
+    },
+    {
+      "id": "dep_goeswith",
+      "name": "Dependency: goes with",
+      "description": "Parts that go together (dependency relation via goeswith)",
+      "head_pos": "noun",
+      "collocate_pos": "noun",
+      "cql_pattern": "[deprel=goeswith]",
+      "default_slop": 0,
+      "relation_type": "DEP_GOESWITH",
+      "exploration_enabled": true
+    },
+    {
+      "id": "dep_reparandum",
+      "name": "Dependency: reparandum",
+      "description": "Overridden disfluency (dependency relation via reparandum)",
+      "head_pos": "noun",
+      "collocate_pos": "noun",
+      "cql_pattern": "[deprel=reparandum]",
+      "default_slop": 0,
+      "relation_type": "DEP_REPARANDUM",
+      "exploration_enabled": true
     }
   ]
 }

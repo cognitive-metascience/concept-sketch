@@ -189,10 +189,11 @@ public class HybridConllUProcessor implements Closeable {
                 String lemma = fields.length > 2 ? fields[2] : word;
                 String upos = fields.length > 3 ? fields[3] : "X";
                 String xpos = fields.length > 4 ? fields[4] : upos;
+                String deprel = fields.length > 6 && !fields[6].equals("_") ? fields[6] : "";
 
                 // Use XPOS if available, otherwise UPOS
                 String tag = (xpos != null && !xpos.equals("_")) ? xpos : upos;
-                
+
                 // Fix null/underscore values
                 if (lemma == null || lemma.equals("_")) lemma = word;
                 if (tag == null || tag.equals("_")) tag = "X";
@@ -203,7 +204,7 @@ public class HybridConllUProcessor implements Closeable {
                 int endOffset = startOffset + word.length();
                 currentOffset = endOffset;
 
-                builder.addToken(position, word, lemma, tag, startOffset, endOffset);
+                builder.addToken(position, word, lemma, tag, startOffset, endOffset, deprel);
                 position++;
                 
             } catch (NumberFormatException e) {

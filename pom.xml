@@ -15,37 +15,26 @@
     <properties>
         <maven.compiler.release>21</maven.compiler.release>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <lucene.version>10.3.2</lucene.version>
+        <lucene.version>8.11.1</lucene.version>
+        <blacklab.version>4.0.0</blacklab.version>
         <fastjson.version>2.0.25</fastjson.version>
         <junit.version>5.9.0</junit.version>
     </properties>
 
     <dependencies>
-        <!-- Apache Lucene -->
+        <!-- BlackLab Core - corpus query engine with CoNLL-U dependency support -->
+        <!-- Install first: ./install-blacklab.sh or .\install-blacklab.ps1 -->
         <dependency>
-            <groupId>org.apache.lucene</groupId>
-            <artifactId>lucene-core</artifactId>
-            <version>${lucene.version}</version>
+            <groupId>nl.inl.blacklab</groupId>
+            <artifactId>blacklab-engine</artifactId>
+            <version>${blacklab.version}</version>
         </dependency>
+
+        <!-- BlackLab Query Parser - for CQL parsing -->
         <dependency>
-            <groupId>org.apache.lucene</groupId>
-            <artifactId>lucene-analysis-common</artifactId>
-            <version>${lucene.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.apache.lucene</groupId>
-            <artifactId>lucene-queries</artifactId>
-            <version>${lucene.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.apache.lucene</groupId>
-            <artifactId>lucene-queryparser</artifactId>
-            <version>${lucene.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.apache.lucene</groupId>
-            <artifactId>lucene-highlighter</artifactId>
-            <version>${lucene.version}</version>
+            <groupId>nl.inl.blacklab</groupId>
+            <artifactId>blacklab-query-parser</artifactId>
+            <version>${blacklab.version}</version>
         </dependency>
 
         <!-- JSON Processing -->
@@ -110,6 +99,12 @@
             <name>UFAL Maven Repository</name>
             <url>https://ufal.mff.cuni.cz/maven2</url>
         </repository>
+        <!-- BlackLab Repository -->
+        <repository>
+            <id>blacklab</id>
+            <name>BlackLab Maven Repository</name>
+            <url>https://raw.githubusercontent.com/instituutnederlandsetaal/BlackLab/mvn-repo/</url>
+        </repository>
     </repositories>
 
     <build>
@@ -118,6 +113,15 @@
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
                 <version>3.12.1</version>
+                <configuration>
+                    <excludes>
+                        <!-- Legacy Lucene 10 code not compatible with BlackLab's Lucene 8.11.1 -->
+                        <exclude>**/CQLToLuceneCompiler.java</exclude>
+                        <exclude>**/HybridQueryExecutor.java</exclude>
+                        <exclude>**/ConcordanceExplorer.java</exclude>
+                        <exclude>**/CollocationWitnessTool.java</exclude>
+                    </excludes>
+                </configuration>
             </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
@@ -155,10 +159,22 @@
                             <goal>shade</goal>
                         </goals>
                         <configuration>
+                            <filters>
+                                <filter>
+                                    <artifact>*:*</artifact>
+                                    <excludes>
+                                        <exclude>META-INF/*.SF</exclude>
+                                        <exclude>META-INF/*.DSA</exclude>
+                                        <exclude>META-INF/*.RSA</exclude>
+                                    </excludes>
+                                </filter>
+                            </filters>
                             <transformers>
                                 <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
                                     <mainClass>pl.marcinmilkowski.word_sketch.Main</mainClass>
                                 </transformer>
+                                <!-- Merge Lucene SPI service files for codecs -->
+                                <transformer implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer"/>
                             </transformers>
                             <createDependencyReducedPom>false</createDependencyReducedPom>
                         </configuration>

@@ -593,7 +593,9 @@
                 if (firstWithExamples && firstWithExamples.examples.length > 0) {
                     html += '<div class="examples"><h4>Examples</h4>';
                     firstWithExamples.examples.slice(0, 5).forEach(ex => {
-                        const highlighted = escapeHtml(ex).replace(
+                        // Handle both string examples and object examples (API returns objects)
+                        const exampleText = (typeof ex === 'string') ? ex : (ex.highlighted || ex.raw || ex.sentence || '');
+                        const highlighted = escapeHtml(exampleText).replace(
                             new RegExp(escapeRegExp(currentWord), 'gi'),
                             '<span class="highlight">$&</span>'
                         );

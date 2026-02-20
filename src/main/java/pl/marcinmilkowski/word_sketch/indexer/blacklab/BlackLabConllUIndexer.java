@@ -1,0 +1,126 @@
+package pl.marcinmilkowski.word_sketch.indexer.blacklab;
+
+import nl.inl.blacklab.search.BlackLab;
+import nl.inl.blacklab.search.BlackLabIndexWriter;
+import nl.inl.blacklab.index.Indexer;
+import nl.inl.blacklab.index.IndexListener;
+
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.concurrent.atomic.AtomicLong;
+
+/**
+ * Indexer for CoNLL-U files using BlackLab.
+ * 
+ * Uses BlackLab's Indexer API with the CoNLL-U format configuration.
+ */
+public class BlackLabConllUIndexer implements AutoCloseable {
+
+    private final BlackLabIndexWriter indexWriter;
+    private final Indexer indexer;
+    private final Path indexPath;
+    private final AtomicLong documentCount = new AtomicLong(0);
+    private final AtomicLong tokenCount = new AtomicLong(0);
+
+    public BlackLabConllUIndexer(String indexPath) throws IOException {
+        this.indexPath = Paths.get(indexPath);
+        Files.createDirectories(this.indexPath);
+
+        try {
+            // Create new index with default settings
+            // Note: BlackLab 4.0.0 requires format to be registered via .blf.yaml config
+            // For now, create with basic XML format
+            this.indexWriter = BlackLab.openForWriting(this.indexPath.toFile(), true, (String)null);
+            
+            // Create indexer with default format
+            this.indexer = Indexer.create(this.indexWriter);
+            
+            // Set up listener for progress reporting
+            this.indexer.setListener(new IndexListener() {
+                @Override
+                public void fileStarted(String name) {
+                    System.out.println("Indexing: " + name);
+                }
+
+                @Override
+                public void fileDone(String name) {
+                    documentCount.incrementAndGet();
+                    if (documentCount.get() % 1000 == 0) {
+                        System.out.printf("Indexed %,d documents...%n", documentCount.get());
+                    }
+                }
+
+                @Override
+                public void tokensDone(int n) {
+                    tokenCount.set(n);
+                }
+
+                @Override
+                public boolean errorOccurred(Throwable e, String path, File f) {
+                    System.err.println("Indexing error in " + path + ": " + e.getMessage());
+                    if (e != null) {
+                        e.printStackTrace();
+                    }
+                    return true; // continue indexing
+                }
+            });
+        } catch (Exception e) {
+            throw new IOException("Failed to create index: " + e.getMessage(), e);
+        }
+    }
+
+    /**
+     * Index a single CoNLL-U file.
+     */
+    public void indexFile(String conlluPath) throws IOException {
+        Path path = Paths.get(conlluPath);
+
+        if (!Files.exists(path)) {
+            throw new IOException("File not found: " + conlluPath);
+        }
+
+        // Index the file
+        indexer.index(path.toFile());
+    }
+
+    /**
+     * Index all CoNLL-U files in a directory.
+     */
+    public void indexDirectory(String dirPath, String pattern) throws IOException {
+        Path dir = Paths.get(dirPath);
+
+        if (!Files.isDirectory(dir)) {
+            throw new IOException("Directory not found: " + dirPath);
+        }
+
+        System.out.println("Indexing directory: " + dirPath);
+
+        try (var stream = Files.newDirectoryStream(dir, pattern)) {
+            for (Path file : stream) {
+                indexFile(file.toString());
+            }
+        }
+    }
+
+    @Override
+    public void close() throws IOException {
+        if (indexer != null) {
+            // Indexer will close the writer
+            System.out.println("Indexing complete!");
+            System.out.println("  Documents: " + documentCount.get());
+            System.out.println("  Tokens: " + tokenCount.get());
+            System.out.println("  Index path: " + indexPath);
+        }
+    }
+
+    public long getDocumentCount() {
+        return documentCount.get();
+    }
+
+    public long getTokenCount() {
+        return tokenCount.get();
+    }
+}

@@ -45,11 +45,14 @@ For large corpora (recommended for 10GB+ CoNLL-U), run in two steps so shard/spi
 # 1) Build hybrid index only
 java -jar target/word-sketch-lucene-1.0.0.jar hybrid-index --input corpus.conllu --output data/index/
 
-# 2) Precompute collocations with explicit sharding
-java -jar target/word-sketch-lucene-1.0.0.jar precompute-collocations \
-  --index data/index/ --output data/index/collocations.bin \
-  --shards 64 --spill 2000000 --top-k 100 --min-freq 10 --min-cooc 2
+# 2) Precompute grammar-pattern collocations (optional, for O(1) lookup)
+java -jar target/word-sketch-lucene-1.0.0.jar precompute-grammar \
+  --index data/index/ --output data/index/grammar_collocations.bin \
+  --top-k 100 --min-freq 10 --min-cooc 2
 ```
+
+> **Note:** The old `precompute-collocations` and `precompute-relations` commands have been **removed**.
+> Collocations are now computed dynamically using CQL patterns at query time.
 
 ### 3. Start API Server
 
@@ -120,15 +123,15 @@ udpipe --tokenize --tag --lemma --output=conllu english-model.udpipe corpus.txt 
 java -jar word-sketch-lucene.jar single-pass --input corpus.conllu --output data/index/
 ```
 
-#### Large CoNLL-U (Two-Step, Tunable)
+#### Large CoNLL-U (Two-Step)
 
 ```bash
-# Stage 1: index only
+# Stage 1: build hybrid index
 java -jar word-sketch-lucene.jar hybrid-index --input corpus.conllu --output data/index/
 
-# Stage 2: collocations only (explicit shard/spill controls)
-java -jar word-sketch-lucene.jar precompute-collocations --index data/index/ \
-  --output data/index/collocations.bin --shards 64 --spill 2000000 --top-k 100 --min-freq 10
+# Stage 2: precompute grammar-pattern collocations (optional)
+java -jar word-sketch-lucene.jar precompute-grammar --index data/index/ \
+  --output data/index/grammar_collocations.bin --top-k 100 --min-freq 10 --min-cooc 2
 ```
 
 #### From Raw Text
@@ -479,16 +482,55 @@ Response (JSON/HTML)
 
 ### Collocation Computation
 
-**logDice Formula:**
+#### logDice (Default)
 ```
 logDice = log₂(2 * f(A,B) / (f(A) + f(B))) + 14
 ```
+- Scale: 0-14 (14 = perfect association)
+- Symmetric measure - same value regardless of direction
 
-Where:
-- `f(A,B)` = co-occurrence frequency
+#### MI3 (Mutual Information)
+```
+MI3 = log₂((f(A,B) * N) / (f(A) * f(B)))
+```
+- Higher values indicate stronger association
+- Good for finding rare but informative collocations
+
+#### T-Score
+```
+T = (f(A,B) - expected) / sqrt(expected)
+where expected = (f(A) * f(B)) / N
+```
+- Measures statistical significance
+- Higher absolute values indicate more significant associations
+
+#### Log-Likelihood (G-squared)
+```
+G2 = 2 * f(A,B) * log(f(A,B) / expected)
+```
+- Measures deviance from expected co-occurrence
+- Higher values indicate greater statistical significance
+
+**Parameters:**
+- `f(A,B)` = co-occurrence frequency (collocate with headword)
 - `f(A)` = headword frequency
 - `f(B)` = collocate total frequency
-- Scale: 0-14 (14 = perfect association)
+- `N` = total tokens in corpus
+
+**Query API:**
+```bash
+# Default logDice
+curl "http://localhost:8080/api/sketch/house?scoring=logDice"
+
+# MI3 scoring
+curl "http://localhost:8080/api/sketch/house?scoring=mi3"
+
+# T-Score
+curl "http://localhost:8080/api/sketch/house?scoring=tscore"
+
+# Log-Likelihood
+curl "http://localhost:8080/api/sketch/house?scoring=loglikelihood"
+```
 
 ---
 

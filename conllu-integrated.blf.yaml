@@ -1,0 +1,20 @@
+# BlackLab corpus configuration for CoNLL-U with integrated index format
+# Save as: corpus-config.yaml
+
+name: conllu-integrated
+displayName: CoNLL-U (Integrated Index)
+description: CoNLL-U format with BlackLab40 codec for integrated indexing
+
+# Use integrated index format (BlackLab's custom format)
+indexType: integrated
+
+# Use the built-in CoNLL-U format
+inputFormat: conll-u
+
+# Codec settings
+codec: BlackLab40
+
+# Special fields
+specialFields:
+  # Use 'id' field from CoNLL-U as persistent document ID
+  pidField: id

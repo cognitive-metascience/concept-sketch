@@ -3,8 +3,6 @@ package pl.marcinmilkowski.word_sketch.tools;
 import pl.marcinmilkowski.word_sketch.grammar.CQLParser;
 import pl.marcinmilkowski.word_sketch.grammar.CQLPattern;
 
-import java.util.List;
-
 public class CQLDebug {
     public static void main(String[] args) {
         String[] patterns = {

@@ -61,7 +61,9 @@ public class HybridIndexer implements Closeable {
         ThreadLocal.withInitial(PositionalTokenStream::new);
     private final ThreadLocal<PositionalTokenStream> tagTokenStream = 
         ThreadLocal.withInitial(PositionalTokenStream::new);
-    private final ThreadLocal<PositionalTokenStream> posGroupTokenStream = 
+    private final ThreadLocal<PositionalTokenStream> posGroupTokenStream =
+        ThreadLocal.withInitial(PositionalTokenStream::new);
+    private final ThreadLocal<PositionalTokenStream> deprelTokenStream =
         ThreadLocal.withInitial(PositionalTokenStream::new);
 
     /**
@@ -182,6 +184,12 @@ public class HybridIndexer implements Closeable {
             posGroupStream.setTokens(tokens);
             posGroupStream.setFieldType("pos_group");
             doc.add(new TextField("pos_group", posGroupStream));
+
+            // Deprel field with positions - for span queries on dependency relations
+            PositionalTokenStream deprelStream = deprelTokenStream.get();
+            deprelStream.setTokens(tokens);
+            deprelStream.setFieldType("deprel");
+            doc.add(new TextField("deprel", deprelStream));
 
             // Token sequence as binary DocValues - for efficient extraction
             BytesRef tokenBytes = TokenSequenceCodec.encode(tokens);

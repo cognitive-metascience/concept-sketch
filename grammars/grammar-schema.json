@@ -1,0 +1,91 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Word Sketch Grammar Configuration",
+  "description": "Grammar configuration for Word Sketch collocation extraction. Defines grammatical relations and their CQL patterns.",
+  "type": "object",
+  "required": ["version", "relations"],
+  "additionalProperties": false,
+  "properties": {
+    "version": {
+      "type": "string",
+      "description": "Configuration version"
+    },
+    "description": {
+      "type": "string",
+      "description": "Human-readable description"
+    },
+    "relations": {
+      "type": "array",
+      "minItems": 1,
+      "description": "List of grammatical relations to extract",
+      "items": {
+        "$ref": "#/definitions/Relation"
+      }
+    }
+  },
+  "definitions": {
+    "Relation": {
+      "type": "object",
+      "required": ["id", "pattern", "head_position", "collocate_position"],
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[a-z_]+$",
+          "description": "Unique relation identifier (lowercase with underscores)"
+        },
+        "name": {
+          "type": "string",
+          "description": "Human-readable name"
+        },
+        "description": {
+          "type": "string",
+          "description": "Description with examples"
+        },
+        "pattern": {
+          "type": "string",
+          "description": "CQL pattern defining the relation. Must NOT contain {head} placeholder.",
+          "pattern": "^[^}]*$",
+          "not": {
+            "pattern": "\\{head\\}"
+          }
+        },
+        "head_position": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "1-based position of headword in pattern"
+        },
+        "collocate_position": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "1-based position of collocate in pattern"
+        },
+        "dual": {
+          "type": "boolean",
+          "default": false,
+          "description": "Compute both directions (head->collocate and collocate->head)"
+        },
+        "default_slop": {
+          "type": "integer",
+          "minimum": 0,
+          "default": 10,
+          "description": "Maximum distance between tokens"
+        },
+        "relation_type": {
+          "type": "string",
+          "description": "Category (e.g., SURFACE, DEP_*)"
+        }
+      },
+      "errorMessage": {
+        "properties": {
+          "pattern": "Pattern must NOT contain {head}. Use [lemma=\"...\"] or [tag=\"...\"] instead.",
+          "head_position": "head_position must be a positive integer (1-based)",
+          "collocate_position": "collocate_position must be a positive integer (1-based)"
+        }
+      }
+    }
+  },
+  "errorMessage": {
+    "additionalProperties": "Grammar config must NOT contain 'copulas' key. Copulas must be embedded in CQL patterns using [lemma=\"be|appear|seem|...\"]"
+  }
+}

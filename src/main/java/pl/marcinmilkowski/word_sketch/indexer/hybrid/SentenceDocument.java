@@ -21,7 +21,8 @@ public record SentenceDocument(
         String lemma,
         String tag,
         int startOffset,
-        int endOffset
+        int endOffset,
+        String deprel
     ) {
         /**
          * Gets the POS group (broad category) from the tag.
@@ -111,7 +112,13 @@ public record SentenceDocument(
 
         public Builder addToken(int position, String word, String lemma, String tag,
                                int startOffset, int endOffset) {
-            tokens.add(new Token(position, word, lemma, tag, startOffset, endOffset));
+            tokens.add(new Token(position, word, lemma, tag, startOffset, endOffset, null));
+            return this;
+        }
+
+        public Builder addToken(int position, String word, String lemma, String tag,
+                               int startOffset, int endOffset, String deprel) {
+            tokens.add(new Token(position, word, lemma, tag, startOffset, endOffset, deprel));
             return this;
         }
 

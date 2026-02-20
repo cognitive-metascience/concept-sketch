@@ -230,6 +230,25 @@ class LogDiceCalculatorTest {
     }
 
     @Test
+    @DisplayName("Edge case: extreme frequency ratios should not produce negative values")
+    void testExtremeRatiosNoNegative() {
+        // Very small cooccurrence relative to large corpus frequencies
+        // This previously could produce negative values before overflow protection
+        double logDice = LogDiceCalculator.compute(1, 10_000_000, 5_000_000);
+        assertTrue(logDice >= 0,
+            String.format("logDice should never be negative, got: %.2f", logDice));
+    }
+
+    @Test
+    @DisplayName("Edge case: large values should not overflow")
+    void testLargeValuesNoOverflow() {
+        // Very large corpus (billions)
+        double logDice = LogDiceCalculator.compute(1_000_000L, 500_000_000L, 300_000_000L);
+        assertTrue(logDice >= 0 && logDice <= 14,
+            String.format("logDice should be in range [0, 14], got: %.2f", logDice));
+    }
+
+    @Test
     @DisplayName("Very large corpus frequencies")
     void testVeryLargeCorpus() {
         // Billion-token corpus simulation

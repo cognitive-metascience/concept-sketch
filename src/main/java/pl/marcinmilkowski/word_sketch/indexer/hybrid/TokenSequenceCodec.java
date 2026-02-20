@@ -13,10 +13,10 @@ import java.util.List;
 
 /**
  * Codec for encoding/decoding token sequences into binary format for DocValues.
- * 
+ *
  * This enables efficient storage and retrieval of all tokens in a sentence
  * as a single binary DocValues field, supporting O(1) position-based lookups.
- * 
+ *
  * Binary format per token:
  * - position: varint (1-5 bytes)
  * - word length: varint (1-2 bytes)
@@ -27,7 +27,9 @@ import java.util.List;
  * - tag: UTF-8 bytes
  * - startOffset: varint (1-5 bytes)
  * - endOffset: varint (1-5 bytes)
- * 
+ * - deprel length: varint (1-2 bytes)
+ * - deprel: UTF-8 bytes (dependency relation from CoNLL-U column 7)
+ *
  * Typical sentence (~20 tokens) encodes to ~400-600 bytes.
  */
 public class TokenSequenceCodec {
@@ -52,6 +54,7 @@ public class TokenSequenceCodec {
             writeString(dos, token.tag());
             writeVarInt(dos, token.startOffset());
             writeVarInt(dos, token.endOffset());
+            writeString(dos, token.deprel() != null ? token.deprel() : "");
         }
         
         dos.flush();
@@ -83,8 +86,9 @@ public class TokenSequenceCodec {
             String tag = readString(dis);
             int startOffset = readVarInt(dis);
             int endOffset = readVarInt(dis);
-            
-            tokens.add(new SentenceDocument.Token(position, word, lemma, tag, startOffset, endOffset));
+            String deprel = readString(dis);
+
+            tokens.add(new SentenceDocument.Token(position, word, lemma, tag, startOffset, endOffset, deprel));
         }
         
         return tokens;
@@ -117,9 +121,10 @@ public class TokenSequenceCodec {
             String tag = readString(dis);
             int startOffset = readVarInt(dis);
             int endOffset = readVarInt(dis);
-            
+            String deprel = readString(dis);
+
             if (position == targetPosition) {
-                return new SentenceDocument.Token(position, word, lemma, tag, startOffset, endOffset);
+                return new SentenceDocument.Token(position, word, lemma, tag, startOffset, endOffset, deprel);
             }
             
             // Optimization: if positions are sorted and we've passed the target, stop
@@ -160,9 +165,10 @@ public class TokenSequenceCodec {
             String tag = readString(dis);
             int startOffset = readVarInt(dis);
             int endOffset = readVarInt(dis);
-            
+            String deprel = readString(dis);
+
             if (position >= startPos && position <= endPos) {
-                result.add(new SentenceDocument.Token(position, word, lemma, tag, startOffset, endOffset));
+                result.add(new SentenceDocument.Token(position, word, lemma, tag, startOffset, endOffset, deprel));
             }
             
             // Optimization: if positions are sorted and we've passed the end, stop

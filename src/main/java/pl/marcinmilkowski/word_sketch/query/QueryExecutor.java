@@ -6,8 +6,7 @@ import java.util.List;
 
 /**
  * Interface for word sketch query executors.
- * Allows different implementations (legacy, hybrid) to be used interchangeably.
- * This is the core abstraction that enables the hybrid index migration.
+ * Allows different implementations (legacy, hybrid, BlackLab) to be used interchangeably.
  */
 public interface QueryExecutor extends Closeable {
 
@@ -21,7 +20,7 @@ public interface QueryExecutor extends Closeable {
      * @return List of collocation results, sorted by logDice descending
      * @throws IOException if index access fails
      */
-    List<WordSketchQueryExecutor.WordSketchResult> findCollocations(String headword, String cqlPattern,
+    List<QueryResults.WordSketchResult> findCollocations(String headword, String cqlPattern,
                                              double minLogDice, int maxResults) throws IOException;
 
     /**
@@ -32,7 +31,7 @@ public interface QueryExecutor extends Closeable {
      * @return List of concordance results
      * @throws IOException if index access fails
      */
-    List<WordSketchQueryExecutor.ConcordanceResult> executeQuery(String cqlPattern, int maxResults) throws IOException;
+    List<QueryResults.ConcordanceResult> executeQuery(String cqlPattern, int maxResults) throws IOException;
 
     /**
      * Get the total frequency of a lemma in the corpus.
@@ -60,7 +59,7 @@ public interface QueryExecutor extends Closeable {
      * @return List of collocation results, sorted by logDice descending
      * @throws IOException if index access fails
      */
-    default List<WordSketchQueryExecutor.WordSketchResult> findGrammaticalRelation(
+    default List<QueryResults.WordSketchResult> findGrammaticalRelation(
             String headword, RelationType relType, double minLogDice, int maxResults) throws IOException {
         // Default implementation uses findCollocations with simple pattern
         return findCollocations(headword, relType.getSimplePattern(), minLogDice, maxResults);
@@ -70,9 +69,9 @@ public interface QueryExecutor extends Closeable {
      * Types of grammatical relations for semantic field exploration.
      */
     enum RelationType {
-        /** Adjective modifiers: "good theory" */
+        /** Adjective modifiers: "good theory" - adjective BEFORE noun */
         ADJ_MODIFIER("[tag=jj.*]",
-            "[lemma=\"%s\"] [tag=\"JJ.*\"]"),
+            "[tag=\"JJ.*\"] [lemma=\"%s\"]"),
 
         /** Adjectival predicates: "the theory is valid" - using copula be */
         ADJ_PREDICATE("[tag=jj.*]",
