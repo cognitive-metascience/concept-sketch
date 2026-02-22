@@ -2,6 +2,7 @@ package pl.marcinmilkowski.word_sketch;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import pl.marcinmilkowski.word_sketch.api.WordSketchApiServer;
 import pl.marcinmilkowski.word_sketch.config.GrammarConfigLoader;
 import pl.marcinmilkowski.word_sketch.indexer.blacklab.BlackLabConllUIndexer;
 import pl.marcinmilkowski.word_sketch.query.BlackLabQueryExecutor;
@@ -44,6 +45,9 @@ public class Main {
                     break;
                 case "blacklab-query":
                     handleBlackLabQueryCommand(args);
+                    break;
+                case "server":
+                    handleServerCommand(args);
                     break;
                 case "help":
                     showUsage();
@@ -94,6 +98,21 @@ public class Main {
         System.out.println();
         System.out.println("  # Query API");
         System.out.println("  curl 'http://localhost:8080/api/sketch/theory?deprel=amod'");
+        System.out.println();
+        System.out.println("Commands:");
+        System.out.println("  blacklab-index --input <file.conllu> --output <index-dir>");
+        System.out.println("      Index a CoNLL-U file with BlackLab");
+        System.out.println();
+        System.out.println("  blacklab-query --index <dir> --lemma <word> [--deprel <rel>]");
+        System.out.println("      Query the index for collocations");
+        System.out.println("      Options:");
+        System.out.println("        --deprel <rel>   Dependency relation (e.g., amod, nsubj, obj)");
+        System.out.println("        --min-logdice <n>  Minimum logDice score (default: 0)");
+        System.out.println("        --limit <n>      Max results (default: 20)");
+        System.out.println();
+        System.out.println("  server --index <dir> [--port <port>]");
+        System.out.println("      Start REST API server");
+        System.out.println();
     }
 
     private static void handleBlackLabIndexCommand(String[] args) {
@@ -181,6 +200,74 @@ public class Main {
                     result.getRelativeFrequency()
                 );
             }
+        }
+    }
+
+    private static void handleServerCommand(String[] args) throws IOException {
+        String indexPath = null;
+        int port = 8080;
+
+        for (int i = 1; i < args.length; i++) {
+            switch (args[i]) {
+                case "--index":
+                case "-i":
+                    indexPath = args[++i];
+                    break;
+                case "--port":
+                case "-p":
+                    port = Integer.parseInt(args[++i]);
+                    break;
+                default:
+                    System.err.println("Unknown option: " + args[i]);
+            }
+        }
+
+        if (indexPath == null) {
+            System.err.println("Error: --index is required");
+            System.err.println("Usage: java -jar word-sketch-lucene.jar server --index <dir> [--port <port>]");
+            return;
+        }
+
+        System.out.println("Starting API server...");
+        System.out.println("Index: " + indexPath);
+        System.out.println("Port: " + port);
+        System.out.println();
+
+        QueryExecutor executor = new BlackLabQueryExecutor(indexPath);
+
+        // Load grammar configuration (optional)
+        GrammarConfigLoader grammarConfig = null;
+        try {
+            var grammarPath = java.nio.file.Paths.get("grammars/relations.json");
+            grammarConfig = new GrammarConfigLoader(grammarPath);
+            System.out.println("Loaded grammar config: " + grammarConfig.getVersion());
+        } catch (IOException e) {
+            System.out.println("No grammar config found, using defaults.");
+        }
+
+        WordSketchApiServer server = WordSketchApiServer.builder()
+            .withExecutor(executor)
+            .withIndexPath(indexPath)
+            .withPort(port)
+            .withGrammarConfig(grammarConfig)
+            .build();
+
+        server.start();
+
+        Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+            System.out.println("\nShutting down...");
+            server.stop();
+            try {
+                executor.close();
+            } catch (IOException e) {
+                // Ignore
+            }
+        }));
+
+        try {
+            Thread.currentThread().join();
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
         }
     }
 }

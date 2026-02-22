@@ -53,6 +53,9 @@ public class QueryResults {
         private final int startOffset;
         private final int endOffset;
         private final String docId;
+        private final String collocateLemma;  // For grouped BCQL results
+        private final long frequency;          // For grouped BCQL results
+        private final double logDice;         // For grouped BCQL results
 
         public ConcordanceResult(String sentence, String lemma, String tag,
                                 String word, int startOffset, int endOffset, String docId) {
@@ -63,6 +66,26 @@ public class QueryResults {
             this.startOffset = startOffset;
             this.endOffset = endOffset;
             this.docId = docId;
+            this.collocateLemma = null;
+            this.frequency = 0;
+            this.logDice = 0.0;
+        }
+
+        /**
+         * Constructor for grouped BCQL results with collocate info.
+         */
+        public ConcordanceResult(String snippet, int start, int end, String docId,
+                                String collocateLemma, long frequency, double logDice) {
+            this.sentence = snippet;
+            this.lemma = null;
+            this.tag = null;
+            this.word = null;
+            this.startOffset = start;
+            this.endOffset = end;
+            this.docId = docId;
+            this.collocateLemma = collocateLemma;
+            this.frequency = frequency;
+            this.logDice = logDice;
         }
 
         /**
@@ -87,5 +110,8 @@ public class QueryResults {
         public int getStartOffset() { return startOffset; }
         public int getEndOffset() { return endOffset; }
         public String getDocId() { return docId; }
+        public String getCollocateLemma() { return collocateLemma; }
+        public long getFrequency() { return frequency; }
+        public double getLogDice() { return logDice; }
     }
 }

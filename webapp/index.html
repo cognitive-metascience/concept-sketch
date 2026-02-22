@@ -328,6 +328,7 @@
     <div class="tabs">
         <button class="tab active" onclick="switchTab('sketch')">Word Sketch</button>
         <button class="tab" onclick="switchTab('semantic')">Semantic Field Explorer</button>
+        <button class="tab" onclick="switchTab('bcql')">BCQL Query</button>
     </div>
 
     <div id="sketchTab" class="tab-content active">
@@ -367,10 +368,7 @@
         <div id="exploreMode" class="snowball-controls" style="grid-template-columns: 2fr 1.5fr 0.7fr 0.7fr 0.7fr 0.5fr;">
             <input type="text" id="exploreSeed" placeholder="Seed word (e.g., house, car, theory)">
             <select id="exploreRelation" title="Grammatical relation">
-                <option value="adj_predicate">X is ADJ (predicate)</option>
-                <option value="adj_modifier">ADJ X (modifier)</option>
-                <option value="subject_of">X VERBs (subject)</option>
-                <option value="object_of">VERB X (object)</option>
+                <!-- Populated dynamically from /api/relations -->
             </select>
             <input type="number" id="exploreTopAdj" value="15" min="5" max="30" title="Top collocates to use">
             <input type="number" id="exploreMinShared" value="2" min="1" max="5" title="Min shared collocates">
@@ -382,10 +380,7 @@
         <div id="multiexploreMode" class="snowball-controls" style="display: none; grid-template-columns: 2fr 1.5fr 0.7fr 0.7fr 0.7fr 0.5fr;">
             <input type="text" id="multiExploreSeed" placeholder="Seeds (comma-separated, e.g., theory,model,hypothesis)">
             <select id="multiExploreRelation" title="Grammatical relation">
-                <option value="adj_predicate">X is ADJ (predicate)</option>
-                <option value="adj_modifier">ADJ X (modifier)</option>
-                <option value="subject_of">X VERBs (subject)</option>
-                <option value="object_of">VERB X (object)</option>
+                <!-- Populated dynamically from /api/relations -->
             </select>
             <input type="number" id="multiExploreTopAdj" value="15" min="5" max="30" title="Top collocates per seed">
             <input type="number" id="multiExploreMinShared" value="2" min="1" max="5" title="Min shared collocates">
@@ -425,6 +420,25 @@
         </div>
         
         <div id="semanticDetails" class="results" style="margin-top: 20px;"></div>
+    </div>
+
+    <!-- BCQL Query Tab -->
+    <div id="bcqlTab" class="tab-content">
+        <div style="margin-bottom: 20px;">
+            <div style="margin-bottom: 15px;">
+                <label style="display: block; margin-bottom: 8px; font-weight: 600; color: #333;">BCQL Query</label>
+                <input type="text" id="bcqlInput" placeholder="e.g., [lemma=&quot;theory&quot;] []{0,3} [lemma=&quot;important&quot;]" style="width: 100%; padding: 12px; font-size: 14px; border: 2px solid #ddd; border-radius: 8px; font-family: monospace;">
+            </div>
+            <div style="display: flex; gap: 10px; align-items: center;">
+                <label for="bcqlLimit">Max results:</label>
+                <input type="number" id="bcqlLimit" value="20" min="1" max="100" style="width: 80px; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+                <button onclick="runBcqlQuery()" style="padding: 12px 24px; font-size: 16px; background: #4a90d9; color: white; border: none; border-radius: 8px; cursor: pointer;">Execute</button>
+            </div>
+            <div style="margin-top: 15px; padding: 10px; background: #f5f5f5; border-radius: 6px; font-size: 12px; color: #666;">
+                <strong>Syntax help:</strong> [lemma="word"] | [tag="JJ.*"] | []{0,5} (0-5 tokens) | {deprel="nsubj"} (dependency)
+            </div>
+        </div>
+        <div id="bcqlResults" class="results"></div>
     </div>
 
     <div id="radialModal" class="radial-modal" onclick="closeRadial(event)">
@@ -510,11 +524,98 @@
             btn.disabled = false;
         }
 
+        // Populate relation dropdowns from /api/relations
+        async function populateRelationDropdowns() {
+            const apiUrl = document.getElementById('apiUrl').value.trim();
+            const exploreSelect = document.getElementById('exploreRelation');
+            const multiExploreSelect = document.getElementById('multiExploreRelation');
+
+            if (!exploreSelect || !multiExploreSelect) return;
+
+            try {
+                const response = await fetch(`${apiUrl}/api/relations`);
+                const data = await response.json();
+
+                if (data.relations && Array.isArray(data.relations)) {
+                    const options = data.relations.map(rel => {
+                        const label = rel.name || rel.id;
+                        return `<option value="${rel.id}">${label}</option>`;
+                    }).join('');
+
+                    exploreSelect.innerHTML = options;
+                    multiExploreSelect.innerHTML = options;
+                }
+            } catch (e) {
+                console.error('Failed to load relations:', e);
+                // Fallback to default options if fetch fails
+                exploreSelect.innerHTML = `
+                    <option value="adj_predicate">X is ADJ (predicate)</option>
+                    <option value="adj_modifier">ADJ X (modifier)</option>
+                    <option value="subject_of">X VERBs (subject)</option>
+                    <option value="object_of">VERB X (object)</option>
+                `;
+                multiExploreSelect.innerHTML = exploreSelect.innerHTML;
+            }
+        }
+
+        // Initialize on page load
+        populateRelationDropdowns();
+
+        // Fetch examples for semantic field exploration
+        async function fetchSemanticFieldExamples(adj, noun, max = 10) {
+            const apiUrl = document.getElementById('apiUrl').value.trim();
+            const detailsDiv = document.getElementById('semanticDetails');
+
+            // Show loading in a modal or inline
+            const examplesId = 'semantic-examples-' + adj + '-' + noun;
+            let examplesDiv = document.getElementById(examplesId);
+            if (examplesDiv) {
+                // Toggle visibility if already loaded
+                examplesDiv.style.display = examplesDiv.style.display === 'none' ? 'block' : 'none';
+                return;
+            }
+
+            detailsDiv.insertAdjacentHTML('beforeend', `<div id="${examplesId}" class="examples" style="margin-top:20px; padding:15px; background:#f9f9f9; border-radius:8px;"><div class="loading">Fetching examples for "${adj} ${noun}"...</div></div>`);
+            examplesDiv = document.getElementById(examplesId);
+
+            try {
+                const response = await fetch(`${apiUrl}/api/semantic-field/examples?adjective=${encodeURIComponent(adj)}&noun=${encodeURIComponent(noun)}&max=${max}`);
+                const data = await response.json();
+
+                if (data.examples && data.examples.length > 0) {
+                    let html = `<h4 style="margin-top:0;">Examples: "${adj} ${noun}"</h4>`;
+                    data.examples.forEach((ex, i) => {
+                        // Highlight the adjective and noun in the sentence
+                        const highlighted = ex
+                            .replace(new RegExp(`\\b${adj}\\b`, 'gi'), '<strong style="color:#e74c3c;">$&</strong>')
+                            .replace(new RegExp(`\\b${noun}\\b`, 'gi'), '<strong style="color:#3498db;">$&</strong>');
+                        html += `<div class="example">${highlighted}</div>`;
+                    });
+                    examplesDiv.innerHTML = html;
+                } else {
+                    examplesDiv.innerHTML = `<div style="color:#888;">No examples found for "${adj} ${noun}".</div>`;
+                }
+            } catch (e) {
+                examplesDiv.innerHTML = `<div class="error">Failed to fetch examples: ${e.message}</div>`;
+            }
+        }
+
         function filterPos(pos) {
             activeFilters[pos] = !activeFilters[pos];
             if (currentWord) {
                 search();
             }
+        }
+
+        // Map frontend relation IDs to API relation IDs
+        function mapRelationToApi(relationId) {
+            const mapping = {
+                'adj_predicate': 'noun_adj_predicates',
+                'adj_modifier': 'noun_modifiers',
+                'subject_of': 'noun_verbs',
+                'object_of': 'verb_nouns'
+            };
+            return mapping[relationId] || relationId;
         }
 
         let currentSketchData = null;
@@ -536,10 +637,11 @@
             }
 
             let html = '';
+            let allAutoFetchData = [];
 
             // Process patterns from the API
             const patterns = data.patterns;
-            
+
             for (const [patternId, patternData] of Object.entries(patterns)) {
                 if (patternData.error) {
                     continue; // Skip patterns with errors
@@ -567,21 +669,36 @@
                         <div class="collocation-list">
                 `;
                 
+                // Auto-fetch examples for top 3 collocations
+                const topCollocs = collocations.slice(0, 3);
+                topCollocs.forEach((c, idx) => {
+                    allAutoFetchData.push({
+                        id: `example-${patternId}-${idx}`,
+                        word1: currentWord,
+                        word2: c.lemma,
+                        relation: mapRelationToApi(patternId),
+                        pos: c.pos || ''
+                    });
+                });
+
                 collocations.slice(0, 20).forEach((c, idx) => {
                     const score = c.logDice ? c.logDice.toFixed(2) : '-';
                     const freq = c.frequency || '-';
                     const word = c.lemma || '-';
                     const uniqueId = `example-${patternId}-${idx}`;
+                    const apiRelation = mapRelationToApi(patternId);
+                    // Show examples by default for top 3
+                    const showByDefault = idx < 3;
                     html += `
                         <div style="margin-bottom: 10px;">
                             <div class="collocation" style="cursor: pointer; display: flex; justify-content: space-between; align-items: center; padding: 10px; background: #f9f9f9; border-radius: 4px; border: 1px solid #ddd;">
-                                <span class="word" style="cursor: pointer; text-decoration: underline; color: #2980b9; font-weight: 500;" onclick="toggleSketchExamples('${uniqueId}', '${escapeJs(currentWord)}', '${escapeJs(word)}', '${escapeJs(patternId)}', '${escapeJs(c.pos || '')}')">${escapeHtml(word)}</span>
+                                <span class="word" style="cursor: pointer; text-decoration: underline; color: #2980b9; font-weight: 500;" onclick="toggleSketchExamples('${uniqueId}', '${escapeJs(currentWord)}', '${escapeJs(word)}', '${escapeJs(apiRelation)}', '${escapeJs(c.pos || '')}')">${escapeHtml(word)}</span>
                                 <span>
                                     <span class="score">logDice: ${score}</span>
                                     <span class="freq">(${freq})</span>
                                 </span>
                             </div>
-                            <div id="${uniqueId}" style="display: none; margin-top: 8px; margin-left: 10px; padding: 10px; background: #fef5e7; border-left: 3px solid #e74c3c; border-radius: 4px;"></div>
+                            <div id="${uniqueId}" style="display: ${showByDefault ? 'block' : 'none'}; margin-top: 8px; margin-left: 10px; padding: 10px; background: #fef5e7; border-left: 3px solid #e74c3c; border-radius: 4px;"><div class="loading">Loading examples...</div></div>
                         </div>
                     `;
                 });
@@ -612,6 +729,15 @@
             }
 
             resultsDiv.innerHTML = html;
+
+            // Auto-fetch examples for top collocations
+            if (allAutoFetchData && allAutoFetchData.length > 0) {
+                allAutoFetchData.forEach((item, idx) => {
+                    setTimeout(() => {
+                        fetchSketchExamples(item.id, item.word1, item.word2, item.relation, item.pos);
+                    }, idx * 200); // Stagger requests to avoid overwhelming the API
+                });
+            }
         }
 
         function escapeHtml(str) {
@@ -634,9 +760,18 @@
         }
 
         function openRadialSketch(patternId) {
-            if (!currentSketchData || !currentSketchData.patterns) return;
+            console.log('openRadialSketch called with patternId:', patternId);
+            console.log('currentSketchData:', currentSketchData);
+            if (!currentSketchData || !currentSketchData.patterns) {
+                console.error('No currentSketchData or patterns');
+                return;
+            }
             const pattern = currentSketchData.patterns[patternId];
-            if (!pattern || !pattern.collocations) return;
+            console.log('pattern:', pattern);
+            if (!pattern || !pattern.collocations) {
+                console.error('No pattern or collocations');
+                return;
+            }
 
             const items = pattern.collocations.map(c => ({
                 label: c.lemma,
@@ -644,6 +779,7 @@
                 meta: `freq ${c.frequency || 0}`,
                 color: '#4a90d9'
             }));
+            console.log('items:', items);
 
             showRadialPlot({
                 title: `${currentWord || 'Word'} • ${pattern.name}`,
@@ -1105,14 +1241,17 @@
             
             (data.discovered_nouns || []).slice(0, 20).forEach(noun => {
                 const sharedCollocates = noun.shared_collocates || noun.shared_adjectives || [];
+                const firstColloc = sharedCollocates[0] || '';
                 html += `
-                    <tr class="collocation" style="cursor:pointer;" onclick="document.getElementById('exploreSeed').value='${noun.word}'; runExplore();">
-                        <td style="padding:8px; font-weight:500;">${noun.word}</td>
+                    <tr class="collocation">
+                        <td style="padding:8px; font-weight:500; cursor:pointer;" onclick="document.getElementById('exploreSeed').value='${noun.word}'; runExplore();">${noun.word}</td>
                         <td style="text-align:center; padding:8px;">
                             <span style="background:#3498db; color:white; padding:2px 8px; border-radius:10px; font-size:12px;">${noun.shared_count}</span>
                         </td>
                         <td style="text-align:right; padding:8px; color:#666;">${noun.similarity_score.toFixed(1)}</td>
-                        <td style="padding:8px; font-size:12px; color:#888;">${sharedCollocates.slice(0, 5).join(', ')}${sharedCollocates.length > 5 ? '...' : ''}</td>
+                        <td style="padding:8px; font-size:12px; color:#888;">${sharedCollocates.slice(0, 5).map(c =>
+                            `<span style="cursor:pointer; color:#27ae60;" onclick="event.stopPropagation(); fetchSemanticFieldExamples('${c}', '${noun.word}')">${c}</span>`
+                        ).join(', ')}${sharedCollocates.length > 5 ? '...' : ''}</td>
                     </tr>
                 `;
             });
@@ -1129,7 +1268,7 @@
             coreCollocates.forEach(coll => {
                 const coverage = Math.round(coll.coverage * 100);
                 html += `
-                    <div style="background:#e8f8f5; border:1px solid #27ae60; border-radius:20px; padding:6px 12px; font-size:13px;">
+                    <div style="background:#e8f8f5; border:1px solid #27ae60; border-radius:20px; padding:6px 12px; font-size:13px; cursor:pointer;" onclick="fetchSemanticFieldExamples('${coll.word}', '${data.seed}')">
                         <strong>${coll.word}</strong>
                         <span style="color:#27ae60; margin-left:5px;">${coverage}%</span>
                     </div>
@@ -1771,6 +1910,108 @@
         // Enter key for semantic field
         document.getElementById('semanticNouns').addEventListener('keypress', function(e) {
             if (e.key === 'Enter') runSemanticField();
+        });
+
+        // BCQL Query functions
+        async function runBcqlQuery() {
+            const bcql = document.getElementById('bcqlInput').value.trim();
+            const limit = parseInt(document.getElementById('bcqlLimit').value) || 20;
+            const apiUrl = document.getElementById('apiUrl').value.trim();
+            const resultsDiv = document.getElementById('bcqlResults');
+
+            if (!bcql) {
+                resultsDiv.innerHTML = '<div class="error">Please enter a BCQL query</div>';
+                return;
+            }
+
+            resultsDiv.innerHTML = '<div class="loading">Executing BCQL query...</div>';
+
+            try {
+                const response = await fetch(`${apiUrl}/api/bcql`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ query: bcql, limit: limit })
+                });
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+
+                const data = await response.json();
+
+                if (data.error) {
+                    resultsDiv.innerHTML = `<div class="error"><strong>Query Error:</strong> ${data.error}</div>`;
+                    return;
+                }
+
+                // Render results - grouped collocations with logDice
+                let html = `<div style="margin-bottom: 15px; padding: 10px; background: #e8f5e9; border-radius: 6px;">
+                    <strong>${data.hits || 0}</strong> hits found
+                </div>`;
+
+                if (data.results && data.results.length > 0) {
+                    // Check if this is grouped results (has collocateLemma) or raw concordances
+                    const hasCollocate = data.results[0] && data.results[0].collocateLemma;
+
+                    if (hasCollocate) {
+                        // Grouped results with logDice
+                        data.results.forEach((result, idx) => {
+                            const collocate = result.collocateLemma || '';
+                            const freq = result.frequency || 0;
+                            const logDice = result.logDice || 0;
+                            const sentence = result.sentence || '';
+
+                            html += `<div style="margin-bottom: 15px; padding: 12px; background: white; border-radius: 6px; border-left: 4px solid #4caf50;">
+                                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                                    <span style="font-weight: bold; font-size: 16px; color: #2e7d32;">${escapeHtml(collocate)}</span>
+                                    <span style="background: #e8f5e9; padding: 4px 8px; border-radius: 4px; font-size: 12px;">
+                                        logDice: <strong>${logDice.toFixed(2)}</strong>
+                                    </span>
+                                </div>
+                                <div style="color: #666; font-size: 12px; margin-bottom: 8px;">
+                                    Frequency: ${freq}
+                                </div>
+                                ${sentence ? `<div style="font-family: monospace; font-size: 13px; color: #333; padding: 8px; background: #f5f5f5; border-radius: 4px;">${escapeHtml(sentence)}</div>` : ''}
+                            </div>`;
+                        });
+                    } else {
+                        // Raw concordances (legacy format)
+                        data.results.forEach((result, idx) => {
+                            const sentence = result.sentence || '';
+                            const matchStart = result.matchStart || 0;
+                            const matchEnd = result.matchEnd || 0;
+
+                            // Highlight the match
+                            let highlighted = '';
+                            if (matchStart >= 0 && matchEnd > matchStart) {
+                                highlighted = escapeHtml(sentence.substring(0, matchStart)) +
+                                    '<mark style="background: #ffeb3b; padding: 2px;">' +
+                                    escapeHtml(sentence.substring(matchStart, matchEnd)) +
+                                    '</mark>' +
+                                    escapeHtml(sentence.substring(matchEnd));
+                            } else {
+                                highlighted = escapeHtml(sentence);
+                            }
+
+                            html += `<div style="margin-bottom: 10px; padding: 10px; background: white; border-radius: 6px; border-left: 3px solid #4a90d9; font-family: monospace; font-size: 13px; line-height: 1.5;">
+                                <div style="color: #666; font-size: 11px; margin-bottom: 5px;">#${idx + 1}</div>
+                                ${highlighted}
+                            </div>`;
+                        });
+                    }
+                } else {
+                    html += '<div style="color: #666;">No matches found.</div>';
+                }
+
+                resultsDiv.innerHTML = html;
+
+            } catch (error) {
+                resultsDiv.innerHTML = `<div class="error">Error: ${error.message}</div>`;
+            }
+        }
+
+        // Enter key for BCQL query
+        document.getElementById('bcqlInput').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') runBcqlQuery();
         });
     </script>
 </body>

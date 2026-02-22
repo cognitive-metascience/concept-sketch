@@ -34,6 +34,20 @@ public interface QueryExecutor extends Closeable {
     List<QueryResults.ConcordanceResult> executeQuery(String cqlPattern, int maxResults) throws IOException;
 
     /**
+     * Execute a BCQL (BlackLab Corpus Query Language) query for concordance results.
+     * Uses CorpusQueryLanguageParser instead of ContextualQueryLanguageParser.
+     *
+     * @param bcqlPattern BCQL pattern to search for
+     * @param maxResults Maximum number of results to return
+     * @return List of concordance results
+     * @throws IOException if index access fails
+     */
+    default List<QueryResults.ConcordanceResult> executeBcqlQuery(String bcqlPattern, int maxResults) throws IOException {
+        // Default: treat BCQL as CQL (for backward compatibility)
+        return executeQuery(bcqlPattern, maxResults);
+    }
+
+    /**
      * Get the total frequency of a lemma in the corpus.
      *
      * @param lemma The lemma to look up

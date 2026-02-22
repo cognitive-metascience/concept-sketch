@@ -10,6 +10,8 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.*;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 /**
@@ -98,14 +100,9 @@ public class GrammarConfigLoader {
                 throw new IllegalArgumentException("Missing 'id' field for relation at index " + i);
             }
 
-            // Support both new format (pattern, head_position, dual) and legacy format (cql_pattern)
+            // Support BCQL format with {head} placeholder
             String pattern = relObj.containsKey("pattern") ? relObj.getString("pattern") :
                            (relObj.containsKey("cql_pattern") ? relObj.getString("cql_pattern") : "");
-
-            // VALIDATION: Reject legacy {head} format - throw exception
-            if (pattern.contains("{head}")) {
-                throw new IllegalArgumentException("Relation '" + id + "' uses deprecated {head} format. Use [lemma=\"...\"] instead.");
-            }
 
             int headPosition = relObj.containsKey("head_position") ? relObj.getIntValue("head_position") :
                               (relObj.containsKey("head_pos") ? 1 : 1); // default to 1
@@ -114,14 +111,20 @@ public class GrammarConfigLoader {
 
             // VALIDATION: Require pattern - throw exception if missing
             if (pattern == null || pattern.isBlank()) {
-                throw new IllegalArgumentException("Relation '" + id + "' has no pattern - every relation must have a CQL pattern");
+                throw new IllegalArgumentException("Relation '" + id + "' has no pattern - every relation must have a BCQL pattern");
             }
 
-            // VALIDATION: Check positions match pattern token count - throw exception
-            int tokenCount = countPatternTokens(pattern);
-            if (headPosition < 1 || headPosition > tokenCount || collocatePosition < 1 || collocatePosition > tokenCount) {
-                throw new IllegalArgumentException("Relation '" + id + "': positions (" + headPosition + "," + collocatePosition
-                    + ") must be between 1 and " + tokenCount + " (pattern has " + tokenCount + " tokens: " + pattern + ")");
+            // VALIDATION: Skip token count validation for patterns with {head} or {deprel} placeholders
+            // These are dependency relations where BlackLab handles the placeholder specially
+            boolean hasHead = pattern.contains("{head}");
+            boolean hasDeprel = pattern.indexOf("{deprel") >= 0;
+            boolean hasPlaceholder = hasHead || hasDeprel;
+            if (!hasPlaceholder) {
+                int tokenCount = countPatternTokens(pattern);
+                if (headPosition < 1 || headPosition > tokenCount || collocatePosition < 1 || collocatePosition > tokenCount) {
+                    throw new IllegalArgumentException("Relation '" + id + "': positions (" + headPosition + "," + collocatePosition
+                        + ") must be between 1 and " + tokenCount + " (pattern has " + tokenCount + " tokens: " + pattern + ")");
+                }
             }
 
             boolean dual = relObj.containsKey("dual") && relObj.getBoolean("dual");
@@ -222,6 +225,13 @@ public class GrammarConfigLoader {
     }
 
     /**
+     * Get a relation by ID (direct access, returns null if not found).
+     */
+    public RelationConfig getRelationById(String id) {
+        return relationsById.get(id);
+    }
+
+    /**
      * Get relations for a specific head POS group.
      */
     public List<RelationConfig> getRelationsForHeadPos(String headPos) {
@@ -306,24 +316,150 @@ public class GrammarConfigLoader {
         }
 
         /**
-         * Get the full CQL pattern with headword substituted at headPosition.
+         * Get the BCQL pattern with headword substituted.
+         * For BCQL format: replaces the constraint at head_position with [lemma="headword" & original_constraint]
          */
         public String getFullPattern(String headword) {
-            if (pattern == null || headword == null) return null;
+            if (pattern == null) return null;
+            if (headword == null || headword.isBlank()) return pattern;
 
-            // Check for legacy format: pattern doesn't contain {head} placeholder and is a single constraint
-            if (isLegacyFormat()) {
-                return null; // Signal to use fallback
+            // Parse the pattern and substitute the headword at head_position
+            return substituteHeadword(pattern, headword, headPosition);
+        }
+
+        /**
+         * Substitute the headword into the BCQL pattern at the specified position.
+         * E.g., pattern "[xpos=\"NN.*\"] [xpos=\"JJ.*\"]" with head at position 1
+         * becomes "[lemma=\"theory\" & xpos=\"NN.*\"] [xpos=\"JJ.*\"]"
+         */
+        private static String substituteHeadword(String pattern, String headword, int headPosition) {
+            if (pattern == null || headword == null || headPosition < 1) {
+                return pattern;
             }
 
-            // Split pattern into elements and replace the headPosition element with lemma constraint
-            String[] elements = pattern.split("\\s+");
-            if (headPosition < 1 || headPosition > elements.length) {
-                return pattern; // Return as-is if position is invalid
+            // Split pattern into tokens, preserving numbered prefixes like "1:" or "2:"
+            List<String> tokens = new ArrayList<>();
+            int i = 0;
+            while (i < pattern.length()) {
+                // Skip whitespace
+                if (Character.isWhitespace(pattern.charAt(i))) {
+                    i++;
+                    continue;
+                }
+
+                // Check for numbered prefix like "1:" or "2:"
+                String prefix = "";
+                if (i < pattern.length() && Character.isDigit(pattern.charAt(i))) {
+                    int colonPos = pattern.indexOf(':', i);
+                    if (colonPos > i && colonPos < i + 3) {
+                        prefix = pattern.substring(i, colonPos + 1);
+                        i = colonPos + 1;
+                    }
+                }
+
+                if (i < pattern.length() && pattern.charAt(i) == '[') {
+                    int end = pattern.indexOf(']', i);
+                    if (end > i) {
+                        tokens.add(prefix + pattern.substring(i, end + 1));
+                        i = end + 1;
+                    } else {
+                        i++;
+                    }
+                } else if (i < pattern.length() && pattern.charAt(i) == '"') {
+                    // Handle quoted strings outside brackets
+                    int end = pattern.indexOf('"', i + 1);
+                    if (end > i) {
+                        i = end + 1;
+                    } else {
+                        i++;
+                    }
+                } else {
+                    i++;
+                }
             }
-            // Replace the element at headPosition (1-based) with lemma constraint
-            elements[headPosition - 1] = "[lemma=\"" + headword.toLowerCase() + "\"]";
-            return String.join(" ", elements);
+
+            if (headPosition > tokens.size()) {
+                return pattern;
+            }
+
+            // Get the constraint at headPosition and merge with lemma
+            String token = tokens.get(headPosition - 1);
+            // Extract just the constraint part (after any "1:" prefix)
+            String constraint = token;
+            if (!token.isEmpty() && Character.isDigit(token.charAt(0))) {
+                int colon = token.indexOf(':');
+                if (colon > 0) {
+                    constraint = token.substring(colon + 1);
+                }
+            }
+            String newConstraint = mergeLemmaConstraint(constraint, headword);
+
+            // Replace with prefix + new constraint
+            String prefix = "";
+            if (!token.isEmpty() && Character.isDigit(token.charAt(0))) {
+                int colon = token.indexOf(':');
+                if (colon > 0) {
+                    prefix = token.substring(0, colon + 1);
+                }
+            }
+            tokens.set(headPosition - 1, prefix + newConstraint);
+
+            return String.join(" ", tokens);
+        }
+
+        /**
+         * Merge lemma constraint with existing xpos/pos constraint.
+         * E.g., "[xpos=\"NN.*\"]" + "theory" -> "[lemma=\"theory\" & xpos=\"NN.*\"]"
+         */
+        private static String mergeLemmaConstraint(String existingConstraint, String headword) {
+            // Parse existing constraint to extract xpos/pos tags
+            String xposPattern = extractXposPattern(existingConstraint);
+            String posPattern = extractPosPattern(existingConstraint);
+
+            // Build new constraint with lemma
+            StringBuilder sb = new StringBuilder();
+            sb.append("[lemma=\"").append(escapeForRegex(headword)).append("\"");
+
+            if (xposPattern != null) {
+                sb.append(" & ").append(xposPattern);
+            }
+            if (posPattern != null) {
+                sb.append(" & ").append(posPattern);
+            }
+
+            sb.append("]");
+            return sb.toString();
+        }
+
+        /**
+         * Extract xpos constraint from an existing constraint string.
+         * E.g., "[xpos=\"NN.*\"]" returns "xpos=\"NN.*\""
+         */
+        private static String extractXposPattern(String constraint) {
+            return extractConstraintAttribute(constraint, "xpos");
+        }
+
+        /**
+         * Extract pos constraint from an existing constraint string.
+         * E.g., "[tag=\"NN\"]" returns "tag=\"NN\""
+         */
+        private static String extractPosPattern(String constraint) {
+            return extractConstraintAttribute(constraint, "tag");
+        }
+
+        private static String extractConstraintAttribute(String constraint, String attrName) {
+            if (constraint == null) return null;
+            Pattern p = Pattern.compile(attrName + "=\"([^\"]*)\"");
+            Matcher m = p.matcher(constraint);
+            if (m.find()) {
+                return attrName + "=\"" + m.group(1) + "\"";
+            }
+            return null;
+        }
+
+        private static String escapeForRegex(String s) {
+            if (s == null) return "";
+            return s.replace("\\", "\\\\").replace("\"", "\\\"");
         }
 
         /**
