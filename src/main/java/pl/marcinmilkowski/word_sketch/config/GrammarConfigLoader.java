@@ -104,22 +104,28 @@ public class GrammarConfigLoader {
             String pattern = relObj.containsKey("pattern") ? relObj.getString("pattern") :
                            (relObj.containsKey("cql_pattern") ? relObj.getString("cql_pattern") : "");
 
-            int headPosition = relObj.containsKey("head_position") ? relObj.getIntValue("head_position") :
-                              (relObj.containsKey("head_pos") ? 1 : 1); // default to 1
-            int collocatePosition = relObj.containsKey("collocate_position") ? relObj.getIntValue("collocate_position") :
-                                   (relObj.containsKey("collocate_pos") ? 2 : 2);
+            // Parse positions from numbered labels in pattern (1: for head, 2: for collocate)
+            // If explicit fields are provided, use those; otherwise derive from pattern
+            int derivedHeadPos = deriveHeadPositionFromPattern(pattern);
+            int derivedCollocatePos = deriveCollocatePositionFromPattern(pattern);
+
+            int headPosition = relObj.containsKey("head_position") ? relObj.getIntValue("head_position") : derivedHeadPos;
+            int collocatePosition = relObj.containsKey("collocate_position") ? relObj.getIntValue("collocate_position") : derivedCollocatePos;
 
             // VALIDATION: Require pattern - throw exception if missing
             if (pattern == null || pattern.isBlank()) {
                 throw new IllegalArgumentException("Relation '" + id + "' has no pattern - every relation must have a BCQL pattern");
             }
 
-            // VALIDATION: Skip token count validation for patterns with {head} or {deprel} placeholders
-            // These are dependency relations where BlackLab handles the placeholder specially
+            // VALIDATION: Skip token count validation for:
+            // 1. Patterns with {head} or {deprel} placeholders (dependency relations)
+            // 2. Dual relations where head and collocate are the same
             boolean hasHead = pattern.contains("{head}");
             boolean hasDeprel = pattern.indexOf("{deprel") >= 0;
             boolean hasPlaceholder = hasHead || hasDeprel;
-            if (!hasPlaceholder) {
+            boolean isDual = relObj.containsKey("dual") && relObj.getBoolean("dual");
+
+            if (!hasPlaceholder && !isDual) {
                 int tokenCount = countPatternTokens(pattern);
                 if (headPosition < 1 || headPosition > tokenCount || collocatePosition < 1 || collocatePosition > tokenCount) {
                     throw new IllegalArgumentException("Relation '" + id + "': positions (" + headPosition + "," + collocatePosition
@@ -127,7 +133,7 @@ public class GrammarConfigLoader {
                 }
             }
 
-            boolean dual = relObj.containsKey("dual") && relObj.getBoolean("dual");
+            boolean dual = isDual;
 
             RelationConfig config = new RelationConfig(
                 id,
@@ -193,6 +199,90 @@ public class GrammarConfigLoader {
             }
         }
         return count;
+    }
+
+    /**
+     * Derive head position from numbered labels in pattern.
+     * Looks for "1:" prefix - that position is the head.
+     * Returns default 1 if not found.
+     */
+    private static int deriveHeadPositionFromPattern(String pattern) {
+        if (pattern == null || pattern.isBlank()) {
+            return 1;
+        }
+        // Find position of "1:" in pattern - count tokens up to and including "1:"
+        int pos = 1;
+        int i = 0;
+        while (i < pattern.length()) {
+            // Skip whitespace
+            if (Character.isWhitespace(pattern.charAt(i))) {
+                i++;
+                continue;
+            }
+            // Check for "1:" prefix
+            if (i + 1 < pattern.length() && pattern.charAt(i) == '1' && pattern.charAt(i + 1) == ':') {
+                return pos;
+            }
+            // Check for "2:" prefix (not head)
+            if (i + 1 < pattern.length() && pattern.charAt(i) == '2' && pattern.charAt(i + 1) == ':') {
+                // Count this token but don't return
+            }
+            // Count tokens (start with [)
+            if (pattern.charAt(i) == '[') {
+                int end = pattern.indexOf(']', i);
+                if (end > i) {
+                    pos++;
+                    i = end + 1;
+                } else {
+                    i++;
+                }
+            } else {
+                i++;
+            }
+        }
+        return 1; // default
+    }
+
+    /**
+     * Derive collocate position from numbered labels in pattern.
+     * Looks for "2:" prefix - that position is the collocate.
+     * Returns default 2 if not found.
+     */
+    private static int deriveCollocatePositionFromPattern(String pattern) {
+        if (pattern == null || pattern.isBlank()) {
+            return 2;
+        }
+        // Find position of "2:" in pattern - count tokens up to and including "2:"
+        int pos = 1;
+        int i = 0;
+        while (i < pattern.length()) {
+            // Skip whitespace
+            if (Character.isWhitespace(pattern.charAt(i))) {
+                i++;
+                continue;
+            }
+            // Check for "2:" prefix
+            if (i + 1 < pattern.length() && pattern.charAt(i) == '2' && pattern.charAt(i + 1) == ':') {
+                return pos;
+            }
+            // Check for "1:" prefix (not collocate)
+            if (i + 1 < pattern.length() && pattern.charAt(i) == '1' && pattern.charAt(i + 1) == ':') {
+                // Count this token but don't return
+            }
+            // Count tokens (start with [)
+            if (pattern.charAt(i) == '[') {
+                int end = pattern.indexOf(']', i);
+                if (end > i) {
+                    pos++;
+                    i = end + 1;
+                } else {
+                    i++;
+                }
+            } else {
+                i++;
+            }
+        }
+        return 2; // default
     }
 
     /**

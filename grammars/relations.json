@@ -1,6 +1,6 @@
 {
   "version": "2.0",
-  "description": "BCQL grammar with numbered capture groups - number = collocate_position",
+  "description": "BCQL grammar - positions derived from numbered labels (1: = head, 2: = collocate)",
   "bcql": true,
   "relations": [
     {
@@ -8,28 +8,22 @@
       "name": "Adjectives (predicative)",
       "description": "Adjective predicates with copula (e.g., 'hypothesis is valid', 'theory appears correct')",
       "pattern": "1:[xpos=\"NN.*\"] [lemma=\"be|appear|seem|look|sound|feel|smell|taste|remain|become|get|grow|turn|prove\"] 2:[xpos=\"JJ.*\"]",
-      "head_position": 1,
-      "collocate_position": 3,
       "relation_type": "SURFACE",
-      "dual": false,      
+      "dual": false
     },
     {
       "id": "noun_modifiers",
       "name": "Modifiers (adjectives)",
       "description": "Adjectives modifying nouns (e.g., 'big house', 'red car')",
       "pattern": "2:[xpos=\"JJ.*\"] 1:[xpos=\"NN.*\"]",
-      "head_position": 2,
-      "collocate_position": 1,
       "relation_type": "SURFACE",
-      "dual": false,
+      "dual": false
     },
     {
       "id": "subject_of",
       "name": "Subjects",
       "description": "Subject of verbs",
       "pattern": "1:[xpos=\"NN.*\"] 2:[xpos=\"VB.*\"]",
-      "head_position": 1,
-      "collocate_position": 2,
       "relation_type": "SURFACE"
     },
     {
@@ -37,8 +31,6 @@
       "name": "Objects (direct)",
       "description": "Direct objects of verbs",
       "pattern": "1:[xpos=\"VB.*\"] 2:[xpos=\"NN.*\"]",
-      "head_position": 1,
-      "collocate_position": 2,
       "relation_type": "SURFACE"
     },
     {
@@ -46,8 +38,6 @@
       "name": "Verbs (subject of)",
       "description": "Verbs appearing near nouns (subjects)",
       "pattern": "1:[xpos=\"NN.*\"] []{0,3} 2:[xpos=\"VB.*\"]",
-      "head_position": 1,
-      "collocate_position": 2,
       "relation_type": "SURFACE"
     },
     {
@@ -55,8 +45,6 @@
       "name": "Nouns in compound",
       "description": "Other nouns in compound (e.g., 'coffee house', 'house party')",
       "pattern": "1:[xpos=\"NN.*\"] 2:[xpos=\"NN.*\"]",
-      "head_position": 1,
-      "collocate_position": 2,
       "relation_type": "SURFACE"
     },
     {
@@ -64,8 +52,6 @@
       "name": "Prepositions",
       "description": "Prepositions (e.g., 'house of', 'at the house')",
       "pattern": "1:[xpos=\"NN.*\"] 2:[xpos=\"IN\"]",
-      "head_position": 1,
-      "collocate_position": 2,
       "relation_type": "SURFACE"
     },
     {
@@ -73,8 +59,6 @@
       "name": "Adverbs",
       "description": "Adverbs modifying nouns (e.g., 'almost home')",
       "pattern": "2:[xpos=\"RB.*\"] 1:[xpos=\"NN.*\"]",
-      "head_position": 2,
-      "collocate_position": 1,
       "relation_type": "SURFACE"
     },
     {
@@ -82,8 +66,6 @@
       "name": "Possessive nouns",
       "description": "Possessive forms (e.g., 'house's')",
       "pattern": "2:[xpos=\"NN.*Z\"] 1:[xpos=\"NN.*\"]",
-      "head_position": 2,
-      "collocate_position": 1,
       "default_slop": 1,
       "relation_type": "SURFACE"
     },
@@ -92,8 +74,6 @@
       "name": "Predicate nouns",
       "description": "Noun predicates with 'be' (e.g., 'theory is a science', 'this is evidence')",
       "pattern": "1:[xpos=\"NN.*\"] [lemma=\"be|appear|seem|look|sound|feel|smell|taste|remain|become|get|grow|turn|prove\"] 2:[xpos=\"NN.*\"]",
-      "head_position": 1,
-      "collocate_position": 3,
       "default_slop": 8,
       "relation_type": "SURFACE"
     },
@@ -102,8 +82,6 @@
       "name": "Pronominal objects",
       "description": "Pronouns as objects (e.g., 'tell them', 'see us')",
       "pattern": "2:[xpos=\"VB.*\"] 1:[xpos=\"PRP\"]",
-      "head_position": 2,
-      "collocate_position": 1,
       "default_slop": 3,
       "relation_type": "SURFACE"
     },
@@ -112,8 +90,6 @@
       "name": "Pronominal subjects",
       "description": "Pronouns as subjects (e.g., 'it works', 'they agree')",
       "pattern": "2:[xpos=\"PRP\"] 1:[xpos=\"VB.*\"]",
-      "head_position": 2,
-      "collocate_position": 1,
       "default_slop": 3,
       "relation_type": "SURFACE"
     },
@@ -122,8 +98,6 @@
       "name": "Noun modifiers (of nouns)",
       "description": "Nouns modifying nouns (e.g., 'city government', 'cancer research')",
       "pattern": "2:[xpos=\"NN.*\"] 1:[xpos=\"NN.*\"]",
-      "head_position": 2,
-      "collocate_position": 1,
       "default_slop": 2,
       "relation_type": "SURFACE"
     },
@@ -132,8 +106,6 @@
       "name": "Adjective modifiers (of adjectives)",
       "description": "Adverbs modifying adjectives (e.g., 'very happy', 'extremely difficult')",
       "pattern": "2:[xpos=\"RB.*\"] 1:[xpos=\"JJ.*\"]",
-      "head_position": 2,
-      "collocate_position": 1,
       "default_slop": 1,
       "relation_type": "SURFACE"
     },
@@ -142,8 +114,6 @@
       "name": "Verb modifiers",
       "description": "Adverbs modifying verbs (e.g., 'quickly run', 'carefully analyze')",
       "pattern": "2:[xpos=\"RB.*\"] 1:[xpos=\"VB.*\"]",
-      "head_position": 2,
-      "collocate_position": 1,
       "default_slop": 2,
       "relation_type": "SURFACE"
     },
@@ -152,8 +122,6 @@
       "name": "Possessors",
       "description": "Possessive nouns (e.g., 'John's house', 'government's policy')",
       "pattern": "2:[xpos=\"NN.*Z\"] 1:[xpos=\"NN.*\"]",
-      "head_position": 2,
-      "collocate_position": 1,
       "default_slop": 1,
       "relation_type": "SURFACE"
     },
@@ -162,8 +130,6 @@
       "name": "Pronominal possessors",
       "description": "Possessive pronouns (e.g., 'my house', 'their policy')",
       "pattern": "2:[xpos=\"PP$\"] 1:[xpos=\"NN.*\"]",
-      "head_position": 2,
-      "collocate_position": 1,
       "default_slop": 1,
       "relation_type": "SURFACE"
     },
@@ -172,18 +138,14 @@
       "name": "Wh-words",
       "description": "Wh-words following verbs (e.g., 'know what', 'ask who')",
       "pattern": "1:[xpos=\"VB.*\"] 2:[xpos=\"W.*\"]",
-      "head_position": 1,
-      "collocate_position": 2,
       "default_slop": 3,
       "relation_type": "SURFACE"
     },
     {
-      "id": "infin_comp",
+      "id": "infincomp",
       "name": "Infinitive complements",
       "description": "Infinitive objects (e.g., 'want to go', 'need to know')",
       "pattern": "1:[xpos=\"VB.*\"] [xpos=\"TO\"] 2:[xpos=\"VB.*\"]",
-      "head_position": 1,
-      "collocate_position": 3,
       "default_slop": 4,
       "relation_type": "SURFACE"
     },
@@ -192,8 +154,6 @@
       "name": "-ing complements",
       "description": "Gerund complements (e.g., 'enjoy reading', 'consider leaving')",
       "pattern": "1:[xpos=\"VB.*\"] 2:[xpos=\"VBG\"]",
-      "head_position": 1,
-      "collocate_position": 2,
       "default_slop": 3,
       "relation_type": "SURFACE"
     },
@@ -202,8 +162,6 @@
       "name": "Passive constructions",
       "description": "Passive voice (e.g., 'is known by', 'was developed by')",
       "pattern": "1:[xpos=\"VBN\"] [word=\"by\"] 2:[xpos=\"NN.*\"]",
-      "head_position": 1,
-      "collocate_position": 3,
       "default_slop": 8,
       "relation_type": "SURFACE"
     },
@@ -212,8 +170,6 @@
       "name": "Reflexive constructions",
       "description": "Reflexive pronouns (e.g., 'protect themselves', 'enjoy himself')",
       "pattern": "1:[xpos=\"VB.*\"] 2:[xpos=\"PRP\" & word=\".*self|.*selves\"]",
-      "head_position": 1,
-      "collocate_position": 2,
       "default_slop": 3,
       "relation_type": "SURFACE"
     },
@@ -222,8 +178,6 @@
       "name": "It-cleft constructions",
       "description": "It's X to... patterns (e.g., 'it's important to note')",
       "pattern": "2:[word=\"it\"] [xpos=\"VB.*\"] 1:[xpos=\"JJ.*\"]",
-      "head_position": 3,
-      "collocate_position": 1,
       "default_slop": 10,
       "relation_type": "SURFACE"
     },
@@ -232,8 +186,6 @@
       "name": "Prepositional phrases",
       "description": "Prepositional phrases (e.g., 'house in London', 'book on table')",
       "pattern": "1:[xpos=\"NN.*\"] [xpos=\"IN\"] 2:[xpos=\"NN.*\"]",
-      "head_position": 1,
-      "collocate_position": 3,
       "default_slop": 5,
       "relation_type": "SURFACE"
     },
@@ -242,8 +194,6 @@
       "name": "Adjective complements",
       "description": "Adjectives as complements of verbs (e.g., 'consider important', 'keep clean')",
       "pattern": "1:[xpos=\"VB.*\"] 2:[xpos=\"JJ.*\"]",
-      "head_position": 1,
-      "collocate_position": 2,
       "default_slop": 4,
       "relation_type": "SURFACE"
     },
@@ -252,8 +202,6 @@
       "name": "Adjectives (complements)",
       "description": "Adjectives after verbs (e.g., 'becomes happy', 'seems difficult')",
       "pattern": "1:[xpos=\"VB.*\"] 2:[xpos=\"JJ.*\"]",
-      "head_position": 1,
-      "collocate_position": 2,
       "default_slop": 4,
       "relation_type": "SURFACE"
     },
@@ -262,8 +210,6 @@
       "name": "Intransitive particles",
       "description": "Particles after intransitive verbs (e.g., 'wake up', 'break down')",
       "pattern": "1:[xpos=\"VB.*\"] 2:[xpos=\"RP\"]",
-      "head_position": 1,
-      "collocate_position": 2,
       "default_slop": 1,
       "relation_type": "SURFACE"
     },
@@ -272,8 +218,6 @@
       "name": "Transitive particles",
       "description": "Particles with transitive verbs (e.g., 'pick up', 'put down')",
       "pattern": "1:[xpos=\"VB.*\"] [xpos=\"NN.*\"] 2:[xpos=\"RP\"]",
-      "head_position": 1,
-      "collocate_position": 3,
       "default_slop": 2,
       "relation_type": "SURFACE"
     },
@@ -282,20 +226,14 @@
       "name": "Nouns (objects/subjects)",
       "description": "Nouns appearing near verbs (objects/subjects)",
       "pattern": "1:[xpos=\"NN.*\"]",
-      "head_position": 1,
-      "collocate_position": 1,
       "dual": true,
-      "relation_type": "SURFACE",
-      "bcql_description": "Nouns appearing near verbs",
-      "bcql_pattern": "1:[xpos=\"NN.*\"]"
+      "relation_type": "SURFACE"
     },
     {
       "id": "verb_particles",
       "name": "Particles",
       "description": "Particles (e.g., 'give up', 'break down')",
       "pattern": "1:[xpos=\"VB.*\"] 2:[xpos=\"RP\"]",
-      "head_position": 1,
-      "collocate_position": 2,
       "default_slop": 2,
       "relation_type": "SURFACE"
     },
@@ -304,8 +242,6 @@
       "name": "Prepositions",
       "description": "Prepositions (e.g., 'depend on', 'look at')",
       "pattern": "1:[xpos=\"VB.*\"] 2:[xpos=\"IN\"]",
-      "head_position": 1,
-      "collocate_position": 2,
       "default_slop": 5,
       "relation_type": "SURFACE"
     },
@@ -314,8 +250,6 @@
       "name": "Adverbs",
       "description": "Adverbs modifying verbs",
       "pattern": "2:[xpos=\"RB.*\"] 1:[xpos=\"VB.*\"]",
-      "head_position": 2,
-      "collocate_position": 1,
       "default_slop": 3,
       "relation_type": "SURFACE"
     },
@@ -324,8 +258,6 @@
       "name": "Adjectives (verb context)",
       "description": "Adjectives in verb context (e.g., 'become happy')",
       "pattern": "1:[xpos=\"VB.*\"] 2:[xpos=\"JJ.*\"]",
-      "head_position": 1,
-      "collocate_position": 2,
       "default_slop": 4,
       "relation_type": "SURFACE"
     },
@@ -334,8 +266,6 @@
       "name": "Infinitive 'to'",
       "description": "Infinitive marker (e.g., 'want to', 'need to')",
       "pattern": "1:[xpos=\"VB.*\"] 2:[xpos=\"TO\"]",
-      "head_position": 1,
-      "collocate_position": 2,
       "default_slop": 2,
       "relation_type": "SURFACE"
     },
@@ -344,8 +274,6 @@
       "name": "Other verbs",
       "description": "Verb chains (e.g., 'try to make')",
       "pattern": "1:[xpos=\"VB.*\"] [xpos=\"TO\"] 2:[xpos=\"VB.*\"]",
-      "head_position": 1,
-      "collocate_position": 3,
       "default_slop": 5,
       "relation_type": "SURFACE"
     },
@@ -354,8 +282,6 @@
       "name": "Nouns modified",
       "description": "Nouns modified by the adjective",
       "pattern": "2:[xpos=\"JJ.*\"] 1:[xpos=\"NN.*\"]",
-      "head_position": 2,
-      "collocate_position": 1,
       "default_slop": 3,
       "relation_type": "SURFACE"
     },
@@ -364,8 +290,6 @@
       "name": "Adverbs (intensifiers)",
       "description": "Adverbs modifying adjectives (e.g., 'very big')",
       "pattern": "2:[xpos=\"RB.*\"] 1:[xpos=\"JJ.*\"]",
-      "head_position": 2,
-      "collocate_position": 1,
       "default_slop": 3,
       "relation_type": "SURFACE"
     },
@@ -374,8 +298,6 @@
       "name": "Verbs",
       "description": "Verbs (e.g., 'be happy', 'become sad')",
       "pattern": "1:[xpos=\"VB.*\"] 2:[xpos=\"JJ.*\"]",
-      "head_position": 1,
-      "collocate_position": 2,
       "default_slop": 4,
       "relation_type": "SURFACE"
     },
@@ -384,8 +306,6 @@
       "name": "Prepositions",
       "description": "Prepositions (e.g., 'afraid of', 'good at')",
       "pattern": "1:[xpos=\"JJ.*\"] 2:[xpos=\"IN\"]",
-      "head_position": 1,
-      "collocate_position": 2,
       "default_slop": 5,
       "relation_type": "SURFACE"
     },
@@ -394,8 +314,6 @@
       "name": "Coordinated adjectives (and/or)",
       "description": "Adjectives in coordination (e.g., 'big and red')",
       "pattern": "1:[xpos=\"JJ.*\"] [lemma=\"and|or\"] 2:[xpos=\"JJ.*\"]",
-      "head_position": 1,
-      "collocate_position": 3,
       "default_slop": 2,
       "relation_type": "SURFACE"
     },
@@ -404,8 +322,6 @@
       "name": "Dependency: nominal subject",
       "description": "Verb with its nominal subject (e.g., 'theory explains')",
       "pattern": "1:[xpos=\"VB.*\"] 2:[deprel=\"nsubj\"]",
-      "head_position": 1,
-      "collocate_position": 2,
       "default_slop": 0,
       "relation_type": "DEP"
     },
@@ -414,8 +330,6 @@
       "name": "Dependency: passive nominal subject",
       "description": "Verb with its passive nominal subject (e.g., 'theory is studied')",
       "pattern": "1:[xpos=\"VB.*\"] 2:[deprel=\"nsubj:pass\"]",
-      "head_position": 1,
-      "collocate_position": 2,
       "default_slop": 0,
       "relation_type": "DEP"
     },
@@ -424,8 +338,6 @@
       "name": "Dependency: direct object",
       "description": "Verb with its direct object (e.g., 'explain theory')",
       "pattern": "1:[xpos=\"VB.*\"] 2:[deprel=\"obj\"]",
-      "head_position": 1,
-      "collocate_position": 2,
       "default_slop": 0,
       "relation_type": "DEP"
     },
@@ -434,8 +346,6 @@
       "name": "Dependency: indirect object",
       "description": "Verb with its indirect object (e.g., 'give me')",
       "pattern": "1:[xpos=\"VB.*\"] 2:[deprel=\"iobj\"]",
-      "head_position": 1,
-      "collocate_position": 2,
       "default_slop": 0,
       "relation_type": "DEP"
     },
@@ -444,8 +354,6 @@
       "name": "Dependency: adjectival modifier",
       "description": "Noun with its adjectival modifier (e.g., 'big theory')",
       "pattern": "1:[xpos=\"NN.*\"] 2:[deprel=\"amod\"]",
-      "head_position": 1,
-      "collocate_position": 2,
       "default_slop": 0,
       "relation_type": "DEP"
     },
@@ -454,8 +362,6 @@
       "name": "Dependency: numeric modifier",
       "description": "Noun with its numeric modifier (e.g., 'five theories')",
       "pattern": "1:[xpos=\"NN.*\"] 2:[deprel=\"nummod\"]",
-      "head_position": 1,
-      "collocate_position": 2,
       "default_slop": 0,
       "relation_type": "DEP"
     },
@@ -464,8 +370,6 @@
       "name": "Dependency: determiner",
       "description": "Noun with its determiner (e.g., 'the theory')",
       "pattern": "1:[xpos=\"NN.*\"] 2:[deprel=\"det\"]",
-      "head_position": 1,
-      "collocate_position": 2,
       "default_slop": 0,
       "relation_type": "DEP"
     },
@@ -474,8 +378,6 @@
       "name": "Dependency: case marker",
       "description": "Noun with its case marker/preposition (e.g., 'theory of')",
       "pattern": "1:[xpos=\"NN.*\"] 2:[deprel=\"case\"]",
-      "head_position": 1,
-      "collocate_position": 2,
       "default_slop": 0,
       "relation_type": "DEP"
     },
@@ -484,8 +386,6 @@
       "name": "Dependency: nominal modifier",
       "description": "Noun with its nominal modifier (e.g., 'government policy')",
       "pattern": "1:[xpos=\"NN.*\"] 2:[deprel=\"nmod\"]",
-      "head_position": 1,
-      "collocate_position": 2,
       "default_slop": 0,
       "relation_type": "DEP"
     },
@@ -494,8 +394,6 @@
       "name": "Dependency: compound",
       "description": "Noun in compound with head noun (e.g., 'coffee house')",
       "pattern": "1:[xpos=\"NN.*\"] 2:[deprel=\"compound\"]",
-      "head_position": 1,
-      "collocate_position": 2,
       "default_slop": 0,
       "relation_type": "DEP"
     },
@@ -504,8 +402,6 @@
       "name": "Dependency: adverbial modifier",
       "description": "Verb/adjective with its adverbial modifier (e.g., 'quickly run')",
       "pattern": "1:[xpos=\"VB.*|JJ.*\"] 2:[deprel=\"advmod\"]",
-      "head_position": 1,
-      "collocate_position": 2,
       "default_slop": 0,
       "relation_type": "DEP"
     },
@@ -514,8 +410,6 @@
       "name": "Dependency: auxiliary",
       "description": "Verb with its auxiliary (e.g., 'will explain')",
       "pattern": "1:[xpos=\"VB.*\"] 2:[deprel=\"aux\"]",
-      "head_position": 1,
-      "collocate_position": 2,
       "default_slop": 0,
       "relation_type": "DEP"
     },
@@ -524,8 +418,6 @@
       "name": "Dependency: copula",
       "description": "Noun/adjective with its copula (e.g., 'is important')",
       "pattern": "1:[xpos=\"NN.*|JJ.*\"] 2:[deprel=\"cop\"]",
-      "head_position": 1,
-      "collocate_position": 2,
       "default_slop": 0,
       "relation_type": "DEP"
     },
@@ -534,8 +426,6 @@
       "name": "Dependency: marker",
       "description": "Verb with its marker (e.g., 'to explain')",
       "pattern": "1:[xpos=\"VB.*\"] 2:[deprel=\"mark\"]",
-      "head_position": 1,
-      "collocate_position": 2,
       "default_slop": 0,
       "relation_type": "DEP"
     },
@@ -544,8 +434,6 @@
       "name": "Dependency: coordinating conjunction",
       "description": "Element with its coordinating conjunction (e.g., 'theory and practice')",
       "pattern": "1:[xpos=\"NN.*|VB.*|JJ.*\"] 2:[deprel=\"cc\"]",
-      "head_position": 1,
-      "collocate_position": 2,
       "default_slop": 0,
       "relation_type": "DEP"
     },
@@ -554,8 +442,6 @@
       "name": "Dependency: clausal complement",
       "description": "Verb with its clausal complement (e.g., 'say that theory')",
       "pattern": "1:[xpos=\"VB.*\"] 2:[deprel=\"ccomp\"]",
-      "head_position": 1,
-      "collocate_position": 2,
       "default_slop": 0,
       "relation_type": "DEP"
     },
@@ -564,8 +450,6 @@
       "name": "Dependency: open clausal complement",
       "description": "Verb with its open clausal complement (e.g., 'try to explain')",
       "pattern": "1:[xpos=\"VB.*\"] 2:[deprel=\"xcomp\"]",
-      "head_position": 1,
-      "collocate_position": 2,
       "default_slop": 0,
       "relation_type": "DEP"
     },
@@ -574,8 +458,6 @@
       "name": "Dependency: flat multiword expression",
       "description": "Flat multiword expression (e.g., 'New York')",
       "pattern": "1:[xpos=\"NNP\"] 2:[deprel=\"flat\"]",
-      "head_position": 1,
-      "collocate_position": 2,
       "default_slop": 0,
       "relation_type": "DEP"
     },
@@ -584,8 +466,6 @@
       "name": "Dependency: goes with",
       "description": "Parts that go together (e.g., 'not so')",
       "pattern": "1:[xpos=\"RB.*\"] 2:[deprel=\"goeswith\"]",
-      "head_position": 1,
-      "collocate_position": 2,
       "default_slop": 0,
       "relation_type": "DEP"
     },
@@ -594,8 +474,6 @@
       "name": "Dependency: reparandum",
       "description": "Overridden disfluency",
       "pattern": "1:[xpos=\"UH\"] 2:[deprel=\"reparandum\"]",
-      "head_position": 1,
-      "collocate_position": 2,
       "default_slop": 0,
       "relation_type": "DEP"
     }

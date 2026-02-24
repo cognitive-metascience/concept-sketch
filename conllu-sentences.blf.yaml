@@ -1,0 +1,74 @@
+# BlackLab INPUT FORMAT: CoNLL-U with <s> sentence markers
+#
+# Input files must be preprocessed with:
+#   python scripts/conllu_to_wpl.py input.conllu input_s.conllu
+#
+# The first annotation listed is the main annotation (word).
+# Sensitivity values: sensitive_insensitive | sensitive | insensitive
+#
+# CoNLL-U columns (1-indexed):
+#  1: ID   2: FORM   3: LEMMA   4: UPOS   5: XPOS
+#  6: FEATS   7: HEAD   8: DEPREL   9: DEPS   10: MISC
+
+fileType: tabular
+fileTypeOptions:
+  type: tsv
+  inlineTags: true
+
+annotatedFields:
+  contents:
+    annotations:
+      - name: word
+        displayName: Word form
+        valuePath: 2
+        sensitivity: sensitive_insensitive
+
+      - name: lemma
+        displayName: Lemma
+        valuePath: 3
+        sensitivity: sensitive_insensitive
+
+      - name: pos
+        displayName: UPOS
+        valuePath: 4
+        sensitivity: insensitive
+
+      - name: xpos
+        displayName: XPOS
+        valuePath: 5
+        sensitivity: insensitive
+
+      - name: deprel
+        displayName: Dependency relation
+        valuePath: 8
+        sensitivity: insensitive
+
+      - name: wordnum
+        displayName: Token ID
+        valuePath: 1
+        sensitivity: insensitive
+        forwardIndex: false
+
+      - name: feats
+        displayName: Features
+        valuePath: 6
+        sensitivity: insensitive
+        forwardIndex: false
+
+      - name: head
+        displayName: Head
+        valuePath: 7
+        sensitivity: insensitive
+        forwardIndex: false
+
+      - name: deps
+        displayName: Enhanced deps
+        valuePath: 9
+        sensitivity: insensitive
+        forwardIndex: false
+
+      - name: other
+        displayName: Misc
+        valuePath: 10
+        sensitivity: insensitive
+        forwardIndex: false

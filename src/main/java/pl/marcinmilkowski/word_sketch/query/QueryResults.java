@@ -47,6 +47,7 @@ public class QueryResults {
      */
     public static class ConcordanceResult {
         private final String sentence;
+        private final String rawXml;           // Raw XML for toggle display
         private final String lemma;
         private final String tag;
         private final String word;
@@ -60,6 +61,7 @@ public class QueryResults {
         public ConcordanceResult(String sentence, String lemma, String tag,
                                 String word, int startOffset, int endOffset, String docId) {
             this.sentence = sentence;
+            this.rawXml = null;
             this.lemma = lemma;
             this.tag = tag;
             this.word = word;
@@ -77,6 +79,25 @@ public class QueryResults {
         public ConcordanceResult(String snippet, int start, int end, String docId,
                                 String collocateLemma, long frequency, double logDice) {
             this.sentence = snippet;
+            this.rawXml = null;
+            this.lemma = null;
+            this.tag = null;
+            this.word = null;
+            this.startOffset = start;
+            this.endOffset = end;
+            this.docId = docId;
+            this.collocateLemma = collocateLemma;
+            this.frequency = frequency;
+            this.logDice = logDice;
+        }
+
+        /**
+         * Full constructor with raw XML for toggle display.
+         */
+        public ConcordanceResult(String sentence, String rawXml, int start, int end, String docId,
+                                String collocateLemma, long frequency, double logDice) {
+            this.sentence = sentence;
+            this.rawXml = rawXml;
             this.lemma = null;
             this.tag = null;
             this.word = null;
@@ -104,6 +125,7 @@ public class QueryResults {
         }
 
         public String getSentence() { return sentence; }
+        public String getRawXml() { return rawXml; }
         public String getLemma() { return lemma; }
         public String getTag() { return tag; }
         public String getWord() { return word; }

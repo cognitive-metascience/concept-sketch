@@ -1,20 +1,19 @@
-# BlackLab corpus configuration for CoNLL-U with integrated index format
-# Save as: corpus-config.yaml
+# BlackLab CORPUS CONFIG for CoNLL-U with sentence markers
+#
+# This is the corpus-level configuration (indexType, codec, etc.).
+# The input format is defined in conllu-sentences.blf.yaml.
+#
+# To re-index:
+#   python scripts/conllu_to_wpl.py corpus.conllu corpus_s.conllu
+#   java -cp ... nl.inl.blacklab.tools.IndexTool create \
+#     --format-dir /path/to/project \
+#     /path/to/index /path/to/input_dir conllu-sentences
 
 name: conllu-integrated
-displayName: CoNLL-U (Integrated Index)
-description: CoNLL-U format with BlackLab40 codec for integrated indexing
+displayName: CoNLL-U (with sentence markers)
+description: CoNLL-U with <s> sentence spans; enables context=s concordances
 
-# Use integrated index format (BlackLab's custom format)
 indexType: integrated
-
-# Use the built-in CoNLL-U format
-inputFormat: conll-u
-
-# Codec settings
 codec: BlackLab40
 
-# Special fields
-specialFields:
-  # Use 'id' field from CoNLL-U as persistent document ID
-  pidField: id
+inputFormat: conllu-sentences

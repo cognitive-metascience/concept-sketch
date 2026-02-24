@@ -249,7 +249,7 @@ public class WordSketchApiServer {
                                 lemma, fullPattern,
                                 rel.headPosition(), rel.collocatePosition(),
                                 0.0, 20);
-                        
+
                         if (!results.isEmpty()) {
                             JSONObject patternData = new JSONObject();
                             patternData.put("name", rel.name());
@@ -280,17 +280,11 @@ public class WordSketchApiServer {
     }
 
     private void handleRelationQuery(com.sun.net.httpserver.HttpExchange exchange, String lemma, String relation) throws IOException {
-        logger.info("DEBUG handleRelationQuery: lemma={} relation={}", lemma, relation);
         List<QueryResults.WordSketchResult> results = new ArrayList<>();
-        
+
         // Try to find the relation in grammar config
         if (grammarConfig != null) {
             var rel = grammarConfig.getRelationById(relation);
-            logger.info("DEBUG relation config: id={} pattern={} headPos={} collPos={}", 
-                rel != null ? rel.id() : "null",
-                rel != null ? rel.pattern() : "null",
-                rel != null ? rel.headPosition() : 0,
-                rel != null ? rel.collocatePosition() : 0);
             if (rel != null && "SURFACE".equals(rel.relationType())) {
                 try {
                     // Substitute headword into BCQL pattern
@@ -299,7 +293,6 @@ public class WordSketchApiServer {
                         lemma, fullPattern,
                         rel.headPosition(), rel.collocatePosition(),
                         0.0, 50);
-                    logger.info("DEBUG results count={}", results.size());
                 } catch (IOException e) {
                     logger.error("Query failed", e);
                     sendError(exchange, 500, "Query failed: " + e.getMessage());
@@ -760,7 +753,7 @@ public class WordSketchApiServer {
             Map<String, Object> exMap = new HashMap<>();
             exMap.put("sentence", r.getSentence());
             exMap.put("highlighted", r.getSentence());
-            exMap.put("raw", r.getSentence());
+            exMap.put("raw", r.getRawXml() != null ? r.getRawXml() : r.getSentence());
             examplesList.add(exMap);
         }
         response.put("examples", examplesList);
@@ -937,6 +930,7 @@ public class WordSketchApiServer {
             JSONObject obj = JSON.parseObject(body);
             String bcqlQuery = obj.getString("query");
             int limit = obj.getIntValue("limit");
+            boolean raw = obj.getBooleanValue("raw");  // Add raw output option
             if (limit <= 0) limit = 20;
 
             System.out.println("DEBUG BCQL: " + bcqlQuery);
@@ -951,7 +945,12 @@ public class WordSketchApiServer {
             List<Map<String, Object>> resultsList = new ArrayList<>();
             for (QueryResults.ConcordanceResult r : results) {
                 Map<String, Object> resultMap = new HashMap<>();
+                // Plain text sentence (default)
                 resultMap.put("sentence", r.getSentence());
+                // Raw XML always available (for toggle)
+                if (r.getRawXml() != null) {
+                    resultMap.put("raw", r.getRawXml());
+                }
                 resultMap.put("matchStart", r.getStartOffset());
                 resultMap.put("matchEnd", r.getEndOffset());
                 // Add grouped BCQL fields

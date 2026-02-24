@@ -31,34 +31,74 @@ mvn clean package
 
 ### 2. Create an Index
 
-To create an index:
-```bash
-# Tag corpus with UDPipe
-udpipe --tokenize --tag --lemma --output=conllu english-model.udpipe corpus.txt > corpus.conllu
+#### Step 1 — Prepare a CoNLL-U corpus
 
-# Build HYBRID index + precomputed collocations (recommended)
-java -jar target/word-sketch-lucene-1.0.0.jar single-pass --input corpus.conllu --output data/index/
+Tag your text with any CoNLL-U-producing tool. The project includes a **Stanza GPU script** for efficient tagging:
+
+**Option A: Use the Stanza script (recommended)**
+
+```bash
+# Download model (one-time)
+python tag_with_stanza.py --download --lang en
+
+# Tag corpus (uses GPU automatically if available)
+python tag_with_stanza.py \
+  --input corpus.txt \
+  --output corpus.conllu \
+  --lang en
 ```
 
-For large corpora (recommended for 10GB+ CoNLL-U), run in two steps so shard/spill can be tuned explicitly:
-```bash
-# 1) Build hybrid index only
-java -jar target/word-sketch-lucene-1.0.0.jar hybrid-index --input corpus.conllu --output data/index/
+For GPU tuning and more options, see [STANZA_GPU.md](STANZA_GPU.md).
 
-# 2) Precompute grammar-pattern collocations (optional, for O(1) lookup)
-java -jar target/word-sketch-lucene-1.0.0.jar precompute-grammar \
-  --index data/index/ --output data/index/grammar_collocations.bin \
-  --top-k 100 --min-freq 10 --min-cooc 2
+**Option B: Use UDPipe 2 directly**
+
+```bash
+udpipe --tokenize --tag --parse --output=conllu english.udpipe corpus.txt > corpus.conllu
 ```
 
-> **Note:** The old `precompute-collocations` and `precompute-relations` commands have been **removed**.
-> Collocations are now computed dynamically using CQL patterns at query time.
+**Option C: Use another CoNLL-U tagger** (Stanza in Python without GPU, spaCy, etc.)
+
+#### Step 2 — Preprocess: add `<s>` sentence markers
+
+BlackLab's tabular parser requires explicit inline tags for sentence boundaries.
+The project ships a script that converts CoNLL-U blank-line sentence boundaries
+into `<s>` / `</s>` inline tags:
+
+```bash
+python scripts/conllu_to_wpl.py corpus.conllu corpus_s.conllu
+```
+
+Move the output file into a dedicated input directory:
+
+```bash
+mkdir input_dir
+mv corpus_s.conllu input_dir/
+```
+
+#### Step 3 — Index with BlackLab
+
+The shaded JAR bundles BlackLab's `IndexTool`. Run it from the project root
+(so `--format-dir .` can find `conllu-sentences.blf.yaml`):
+
+```bash
+java -cp target/word-sketch-lucene-1.0.1-shaded.jar \
+  nl.inl.blacklab.tools.IndexTool create \
+  --format-dir . \
+  my_index/ input_dir/ conllu-sentences
+```
+
+| Argument | Meaning |
+|----------|---------|
+| `--format-dir .` | Directory containing `conllu-sentences.blf.yaml` |
+| `my_index/` | Output index directory (created automatically) |
+| `input_dir/` | Directory with preprocessed `.conllu` files |
+| `conllu-sentences` | Format name (matches the `.blf.yaml` filename) |
 
 ### 3. Start API Server
 
 ```bash
 # Terminal 1
-java -jar target/word-sketch-lucene-1.0.0.jar server --index data/index/ --port 8080
+java -jar target/word-sketch-lucene-1.0.1-shaded.jar server --index my_index/ --port 8080
 ```
 
 Server startup output:
@@ -113,46 +153,77 @@ curl "http://localhost:8080/api/semantic-field/explore-multi?seeds=theory,model,
 
 ### Index a Corpus
 
-#### From CoNLL-U (Recommended)
+#### Prerequisites
+
+- A corpus in **CoNLL-U format** (columns: ID, FORM, LEMMA, UPOS, XPOS, FEATS, HEAD, DEPREL, DEPS, MISC)
+- The project's `conllu-sentences.blf.yaml` format file (in the project root)
+- Java 21+ and the shaded JAR (`target/word-sketch-lucene-1.0.1-shaded.jar`)
+
+#### Step 1 — Preprocess CoNLL-U: add sentence markers
+
+BlackLab's tabular parser needs explicit `<s>` / `</s>` inline tags to index
+sentence spans. The bundled script converts CoNLL-U blank-line boundaries:
 
 ```bash
-# 1. Tag with UDPipe (creates CoNLL-U format)
-udpipe --tokenize --tag --lemma --output=conllu english-model.udpipe corpus.txt > corpus.conllu
-
-# 2. Build HYBRID index + precomputed collocations
-java -jar word-sketch-lucene.jar single-pass --input corpus.conllu --output data/index/
+python scripts/conllu_to_wpl.py corpus.conllu corpus_s.conllu
 ```
 
-#### Large CoNLL-U (Two-Step)
+What the script does:
+- Skips comment lines (`#`) and multi-word token lines (`1-2`, `1.1`, …)
+- Emits `<s>` before the first token of each sentence
+- Emits `</s>` after the last token
+- Preserves all 10 CoNLL-U columns as tab-separated values
+
+#### Step 2 — Create a BlackLab index
 
 ```bash
-# Stage 1: build hybrid index
-java -jar word-sketch-lucene.jar hybrid-index --input corpus.conllu --output data/index/
+mkdir input_dir
+cp corpus_s.conllu input_dir/
 
-# Stage 2: precompute grammar-pattern collocations (optional)
-java -jar word-sketch-lucene.jar precompute-grammar --index data/index/ \
-  --output data/index/grammar_collocations.bin --top-k 100 --min-freq 10 --min-cooc 2
+# Run from the project root (so --format-dir finds conllu-sentences.blf.yaml)
+java -cp target/word-sketch-lucene-1.0.1-shaded.jar \
+  nl.inl.blacklab.tools.IndexTool create \
+  --format-dir . \
+  my_index/ input_dir/ conllu-sentences
 ```
 
-#### From Raw Text
+To add more documents to an existing index later:
 
 ```bash
-# Not supported in hybrid-only mode. Convert to CoNLL-U first and use `single-pass`.
+java -cp target/word-sketch-lucene-1.0.1-shaded.jar \
+  nl.inl.blacklab.tools.IndexTool add \
+  --format-dir . \
+  my_index/ more_input_dir/ conllu-sentences
 ```
+
+#### Indexed annotations
+
+| Annotation | Source column | Forward index |
+|------------|--------------|---------------|
+| `word`     | FORM (col 2) | ✓ |
+| `lemma`    | LEMMA (col 3) | ✓ |
+| `pos`      | UPOS (col 4) | ✓ |
+| `xpos`     | XPOS (col 5) | ✓ |
+| `deprel`   | DEPREL (col 8) | ✓ |
+| `wordnum`  | ID (col 1) | — |
+| `feats`    | FEATS (col 6) | — |
+| `head`     | HEAD (col 7) | — |
 
 ### Query via Command Line
 
 ```bash
-# Get all collocations for "house"
-java -jar word-sketch-lucene.jar hybrid-query --index data/index/ --lemma house
+# Find all collocations for "theory"
+java -jar target/word-sketch-lucene-1.0.1-shaded.jar \
+  blacklab-query --index my_index/ --lemma theory
 
-# Find adjectives modifying "problem"
-java -jar word-sketch-lucene.jar hybrid-query --index data/index/ --lemma problem \
-  --pattern "[tag=\"jj.*\"]" --limit 20
+# Find adjectival modifiers of "theory" (deprel=amod)
+java -jar target/word-sketch-lucene-1.0.1-shaded.jar \
+  blacklab-query --index my_index/ --lemma theory --deprel amod
 
-# Find what "theory" is object of
-java -jar word-sketch-lucene.jar hybrid-query --index data/index/ --lemma theory \
-  --pattern "[tag=\"vb.*\"]" --limit 20
+# Increase result count and filter by logDice
+java -jar target/word-sketch-lucene-1.0.1-shaded.jar \
+  blacklab-query --index my_index/ --lemma theory \
+  --deprel nsubj --limit 50 --min-logdice 4.0
 ```
 
 ### Grammar Configuration

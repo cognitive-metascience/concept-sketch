@@ -1,7 +1,7 @@
 {
   "tool_name": "Bash",
-  "tool_input_preview": "{\"command\":\"python -c \\\"import json; json.load(open('D:/git/word-sketch-lucene/grammars/relations.json'))\\\" 2>&1\",\"description\":\"Check JSON error\"}",
-  "error": "Exit code 1\nTraceback (most recent call last):\r\n  File \"<string>\", line 1, in <module>\r\n  File \"C:\\Program Files\\Python311\\Lib\\json\\__init__.py\", line 293, in load\r\n    return loads(fp.read(),\r\n           ^^^^^^^^^^^^^^^^\r\n  File \"C:\\Program Files\\Python311\\Lib\\json\\__init__.py\", line 346, in loads\r\n    return _default_decoder.decode(s)\r\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^\r\n  File \"C:\\Program Files\\Python311\\Lib\\json\\decoder.py\", line 340, in decode\r\n    raise JSONDecodeError(\"Extra data\", s, ...",
-  "timestamp": "2026-02-22T10:17:05.020Z",
+  "tool_input_preview": "{\"command\":\"cd D:/git/word-sketch-lucene && java -jar target/word-sketch-lucene-1.0.1.jar server --index \\\"D:/corpora_philsci/bi\\\" --port 8080 2>&1 &\\nsleep 8\\ncurl -s http://localhost:8080/health\",\"t...",
+  "error": "Exit code 7\n==========================================\r\n   Word Sketch Lucene - BlackLab Edition  \r\n==========================================\r\n\r\nStarting API server...\r\nIndex: D:/corpora_philsci/bi\r\nPort: 8080\r\n\r\n[main] ERROR pl.marcinmilkowski.word_sketch.Main - Application error\r\njava.lang.IllegalArgumentException: Relation 'verb_nouns': positions (1,2) must be between 1 and 1 (pattern has 1 tokens: 1:[xpos=\"NN.*\"])\r\n\tat pl.marcinmilkowski.word_sketch.config.GrammarConfigLoader.<init>(Grammar...",
+  "timestamp": "2026-02-23T21:34:16.102Z",
   "retry_count": 1
 }
