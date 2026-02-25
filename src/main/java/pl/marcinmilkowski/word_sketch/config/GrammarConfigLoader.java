@@ -581,5 +581,29 @@ public class GrammarConfigLoader {
             return "other";  // collocatePos derived from pattern only
         }
 
+        /**
+         * Extract the dependency relation (deprel) from the pattern.
+         * For DEP relations, looks for {deprel="nsubj"} or similar in the pattern.
+         * Returns null for non-DEP relations.
+         */
+        public String getDeprel() {
+            if (pattern == null || !"DEP".equals(relationType)) {
+                return null;
+            }
+            // Look for {deprel="xxx"} or {deprel='xxx'} pattern
+            Pattern p = Pattern.compile("\\{deprel=[\"']([^\"']+)[\"']\\}");
+            Matcher m = p.matcher(pattern);
+            if (m.find()) {
+                return m.group(1);
+            }
+            // Also check for simple deprel="xxx" without braces
+            p = Pattern.compile("deprel=[\"']([^\"']+)[\"']");
+            m = p.matcher(pattern);
+            if (m.find()) {
+                return m.group(1);
+            }
+            return null;
+        }
+
     }
 }

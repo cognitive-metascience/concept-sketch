@@ -98,13 +98,32 @@ public class WordSketchApiServer {
             server.createContext("/api/sketch/", exchange -> {
                 String path = exchange.getRequestURI().getPath();
                 String[] parts = path.substring("/api/sketch/".length()).split("/");
-                
+
                 if (parts.length == 0 || parts[0].isEmpty()) {
                     sendError(exchange, 400, "Lemma required");
                     return;
                 }
 
                 String lemma = parts[0];
+                
+                // Check if this is a dependency sketch request
+                if (parts.length > 1 && "dep".equals(parts[1])) {
+                    String specificDeprel = parts.length > 2 ? parts[2] : null;
+                    try {
+                        if (specificDeprel != null && !specificDeprel.isEmpty()) {
+                            // Get specific dependency relation
+                            handleDependencyRelationQuery(exchange, lemma, specificDeprel);
+                        } else {
+                            // Get full dependency sketch
+                            handleFullDependencySketch(exchange, lemma);
+                        }
+                    } catch (IOException e) {
+                        logger.error("Dependency sketch error", e);
+                        sendError(exchange, 500, "Dependency sketch failed: " + e.getMessage());
+                    }
+                    return;
+                }
+                
                 String relation = parts.length > 1 ? parts[1] : null;
 
                 try {
@@ -147,22 +166,55 @@ public class WordSketchApiServer {
                 sendJsonResponse(exchange, Collections.singletonMap("relations", relations));
             });
 
+            // Get available dependency relations - from grammar config filtered by DEP type
+            server.createContext("/api/relations/dep", exchange -> {
+                JSONArray relations = new JSONArray();
+
+                if (grammarConfig != null) {
+                    for (var rel : grammarConfig.getRelations()) {
+                        if ("DEP".equals(rel.relationType())) {
+                            JSONObject obj = new JSONObject();
+                            obj.put("id", rel.id());
+                            obj.put("name", rel.name());
+                            obj.put("description", rel.description());
+                            obj.put("relation_type", rel.relationType());
+                            obj.put("pattern", rel.pattern());
+                            obj.put("deprel", rel.getDeprel());
+                            relations.add(obj);
+                        }
+                    }
+                } else {
+                    sendError(exchange, 500, "Grammar configuration not loaded");
+                    return;
+                }
+
+                sendJsonResponse(exchange, Collections.singletonMap("relations", relations));
+            });
+
             // Semantic Field Exploration endpoints
             server.createContext("/api/semantic-field/explore", exchange -> {
+                logger.info("Received request: {}", exchange.getRequestURI());
                 try {
                     handleSemanticFieldExplore(exchange);
                 } catch (IOException e) {
                     logger.error("Semantic field explore error", e);
                     sendError(exchange, 500, "Semantic field exploration failed: " + e.getMessage());
+                } catch (Exception e) {
+                    logger.error("Semantic field explore unexpected error", e);
+                    sendError(exchange, 500, "Unexpected error: " + e.getMessage());
                 }
             });
 
             server.createContext("/api/semantic-field/explore-multi", exchange -> {
+                logger.info("Received request: {}", exchange.getRequestURI());
                 try {
                     handleSemanticFieldExploreMulti(exchange);
                 } catch (IOException e) {
                     logger.error("Semantic field explore-multi error", e);
                     sendError(exchange, 500, "Multi-seed exploration failed: " + e.getMessage());
+                } catch (Exception e) {
+                    logger.error("Semantic field explore-multi unexpected error", e);
+                    sendError(exchange, 500, "Unexpected error: " + e.getMessage());
                 }
             });
 
@@ -220,9 +272,15 @@ public class WordSketchApiServer {
             System.out.println("Server started on http://localhost:" + port);
             System.out.println("Endpoints:");
             System.out.println("  GET  /health - Health check");
-            System.out.println("  GET  /api/sketch/{lemma} - Get full word sketch");
-            System.out.println("  GET  /api/sketch/{lemma}/{relation} - Get specific relation");
-            System.out.println("  GET  /api/relations - List available relations");
+            System.out.println("  GET  /api/sketch/{lemma} - Get full word sketch (surface patterns)");
+            System.out.println("  GET  /api/sketch/{lemma}/{relation} - Get specific surface relation");
+            System.out.println("  GET  /api/sketch/{lemma}/dep - Get full dependency sketch");
+            System.out.println("  GET  /api/sketch/{lemma}/dep/{relationId} - Get specific dependency relation");
+            System.out.println("  GET  /api/relations - List available surface relations");
+            System.out.println("  GET  /api/relations/dep - List available dependency relations");
+            System.out.println("  GET  /api/concordance/examples - Get concordance examples for word pair");
+            System.out.println("  GET  /api/visual/radial - Get radial plot SVG");
+            System.out.println("  POST /api/bcql - Execute BCQL query");
             System.out.println();
             System.out.println("Press Ctrl+C to stop.");
 
@@ -320,6 +378,111 @@ public class WordSketchApiServer {
     }
 
     /**
+     * Handle full dependency sketch request.
+     * Returns all dependency relations for the given lemma.
+     * DEP relations use surface patterns with [deprel="..."] constraints.
+     */
+    private void handleFullDependencySketch(com.sun.net.httpserver.HttpExchange exchange, String lemma) throws IOException {
+        JSONObject response = new JSONObject();
+        response.put("lemma", lemma);
+        response.put("type", "dependency");
+        JSONObject relations = new JSONObject();
+
+        if (grammarConfig != null) {
+            for (var rel : grammarConfig.getRelations()) {
+                if ("DEP".equals(rel.relationType())) {
+                    try {
+                        String deprel = rel.getDeprel();
+                        if (deprel == null) continue;
+
+                        // Use the pattern from config with headword substitution
+                        String fullPattern = rel.getFullPattern(lemma);
+                        
+                        // Execute using surface pattern method (DEP relations use surface patterns with deprel constraints)
+                        List<QueryResults.WordSketchResult> results =
+                            ((BlackLabQueryExecutor) executor).executeSurfacePattern(
+                                lemma, fullPattern,
+                                rel.headPosition(), rel.collocatePosition(),
+                                0.0, 20);
+
+                        if (!results.isEmpty()) {
+                            JSONObject relData = new JSONObject();
+                            relData.put("id", rel.id());
+                            relData.put("name", rel.name());
+                            relData.put("description", rel.description());
+                            relData.put("deprel", deprel);
+                            relData.put("total_matches", results.stream().mapToInt(r -> (int)r.getFrequency()).sum());
+
+                            JSONArray collocations = new JSONArray();
+                            for (QueryResults.WordSketchResult result : results) {
+                                JSONObject word = new JSONObject();
+                                word.put("lemma", result.getLemma());
+                                word.put("frequency", result.getFrequency());
+                                word.put("logDice", result.getLogDice());
+                                word.put("pos", result.getPos());
+                                collocations.add(word);
+                            }
+                            relData.put("collocations", collocations);
+                            relations.put(rel.id(), relData);
+                        }
+                    } catch (Exception e) {
+                        logger.debug("Dependency relation {} failed for lemma {}", rel.id(), lemma, e);
+                    }
+                }
+            }
+        }
+
+        response.put("relations", relations);
+        sendJsonResponse(exchange, response);
+    }
+
+    /**
+     * Handle specific dependency relation query.
+     * Returns collocates for a single dependency relation.
+     * DEP relations use surface patterns with [deprel="..."] constraints.
+     */
+    private void handleDependencyRelationQuery(com.sun.net.httpserver.HttpExchange exchange, String lemma, String relationId) throws IOException {
+        List<QueryResults.WordSketchResult> results = new ArrayList<>();
+
+        if (grammarConfig != null) {
+            var rel = grammarConfig.getRelationById(relationId);
+            if (rel != null && "DEP".equals(rel.relationType())) {
+                try {
+                    // Use the pattern from config with headword substitution
+                    String fullPattern = rel.getFullPattern(lemma);
+                    
+                    // Execute using surface pattern method
+                    results = ((BlackLabQueryExecutor) executor).executeSurfacePattern(
+                        lemma, fullPattern,
+                        rel.headPosition(), rel.collocatePosition(),
+                        0.0, 50);
+                } catch (IOException e) {
+                    logger.error("Dependency query failed", e);
+                    sendError(exchange, 500, "Dependency query failed: " + e.getMessage());
+                    return;
+                }
+            }
+        }
+
+        JSONArray collocations = new JSONArray();
+        for (QueryResults.WordSketchResult result : results) {
+            JSONObject word = new JSONObject();
+            word.put("lemma", result.getLemma());
+            word.put("frequency", result.getFrequency());
+            word.put("logDice", result.getLogDice());
+            word.put("pos", result.getPos());
+            collocations.add(word);
+        }
+
+        JSONObject response = new JSONObject();
+        response.put("lemma", lemma);
+        response.put("relation", relationId);
+        response.put("collocations", collocations);
+
+        sendJsonResponse(exchange, response);
+    }
+
+    /**
      * Handle semantic field exploration (single seed).
      * GET /api/semantic-field/explore?seed=house&relation=adj_predicate&top=15&min_shared=2&min_logdice=3.0
      */
@@ -356,17 +519,26 @@ public class WordSketchApiServer {
         }
 
         String relationType = relationConfig.get().relationType();
+        String relationName = relationConfig.get().name();
 
         int topCollocates = Integer.parseInt(params.getOrDefault("top", "15"));
         int nounsPerCollocate = Integer.parseInt(params.getOrDefault("nouns_per", "30"));
         int minShared = Integer.parseInt(params.getOrDefault("min_shared", "2"));
         double minLogDice = Double.parseDouble(params.getOrDefault("min_logdice", "3.0"));
 
-        // Run semantic field exploration
+        // Run semantic field exploration using the BCQL pattern from grammar config
         SemanticFieldExplorer explorer = new SemanticFieldExplorer(indexPath);
-        QueryExecutor.RelationType legacyRelationType = toLegacyRelationType(relationType);
-        ExplorationResult result = explorer.exploreByRelation(
-            seed, topCollocates, nounsPerCollocate, minShared, minLogDice, legacyRelationType);
+        
+        // Get the BCQL pattern with headword substituted at the head position
+        String bcqlPattern = relationConfig.get().getFullPattern(seed);
+        String simplePattern = relationConfig.get().collocatePosGroup().equals("adj") ? 
+            "[xpos=\"JJ.*\"]" : "[xpos=\"NN.*|VB.*\"]";
+        int headPos = relationConfig.get().headPosition();
+        int collocatePos = relationConfig.get().collocatePosition();
+        
+        ExplorationResult result = explorer.exploreByPattern(
+            seed, topCollocates, nounsPerCollocate, minShared, minLogDice,
+            bcqlPattern, simplePattern, relationName, headPos, collocatePos);
         explorer.close();
 
         // Format response
@@ -451,10 +623,13 @@ public class WordSketchApiServer {
      * GET /api/semantic-field/explore-multi?seeds=theory,model,hypothesis&relation=adj_predicate&top=15&min_shared=2
      */
     private void handleSemanticFieldExploreMulti(com.sun.net.httpserver.HttpExchange exchange) throws IOException {
+        logger.info("handleSemanticFieldExploreMulti called");
         String query = exchange.getRequestURI().getQuery();
+        logger.info("Query string: {}", query);
         Map<String, String> params = parseQueryParams(query);
 
         String seedsStr = params.getOrDefault("seeds", "");
+        logger.info("Seeds parameter: {}", seedsStr);
         if (seedsStr.isEmpty()) {
             sendError(exchange, 400, "Missing required parameter: seeds (comma-separated)");
             return;
@@ -496,20 +671,31 @@ public class WordSketchApiServer {
         }
 
         String relationType = relationConfig.get().relationType();
+        String relationName = relationConfig.get().name();
 
         int topCollocates = Integer.parseInt(params.getOrDefault("top", "15"));
         int minShared = Integer.parseInt(params.getOrDefault("min_shared", "2"));
         double minLogDice = Double.parseDouble(params.getOrDefault("min_logdice", "2.0"));
 
-        // Run multi-seed exploration
+        // Get the BCQL pattern from grammar config
+        String bcqlPattern = relationConfig.get().pattern();
+        String simplePattern = relationConfig.get().collocatePosGroup().equals("adj") ? 
+            "[xpos=\"JJ.*\"]" : "[xpos=\"NN.*|VB.*\"]";
+        int headPos = relationConfig.get().headPosition();
+        int collocatePos = relationConfig.get().collocatePosition();
+
+        // Run multi-seed exploration using the BCQL pattern from grammar config
         Map<String, List<QueryResults.WordSketchResult>> seedToCollocates = new HashMap<>();
         Set<String> commonCollocates = null;
 
-        QueryExecutor.RelationType legacyRelationType = toLegacyRelationType(relationType);
-
         for (String seed : seeds) {
-            List<QueryResults.WordSketchResult> collocates = executor.findGrammaticalRelation(
-                seed, legacyRelationType, minLogDice, topCollocates);
+            List<QueryResults.WordSketchResult> collocates;
+            if (executor instanceof BlackLabQueryExecutor) {
+                collocates = ((BlackLabQueryExecutor) executor).executeSurfacePattern(
+                    seed, bcqlPattern, headPos, collocatePos, minLogDice, topCollocates);
+            } else {
+                collocates = executor.findCollocations(seed, bcqlPattern, minLogDice, topCollocates);
+            }
             seedToCollocates.put(seed, collocates);
 
             Set<String> seedCollocates = new HashSet<>();

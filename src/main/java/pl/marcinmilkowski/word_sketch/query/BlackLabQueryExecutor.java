@@ -52,26 +52,60 @@ public class BlackLabQueryExecutor implements QueryExecutor {
             return Collections.emptyList();
         }
 
-        // BCQL syntax: "word" [] for word followed by any token
-        String bcql = String.format("\"%s\" []", headword.toLowerCase());
+        // Use the provided CQL pattern with the headword
+        // Pattern can be like "[xpos=JJ.*]" or "[lemma=\"%s\"] []{0,5} [xpos=\"JJ.*\"]"
+        String bcql;
+        if (cqlPattern.contains("%s")) {
+            // Pattern has placeholder for headword
+            bcql = String.format(cqlPattern, headword.toLowerCase());
+        } else if (cqlPattern.startsWith("[")) {
+            // Simple pattern like "[xpos=JJ.*]" - find headword followed by pattern
+            // BCQL requires proper sequence syntax
+            bcql = String.format("\"%s\" %s", headword.toLowerCase(), cqlPattern);
+        } else {
+            // Fallback: just search for headword
+            bcql = String.format("\"%s\" []", headword.toLowerCase());
+        }
 
         try {
+            // BCQL requires the pattern to be a valid sequence
+            // For simple attribute constraints, we need to use the proper syntax
             TextPattern pattern = nl.inl.blacklab.queryParser.corpusql.CorpusQueryLanguageParser.parse(bcql, "lemma");
             BLSpanQuery query = pattern.toQuery(QueryInfo.create(blackLabIndex));
             Hits hits = blackLabIndex.find(query);
 
+            if (hits.size() == 0) {
+                return Collections.emptyList();
+            }
+
             long headwordFreq = getTotalFrequency(headword);
 
-            // Group by word form - need to use Search API for grouping
+            // Group by the matched collocate (last token in pattern)
             SearchHits searchHits = blackLabIndex.search().find(query);
-            HitProperty groupBy = new HitPropertyHitText(blackLabIndex, MatchSensitivity.SENSITIVE);
+            HitProperty groupBy = new HitPropertyHitText(blackLabIndex, MatchSensitivity.INSENSITIVE);
             HitGroups groups = searchHits.groupWithStoredHits(groupBy, Results.NO_LIMIT).execute();
 
             List<QueryResults.WordSketchResult> results = new ArrayList<>();
 
             for (HitGroup group : groups) {
-                PropertyValue identity = group.identity();
-                String collocateLemma = identity.toString();
+                String identity = group.identity().toString();
+                if (identity == null || identity.isEmpty()) {
+                    continue;
+                }
+
+                // Extract lemma from the matched text (XML format first, plain text fallback)
+                String collocateLemma = extractLemmaFromMatch(identity);
+                if (collocateLemma == null || collocateLemma.isEmpty()) {
+                    // HitPropertyHitText returns plain text (e.g. "empirical test"), not XML.
+                    // The collocate is the last whitespace-separated token.
+                    String trimmed = identity.trim();
+                    int lastSpace = trimmed.lastIndexOf(' ');
+                    collocateLemma = lastSpace >= 0 ? trimmed.substring(lastSpace + 1) : trimmed;
+                }
+                if (collocateLemma == null || collocateLemma.isEmpty()) {
+                    continue;
+                }
+
                 long f_xy = group.size();
                 long f_y = getTotalFrequency(collocateLemma);
 
@@ -79,8 +113,9 @@ public class BlackLabQueryExecutor implements QueryExecutor {
 
                 if (logDice >= minLogDice) {
                     double relFreq = LogDiceCalculator.relativeFrequency(f_xy, headwordFreq);
+                    String pos = extractPosFromMatch(identity);
                     results.add(new QueryResults.WordSketchResult(
-                        collocateLemma, "unknown", f_xy, logDice, relFreq, Collections.emptyList()));
+                        collocateLemma, pos, f_xy, logDice, relFreq, Collections.emptyList()));
                 }
             }
 
@@ -90,8 +125,50 @@ public class BlackLabQueryExecutor implements QueryExecutor {
                 .toList();
 
         } catch (InvalidQuery e) {
-            throw new IOException("CQL parse error: " + e.getMessage(), e);
+            // BCQL parse error - the pattern format may not be compatible
+            // Log the error and return empty results
+            logger.warn("BCQL parse error for pattern: {}. Error: {}", cqlPattern, e.getMessage());
+            return Collections.emptyList();
         }
+    }
+
+    /**
+     * Extract lemma from matched text (XML format).
+     */
+    private String extractLemmaFromMatch(String matchText) {
+        if (matchText == null || matchText.isEmpty()) {
+            return null;
+        }
+        // Find all lemma="xxx" patterns and get the last one (the collocate)
+        java.util.regex.Pattern p = java.util.regex.Pattern.compile("lemma=\"([^\"]+)\"");
+        java.util.regex.Matcher m = p.matcher(matchText);
+        String lastLemma = null;
+        while (m.find()) {
+            lastLemma = m.group(1);
+        }
+        return lastLemma != null ? lastLemma.toLowerCase() : null;
+    }
+
+    /**
+     * Extract POS tag from matched text (XML format).
+     */
+    private String extractPosFromMatch(String matchText) {
+        if (matchText == null || matchText.isEmpty()) {
+            return "unknown";
+        }
+        // Try xpos first
+        java.util.regex.Pattern p = java.util.regex.Pattern.compile("xpos=\"([^\"]+)\"");
+        java.util.regex.Matcher m = p.matcher(matchText);
+        if (m.find()) {
+            return m.group(1);
+        }
+        // Fallback to upos
+        p = java.util.regex.Pattern.compile("upos=\"([^\"]+)\"");
+        m = p.matcher(matchText);
+        if (m.find()) {
+            return m.group(1);
+        }
+        return "unknown";
     }
 
     public List<QueryResults.WordSketchResult> findDependencyCollocations(
@@ -431,6 +508,155 @@ public class BlackLabQueryExecutor implements QueryExecutor {
         } catch (Exception e) {
             return 0L;
         }
+    }
+
+    /**
+     * Execute a dependency relation query for word sketches.
+     * Uses BCQL dependency syntax: "headword" -deprel-> _
+     * This finds all words that have the specified dependency relation to the headword.
+     * 
+     * @param lemma The headword lemma to search for
+     * @param deprel The dependency relation (e.g., "nsubj", "obj", "amod")
+     * @param headPosConstraint Optional POS constraint for the head (e.g., "VB.*"), or null
+     * @param minLogDice Minimum logDice score threshold
+     * @param maxResults Maximum number of results to return
+     * @return List of collocation results sorted by logDice descending
+     */
+    public List<QueryResults.WordSketchResult> executeDependencyPattern(
+            String lemma, 
+            String deprel,
+            String headPosConstraint,
+            double minLogDice, 
+            int maxResults) throws IOException {
+
+        if (lemma == null || lemma.isEmpty() || deprel == null) {
+            return Collections.emptyList();
+        }
+
+        // BCQL dependency syntax: "lemma" -deprel-> _
+        // The underscore matches any dependent word
+        String bcql;
+        if (headPosConstraint != null && !headPosConstraint.isEmpty()) {
+            // With POS constraint on head: [lemma="theory" & xpos="NN.*"] -nsubj-> _
+            bcql = String.format("[lemma=\"%s\" & xpos=\"%s\"] -%s-> _", 
+                                 lemma.toLowerCase(), headPosConstraint, deprel);
+        } else {
+            // Simple form: "lemma" -deprel-> _
+            bcql = String.format("\"%s\" -%s-> _", 
+                                 lemma.toLowerCase(), deprel);
+        }
+
+        try {
+            TextPattern pattern = nl.inl.blacklab.queryParser.corpusql.CorpusQueryLanguageParser.parse(bcql, "lemma");
+            BLSpanQuery query = pattern.toQuery(QueryInfo.create(blackLabIndex));
+
+            // Get hits
+            Hits hits = blackLabIndex.find(query);
+            if (hits.size() == 0) {
+                return Collections.emptyList();
+            }
+
+            long headwordFreq = getTotalFrequency(lemma);
+
+            // Group by dependent lemma to get frequencies
+            Map<String, Long> freqMap = new HashMap<>();
+            Map<String, String> lemmaPosMap = new HashMap<>();
+
+            SearchHits searchHits = blackLabIndex.search().find(query);
+            HitProperty groupBy = new HitPropertyHitText(blackLabIndex, MatchSensitivity.INSENSITIVE);
+            HitGroups groups = searchHits.groupWithStoredHits(groupBy, Results.NO_LIMIT).execute();
+
+            for (HitGroup group : groups) {
+                String dependentLemma = extractDependentLemmaFromGroup(group);
+                if (dependentLemma != null && !dependentLemma.isEmpty()) {
+                    freqMap.merge(dependentLemma.toLowerCase(), group.size(), Long::sum);
+                    // Store POS if available
+                    String pos = extractPosFromGroup(group);
+                    if (pos != null) {
+                        lemmaPosMap.put(dependentLemma.toLowerCase(), pos);
+                    }
+                }
+            }
+
+            // Build results with logDice
+            List<QueryResults.WordSketchResult> results = new ArrayList<>();
+            for (Map.Entry<String, Long> entry : freqMap.entrySet()) {
+                String collocateLemma = entry.getKey();
+                long f_xy = entry.getValue();
+                long f_y = getTotalFrequency(collocateLemma);
+
+                double logDice = LogDiceCalculator.compute(f_xy, headwordFreq, f_y);
+
+                if (logDice >= minLogDice) {
+                    double relFreq = LogDiceCalculator.relativeFrequency(f_xy, headwordFreq);
+                    String pos = lemmaPosMap.getOrDefault(collocateLemma, "unknown");
+                    results.add(new QueryResults.WordSketchResult(
+                        collocateLemma, pos, f_xy, logDice, relFreq, Collections.emptyList()));
+                }
+            }
+
+            return results.stream()
+                .sorted(Comparator.comparingDouble(QueryResults.WordSketchResult::getLogDice).reversed())
+                .limit(maxResults)
+                .toList();
+
+        } catch (InvalidQuery e) {
+            throw new IOException("BCQL parse error: " + e.getMessage(), e);
+        }
+    }
+
+    /**
+     * Extract the dependent lemma from a dependency query hit group.
+     * The dependent is matched by the underscore in the BCQL pattern.
+     * The group identity contains the matched text from which we extract the lemma.
+     */
+    private String extractDependentLemmaFromGroup(HitGroup group) {
+        // Get the group identity (matched text)
+        String identity = group.identity().toString();
+        if (identity == null || identity.isEmpty()) {
+            return null;
+        }
+
+        // Extract lemma from XML attributes in the match
+        // For dependency queries, the underscore matches the dependent word
+        // We want the lemma of that matched word
+        java.util.regex.Pattern p = java.util.regex.Pattern.compile("lemma=\"([^\"]+)\"");
+        java.util.regex.Matcher m = p.matcher(identity);
+        
+        // Get the last lemma in the match (the dependent)
+        String lastLemma = null;
+        while (m.find()) {
+            lastLemma = m.group(1);
+        }
+        if (lastLemma != null) {
+            return lastLemma.toLowerCase();
+        }
+        return null;
+    }
+
+    /**
+     * Extract POS tag from a hit group.
+     * The group identity contains the matched text from which we extract POS.
+     */
+    private String extractPosFromGroup(HitGroup group) {
+        String identity = group.identity().toString();
+        if (identity == null || identity.isEmpty()) {
+            return null;
+        }
+
+        // Extract xpos or upos from XML
+        java.util.regex.Pattern p = java.util.regex.Pattern.compile("xpos=\"([^\"]+)\"");
+        java.util.regex.Matcher m = p.matcher(identity);
+        if (m.find()) {
+            return m.group(1);
+        }
+        // Fallback to upos
+        p = java.util.regex.Pattern.compile("upos=\"([^\"]+)\"");
+        m = p.matcher(identity);
+        if (m.find()) {
+            return m.group(1);
+        }
+        return null;
     }
 
     /**

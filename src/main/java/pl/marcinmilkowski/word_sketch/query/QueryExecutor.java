@@ -84,20 +84,20 @@ public interface QueryExecutor extends Closeable {
      */
     enum RelationType {
         /** Adjective modifiers: "good theory" - adjective BEFORE noun */
-        ADJ_MODIFIER("[tag=jj.*]",
-            "[tag=\"JJ.*\"] [lemma=\"%s\"]"),
+        ADJ_MODIFIER("[xpos=\"JJ.*\"]",
+            "[xpos=\"JJ.*\"] [lemma=\"%s\"]"),
 
         /** Adjectival predicates: "the theory is valid" - using copula be */
-        ADJ_PREDICATE("[tag=jj.*]",
-            "[lemma=\"%s\"] [tag=\"VB.*\"] [tag=\"JJ.*\"]"),
+        ADJ_PREDICATE("[xpos=\"JJ.*\"]",
+            "[lemma=\"%s\"] []{0,5} [xpos=\"JJ.*\"]"),
 
         /** Verbs with noun as subject: "the theory explains..." */
-        SUBJECT_OF("[tag=vb.*]",
-            "[lemma=\"%s\"] [tag=\"VB.*\"]"),
+        SUBJECT_OF("[xpos=\"VB.*\"]",
+            "[lemma=\"%s\"] []{0,3} [xpos=\"VB.*\"]"),
 
         /** Verbs with noun as object: "develop the theory" */
-        OBJECT_OF("[tag=vb.*]",
-            "[tag=\"VB.*\"] [lemma=\"%s\"]");
+        OBJECT_OF("[xpos=\"VB.*\"]",
+            "[xpos=\"VB.*\"] []{0,3} [lemma=\"%s\"]");
 
         private final String simplePattern;
         private final String fullPattern;

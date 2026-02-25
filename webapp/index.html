@@ -3,6 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
     <title>Word Sketch Lucene Demo</title>
     <style>
         * { box-sizing: border-box; }
@@ -327,6 +330,7 @@
 
     <div class="tabs">
         <button class="tab active" onclick="switchTab('sketch')">Word Sketch</button>
+        <button class="tab" onclick="switchTab('dependency')">Dependency Sketch</button>
         <button class="tab" onclick="switchTab('semantic')">Semantic Field Explorer</button>
         <button class="tab" onclick="switchTab('bcql')">BCQL Query</button>
     </div>
@@ -422,6 +426,31 @@
         <div id="semanticDetails" class="results" style="margin-top: 20px;"></div>
     </div>
 
+    <!-- Dependency Sketch Tab -->
+    <div id="dependencyTab" class="tab-content">
+        <div class="search-box">
+            <input type="text" id="depWordInput" placeholder="Enter a word (e.g., 'theory', 'explain', 'hypothesis')" autofocus>
+            <button id="depSearchBtn" onclick="searchDependency()">Search</button>
+        </div>
+
+        <!-- Dependency relation filters -->
+        <div class="pos-filters" style="margin-bottom: 20px;">
+            <label><input type="checkbox" checked onchange="filterDepRel('nsubj')"> <span>Subjects (nsubj)</span></label>
+            <label><input type="checkbox" checked onchange="filterDepRel('obj')"> <span>Objects (obj)</span></label>
+            <label><input type="checkbox" checked onchange="filterDepRel('amod')"> <span>Modifiers (amod)</span></label>
+            <label><input type="checkbox" checked onchange="filterDepRel('advmod')"> <span>Adverbs (advmod)</span></label>
+            <label><input type="checkbox" checked onchange="filterDepRel('nmod')"> <span>Nominal mods (nmod)</span></label>
+            <label><input type="checkbox" checked onchange="filterDepRel('compound')"> <span>Compounds</span></label>
+            <label><input type="checkbox" checked onchange="filterDepRel('aux')"> <span>Auxiliaries (aux)</span></label>
+            <label><input type="checkbox" checked onchange="filterDepRel('mark')"> <span>Markers (mark)</span></label>
+            <label><input type="checkbox" checked onchange="filterDepRel('det')"> <span>Determiners (det)</span></label>
+            <label><input type="checkbox" checked onchange="filterDepRel('case')"> <span>Case markers (case)</span></label>
+        </div>
+
+        <!-- Results container -->
+        <div id="depResults" class="results"></div>
+    </div>
+
     <!-- BCQL Query Tab -->
     <div id="bcqlTab" class="tab-content">
         <div style="margin-bottom: 20px;">
@@ -445,20 +474,29 @@
         <div class="radial-content" onclick="event.stopPropagation()">
             <div class="radial-header">
                 <div class="radial-title" id="radialTitle">Radial Plot</div>
-                <button class="radial-close" onclick="closeRadial(event)">✕</button>
+                <div style="display:flex;gap:8px;align-items:center;">
+                    <button class="radial-close" onclick="downloadRadialSvg()" title="Download SVG">⬇️ Download</button>
+                    <button class="radial-close" onclick="closeRadial(event)">✕</button>
+                </div>
             </div>
             <div class="radial-subtitle" id="radialSubtitle"></div>
             <div class="radial-controls">
                 <label for="radialCount">Items</label>
                 <input type="number" id="radialCount" value="20" min="5" max="100">
             </div>
-            <div id="radialSvgContainer" style="width:100%; height:520px; background: white; border-radius: 8px; overflow: auto; display:flex; align-items:center; justify-content:center;"></div>
+            <div id="radialSvgContainer" style="width:100%; height:420px; background: white; border-radius: 8px; overflow: auto; display:flex; align-items:center; justify-content:center;"></div>
             <div class="radial-legend" id="radialLegend"></div>
         </div>
     </div>
 
     <script src="https://d3js.org/d3.v7.min.js"></script>
     <script>
+        // Helper function to get API URL with fallback
+        function getApiUrl() {
+            const el = document.getElementById('apiUrl');
+            return el ? el.value.trim() : 'http://localhost:8080';
+        }
+
         let activeFilters = { noun: true, verb: true, adj: true, adv: true, prep: true, part: true, other: true };
         let currentWord = '';
         let currentTab = 'sketch';
@@ -824,10 +862,11 @@
             legend.innerHTML = '';
 
             try {
-                const apiUrl = document.getElementById('apiUrl').value.trim();
+                const apiUrl = getApiUrl();
                 const countInput = document.getElementById('radialCount');
                 const maxItems = Math.max(5, Math.min(100, parseInt(countInput?.value || '20', 10)));
-                const payload = { center: centerLabel || '', width: 840, height: 520, items: items.slice(0, maxItems) };
+                // Use smaller dimensions to fit dialog better
+                const payload = { center: centerLabel || '', width: 640, height: 420, items: items.slice(0, maxItems) };
                 if (mode) payload.mode = mode;
                 const response = await fetch(`${apiUrl}/api/visual/radial`, {
                     method: 'POST',
@@ -841,15 +880,38 @@
                 // Insert server-rendered SVG
                 container.innerHTML = svgText;
 
-                // Simple legend
+                // Simple legend - use plain text symbols instead of HTML entities
                 const maxScore = Math.max(1, ...items.map(i => Math.abs(i.score || 0)));
                 legend.innerHTML = mode === 'signed'
-                    ? `<span><span class="dot" style="background:rgb(43,131,186)"></span> positive (A&gt;B) &nbsp; <span><span class="dot" style="background:rgb(215,25,28)"></span> negative (B&gt;A)</span>`
+                    ? `<span><span class="dot" style="background:rgb(43,131,186)"></span> positive (A>B) &nbsp; <span><span class="dot" style="background:rgb(215,25,28)"></span> negative (B>A)</span>`
                     : `<span><span class="dot" style="background:${items[0]?.color || '#4a90d9'}"></span> max ${maxScore.toFixed(2)}</span>`;
 
             } catch (err) {
                 container.innerHTML = `<div class="error">Failed to render radial plot: ${err.message}</div>`;
             }
+        }
+
+        function downloadRadialSvg() {
+            const container = document.getElementById('radialSvgContainer');
+            const svgElement = container.querySelector('svg');
+            if (!svgElement) {
+                alert('No radial plot to download');
+                return;
+            }
+
+            // Get SVG content
+            const svgData = new XMLSerializer().serializeToString(svgElement);
+            const blob = new Blob([svgData], { type: 'image/svg+xml;charset=utf-8' });
+            const url = URL.createObjectURL(blob);
+
+            // Create download link
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = `radial-${currentRadialPlot.centerLabel || 'plot'}.svg`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url);
         }
 
         async function showRadialPlot({ title, subtitle, centerLabel, items, mode }) {
@@ -2014,6 +2076,264 @@
         // Enter key for BCQL query
         document.getElementById('bcqlInput').addEventListener('keypress', function(e) {
             if (e.key === 'Enter') runBcqlQuery();
+        });
+
+        // Dependency Sketch functions
+        let currentDepWord = '';
+        let activeDepFilters = {
+            nsubj: true, obj: true, amod: true, advmod: true,
+            nmod: true, compound: true, aux: true, mark: true,
+            det: true, case: true, cop: true, cc: true
+        };
+        let currentDepRadialData = { relationId: '', lemma: '' };
+
+        async function searchDependency() {
+            const word = document.getElementById('depWordInput').value.trim();
+            const apiUrl = getApiUrl();
+            const resultsDiv = document.getElementById('depResults');
+            const btn = document.getElementById('depSearchBtn');
+
+            if (!word) return;
+
+            currentDepWord = word;
+            btn.disabled = true;
+            resultsDiv.innerHTML = '<div class="loading">Analyzing dependency relations for "' + word + '"...</div>';
+
+            try {
+                const response = await fetch(`${apiUrl}/api/sketch/${word}/dep`);
+                if (!response.ok) {
+                    throw new Error(`API returned ${response.status}`);
+                }
+                const data = await response.json();
+                renderDependencyResults(data);
+            } catch (e) {
+                resultsDiv.innerHTML = `<div class="error">Error: ${e.message}</div>`;
+            }
+
+            btn.disabled = false;
+        }
+
+        function renderDependencyResults(data) {
+            const resultsDiv = document.getElementById('depResults');
+
+            if (!data.relations || Object.keys(data.relations).length === 0) {
+                resultsDiv.innerHTML = '<div class="error">No dependency relations found</div>';
+                return;
+            }
+
+            let html = '';
+            for (const [relId, relData] of Object.entries(data.relations)) {
+                // Check if this relation type is filtered
+                const deprel = relData.deprel || extractDeprelFromId(relId);
+                if (!activeDepFilters[deprel]) continue;
+
+                html += `
+                    <div class="sketch-section" data-rel-id="${relId}">
+                        <h3>
+                            ${relData.name || relId}
+                            <span class="pos-tag">${deprel}</span>
+                            <button class="radial-button" onclick="showDepRadial('${relId}', '${data.lemma}')">
+                                📊 Radial Plot
+                            </button>
+                        </h3>
+                        <p style="color: #666; font-size: 14px; margin-bottom: 10px;">
+                            ${relData.description || ''}
+                        </p>
+                        <div class="collocations">
+                `;
+
+                // Render collocates - store data for radial plot
+                const collocates = relData.collocations || [];
+                const collocatesData = JSON.stringify(collocates).replace(/"/g, '&quot;');
+                for (const coll of collocates.slice(0, 20)) {
+                    html += `
+                        <div class="collocation adj-row"
+                             onclick="showDepExamples('${data.lemma}', '${coll.lemma}', '${relId}')">
+                            <span class="word">${coll.lemma}</span>
+                            <span class="score">logDice: ${coll.logDice.toFixed(2)}</span>
+                            <span class="freq">freq: ${coll.frequency}</span>
+                        </div>
+                    `;
+                }
+
+                html += `
+                        </div>
+                        <div class="dep-relation-examples" id="dep-examples-${relId}" style="display:none;"></div>
+                    </div>
+                `;
+            }
+
+            resultsDiv.innerHTML = html;
+        }
+
+        async function showDepExamples(headword, collocate, relationId) {
+            const apiUrl = getApiUrl();
+            
+            // Hide all other example divs first
+            document.querySelectorAll('.dep-relation-examples').forEach(div => {
+                if (div.id !== `dep-examples-${relationId}`) {
+                    div.style.display = 'none';
+                }
+            });
+            
+            // Get or create examples div for this relation
+            let examplesDiv = document.getElementById(`dep-examples-${relationId}`);
+            if (!examplesDiv) {
+                // Create it if it doesn't exist
+                const relSection = document.querySelector(`.sketch-section[data-rel-id="${relationId}"]`);
+                if (relSection) {
+                    examplesDiv = document.createElement('div');
+                    examplesDiv.id = `dep-examples-${relationId}`;
+                    examplesDiv.className = 'dep-relation-examples';
+                    examplesDiv.style.display = 'none';
+                    relSection.querySelector('.collocations').insertAdjacentElement('afterend', examplesDiv);
+                } else {
+                    return;
+                }
+            }
+
+            if (examplesDiv.style.display === 'block') {
+                examplesDiv.style.display = 'none';
+                return;
+            }
+
+            examplesDiv.innerHTML = '<div class="loading">Loading examples...</div>';
+            examplesDiv.style.display = 'block';
+
+            try {
+                const response = await fetch(
+                    `${apiUrl}/api/concordance/examples?word1=${encodeURIComponent(headword)}&word2=${encodeURIComponent(collocate)}&limit=10`
+                );
+                const data = await response.json();
+
+                if (data.examples && data.examples.length > 0) {
+                    const deprel = extractDeprelFromId(relationId);
+                    let html = `<h4 style="margin-top:0;">Examples: "${headword}" → "${collocate}" <span style="color:#666;font-weight:normal;font-size:13px;">(${deprel})</span></h4>`;
+                    for (const ex of data.examples) {
+                        html += `<div class="example">${ex.highlighted}</div>`;
+                    }
+                    examplesDiv.innerHTML = html;
+                } else {
+                    examplesDiv.innerHTML = '<div style="color:#888;">No examples found in corpus</div>';
+                }
+            } catch (e) {
+                examplesDiv.innerHTML = `<div class="error">Failed to load examples: ${e.message}</div>`;
+            }
+        }
+
+        function filterDepRel(deprel) {
+            activeDepFilters[deprel] = !activeDepFilters[deprel];
+            if (currentDepWord) {
+                searchDependency();
+            }
+        }
+
+        function extractDeprelFromId(relId) {
+            // Extract deprel from relation ID like "dep_nsubj" -> "nsubj"
+            if (relId.startsWith('dep_')) {
+                return relId.substring(4);
+            }
+            // Fallback: try to extract any deprel-like pattern
+            const match = relId.match(/dep[_-]?([a-z]+)/i);
+            if (match) {
+                return match[1].toLowerCase();
+            }
+            return 'other';
+        }
+
+        function showDepRadial(relationId, lemma) {
+            // Store current radial data for re-rendering
+            currentDepRadialData = { relationId, lemma };
+
+            // Fetch dependency data and render radial plot
+            const apiUrl = getApiUrl();
+            const modal = document.getElementById('radialModal');
+            const title = document.getElementById('radialTitle');
+            const subtitle = document.getElementById('radialSubtitle');
+            const svgContainer = document.getElementById('radialSvgContainer');
+            const radialCount = document.getElementById('radialCount');
+            const legend = document.getElementById('radialLegend');
+
+            // Show modal with loading state
+            title.textContent = 'Loading...';
+            subtitle.textContent = `Dependency relation: ${relationId}`;
+            svgContainer.innerHTML = '<div class="loading">Generating radial plot...</div>';
+            modal.classList.add('active');
+
+            // Fetch dependency sketch data
+            fetch(`${apiUrl}/api/sketch/${encodeURIComponent(lemma)}/dep/${relationId}`)
+                .then(res => res.json())
+                .then(data => {
+                    const collocates = data.collocations || [];
+                    if (collocates.length === 0) {
+                        svgContainer.innerHTML = '<div style="color:#666;">No data available for radial plot</div>';
+                        return;
+                    }
+
+                    // Prepare items for radial plot
+                    const count = parseInt(radialCount.value) || 20;
+                    const items = collocates.slice(0, count).map(c => ({
+                        label: c.lemma,
+                        score: c.logDice
+                    }));
+
+                    // Update title
+                    title.textContent = `"${lemma}" - ${relationId}`;
+                    subtitle.textContent = `${collocates.length} collocates by logDice score`;
+
+                    // Build legend with color coding
+                    const deprel = extractDeprelFromId(relationId);
+                    legend.innerHTML = `
+                        <span><span class="dot" style="background:#4a90d9;"></span>Head: ${lemma}</span>
+                        <span><span class="dot" style="background:#e74c3c;"></span>Deprel: ${deprel}</span>
+                        <span><span class="dot" style="background:#27ae60;"></span>Dependents: ${items.length} shown</span>
+                    `;
+
+                    // Call radial plot API for dependency sketch
+                    renderDepRadialPlot(apiUrl, lemma, items);
+                })
+                .catch(err => {
+                    svgContainer.innerHTML = `<div class="error">Failed to fetch data: ${err.message}</div>`;
+                });
+        }
+
+        function renderDepRadialPlot(apiUrl, lemma, items) {
+            const svgContainer = document.getElementById('radialSvgContainer');
+
+            // Use smaller dimensions to fit dialog better
+            const radialBody = JSON.stringify({
+                center: lemma,
+                width: 640,
+                height: 420,
+                items: items,
+                mode: 'signed'
+            });
+
+            fetch(`${apiUrl}/api/visual/radial`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: radialBody
+            })
+            .then(res => res.text())
+            .then(svg => {
+                document.getElementById('radialSvgContainer').innerHTML = svg;
+            })
+            .catch(err => {
+                svgContainer.innerHTML = `<div class="error">Failed to render radial: ${err.message}</div>`;
+            });
+        }
+
+        // Re-render radial when count changes
+        document.getElementById('radialCount')?.addEventListener('change', function() {
+            // Trigger re-render by calling showDepRadial again if modal is open
+            if (document.getElementById('radialModal').classList.contains('active') && currentDepRadialData.relationId) {
+                showDepRadial(currentDepRadialData.relationId, currentDepRadialData.lemma);
+            }
+        });
+
+        // Enter key for dependency sketch search
+        document.getElementById('depWordInput').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') searchDependency();
         });
     </script>
 </body>

@@ -51,9 +51,9 @@ public class SemanticFieldExplorer implements AutoCloseable {
     private final QueryExecutor executor;
     private final String indexPath;
 
-    // Patterns for finding collocates by POS
-    private static final String ADJECTIVE_PATTERN = "[tag=jj.*]";
-    private static final String NOUN_PATTERN = "[tag=nn.*]";
+    // Patterns for finding collocates by POS (using xpos field from CoNLL-U index)
+    private static final String ADJECTIVE_PATTERN = "[xpos=\"JJ.*\"]";
+    private static final String NOUN_PATTERN = "[xpos=\"NN.*\"]";
 
     public SemanticFieldExplorer(String indexPath) throws IOException {
         this.indexPath = indexPath;
@@ -69,25 +69,32 @@ public class SemanticFieldExplorer implements AutoCloseable {
     // ==================== EXPLORATION MODE ====================
 
     /**
-     * Explore semantic field using adjectival predicates (default mode).
-     * Uses grammatical patterns like "X is/seems/appears ADJ" to find
-     * shared properties, which works better for abstract nouns.
+     * Explore semantic field using a BCQL pattern from grammar config.
+     * This is the preferred method as it uses the actual patterns from relations.json.
      *
      * @param seed The seed noun to explore from
      * @param topPredicates Max predicates to use for expansion
      * @param nounsPerPredicate Max nouns to fetch per predicate
      * @param minShared Min predicates a noun must share with seed
      * @param minLogDice Min logDice threshold
-     * @param relationType The type of grammatical relation to use
+     * @param bcqlPattern BCQL pattern with headword placeholder (e.g., "[lemma=\"%s\"] []{0,5} [xpos=\"JJ.*\"]")
+     * @param simplePattern Simple pattern for reverse lookup (e.g., "[xpos=\"JJ.*\"]")
+     * @param relationName Human-readable relation name for logging
+     * @param headPos 1-based position of head in pattern (from grammar config)
+     * @param collocatePos 1-based position of collocate in pattern (from grammar config)
      * @return ExplorationResult with discovered semantic class
      */
-    public ExplorationResult exploreByRelation(
+    public ExplorationResult exploreByPattern(
             String seed,
             int topPredicates,
             int nounsPerPredicate,
             int minShared,
             double minLogDice,
-            QueryExecutor.RelationType relationType) throws IOException {
+            String bcqlPattern,
+            String simplePattern,
+            String relationName,
+            int headPos,
+            int collocatePos) throws IOException {
 
         if (seed == null || seed.isEmpty()) {
             return ExplorationResult.empty(seed);
@@ -95,27 +102,38 @@ public class SemanticFieldExplorer implements AutoCloseable {
 
         seed = seed.toLowerCase().trim();
 
-        System.out.println("\n=== SEMANTIC FIELD EXPLORATION (by " + relationType + ") ===");
+        System.out.println("\n=== SEMANTIC FIELD EXPLORATION ===");
         System.out.println("Seed: " + seed);
-        System.out.println("Relation: " + relationType);
+        System.out.println("Relation: " + relationName);
+        System.out.println("Pattern: " + bcqlPattern);
+        System.out.println("Head position: " + headPos + ", Collocate position: " + collocatePos);
         System.out.println("Parameters: top=" + topPredicates +
             ", nounsPerRel=" + nounsPerPredicate +
             ", minShared=" + minShared +
             ", minLogDice=" + minLogDice);
         System.out.println("-".repeat(60));
 
-        // Step 1: Get predicates/collocates for the seed noun using the specified relation
-        System.out.println("\nStep 1: Finding " + relationType + " for '" + seed + "'...");
+        // Step 1: Get predicates/collocates for the seed noun using the BCQL pattern
+        System.out.println("\nStep 1: Finding collocates for '" + seed + "'...");
 
-        List<QueryResults.WordSketchResult> seedRelations = executor.findGrammaticalRelation(
-            seed, relationType, minLogDice, topPredicates);
+        // Use executeSurfacePattern which properly handles labeled BCQL patterns
+        List<QueryResults.WordSketchResult> seedRelations;
+        if (executor instanceof BlackLabQueryExecutor) {
+            seedRelations = 
+                ((BlackLabQueryExecutor) executor).executeSurfacePattern(
+                    seed, bcqlPattern, headPos, collocatePos, minLogDice, topPredicates);
+        } else {
+            // Fallback for other executors
+            seedRelations = executor.findCollocations(
+                seed, bcqlPattern, minLogDice, topPredicates);
+        }
 
         if (seedRelations.isEmpty()) {
-            System.out.println("  No " + relationType + " found for seed word.");
+            System.out.println("  No results found for seed word.");
             // Try fallback to simple pattern
             System.out.println("  Trying fallback to simple pattern...");
             seedRelations = executor.findCollocations(
-                seed, relationType.getSimplePattern(), minLogDice, topPredicates);
+                seed, simplePattern, minLogDice, topPredicates);
         }
 
         if (seedRelations.isEmpty()) {
@@ -159,7 +177,7 @@ public class SemanticFieldExplorer implements AutoCloseable {
         System.out.println("  Total candidate nouns: " + nounProfiles.size());
 
         // Step 3: Score nouns by shared collocate count
-        System.out.println("\nStep 3: Scoring nouns by shared " + relationType + "...");
+        System.out.println("\nStep 3: Scoring nouns by shared " + relationName + "...");
 
         List<DiscoveredNoun> discoveredNouns = new ArrayList<>();
 
@@ -185,8 +203,8 @@ public class SemanticFieldExplorer implements AutoCloseable {
 
         System.out.println("  Nouns with " + minShared + "+ shared: " + discoveredNouns.size());
 
-        // Step 4: Identify core collocates
-        System.out.println("\nStep 4: Identifying core " + relationType + "...");
+        // Step 3: Score nouns by shared collocate count
+        System.out.println("\nStep 3: Scoring nouns by shared collocates...");
 
         Map<String, Integer> collocFrequency = new LinkedHashMap<>();
         Map<String, Double> collocTotalScore = new LinkedHashMap<>();
@@ -227,7 +245,7 @@ public class SemanticFieldExplorer implements AutoCloseable {
                 ", score=" + String.format("%.1f", n.similarityScore) +
                 ") <- " + String.join(", ", n.sharedAdjectives.keySet())));
 
-        System.out.println("\nCore " + relationType + " (define the class):");
+        System.out.println("\nCore " + relationName + " (define the class):");
         coreCollocates.stream().limit(10).forEach(a ->
             System.out.println("  " + a.adjective + " (in " + a.sharedByCount +
                 "/" + a.totalNouns + " nouns, avgLogDice=" +

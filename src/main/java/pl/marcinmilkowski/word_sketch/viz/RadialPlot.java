@@ -196,9 +196,9 @@ public class RadialPlot {
         // Legend for signed mode
         if ("signed".equals(mode)) {
             svg.append("  <g id=\"legend\" transform=\"translate(20, " + (height - 40) + ")\">\n");
-            svg.append("    <text class=\"label\" x=\"0\" y=\"0\">Positive (A&amp;gt;B)</text>\n");
+            svg.append("    <text class=\"label\" x=\"0\" y=\"0\">Positive (A&gt;B)</text>\n");
             svg.append("    <circle cx=\"-15\" cy=\"-4\" r=\"6\" fill=\"rgb(43,131,186)\"/>\n");
-            svg.append("    <text class=\"label\" x=\"120\" y=\"0\">Negative (B&amp;gt;A)</text>\n");
+            svg.append("    <text class=\"label\" x=\"120\" y=\"0\">Negative (B&gt;A)</text>\n");
             svg.append("    <circle cx=\"105\" cy=\"-4\" r=\"6\" fill=\"rgb(215,25,28)\"/>\n");
             svg.append("  </g>\n");
         }
