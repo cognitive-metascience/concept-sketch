@@ -1,6 +1,6 @@
-# Word Sketch Lucene
+# ConceptSketch
 
-A high-performance corpus-based collocation analysis tool built on Apache Lucene. This project implements word sketch functionality (grammatical relations and collocations) for corpus linguistics research and NLP applications.
+A high-performance corpus-based collocation analysis tool built on [BlackLab](https://blacklab.ivdnt.org/) corpus search software (which relies on Apache Lucene). This project implements word sketch functionality (grammatical relations and collocations) for corpus linguistics research and NLP applications.
 
 **Current Status:** ✅ **Functional Release v1.0** - See [Limitations](#limitations) section.
 
@@ -154,7 +154,6 @@ curl "http://localhost:8080/api/semantic-field/explore-multi?seeds=theory,model,
 ### Index a Corpus
 
 #### Prerequisites
-
 - A corpus in **CoNLL-U format** (columns: ID, FORM, LEMMA, UPOS, XPOS, FEATS, HEAD, DEPREL, DEPS, MISC)
 - The project's `conllu-sentences.blf.yaml` format file (in the project root)
 - Java 21+ and the shaded JAR (`target/word-sketch-lucene-1.0.1-shaded.jar`)
@@ -219,7 +218,6 @@ java -jar target/word-sketch-lucene-1.0.1-shaded.jar \
 # Find adjectival modifiers of "theory" (deprel=amod)
 java -jar target/word-sketch-lucene-1.0.1-shaded.jar \
   blacklab-query --index my_index/ --lemma theory --deprel amod
-
 # Increase result count and filter by logDice
 java -jar target/word-sketch-lucene-1.0.1-shaded.jar \
   blacklab-query --index my_index/ --lemma theory \
@@ -467,7 +465,7 @@ The `webapp/` directory contains an interactive web interface built with D3.js.
 
 ```bash
 # Terminal 1: API Server
-java -jar target/word-sketch-lucene-1.0.0.jar server --index d:\corpus_74m\index-hybrid --port 8080
+java -jar target/word-sketch-lucene-1.5.0.jar server --index <corpus_path> --port 8080
 
 # Terminal 2: Web Server
 python -m http.server 3000 --directory webapp
@@ -712,15 +710,20 @@ Varint encoding saves space for common cases (positions < 128 = 1 byte).
 
 ## Examples
 
-### Example 1: Find Adjectives Describing "Theory"
-
-```bash
-curl "http://localhost:8080/api/semantic-field/explore?seed=theory&relation=adj_predicate&top=10"
-```
-
-**Result:**
-```
 correct (logDice: 4.21)
+
+## Dependency Sketches
+
+### What are Dependency Sketches?
+Dependency sketches are visual or data-driven representations of how words relate to each other based on syntactic dependencies in the corpus. They help users understand grammatical and semantic relationships beyond simple collocations, leveraging dependency parsing to reveal patterns such as subject, object, modifier, and predicate relations.
+
+### Usage
+Dependency sketches are generated from parsed corpora (e.g., CoNLL-U format) and can be explored via the API and web UI. They provide insights into grammatical structures and are useful for linguistic analysis, semantic field exploration, and advanced querying.
+
+### Example
+For the noun "theory", a dependency sketch might show its typical subjects, objects, and modifiers, visualized as a graph or listed in ranked tables.
+
+See also: [MULTI_SEED_EXPLORATION.md](MULTI_SEED_EXPLORATION.md) for advanced semantic field features.
 practical (logDice: 3.73)
 wrong (logDice: 3.58)
 mathematical (logDice: 3.47)
@@ -759,23 +762,11 @@ All seeds can: eat, run, live
 Dog-specific: bark, beg, fetch
 Cat-specific: meow, purr, scratch
 ```
-
----
-
-## Performance
-
-| Task | Time | Notes |
-|------|------|-------|
-| Index 74M sentences | ~2 hours | With UDPipe, parallelized |
-| Query (PRECOMPUTED) | 0-1 ms | O(1) instant lookup |
-| Query (on-the-fly) | 50-300 ms | Depends on word frequency |
-| Web request | ~50 ms | Includes network latency |
-
 ---
 
 ## Limitations
 
-This is a **functional v1.0 release** with the following limitations:
+This is a **functional v1.5 release** with the following limitations:
 
 ### Known Limitations
 
@@ -794,14 +785,6 @@ This is a **functional v1.0 release** with the following limitations:
 4. **No Morphological Analysis**: Simple POS tag matching
    - Plural/singular not distinguished
    - Verb tense merged into single lemma
-
-### Planned for v2.0
-
-- Agreement rules (noun-adjective gender/number matching)
-- Additional grammatical relations (possessive, comparative, etc.)
-- Morphological decomposition
-- Word sense disambiguation
-- Cross-lingual support
 
 ---
 
