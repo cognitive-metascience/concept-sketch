@@ -39,7 +39,7 @@ public class CorpusBuilder {
      */
     public BuildStats buildIndex(String tableName, String textColumn, int targetTokens,
                                   String indexPath, PosTagger tagger) throws Exception {
-        System.out.println("Corpus Builder - Building Word Sketch Index");
+        System.out.println("Corpus Builder - Building ConceptSketch Index");
         System.out.println("==========================================");
         System.out.println(String.format("Target: %,d tokens from %s.%s", targetTokens, tableName, textColumn));
 

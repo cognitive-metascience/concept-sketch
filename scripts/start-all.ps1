@@ -11,7 +11,7 @@ $scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 $projectRoot = Split-Path -Parent $scriptDir
 
 # Check dependencies
-$jarFile = Join-Path $projectRoot "target\word-sketch-lucene-1.0.0.jar"
+$jarFile = Join-Path $projectRoot "target\concept-sketch-1.5.0-shaded.jar"
 if (-not (Test-Path $jarFile)) {
     Write-Error "JAR file not found: $jarFile"
     Write-Host "Please build with: mvn clean package"

@@ -38,7 +38,7 @@ python tag_with_stanza.py -i corpus.txt -o corpus.conllu --lang en
 ### 4. Index with BlackLab
 
 ```bash
-java -jar target/word-sketch-lucene-1.0.1.jar blacklab-index \
+java -jar target/concept-sketch-1.5.0-shaded.jar blacklab-index \
   --input corpus.conllu \
   --output data/index/
 ```
@@ -47,7 +47,7 @@ java -jar target/word-sketch-lucene-1.0.1.jar blacklab-index \
 
 ```bash
 # Find adjectival modifiers of "theory"
-java -jar target/word-sketch-lucene-1.0.1.jar blacklab-query \
+java -jar target/concept-sketch-1.5.0-shaded.jar blacklab-query \
   --index data/index/ \
   --lemma theory \
   --deprel amod
@@ -56,7 +56,7 @@ java -jar target/word-sketch-lucene-1.0.1.jar blacklab-query \
 ### 6. Start API Server
 
 ```bash
-java -jar target/word-sketch-lucene-1.0.1.jar server \
+java -jar target/concept-sketch-1.5.0-shaded.jar server \
   --index data/index/ \
   --port 8080
 ```
@@ -137,7 +137,7 @@ pip install torch --index-url https://download.pytorch.org/whl/cu118
 ## File Structure
 
 ```
-word-sketch-lucene/
+concept-sketch/
 ├── install-blacklab.sh          # Linux/Mac installer
 ├── install-blacklab.ps1         # Windows installer
 ├── tag_with_stanza.py           # GPU-enabled corpus tagger

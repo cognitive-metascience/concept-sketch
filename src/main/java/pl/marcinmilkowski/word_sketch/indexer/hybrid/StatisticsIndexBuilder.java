@@ -34,7 +34,7 @@ public class StatisticsIndexBuilder implements Closeable {
 
     private static final Logger log = LoggerFactory.getLogger(StatisticsIndexBuilder.class);
 
-    private static final int MAGIC_NUMBER = 0x57534C53; // "WSLS" - Word Sketch Lucene Stats
+    private static final int MAGIC_NUMBER = 0x57534C53; // "WSLS" - ConceptSketch Statistics
     private static final int VERSION = 1;
 
     private final ConcurrentHashMap<String, LemmaStats> lemmaStats = new ConcurrentHashMap<>();
@@ -202,7 +202,7 @@ public class StatisticsIndexBuilder implements Closeable {
 
         try (BufferedWriter writer = Files.newBufferedWriter(filePath)) {
             // Header
-            writer.write("# Word Sketch Lucene Statistics\n");
+            writer.write("# ConceptSketch Statistics\n");
             writer.write(String.format("# Total tokens: %d\n", totalTokens.get()));
             writer.write(String.format("# Total sentences: %d\n", totalSentences.get()));
             writer.write(String.format("# Unique lemmas: %d\n", lemmaStats.size()));

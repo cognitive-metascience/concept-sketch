@@ -81,7 +81,7 @@ The shaded JAR bundles BlackLab's `IndexTool`. Run it from the project root
 (so `--format-dir .` can find `conllu-sentences.blf.yaml`):
 
 ```bash
-java -cp target/word-sketch-lucene-1.0.1-shaded.jar \
+java -cp target/concept-sketch-1.5.0-shaded.jar \
   nl.inl.blacklab.tools.IndexTool create \
   --format-dir . \
   my_index/ input_dir/ conllu-sentences
@@ -98,7 +98,7 @@ java -cp target/word-sketch-lucene-1.0.1-shaded.jar \
 
 ```bash
 # Terminal 1
-java -jar target/word-sketch-lucene-1.0.1-shaded.jar server --index my_index/ --port 8080
+java -jar target/concept-sketch-1.5.0-shaded.jar server --index my_index/ --port 8080
 ```
 
 Server startup output:
@@ -156,7 +156,7 @@ curl "http://localhost:8080/api/semantic-field/explore-multi?seeds=theory,model,
 #### Prerequisites
 - A corpus in **CoNLL-U format** (columns: ID, FORM, LEMMA, UPOS, XPOS, FEATS, HEAD, DEPREL, DEPS, MISC)
 - The project's `conllu-sentences.blf.yaml` format file (in the project root)
-- Java 21+ and the shaded JAR (`target/word-sketch-lucene-1.0.1-shaded.jar`)
+- Java 21+ and the shaded JAR (`target/concept-sketch-1.5.0-shaded.jar`)
 
 #### Step 1 — Preprocess CoNLL-U: add sentence markers
 
@@ -180,7 +180,7 @@ mkdir input_dir
 cp corpus_s.conllu input_dir/
 
 # Run from the project root (so --format-dir finds conllu-sentences.blf.yaml)
-java -cp target/word-sketch-lucene-1.0.1-shaded.jar \
+java -cp target/concept-sketch-1.5.0-shaded.jar \
   nl.inl.blacklab.tools.IndexTool create \
   --format-dir . \
   my_index/ input_dir/ conllu-sentences
@@ -189,7 +189,7 @@ java -cp target/word-sketch-lucene-1.0.1-shaded.jar \
 To add more documents to an existing index later:
 
 ```bash
-java -cp target/word-sketch-lucene-1.0.1-shaded.jar \
+java -cp target/concept-sketch-1.5.0-shaded.jar \
   nl.inl.blacklab.tools.IndexTool add \
   --format-dir . \
   my_index/ more_input_dir/ conllu-sentences
@@ -212,14 +212,14 @@ java -cp target/word-sketch-lucene-1.0.1-shaded.jar \
 
 ```bash
 # Find all collocations for "theory"
-java -jar target/word-sketch-lucene-1.0.1-shaded.jar \
+java -jar target/concept-sketch-1.5.0-shaded.jar \
   blacklab-query --index my_index/ --lemma theory
 
 # Find adjectival modifiers of "theory" (deprel=amod)
-java -jar target/word-sketch-lucene-1.0.1-shaded.jar \
+java -jar target/concept-sketch-1.5.0-shaded.jar \
   blacklab-query --index my_index/ --lemma theory --deprel amod
 # Increase result count and filter by logDice
-java -jar target/word-sketch-lucene-1.0.1-shaded.jar \
+java -jar target/concept-sketch-1.5.0-shaded.jar \
   blacklab-query --index my_index/ --lemma theory \
   --deprel nsubj --limit 50 --min-logdice 4.0
 ```
@@ -606,7 +606,7 @@ curl "http://localhost:8080/api/sketch/house?scoring=loglikelihood"
 ## Project Structure
 
 ```
-word-sketch-lucene/
+concept-sketch/
 ├── src/main/java/pl/marcinmilkowski/word_sketch/
 │   ├── Main.java                    # CLI entry point
 │   ├── api/
@@ -799,7 +799,7 @@ mvn test
 ### Build Documentation
 
 See `plans/` directory for:
-- `word-sketch-lucene-spec.md` - Overall technical specification
+- `concept-sketch-spec.md` - Overall technical specification
 - `precomputed-collocations-spec.md` - Precomputed algorithm details
 - `hybrid-index-spec.md` - Hybrid index architecture
 

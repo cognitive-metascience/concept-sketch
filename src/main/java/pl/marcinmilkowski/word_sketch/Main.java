@@ -12,10 +12,10 @@ import java.io.IOException;
 import java.nio.file.Paths;
 
 /**
- * Main entry point for Word Sketch Lucene using BlackLab backend.
- * 
+ * Main entry point for ConceptSketch using BlackLab backend.
+ *
  * BlackLab provides native CoNLL-U dependency indexing and CQL query support.
- * 
+ *
  * Commands:
  *   blacklab-index --input corpus.conllu --output data/index/
  *   blacklab-query --index data/index/ --lemma theory --deprel amod
@@ -27,7 +27,7 @@ public class Main {
 
     public static void main(String[] args) {
         System.out.println("==========================================");
-        System.out.println("   Word Sketch Lucene - BlackLab Edition  ");
+        System.out.println("   ConceptSketch - BlackLab Edition v1.5.0 ");
         System.out.println("==========================================");
         System.out.println();
 
@@ -64,7 +64,7 @@ public class Main {
     }
 
     private static void showUsage() {
-        System.out.println("Usage: java -jar word-sketch-lucene.jar <command> [options]");
+        System.out.println("Usage: java -jar concept-sketch.jar <command> [options]");
         System.out.println();
         System.out.println("Commands:");
         System.out.println("  blacklab-index --input <file.conllu> --output <index-dir>");
@@ -85,15 +85,15 @@ public class Main {
         System.out.println("  python tag_with_stanza.py -i corpus.txt -o corpus.conllu");
         System.out.println();
         System.out.println("  # Index CoNLL-U file");
-        System.out.println("  java -jar word-sketch-lucene.jar blacklab-index \\");
+        System.out.println("  java -jar concept-sketch.jar blacklab-index \\");
         System.out.println("    --input corpus.conllu --output data/index/");
         System.out.println();
         System.out.println("  # Query for adjectival modifiers of 'theory'");
-        System.out.println("  java -jar word-sketch-lucene.jar blacklab-query \\");
+        System.out.println("  java -jar concept-sketch.jar blacklab-query \\");
         System.out.println("    --index data/index/ --lemma theory --deprel amod");
         System.out.println();
         System.out.println("  # Start API server");
-        System.out.println("  java -jar word-sketch-lucene.jar server \\");
+        System.out.println("  java -jar concept-sketch.jar server \\");
         System.out.println("    --index data/index/ --port 8080");
         System.out.println();
         System.out.println("  # Query API");
@@ -127,7 +127,7 @@ public class Main {
         System.out.println("Or use the BlackLab Server web interface for indexing.");
         System.out.println();
         System.out.println("Once indexed, you can query with:");
-        System.out.println("  java -jar word-sketch-lucene.jar blacklab-query --index output-dir/ --lemma theory --deprel amod");
+        System.out.println("  java -jar concept-sketch.jar blacklab-query --index output-dir/ --lemma theory --deprel amod");
         System.out.println();
         
         // Legacy indexing disabled due to BlackLab classpath scanning issues
@@ -224,7 +224,7 @@ public class Main {
 
         if (indexPath == null) {
             System.err.println("Error: --index is required");
-            System.err.println("Usage: java -jar word-sketch-lucene.jar server --index <dir> [--port <port>]");
+            System.err.println("Usage: java -jar concept-sketch.jar server --index <dir> [--port <port>]");
             return;
         }
 

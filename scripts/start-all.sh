@@ -31,7 +31,7 @@ done
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
 
-JAR_FILE="$PROJECT_ROOT/target/word-sketch-lucene-1.0.0.jar"
+JAR_FILE="$PROJECT_ROOT/target/concept-sketch-1.5.0-shaded.jar"
 if [ ! -f "$JAR_FILE" ]; then
     echo "ERROR: JAR file not found: $JAR_FILE"
     echo "Please build with: mvn clean package"

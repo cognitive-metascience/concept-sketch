@@ -4,7 +4,7 @@ This file documents the Word Sketch Lucene project for future development.
 
 ## Current Status
 
-✅ **v1.0 Functional Release**
+✅ **v1.5 Functional Release**
 
 ### What Works
 - Corpus indexing with CoNLL-U format (POS tagging via UDPipe)
@@ -42,7 +42,7 @@ mvn clean package
 ### Deploy (3 services)
 ```bash
 # Terminal 1: API Server
-java -jar target/word-sketch-lucene-1.0.0.jar server --index d:\corpus_74m\index-hybrid --port 8080
+java -jar target/concept-sketch-1.5.0-shaded.jar server --index d:\corpus_74m\index-hybrid --port 8080
 
 # Terminal 2: Web UI (static server)
 python -m http.server 3000 --directory webapp
@@ -56,10 +56,10 @@ python -m http.server 3000 --directory webapp
 See `src/main/java/pl/marcinmilkowski/word_sketch/Main.java`:
 
 ```bash
-java -jar word-sketch-lucene.jar index --corpus text.txt --output data/index/
-java -jar word-sketch-lucene.jar conllu --input corpus.conllu --output data/index/
-java -jar word-sketch-lucene.jar query --index data/index/ --lemma house
-java -jar word-sketch-lucene.jar server --index data/index/ --port 8080
+java -jar concept-sketch.jar index --corpus text.txt --output data/index/
+java -jar concept-sketch.jar conllu --input corpus.conllu --output data/index/
+java -jar concept-sketch.jar query --index data/index/ --lemma house
+java -jar concept-sketch.jar server --index data/index/ --port 8080
 ```
 
 ---
@@ -211,7 +211,7 @@ Planned improvements:
 
 - **README.md** - User guide (indexing, querying, API, examples)
 - **MULTI_SEED_EXPLORATION.md** - Multi-seed feature details
-- **plans/word-sketch-lucene-spec.md** - Technical specification
+- **plans/concept-sketch-spec.md** - Technical specification
 - **plans/precomputed-collocations-spec.md** - Algorithm details
 - **plans/hybrid-index-spec.md** - Index architecture
 Main Corpus Index          Word Sketch Index
