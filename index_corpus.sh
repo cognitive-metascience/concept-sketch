@@ -1,5 +1,5 @@
 #!/bin/bash
-# Corpus Indexing Script for Word Sketch Lucene
+# Corpus Indexing Script for ConceptSketch
 # Indexes line-segmented text files (one sentence per line) or CoNLL-U files
 #
 # Usage:
@@ -146,7 +146,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$SCRIPT_DIR"
 
 log_info "=========================================="
-log_info "Word Sketch Lucene - Corpus Indexing"
+log_info "ConceptSketch - Corpus Indexing"
 log_info "=========================================="
 log_info ""
 log_info "Input file:  $INPUT_FILE"
@@ -170,10 +170,10 @@ fi
 log_success "Build complete"
 
 # Determine the command to run
-JAR_FILE="$PROJECT_ROOT/target/word-sketch-lucene-1.0.0.jar"
+JAR_FILE="$PROJECT_ROOT/target/concept-sketch-1.0.0.jar"
 
 if [[ ! -f "$JAR_FILE" ]]; then
-    JAR_FILE="$PROJECT_ROOT/target/word-sketch-lucene-*.jar"
+    JAR_FILE="$PROJECT_ROOT/target/concept-sketch-*.jar"
     if ls $JAR_FILE 1> /dev/null 2>&1; then
         JAR_FILE=$(ls $JAR_FILE | head -1)
     else

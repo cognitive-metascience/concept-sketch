@@ -1,6 +1,6 @@
 # Server Startup Scripts
 
-Quick-start scripts for running Word Sketch Lucene.
+Quick-start scripts for running ConceptSketch.
 
 ## Features
 

@@ -465,7 +465,7 @@ The `webapp/` directory contains an interactive web interface built with D3.js.
 
 ```bash
 # Terminal 1: API Server
-java -jar target/word-sketch-lucene-1.5.0.jar server --index <corpus_path> --port 8080
+java -jar target/concept-sketch-1.5.0-shaded.jar server --index <corpus_path> --port 8080
 
 # Terminal 2: Web Server
 python -m http.server 3000 --directory webapp

@@ -237,7 +237,7 @@ if (-not $ScriptDir) {
     $ScriptDir = "."
 }
 $ProjectRoot = (Get-Item $ScriptDir).FullName
-$JarFile = Join-Path $ProjectRoot "target/word-sketch-lucene-1.0.0.jar"
+$JarFile = Join-Path $ProjectRoot "target/concept-sketch-1.0.0.jar"
 
 # Check/build JAR file
 if (-not (Test-Path $JarFile)) {
@@ -325,7 +325,7 @@ $CollocationsFile = Join-Path $OutputDir "collocations.bin"
 
 Write-Step "Step 2: Single-Pass Index + Collocations"
 Write-Info "Building Lucene index and collocations in a single pass"
-Write-Info "Command: java -Xmx8g -jar word-sketch-lucene-1.0.0.jar single-pass ..."
+Write-Info "Command: java -Xmx8g -jar concept-sketch-1.0.0.jar single-pass ..."
 
 $JavaArgs = @(
     "-Xmx8g",

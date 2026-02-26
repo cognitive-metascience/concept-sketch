@@ -1,7 +1,7 @@
 #!/usr/bin/env pwsh
 <#
 .SYNOPSIS
-    Corpus Indexing Script for Word Sketch Lucene
+    Corpus Indexing Script for ConceptSketch
 .DESCRIPTION
     Indexes line-segmented text files (one sentence per line) or CoNLL-U files
 .PARAMETER InputFile
@@ -36,7 +36,7 @@ param(
 
 if ($Help -or (-not $InputFile) -or (-not $OutputDir)) {
     Write-Host @"
-Word Sketch Lucene - Corpus Indexing Script
+ConceptSketch - Corpus Indexing Script
 
 Usage: .\index_corpus.ps1 <input_file> <output_dir> [OPTIONS]
 
@@ -80,7 +80,7 @@ function Write-Error { Write-Host "[ERROR]  $($args[0])" -ForegroundColor $Color
 
 Write-Host ""
 Write-Host "==========================================" -ForegroundColor Cyan
-Write-Host "Word Sketch Lucene - Corpus Indexing" -ForegroundColor Cyan
+Write-Host "ConceptSketch - Corpus Indexing" -ForegroundColor Cyan
 Write-Host "==========================================" -ForegroundColor Cyan
 Write-Host ""
 
@@ -98,7 +98,7 @@ if (-not (Test-Path $OutputDir)) {
 # Get project root
 $ScriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 $ProjectRoot = (Get-Item $ScriptDir).FullName
-$JarFile = Join-Path $ProjectRoot "target/word-sketch-lucene-1.0.0.jar"
+$JarFile = Join-Path $ProjectRoot "target/concept-sketch-1.0.0.jar"
 
 # Check for JAR file
 if (-not (Test-Path $JarFile)) {

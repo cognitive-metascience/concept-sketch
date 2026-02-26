@@ -23,7 +23,7 @@ function Resolve-JarPath {
         return (Resolve-Path $ExplicitJar).Path
     }
 
-    $jar = Get-ChildItem -Path "target" -Filter "word-sketch-lucene-*.jar" -File -ErrorAction SilentlyContinue |
+    $jar = Get-ChildItem -Path "target" -Filter "concept-sketch-*.jar" -File -ErrorAction SilentlyContinue |
         Where-Object { $_.Name -notlike "*original*" } |
         Sort-Object LastWriteTime -Descending |
         Select-Object -First 1
@@ -35,7 +35,7 @@ function Resolve-JarPath {
     Write-Host "No runnable jar found in target/. Building package..."
     mvn -q -DskipTests package
 
-    $jar = Get-ChildItem -Path "target" -Filter "word-sketch-lucene-*.jar" -File |
+    $jar = Get-ChildItem -Path "target" -Filter "concept-sketch-*.jar" -File |
         Where-Object { $_.Name -notlike "*original*" } |
         Sort-Object LastWriteTime -Descending |
         Select-Object -First 1

@@ -4,7 +4,7 @@ Stops Word Sketch server processes and frees a TCP port (default 8080).
 
 .DESCRIPTION
 Finds processes listening on the specified TCP port and attempts to stop the ones
-that look like `word-sketch-lucene` servers (inspects process command line).
+that look like `concept-sketch` servers (inspects process command line).
 Supports `-Force` to override command-line matching and `-WhatIf`/`-Confirm`.
 
 .PARAMETER Port
@@ -55,7 +55,7 @@ if (-not $listeners) {
         Write-Host "Found listener PID ${listenerPid}`n  $cmd" -ForegroundColor Cyan
 
         $looksLikeWordSketch = $false
-        if ($cmd -match 'word[-_ ]?sketch|word-sketch-lucene|word_sketch_lucene|word-sketch-lucene-') { $looksLikeWordSketch = $true }
+        if ($cmd -match 'word[-_ ]?sketch|concept-sketch|word_sketch_lucene|concept-sketch-') { $looksLikeWordSketch = $true }
         if ($Force) { $looksLikeWordSketch = $true }
 
         if ($looksLikeWordSketch) {

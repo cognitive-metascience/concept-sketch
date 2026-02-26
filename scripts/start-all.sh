@@ -52,7 +52,7 @@ fi
 
 echo ""
 echo "================================"
-echo "Word Sketch Lucene - Full Stack"
+echo "ConceptSketch - Full Stack"
 echo "================================"
 echo ""
 echo "Configuration:"

@@ -1,4 +1,4 @@
-# Start Word Sketch Lucene API Server
+# Start ConceptSketch API Server
 # Usage: .\start-server.ps1 [--port 8080] [--index path/to/index] [--collocations path/to/collocations.bin]
 
 param(
@@ -33,7 +33,7 @@ if (Test-Path $collocationsSrc) {
 
 Write-Host ""
 Write-Host "================================" -ForegroundColor Cyan
-Write-Host "Word Sketch Lucene API Server" -ForegroundColor Cyan
+Write-Host "ConceptSketch API Server" -ForegroundColor Cyan
 Write-Host "================================" -ForegroundColor Cyan
 Write-Host ""
 Write-Host "Configuration:" -ForegroundColor Green

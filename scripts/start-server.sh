@@ -1,5 +1,5 @@
 #!/bin/bash
-# Start Word Sketch Lucene API Server
+# Start ConceptSketch API Server
 # Usage: ./start-server.sh [--port 8080] [--index /path/to/index] [--collocations /path/to/collocations.bin]
 
 PORT=8080
@@ -50,7 +50,7 @@ fi
 
 echo ""
 echo "================================"
-echo "Word Sketch Lucene API Server"
+echo "ConceptSketch API Server"
 echo "================================"
 echo ""
 echo "Configuration:"

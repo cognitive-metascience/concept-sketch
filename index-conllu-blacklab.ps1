@@ -289,7 +289,7 @@ try {
     Write-Host "Index location: $OutputDir"
     Write-Host ""
     Write-Host "To query the index, use:" -ForegroundColor Yellow
-    Write-Host "  java -jar word-sketch-lucene-1.0.1.jar blacklab-query \" -ForegroundColor Yellow
+    Write-Host "  java -jar concept-sketch-1.0.1.jar blacklab-query \" -ForegroundColor Yellow
     Write-Host "    --index $OutputDir \" -ForegroundColor Yellow
     Write-Host "    --lemma theory --deprel amod --limit 20" -ForegroundColor Yellow
     Write-Host ""

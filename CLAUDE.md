@@ -1,6 +1,6 @@
 # CLAUDE.md
 
-This file documents the Word Sketch Lucene project for future development.
+This file documents the ConceptSketch project for future development.
 
 ## Current Status
 
@@ -211,9 +211,7 @@ Planned improvements:
 
 - **README.md** - User guide (indexing, querying, API, examples)
 - **MULTI_SEED_EXPLORATION.md** - Multi-seed feature details
-- **plans/concept-sketch-spec.md** - Technical specification
-- **plans/precomputed-collocations-spec.md** - Algorithm details
-- **plans/hybrid-index-spec.md** - Index architecture
+- **plans/concept-sketch-spec.md** - Technical specification (comprehensive architecture and implementation details)
 Main Corpus Index          Word Sketch Index
 - sentence_id              - sentence_id
 - position                 - position
@@ -272,7 +270,7 @@ Where `f(AB)` = collocate frequency, `f(A)` = headword frequency, `f(B)` = collo
 
 ## POS Tagging Pipeline
 
-**Recommended: UDPipe 2** - Fast, supports 50+ languages, outputs CoNLL-U format. See [migration plan](word-sketch-lucene-migration.md) for integration details.
+**Recommended: UDPipe 2** - Fast, supports 50+ languages, outputs CoNLL-U format.
 
 ## Dependencies
 

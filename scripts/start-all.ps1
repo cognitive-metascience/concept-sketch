@@ -32,7 +32,7 @@ if (Test-Path $collocationsSrc) {
 
 Write-Host ""
 Write-Host "================================" -ForegroundColor Cyan
-Write-Host "Word Sketch Lucene - Full Stack" -ForegroundColor Cyan
+Write-Host "ConceptSketch - Full Stack" -ForegroundColor Cyan
 Write-Host "================================" -ForegroundColor Cyan
 Write-Host ""
 Write-Host "Configuration:" -ForegroundColor Green

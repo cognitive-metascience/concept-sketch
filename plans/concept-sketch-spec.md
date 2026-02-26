@@ -1,4 +1,4 @@
-# Word Sketch Lucene Migration Technical Specification
+# ConceptSketch Migration Technical Specification
 
 ## 1. Overview
 
@@ -183,7 +183,7 @@ POST /sketch/query
 ## 7. Project Structure
 
 ```
-word-sketch-lucene/
+concept-sketch/
 ├── src/
 │   ├── indexer/              # Lucene indexing functionality
 │   ├── query/                # Query compilation and execution

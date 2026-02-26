@@ -24,7 +24,7 @@ for /f "tokens=5" %%P in ('netstat -ano ^| findstr /R /C:":8080 .*LISTENING"') d
     )
 
     set "MATCH=0"
-    echo !CMDLINE! | findstr /I "word-sketch word_sketch word-sketch-lucene" >nul 2>&1 && set "MATCH=1"
+    echo !CMDLINE! | findstr /I "concept-sketch conceptsketch word-sketch word_sketch" >nul 2>&1 && set "MATCH=1"
     if "%FORCE%"=="1" set "MATCH=1"
 
     if "!MATCH!"=="1" (

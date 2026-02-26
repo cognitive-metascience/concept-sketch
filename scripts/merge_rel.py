@@ -1,7 +1,7 @@
 import json
 from collections import Counter
 
-path=r'd:\\git\\word-sketch-lucene\\grammars\\relations.json'
+path=r'd:\\git\\concept-sketch\\grammars\\relations.json'
 with open(path,'r',encoding='utf-8') as f:
     data=json.load(f)
 rels=data['relations']
