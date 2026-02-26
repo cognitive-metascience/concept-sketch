@@ -265,8 +265,8 @@ public class SemanticFieldExplorer implements AutoCloseable {
             int nounsPerPredicate,
             int minShared,
             double minLogDice) throws IOException {
-        return exploreByRelation(seed, topPredicates, nounsPerPredicate, minShared,
-            minLogDice, QueryExecutor.RelationType.ADJ_PREDICATE);
+        return explore(seed, topPredicates, nounsPerPredicate, minShared,
+            minLogDice);
     }
 
     /**
