@@ -321,161 +321,178 @@
       "id": "dep_nsubj",
       "name": "Dependency: nominal subject",
       "description": "Verb with its nominal subject (e.g., 'theory explains')",
-      "pattern": "1:[xpos=\"VB.*\"] 2:[deprel=\"nsubj\"]",
-      "default_slop": 0,
+      "pattern": "1:[xpos=\"VB.*\"] 2:[xpos=\"NN.*\"]",
       "relation_type": "DEP"
     },
     {
       "id": "dep_nsubj_pass",
       "name": "Dependency: passive nominal subject",
       "description": "Verb with its passive nominal subject (e.g., 'theory is studied')",
-      "pattern": "1:[xpos=\"VB.*\"] 2:[deprel=\"nsubj:pass\"]",
-      "default_slop": 0,
+      "pattern": "1:[xpos=\"VB.*\"] 2:[xpos=\"NN.*\"]",
       "relation_type": "DEP"
     },
     {
       "id": "dep_obj",
       "name": "Dependency: direct object",
       "description": "Verb with its direct object (e.g., 'explain theory')",
-      "pattern": "1:[xpos=\"VB.*\"] 2:[deprel=\"obj\"]",
-      "default_slop": 0,
+      "pattern": "1:[xpos=\"VB.*\"] 2:[xpos=\"NN.*\"]",
       "relation_type": "DEP"
     },
     {
       "id": "dep_iobj",
       "name": "Dependency: indirect object",
       "description": "Verb with its indirect object (e.g., 'give me')",
-      "pattern": "1:[xpos=\"VB.*\"] 2:[deprel=\"iobj\"]",
-      "default_slop": 0,
+      "pattern": "1:[xpos=\"VB.*\"] 2:[xpos=\"NN.*|PRP\"]",
       "relation_type": "DEP"
     },
     {
       "id": "dep_amod",
       "name": "Dependency: adjectival modifier",
       "description": "Noun with its adjectival modifier (e.g., 'big theory')",
-      "pattern": "1:[xpos=\"NN.*\"] 2:[deprel=\"amod\"]",
-      "default_slop": 0,
+      "pattern": "1:[xpos=\"NN.*\"] 2:[xpos=\"JJ.*\"]",
       "relation_type": "DEP"
     },
     {
       "id": "dep_nummod",
       "name": "Dependency: numeric modifier",
       "description": "Noun with its numeric modifier (e.g., 'five theories')",
-      "pattern": "1:[xpos=\"NN.*\"] 2:[deprel=\"nummod\"]",
-      "default_slop": 0,
+      "pattern": "1:[xpos=\"NN.*\"] 2:[xpos=\"CD\"]",
       "relation_type": "DEP"
     },
     {
       "id": "dep_det",
       "name": "Dependency: determiner",
       "description": "Noun with its determiner (e.g., 'the theory')",
-      "pattern": "1:[xpos=\"NN.*\"] 2:[deprel=\"det\"]",
-      "default_slop": 0,
+      "pattern": "1:[xpos=\"NN.*\"] 2:[xpos=\"DT\"]",
       "relation_type": "DEP"
     },
     {
       "id": "dep_case",
       "name": "Dependency: case marker",
       "description": "Noun with its case marker/preposition (e.g., 'theory of')",
-      "pattern": "1:[xpos=\"NN.*\"] 2:[deprel=\"case\"]",
-      "default_slop": 0,
+      "pattern": "1:[xpos=\"NN.*\"] 2:[xpos=\"IN\"]",
       "relation_type": "DEP"
     },
     {
       "id": "dep_nmod",
       "name": "Dependency: nominal modifier",
       "description": "Noun with its nominal modifier (e.g., 'government policy')",
-      "pattern": "1:[xpos=\"NN.*\"] 2:[deprel=\"nmod\"]",
-      "default_slop": 0,
+      "pattern": "1:[xpos=\"NN.*\"] 2:[xpos=\"NN.*\"]",
       "relation_type": "DEP"
     },
     {
       "id": "dep_compound",
       "name": "Dependency: compound",
       "description": "Noun in compound with head noun (e.g., 'coffee house')",
-      "pattern": "1:[xpos=\"NN.*\"] 2:[deprel=\"compound\"]",
-      "default_slop": 0,
+      "pattern": "1:[xpos=\"NN.*\"] 2:[xpos=\"NN.*\"]",
       "relation_type": "DEP"
     },
     {
       "id": "dep_advmod",
       "name": "Dependency: adverbial modifier",
       "description": "Verb/adjective with its adverbial modifier (e.g., 'quickly run')",
-      "pattern": "1:[xpos=\"VB.*|JJ.*\"] 2:[deprel=\"advmod\"]",
-      "default_slop": 0,
+      "pattern": "1:[xpos=\"VB.*|JJ.*\"] 2:[xpos=\"RB.*\"]",
       "relation_type": "DEP"
     },
     {
       "id": "dep_aux",
       "name": "Dependency: auxiliary",
       "description": "Verb with its auxiliary (e.g., 'will explain')",
-      "pattern": "1:[xpos=\"VB.*\"] 2:[deprel=\"aux\"]",
-      "default_slop": 0,
+      "pattern": "1:[xpos=\"VB.*\"] 2:[xpos=\"MD|VB.*\"]",
       "relation_type": "DEP"
     },
     {
       "id": "dep_cop",
       "name": "Dependency: copula",
       "description": "Noun/adjective with its copula (e.g., 'is important')",
-      "pattern": "1:[xpos=\"NN.*|JJ.*\"] 2:[deprel=\"cop\"]",
-      "default_slop": 0,
+      "pattern": "1:[xpos=\"NN.*|JJ.*\"] 2:[xpos=\"VB.*\" & deprel=\"cop\"]",
       "relation_type": "DEP"
     },
     {
       "id": "dep_mark",
       "name": "Dependency: marker",
       "description": "Verb with its marker (e.g., 'to explain')",
-      "pattern": "1:[xpos=\"VB.*\"] 2:[deprel=\"mark\"]",
-      "default_slop": 0,
+      "pattern": "1:[xpos=\"VB.*\"] 2:[xpos=\"IN|TO\"]",
       "relation_type": "DEP"
     },
     {
       "id": "dep_cc",
       "name": "Dependency: coordinating conjunction",
       "description": "Element with its coordinating conjunction (e.g., 'theory and practice')",
-      "pattern": "1:[xpos=\"NN.*|VB.*|JJ.*\"] 2:[deprel=\"cc\"]",
-      "default_slop": 0,
+      "pattern": "1:[xpos=\"NN.*|VB.*|JJ.*\"] 2:[xpos=\"CC\"]",
       "relation_type": "DEP"
     },
     {
       "id": "dep_ccomp",
       "name": "Dependency: clausal complement",
-      "description": "Verb with its clausal complement (e.g., 'say that theory')",
-      "pattern": "1:[xpos=\"VB.*\"] 2:[deprel=\"ccomp\"]",
-      "default_slop": 0,
+      "description": "Verb/adjective with its clausal complement (e.g., 'say that theory', 'happy that you came')",
+      "pattern": "1:[xpos=\"VB.*|JJ.*\"] 2:[xpos=\"VB.*|IN\"]",
+      "relation_type": "DEP"
+    },
+    {
+      "id": "dep_ccomp_adj",
+      "name": "Dependency: clausal complement of adjective",
+      "description": "Adjective with its clausal complement (e.g., 'happy that...', 'important that...', 'certain that...')",
+      "pattern": "1:[xpos=\"JJ.*\"] 2:[xpos=\"VB.*|IN\"]",
       "relation_type": "DEP"
     },
     {
       "id": "dep_xcomp",
       "name": "Dependency: open clausal complement",
-      "description": "Verb with its open clausal complement (e.g., 'try to explain')",
-      "pattern": "1:[xpos=\"VB.*\"] 2:[deprel=\"xcomp\"]",
-      "default_slop": 0,
+      "description": "Verb with its open clausal complement without overt subject (e.g., 'try to explain', 'easy to please')",
+      "pattern": "1:[xpos=\"VB.*\"] 2:[xpos=\"VB.*|JJ.*\"]",
       "relation_type": "DEP"
     },
     {
       "id": "dep_flat",
       "name": "Dependency: flat multiword expression",
       "description": "Flat multiword expression (e.g., 'New York')",
-      "pattern": "1:[xpos=\"NNP\"] 2:[deprel=\"flat\"]",
-      "default_slop": 0,
+      "pattern": "1:[xpos=\"NNP\"] 2:[xpos=\"NNP\"]",
       "relation_type": "DEP"
     },
     {
       "id": "dep_goeswith",
       "name": "Dependency: goes with",
       "description": "Parts that go together (e.g., 'not so')",
-      "pattern": "1:[xpos=\"RB.*\"] 2:[deprel=\"goeswith\"]",
-      "default_slop": 0,
+      "pattern": "1:[xpos=\"RB.*\"] 2:[xpos=\"RB.*\"]",
       "relation_type": "DEP"
     },
     {
       "id": "dep_reparandum",
       "name": "Dependency: reparandum",
       "description": "Overridden disfluency",
-      "pattern": "1:[xpos=\"UH\"] 2:[deprel=\"reparandum\"]",
-      "default_slop": 0,
+      "pattern": "1:[xpos=\"UH\"] 2:[xpos=\"UH\"]",
       "relation_type": "DEP"
+    },
+    {
+      "id": "dep_pred_adj",
+      "name": "Dependency: predicative adjective",
+      "description": "Noun with its predicative adjective via copula (e.g., 'hypothesis is valid', 'theory seems correct')",
+      "pattern": "1:[xpos=\"NN.*\"] 2:[xpos=\"JJ.*\"]",
+      "relation_type": "DEP"
+    },
+    {
+      "id": "dep_pred_adj_cop",
+      "name": "Dependency: predicative adjective with copula",
+      "description": "Noun with predicative adjective and copula (e.g., 'hypothesis is valid' - finds 'is', 'valid')",
+      "pattern": "1:[xpos=\"NN.*\"] 2:[xpos=\"VB.*\" & deprel=\"cop\"]",
+      "relation_type": "DEP"
+    },
+    {
+      "id": "dep_cop_pred_adj",
+      "name": "Dependency: copulas with predicative adjectives",
+      "description": "Copula verbs with predicative adjectives (e.g., 'is valid', 'seems correct')",
+      "pattern": "1:[xpos=\"JJ.*\"] 2:[xpos=\"VB.*\" & deprel=\"cop\"]",
+      "relation_type": "DEP",
+      "dual": false
+    },
+    {
+      "id": "dep_xcomp_pred_adj",
+      "name": "Dependency: open clausal complements (adjectival)",
+      "description": "Verbs with adjectival xcomp (e.g., 'consider important', 'find useful')",
+      "pattern": "1:[xpos=\"VB.*\"] 2:[xpos=\"JJ.*\"]",
+      "relation_type": "DEP",
+      "dual": false
     }
   ]
 }

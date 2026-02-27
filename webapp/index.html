@@ -433,18 +433,9 @@
             <button id="depSearchBtn" onclick="searchDependency()">Search</button>
         </div>
 
-        <!-- Dependency relation filters -->
-        <div class="pos-filters" style="margin-bottom: 20px;">
-            <label><input type="checkbox" checked onchange="filterDepRel('nsubj')"> <span>Subjects (nsubj)</span></label>
-            <label><input type="checkbox" checked onchange="filterDepRel('obj')"> <span>Objects (obj)</span></label>
-            <label><input type="checkbox" checked onchange="filterDepRel('amod')"> <span>Modifiers (amod)</span></label>
-            <label><input type="checkbox" checked onchange="filterDepRel('advmod')"> <span>Adverbs (advmod)</span></label>
-            <label><input type="checkbox" checked onchange="filterDepRel('nmod')"> <span>Nominal mods (nmod)</span></label>
-            <label><input type="checkbox" checked onchange="filterDepRel('compound')"> <span>Compounds</span></label>
-            <label><input type="checkbox" checked onchange="filterDepRel('aux')"> <span>Auxiliaries (aux)</span></label>
-            <label><input type="checkbox" checked onchange="filterDepRel('mark')"> <span>Markers (mark)</span></label>
-            <label><input type="checkbox" checked onchange="filterDepRel('det')"> <span>Determiners (det)</span></label>
-            <label><input type="checkbox" checked onchange="filterDepRel('case')"> <span>Case markers (case)</span></label>
+        <!-- Dependency relation filters - dynamically populated -->
+        <div class="pos-filters" id="depRelFilters" style="margin-bottom: 20px;">
+            <!-- Populated dynamically by loadDependencyRelations() -->
         </div>
 
         <!-- Results container -->
@@ -2080,12 +2071,78 @@
 
         // Dependency Sketch functions
         let currentDepWord = '';
-        let activeDepFilters = {
-            nsubj: true, obj: true, amod: true, advmod: true,
-            nmod: true, compound: true, aux: true, mark: true,
-            det: true, case: true, cop: true, cc: true
-        };
+        // Active filters for dependency relations - populated dynamically from /api/relations/dep
+        // Now uses relation ID as the key instead of deprel to support multiple relations with same deprel
+        let activeDepFilters = {};
         let currentDepRadialData = { relationId: '', lemma: '' };
+
+        // Load dependency relations and populate filters dynamically
+        async function loadDependencyRelations() {
+            const apiUrl = getApiUrl();
+            try {
+                const response = await fetch(`${apiUrl}/api/relations/dep`);
+                const data = await response.json();
+                
+                const filterContainer = document.getElementById('depRelFilters');
+                if (!filterContainer) return;
+                
+                if (data.relations && Array.isArray(data.relations)) {
+                    // Build filter checkboxes dynamically using relation ID as key
+                    let html = '';
+                    data.relations.forEach(rel => {
+                        const relId = rel.id;
+                        const deprel = rel.deprel || extractDeprelFromId(rel.id);
+                        activeDepFilters[relId] = true;  // Use relation ID as filter key
+                        const label = rel.name || rel.id;
+                        html += `<label><input type="checkbox" checked onchange="filterDepRel('${relId}')"> <span>${label} (${deprel})</span></label>`;
+                    });
+                    
+                    // If no relations loaded, show fallback
+                    if (html === '') {
+                        // Add standard UD deprels as fallback
+                        const fallbackDeprels = [
+                            ['nsubj', 'Subjects'], ['obj', 'Objects'], ['amod', 'Modifiers'],
+                            ['advmod', 'Adverbs'], ['nmod', 'Nominal mods'], ['compound', 'Compounds'],
+                            ['aux', 'Auxiliaries'], ['mark', 'Markers'], ['det', 'Determiners'],
+                            ['case', 'Case markers'], ['cop', 'Copula'], ['cc', 'Conjunctions']
+                        ];
+                        fallbackDeprels.forEach(([d, label]) => {
+                            if (!(d in activeDepFilters)) {
+                                activeDepFilters[d] = true;
+                                html += `<label><input type="checkbox" checked onchange="filterDepRel('${d}')"> <span>${label} (${d})</span></label>`;
+                            }
+                        });
+                    }
+                    filterContainer.innerHTML = html;
+                }
+            } catch (e) {
+                console.error('Failed to load dependency relations:', e);
+                // Fallback to defaults
+                activeDepFilters = {
+                    nsubj: true, obj: true, amod: true, advmod: true,
+                    nmod: true, compound: true, aux: true, mark: true,
+                    det: true, case: true, cop: true, cc: true
+                };
+                const filterContainer = document.getElementById('depRelFilters');
+                if (filterContainer) {
+                    filterContainer.innerHTML = `
+                        <label><input type="checkbox" checked onchange="filterDepRel('nsubj')"> <span>Subjects (nsubj)</span></label>
+                        <label><input type="checkbox" checked onchange="filterDepRel('obj')"> <span>Objects (obj)</span></label>
+                        <label><input type="checkbox" checked onchange="filterDepRel('amod')"> <span>Modifiers (amod)</span></label>
+                        <label><input type="checkbox" checked onchange="filterDepRel('advmod')"> <span>Adverbs (advmod)</span></label>
+                        <label><input type="checkbox" checked onchange="filterDepRel('nmod')"> <span>Nominal mods (nmod)</span></label>
+                        <label><input type="checkbox" checked onchange="filterDepRel('compound')"> <span>Compounds</span></label>
+                        <label><input type="checkbox" checked onchange="filterDepRel('aux')"> <span>Auxiliaries (aux)</span></label>
+                        <label><input type="checkbox" checked onchange="filterDepRel('mark')"> <span>Markers (mark)</span></label>
+                        <label><input type="checkbox" checked onchange="filterDepRel('det')"> <span>Determiners (det)</span></label>
+                        <label><input type="checkbox" checked onchange="filterDepRel('case')"> <span>Case markers (case)</span></label>
+                    `;
+                }
+            }
+        }
+        
+        // Load dependency relations on page load
+        loadDependencyRelations();
 
         async function searchDependency() {
             const word = document.getElementById('depWordInput').value.trim();
@@ -2123,9 +2180,10 @@
 
             let html = '';
             for (const [relId, relData] of Object.entries(data.relations)) {
-                // Check if this relation type is filtered
+                // Check if this relation is filtered - use relation ID as the filter key
+                if (!activeDepFilters[relId]) continue;
+
                 const deprel = relData.deprel || extractDeprelFromId(relId);
-                if (!activeDepFilters[deprel]) continue;
 
                 html += `
                     <div class="sketch-section" data-rel-id="${relId}">
@@ -2168,14 +2226,14 @@
 
         async function showDepExamples(headword, collocate, relationId) {
             const apiUrl = getApiUrl();
-            
+
             // Hide all other example divs first
             document.querySelectorAll('.dep-relation-examples').forEach(div => {
                 if (div.id !== `dep-examples-${relationId}`) {
                     div.style.display = 'none';
                 }
             });
-            
+
             // Get or create examples div for this relation
             let examplesDiv = document.getElementById(`dep-examples-${relationId}`);
             if (!examplesDiv) {
@@ -2201,8 +2259,9 @@
             examplesDiv.style.display = 'block';
 
             try {
+                // Pass the relation parameter so the backend uses the correct BCQL pattern
                 const response = await fetch(
-                    `${apiUrl}/api/concordance/examples?word1=${encodeURIComponent(headword)}&word2=${encodeURIComponent(collocate)}&limit=10`
+                    `${apiUrl}/api/concordance/examples?word1=${encodeURIComponent(headword)}&word2=${encodeURIComponent(collocate)}&relation=${encodeURIComponent(relationId)}&limit=10`
                 );
                 const data = await response.json();
 
