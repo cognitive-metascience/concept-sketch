@@ -467,24 +467,9 @@
     {
       "id": "dep_pred_adj",
       "name": "Dependency: predicative adjective",
-      "description": "Noun with its predicative adjective via copula (e.g., 'hypothesis is valid', 'theory seems correct')",
-      "pattern": "1:[xpos=\"NN.*\"] 2:[xpos=\"JJ.*\"]",
+      "description": "Noun with its predicative adjective via copula (e.g., 'accuracy' with 'comparable' in 'accuracy is comparable')",
+      "pattern": "1:[xpos=\"NN.*\"] [xpos=\"VB.*\" & deprel=\"cop\"] 2:[xpos=\"JJ.*\" & deprel=\"ccomp\"]",
       "relation_type": "DEP"
-    },
-    {
-      "id": "dep_pred_adj_cop",
-      "name": "Dependency: predicative adjective with copula",
-      "description": "Noun with predicative adjective and copula (e.g., 'hypothesis is valid' - finds 'is', 'valid')",
-      "pattern": "1:[xpos=\"NN.*\"] 2:[xpos=\"VB.*\" & deprel=\"cop\"]",
-      "relation_type": "DEP"
-    },
-    {
-      "id": "dep_cop_pred_adj",
-      "name": "Dependency: copulas with predicative adjectives",
-      "description": "Copula verbs with predicative adjectives (e.g., 'is valid', 'seems correct')",
-      "pattern": "1:[xpos=\"JJ.*\"] 2:[xpos=\"VB.*\" & deprel=\"cop\"]",
-      "relation_type": "DEP",
-      "dual": false
     },
     {
       "id": "dep_xcomp_pred_adj",
