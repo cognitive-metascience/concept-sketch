@@ -567,18 +567,53 @@ public class GrammarConfigLoader {
 
         /**
          * Derive the collocate POS group from the pattern.
+         * Looks specifically at the 2: labelled position so that multi-token patterns
+         * like "1:[xpos="NN.*"] 2:[xpos="JJ.*"]" correctly return "adj" not "noun".
+         * Supports both xpos= (current grammar) and tag= (legacy format).
          */
         public String collocatePosGroup() {
             if (pattern == null) return "other";
             String pat = pattern.toLowerCase(Locale.ROOT);
-            // Check with quotes (CQL format: tag="JJ.*") and without quotes (simple format: tag=JJ.*)
-            if (pat.contains("tag=\"in") || pat.contains("tag=in")) return "prep";
-            if (pat.contains("tag=\"rp") || pat.contains("tag=rp") || pat.contains("tag=\"to") || pat.contains("tag=to")) return "part";
-            if (pat.contains("tag=\"jj") || pat.contains("tag=jj")) return "adj";
-            if (pat.contains("tag=\"vb") || pat.contains("tag=vb")) return "verb";
-            if (pat.contains("tag=\"nn") || pat.contains("tag=nn") || pat.contains("tag=\"pos") || pat.contains("tag=pos")) return "noun";
-            if (pat.contains("tag=\"rb") || pat.contains("tag=rb")) return "adv";
-            return "other";  // collocatePos derived from pattern only
+            // Prefer the 2: labeled bracket; fall back to whole pattern for single-token patterns
+            String target = extractLabelContent(pat, 2);
+            if (target == null) target = pat;
+            return posGroupFromConstraint(target);
+        }
+
+        /** Extract the bracket content of the nth labeled position (e.g. "2:[...]"). */
+        private String extractLabelContent(String pat, int label) {
+            String prefix = label + ":[";
+            int idx = pat.indexOf(prefix);
+            if (idx < 0) return null;
+            int start = idx + prefix.length() - 1; // points at '['
+            int depth = 0;
+            for (int i = start; i < pat.length(); i++) {
+                if (pat.charAt(i) == '[') depth++;
+                else if (pat.charAt(i) == ']') { if (--depth == 0) return pat.substring(start, i + 1); }
+            }
+            return null;
+        }
+
+        /** Map a constraint string to a POS group label. */
+        private String posGroupFromConstraint(String s) {
+            // xpos (Penn Treebank — used by current grammar)
+            if (s.contains("xpos=\"jj") || s.contains("xpos=jj")) return "adj";
+            if (s.contains("xpos=\"vb") || s.contains("xpos=vb")) return "verb";
+            if (s.contains("xpos=\"nn") || s.contains("xpos=nn")) return "noun";
+            if (s.contains("xpos=\"rb") || s.contains("xpos=rb")) return "adv";
+            if (s.contains("xpos=\"in") || s.contains("xpos=in")) return "prep";
+            if (s.contains("xpos=\"rp") || s.contains("xpos=rp")
+             || s.contains("xpos=\"to") || s.contains("xpos=to")) return "part";
+            // tag (legacy / alternative attribute name)
+            if (s.contains("tag=\"jj") || s.contains("tag=jj")) return "adj";
+            if (s.contains("tag=\"vb") || s.contains("tag=vb")) return "verb";
+            if (s.contains("tag=\"nn") || s.contains("tag=nn")
+             || s.contains("tag=\"pos") || s.contains("tag=pos")) return "noun";
+            if (s.contains("tag=\"rb") || s.contains("tag=rb")) return "adv";
+            if (s.contains("tag=\"in") || s.contains("tag=in")) return "prep";
+            if (s.contains("tag=\"rp") || s.contains("tag=rp")
+             || s.contains("tag=\"to") || s.contains("tag=to")) return "part";
+            return "other";
         }
 
         /**

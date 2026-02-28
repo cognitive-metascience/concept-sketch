@@ -1,15 +1,21 @@
 #!/usr/bin/env python3
 """
-Filter plain text corpus (one sentence per line) by removing boilerplate sentences.
+Filter plain text corpus (one sentence per line) by removing boilerplate
+sentences and cleaning artifacts.
 
 Usage:
-    python filter_text_corpus.py input.txt output.txt [--patterns file.txt] [--limit N]
+    python filter_text_corpus.py input.txt output.txt [--patterns file.txt]
+        [--limit N] [--no-strip-caret]
 
 The script streams the file line by line, so it works with files too large
 to fit in memory (tens of GBs).
 
 Matching is simple substring/prefix matching - if the sentence STARTS WITH
 any of the patterns, it is removed.
+
+By default the script also removes the '^' character from each line, which
+appears in some corpora (e.g. Lynx output where carets mark removed links).
+Use `--no-strip-caret` to disable this behavior.
 
 Optional --limit N stops after writing N sentences (useful for creating test corpora).
 """
@@ -71,7 +77,8 @@ def filter_text_stream(
     output_path: str,
     patterns: list[str],
     limit: int | None = None,
-    buffer_size: int = 8192
+    buffer_size: int = 8192,
+    strip_caret: bool = True
 ) -> tuple[int, int]:
     """
     Stream-filter a plain text corpus, removing boilerplate sentences.
@@ -82,6 +89,9 @@ def filter_text_stream(
         patterns: List of string prefixes to filter
         limit: Maximum number of sentences to write (None = no limit)
         buffer_size: Buffer size for reading/writing
+        strip_caret: if True (default) strip the '^' character from each line
+            before processing. This helps clean up artifacts such as Lynx's
+            caret markers for removed links.
 
     Returns:
         Tuple of (total_written, removed_count)
@@ -98,6 +108,10 @@ def filter_text_stream(
                 break
 
             text = line.rstrip('\r\n')
+
+            # optionally strip unwanted caret artifacts
+            if strip_caret and '^' in text:
+                text = text.replace('^', '')
             
             # Skip empty lines
             if not text.strip():
@@ -142,10 +156,24 @@ def main():
         help="Maximum number of sentences to write (default: no limit)"
     )
     parser.add_argument(
+        "--strip-caret",
+        dest="strip_caret",
+        action="store_true",
+        help="Remove '^' characters from each line (default)"
+    )
+    parser.add_argument(
+        "--no-strip-caret",
+        dest="strip_caret",
+        action="store_false",
+        help="Do not remove '^' characters from lines"
+    )
+    parser.set_defaults(strip_caret=True)
+    parser.add_argument(
         "--verbose", "-v",
         action="store_true",
         help="Show progress information"
     )
+
 
     args = parser.parse_args()
 
@@ -172,7 +200,13 @@ def main():
         limit_msg = f" (limit: {args.limit})" if args.limit else ""
         print(f"Processing {args.input} -> {args.output}{limit_msg}...", file=sys.stderr)
 
-    total, removed = filter_text_stream(args.input, args.output, patterns, args.limit)
+    total, removed = filter_text_stream(
+        args.input,
+        args.output,
+        patterns,
+        args.limit,
+        strip_caret=args.strip_caret
+    )
 
     if args.verbose:
         print(f"Done. Wrote {total:,} sentences, removed {removed:,} boilerplate sentences.", file=sys.stderr)

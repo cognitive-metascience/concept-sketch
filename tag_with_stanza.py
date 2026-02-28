@@ -35,15 +35,34 @@ def check_cuda():
         return False
 
 
-def read_sentences(input_path: Path):
-    """Read input file, splitting into sentences (one per line or paragraph)."""
-    with open(input_path, 'r', encoding='utf-8') as f:
-        text = f.read()
-    
-    # Split by blank lines (paragraphs) or newlines
-    # Each paragraph/sentence becomes one unit for Stanza
-    paragraphs = [p.strip() for p in text.split('\n\n') if p.strip()]
-    return paragraphs
+def stream_units(input_path: Path, paragraph_mode: bool = False):
+    """Yield processing units from the input file.
+
+    paragraph_mode=False (default): yield one non-empty line at a time.
+        Use this for corpora formatted as one sentence per line.
+    paragraph_mode=True: yield blank-line-separated paragraph blocks.
+        Use this when sentences span multiple lines within a paragraph.
+    """
+    if not paragraph_mode:
+        with open(input_path, 'r', encoding='utf-8') as f:
+            for line in f:
+                stripped = line.rstrip('\n')
+                if stripped:
+                    yield stripped
+    else:
+        buf = []
+        with open(input_path, 'r', encoding='utf-8') as f:
+            for line in f:
+                stripped = line.rstrip('\n')
+                if stripped == '':
+                    if buf:
+                        yield '\n'.join(buf)
+                        buf = []
+                else:
+                    buf.append(stripped)
+            if buf:
+                yield '\n'.join(buf)
+
 
 
 def main():
@@ -80,8 +99,19 @@ def main():
     parser.add_argument(
         '--batch-size',
         type=int,
-        default=64,
-        help='Batch size for GPU processing (default: 64)'
+        default=32,
+        help='Internal token batch size for the NLP model (GPU throughput tuning, default: 32)'
+    )
+    parser.add_argument(
+        '--progress',
+        type=int,
+        default=1000,
+        help='Print progress every N lines/paragraphs (default: 1000)'
+    )
+    parser.add_argument(
+        '--paragraph-mode',
+        action='store_true',
+        help='Input uses blank-line-separated paragraphs instead of one sentence per line'
     )
     
     args = parser.parse_args()
@@ -107,7 +137,7 @@ def main():
     print(f"Initializing Stanza pipeline for {args.lang}...")
     print(f"Processors: tokenize, pos, lemma, depparse")
     print(f"Device: {'GPU (CUDA)' if use_cuda else 'CPU'}")
-    print(f"Batch size: {args.batch_size}")
+    print(f"Model token batch size: {args.batch_size}")
     
     try:
         nlp = stanza.Pipeline(
@@ -140,29 +170,25 @@ def main():
             print("Try running with --download flag to download the model first.", file=sys.stderr)
             sys.exit(1)
     
-    # Read input
-    print(f"Reading input: {args.input}")
-    paragraphs = read_sentences(args.input)
-    print(f"Found {len(paragraphs)} paragraphs/sentences")
-    
-    # Process and write output
-    print(f"Processing...")
+    # Process and write output (streaming)
+    print(f"Streaming input: {args.input}")
+    print(f"Processing paragraphs one-by-one (model token batch={args.batch_size})...")
     with open(args.output, 'w', encoding='utf-8') as f:
         sentence_count = 0
         token_count = 0
-        
-        for i, para in enumerate(paragraphs):
-            if (i + 1) % 1000 == 0:
-                print(f"  Processed {i+1:,} paragraphs...")
-            
-            # Process paragraph
+        para_count = 0
+
+        for para in stream_units(args.input, args.paragraph_mode):
             doc = nlp(para)
-            
+            para_count += 1
+            if para_count % args.progress == 0:
+                print(f"  Processed {para_count:,} paragraphs ({sentence_count:,} sentences, {token_count:,} tokens)...")
+
             # Write in CoNLL-U format
             for sentence in doc.sentences:
                 sentence_count += 1
                 token_count += len(sentence.words)
-                
+
                 # Write CoNLL-U format
                 for word in sentence.words:
                     # CoNLL-U columns:
@@ -184,8 +210,9 @@ def main():
                     )
                 # Empty line after each sentence
                 print(file=f)
-        
+
         print(f"\nComplete!")
+        print(f"  Paragraphs: {para_count:,}")
         print(f"  Sentences: {sentence_count:,}")
         print(f"  Tokens: {token_count:,}")
         print(f"  Output: {args.output}")

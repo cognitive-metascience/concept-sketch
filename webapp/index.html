@@ -325,7 +325,7 @@
 
     <div class="api-config">
         <label>API URL:</label>
-        <input type="text" id="apiUrl" value="http://localhost:8080" placeholder="http://localhost:8080">
+        <input type="text" id="apiUrl" value="http://localhost:8080" placeholder="http://localhost:8080" onkeydown="if(event.key==='Enter') this.blur()">
     </div>
 
     <div class="tabs">
@@ -370,33 +370,33 @@
 
         <!-- Explore mode (single seed) -->
         <div id="exploreMode" class="snowball-controls" style="grid-template-columns: 2fr 1.5fr 0.7fr 0.7fr 0.7fr 0.5fr;">
-            <input type="text" id="exploreSeed" placeholder="Seed word (e.g., house, car, theory)">
+            <input type="text" id="exploreSeed" placeholder="Seed word (e.g., house, car, theory)" onkeydown="if(event.key==='Enter') runExplore()">
             <select id="exploreRelation" title="Grammatical relation">
                 <!-- Populated dynamically from /api/relations -->
             </select>
-            <input type="number" id="exploreTopAdj" value="15" min="5" max="30" title="Top collocates to use">
-            <input type="number" id="exploreMinShared" value="2" min="1" max="5" title="Min shared collocates">
-            <input type="number" id="exploreMinLogDice" value="2.0" step="0.5" min="0" title="Min LogDice">
+            <input type="number" id="exploreTopAdj" value="15" min="5" max="30" title="Top collocates to use" onkeydown="if(event.key==='Enter') runExplore()">
+            <input type="number" id="exploreMinShared" value="2" min="1" max="5" title="Min shared collocates" onkeydown="if(event.key==='Enter') runExplore()">
+            <input type="number" id="exploreMinLogDice" value="2.0" step="0.5" min="0" title="Min LogDice" onkeydown="if(event.key==='Enter') runExplore()">
             <button onclick="runExplore()">Explore</button>
         </div>
 
         <!-- Multi-Seed Explore mode (hidden by default) -->
         <div id="multiexploreMode" class="snowball-controls" style="display: none; grid-template-columns: 2fr 1.5fr 0.7fr 0.7fr 0.7fr 0.5fr;">
-            <input type="text" id="multiExploreSeed" placeholder="Seeds (comma-separated, e.g., theory,model,hypothesis)">
+            <input type="text" id="multiExploreSeed" placeholder="Seeds (comma-separated, e.g., theory,model,hypothesis)" onkeydown="if(event.key==='Enter') runMultiExplore()">
             <select id="multiExploreRelation" title="Grammatical relation">
                 <!-- Populated dynamically from /api/relations -->
             </select>
-            <input type="number" id="multiExploreTopAdj" value="15" min="5" max="30" title="Top collocates per seed">
-            <input type="number" id="multiExploreMinShared" value="2" min="1" max="5" title="Min shared collocates">
-            <input type="number" id="multiExploreMinLogDice" value="2.0" step="0.5" min="0" title="Min LogDice">
+            <input type="number" id="multiExploreTopAdj" value="15" min="5" max="30" title="Top collocates per seed" onkeydown="if(event.key==='Enter') runMultiExplore()">
+            <input type="number" id="multiExploreMinShared" value="2" min="1" max="5" title="Min shared collocates" onkeydown="if(event.key==='Enter') runMultiExplore()">
+            <input type="number" id="multiExploreMinLogDice" value="2.0" step="0.5" min="0" title="Min LogDice" onkeydown="if(event.key==='Enter') runMultiExplore()">
             <button onclick="runMultiExplore()">Explore</button>
         </div>
 
         <!-- Compare mode (hidden by default) -->
         <div id="compareMode" class="snowball-controls" style="display: none; grid-template-columns: 2fr 0.8fr 0.8fr 0.5fr;">
             <input type="text" id="semanticNouns" placeholder="Nouns to compare (comma-separated, e.g., theory,model,hypothesis)">
-            <input type="number" id="semanticMinLogDice" value="2.0" step="0.5" min="0" placeholder="Min LogDice" title="Minimum LogDice threshold">
-            <input type="number" id="semanticMaxPerNoun" value="50" min="10" max="100" placeholder="Max per noun" title="Maximum collocates per noun">
+            <input type="number" id="semanticMinLogDice" value="2.0" step="0.5" min="0" placeholder="Min LogDice" title="Minimum LogDice threshold" onkeydown="if(event.key==='Enter') runSemanticField()">
+            <input type="number" id="semanticMaxPerNoun" value="50" min="10" max="100" placeholder="Max per noun" title="Maximum collocates per noun" onkeydown="if(event.key==='Enter') runSemanticField()">
             <button onclick="runSemanticField()">Compare</button>
         </div>
         
@@ -451,7 +451,7 @@
             </div>
             <div style="display: flex; gap: 10px; align-items: center;">
                 <label for="bcqlLimit">Max results:</label>
-                <input type="number" id="bcqlLimit" value="20" min="1" max="100" style="width: 80px; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+                <input type="number" id="bcqlLimit" value="20" min="1" max="100" style="width: 80px; padding: 8px; border: 1px solid #ddd; border-radius: 4px;" onkeydown="if(event.key==='Enter') runBcqlQuery()">
                 <button onclick="runBcqlQuery()" style="padding: 12px 24px; font-size: 16px; background: #4a90d9; color: white; border: none; border-radius: 8px; cursor: pointer;">Execute</button>
             </div>
             <div style="margin-top: 15px; padding: 10px; background: #f5f5f5; border-radius: 6px; font-size: 12px; color: #666;">
@@ -2003,7 +2003,8 @@
 
                 if (data.results && data.results.length > 0) {
                     // Check if this is grouped results (has collocateLemma) or raw concordances
-                    const hasCollocate = data.results[0] && data.results[0].collocateLemma;
+                    const hasCollocate = data.results[0] && data.results[0].collocateLemma &&
+                                         data.results[0].collocateLemma !== 'unknown';
 
                     if (hasCollocate) {
                         // Grouped results with logDice
@@ -2393,6 +2394,14 @@
         // Enter key for dependency sketch search
         document.getElementById('depWordInput').addEventListener('keypress', function(e) {
             if (e.key === 'Enter') searchDependency();
+        });
+
+        // Escape key closes the radial modal
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                const modal = document.getElementById('radialModal');
+                if (modal && modal.classList.contains('active')) closeRadial(e);
+            }
         });
     </script>
 </body>

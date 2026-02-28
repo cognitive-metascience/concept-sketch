@@ -29,6 +29,15 @@ import java.util.*;
 public class BlackLabQueryExecutor implements QueryExecutor {
     private static final Logger logger = LoggerFactory.getLogger(BlackLabQueryExecutor.class);
 
+    private static final java.util.regex.Pattern LEMMA_ATTR      = java.util.regex.Pattern.compile("lemma=\"([^\"]+)\"");
+    private static final java.util.regex.Pattern LEMMA_ATTR_ANY  = java.util.regex.Pattern.compile("lemma=[\"']([^\"']+)[\"']", java.util.regex.Pattern.CASE_INSENSITIVE);
+    private static final java.util.regex.Pattern XPOS_ATTR       = java.util.regex.Pattern.compile("xpos=\"([^\"]+)\"");
+    private static final java.util.regex.Pattern UPOS_ATTR       = java.util.regex.Pattern.compile("upos=\"([^\"]+)\"");
+    private static final java.util.regex.Pattern SENT_BOUND_LEFT  = java.util.regex.Pattern.compile("[.!?]\\s+(?=[A-Z]|$)");
+    private static final java.util.regex.Pattern SENT_BOUND_RIGHT = java.util.regex.Pattern.compile("[.!?](?=\\s+[A-Z]|\\s*$)");
+    private static final java.util.regex.Pattern XML_SENT_OPEN   = java.util.regex.Pattern.compile("<s(?:\\s[^>]*)?>", java.util.regex.Pattern.CASE_INSENSITIVE);
+    private static final java.util.regex.Pattern XML_SENT_CLOSE  = java.util.regex.Pattern.compile("</s>", java.util.regex.Pattern.CASE_INSENSITIVE);
+
     private final BlackLabIndex blackLabIndex;
     private final String indexPath;
 
@@ -140,8 +149,7 @@ public class BlackLabQueryExecutor implements QueryExecutor {
             return null;
         }
         // Find all lemma="xxx" patterns and get the last one (the collocate)
-        java.util.regex.Pattern p = java.util.regex.Pattern.compile("lemma=\"([^\"]+)\"");
-        java.util.regex.Matcher m = p.matcher(matchText);
+        java.util.regex.Matcher m = LEMMA_ATTR.matcher(matchText);
         String lastLemma = null;
         while (m.find()) {
             lastLemma = m.group(1);
@@ -157,14 +165,12 @@ public class BlackLabQueryExecutor implements QueryExecutor {
             return "unknown";
         }
         // Try xpos first
-        java.util.regex.Pattern p = java.util.regex.Pattern.compile("xpos=\"([^\"]+)\"");
-        java.util.regex.Matcher m = p.matcher(matchText);
+        java.util.regex.Matcher m = XPOS_ATTR.matcher(matchText);
         if (m.find()) {
             return m.group(1);
         }
         // Fallback to upos
-        p = java.util.regex.Pattern.compile("upos=\"([^\"]+)\"");
-        m = p.matcher(matchText);
+        m = UPOS_ATTR.matcher(matchText);
         if (m.find()) {
             return m.group(1);
         }
@@ -283,7 +289,7 @@ public class BlackLabQueryExecutor implements QueryExecutor {
                     Hit hit = sample.get(idx);
                     Concordance conc = concordances.get(hit);
                     String leftText = "", matchText = "", rightText = "", xmlSnippet = "";
-                    String collocateLemma = "unknown";
+                    String collocateLemma = null;
 
                     if (conc != null) {
                         String[] parts = conc.parts();
@@ -292,9 +298,9 @@ public class BlackLabQueryExecutor implements QueryExecutor {
                             String matchXml = parts[1] != null ? parts[1] : "";
                             String rightXml = parts[2] != null ? parts[2] : "";
                             xmlSnippet = leftXml + matchXml + rightXml;
-                            leftText   = extractPlainTextFromXml(leftXml);
+                            leftText   = extractPlainTextFromXml(trimLeftXmlAtSentence(leftXml));
                             matchText  = extractPlainTextFromXml(matchXml);
-                            rightText  = extractPlainTextFromXml(rightXml);
+                            rightText  = extractPlainTextFromXml(trimRightXmlAtSentence(rightXml));
 
                             // Extract collocate lemma from match XML at the labeled position
                             if (collocatePos > 0) {
@@ -308,11 +314,14 @@ public class BlackLabQueryExecutor implements QueryExecutor {
                                         collocateLemma = extracted;
                                     }
                                 }
+                            } else {
+                                // No labeled position: use last lemma in match XML as best-effort collocate
+                                collocateLemma = extractCollocateFromSnippet(matchXml);
                             }
                         }
                     }
 
-                    if (!collocateLemma.equals("unknown") && !collocateLemma.isEmpty()) {
+                    if (collocateLemma != null && !collocateLemma.isEmpty()) {
                         collocateFreqMap.merge(collocateLemma.toLowerCase(), 1L, Long::sum);
                     }
                     hitRecords.add(new HitRecord(xmlSnippet, leftText, matchText, rightText, collocateLemma, hit.doc(), hit.start(), hit.end()));
@@ -326,10 +335,12 @@ public class BlackLabQueryExecutor implements QueryExecutor {
             for (int i = 0; i < resultLimit; i++) {
                 HitRecord rec = hitRecords.get(i);
                 String collocateLemma = rec.collocateLemma();
-                if (collocateLemma == null || collocateLemma.isEmpty()) collocateLemma = "unknown";
+                // null/empty is valid "no collocate" — do not fall back to "unknown"
 
-                long f_xy = collocateFreqMap.getOrDefault(collocateLemma.toLowerCase(), 1L);
-                long f_y = getTotalFrequency(collocateLemma);
+                long f_xy = (collocateLemma != null && !collocateLemma.isEmpty())
+                    ? collocateFreqMap.getOrDefault(collocateLemma.toLowerCase(), 1L) : 0L;
+                long f_y = (collocateLemma != null && !collocateLemma.isEmpty())
+                    ? getTotalFrequency(collocateLemma) : 0L;
 
                 double logDice = (headwordFreq > 0 && f_y > 0)
                     ? LogDiceCalculator.compute(f_xy, headwordFreq, f_y) : 0.0;
@@ -370,9 +381,8 @@ public class BlackLabQueryExecutor implements QueryExecutor {
     /** Keep only the portion of left-context text AFTER the last sentence boundary. */
     private String trimLeftAtSentenceBoundary(String text) {
         if (text == null || text.isEmpty()) return "";
-        // Sentence boundaries: ". ", "! ", "? " (period/bang/question followed by whitespace)
-        java.util.regex.Pattern p = java.util.regex.Pattern.compile("[.!?]\\s+");
-        java.util.regex.Matcher m = p.matcher(text);
+        // Sentence boundaries: ". ", "! ", "? " followed by uppercase letter or end of string
+        java.util.regex.Matcher m = SENT_BOUND_LEFT.matcher(text);
         int lastEnd = 0;
         while (m.find()) lastEnd = m.end();
         return lastEnd > 0 ? text.substring(lastEnd).trim() : text.trim();
@@ -383,10 +393,25 @@ public class BlackLabQueryExecutor implements QueryExecutor {
         if (text == null || text.isEmpty()) return "";
         // Look for a period/bang/question that ends a sentence:
         // must be followed by whitespace+uppercase or end-of-string.
-        java.util.regex.Pattern p = java.util.regex.Pattern.compile("[.!?](?=\\s+[A-Z]|\\s*$)");
-        java.util.regex.Matcher m = p.matcher(text);
+        java.util.regex.Matcher m = SENT_BOUND_RIGHT.matcher(text);
         if (m.find()) return text.substring(0, m.end()).trim();
         return text.trim();
+    }
+
+    /** Keep only content after the last &lt;s&gt; open tag in the left-context XML. */
+    private String trimLeftXmlAtSentence(String xml) {
+        if (xml == null || xml.isEmpty()) return "";
+        java.util.regex.Matcher m = XML_SENT_OPEN.matcher(xml);
+        int lastTagEnd = -1;
+        while (m.find()) lastTagEnd = m.end();
+        return (lastTagEnd >= 0) ? xml.substring(lastTagEnd) : xml;
+    }
+
+    /** Keep only content before the first &lt;/s&gt; close tag in the right-context XML. */
+    private String trimRightXmlAtSentence(String xml) {
+        if (xml == null || xml.isEmpty()) return "";
+        java.util.regex.Matcher m = XML_SENT_CLOSE.matcher(xml);
+        return m.find() ? xml.substring(0, m.start()) : xml;
     }
 
     /**
@@ -419,8 +444,7 @@ public class BlackLabQueryExecutor implements QueryExecutor {
             return null;
         }
         // Find all lemma="xxx" patterns in order
-        java.util.regex.Pattern p = java.util.regex.Pattern.compile("lemma=\"([^\"]+)\"");
-        java.util.regex.Matcher m = p.matcher(xmlSnippet);
+        java.util.regex.Matcher m = LEMMA_ATTR.matcher(xmlSnippet);
 
         int count = 0;
         while (m.find()) {
@@ -471,8 +495,7 @@ public class BlackLabQueryExecutor implements QueryExecutor {
      */
     private String extractHeadword(String bcqlPattern) {
         // Simple regex to find lemma="xxx" or lemma='xxx'
-        java.util.regex.Pattern p = java.util.regex.Pattern.compile("lemma=[\"']([^\"']+)[\"']", java.util.regex.Pattern.CASE_INSENSITIVE);
-        java.util.regex.Matcher m = p.matcher(bcqlPattern);
+        java.util.regex.Matcher m = LEMMA_ATTR_ANY.matcher(bcqlPattern);
         if (m.find()) {
             return m.group(1);
         }
@@ -485,13 +508,12 @@ public class BlackLabQueryExecutor implements QueryExecutor {
      */
     private String extractCollocateFromSnippet(String snippet) {
         // Look for lemma="xxx" patterns and get the last one (the collocate)
-        java.util.regex.Pattern p = java.util.regex.Pattern.compile("lemma=\"([^\"]+)\"");
-        java.util.regex.Matcher m = p.matcher(snippet);
+        java.util.regex.Matcher m = LEMMA_ATTR.matcher(snippet);
         String lastLemma = null;
         while (m.find()) {
             lastLemma = m.group(1);
         }
-        return lastLemma != null ? lastLemma : "unknown";
+        return lastLemma;
     }
 
     @Override
@@ -620,9 +642,8 @@ public class BlackLabQueryExecutor implements QueryExecutor {
         // Extract lemma from XML attributes in the match
         // For dependency queries, the underscore matches the dependent word
         // We want the lemma of that matched word
-        java.util.regex.Pattern p = java.util.regex.Pattern.compile("lemma=\"([^\"]+)\"");
-        java.util.regex.Matcher m = p.matcher(identity);
-        
+        java.util.regex.Matcher m = LEMMA_ATTR.matcher(identity);
+
         // Get the last lemma in the match (the dependent)
         String lastLemma = null;
         while (m.find()) {
@@ -645,14 +666,12 @@ public class BlackLabQueryExecutor implements QueryExecutor {
         }
 
         // Extract xpos or upos from XML
-        java.util.regex.Pattern p = java.util.regex.Pattern.compile("xpos=\"([^\"]+)\"");
-        java.util.regex.Matcher m = p.matcher(identity);
+        java.util.regex.Matcher m = XPOS_ATTR.matcher(identity);
         if (m.find()) {
             return m.group(1);
         }
         // Fallback to upos
-        p = java.util.regex.Pattern.compile("upos=\"([^\"]+)\"");
-        m = p.matcher(identity);
+        m = UPOS_ATTR.matcher(identity);
         if (m.find()) {
             return m.group(1);
         }
@@ -746,8 +765,7 @@ public class BlackLabQueryExecutor implements QueryExecutor {
         }
 
         // Find all lemma="xxx" patterns in order
-        java.util.regex.Pattern p = java.util.regex.Pattern.compile("lemma=\"([^\"]+)\"");
-        java.util.regex.Matcher m = p.matcher(matchOnly);
+        java.util.regex.Matcher m = LEMMA_ATTR.matcher(matchOnly);
 
         int count = 0;
         while (m.find()) {
@@ -833,8 +851,7 @@ public class BlackLabQueryExecutor implements QueryExecutor {
         }
 
         // Find all lemma="xxx" patterns and get the one at the specified position
-        java.util.regex.Pattern p = java.util.regex.Pattern.compile("lemma=\"([^\"]+)\"");
-        java.util.regex.Matcher m = p.matcher(snippet);
+        java.util.regex.Matcher m = LEMMA_ATTR.matcher(snippet);
         int count = 0;
         while (m.find()) {
             count++;
