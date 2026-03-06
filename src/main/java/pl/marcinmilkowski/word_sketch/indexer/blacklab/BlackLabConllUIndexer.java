@@ -25,18 +25,13 @@ public class BlackLabConllUIndexer implements AutoCloseable {
     private final AtomicLong documentCount = new AtomicLong(0);
     private final AtomicLong tokenCount = new AtomicLong(0);
 
-    public BlackLabConllUIndexer(String indexPath) throws IOException {
+    public BlackLabConllUIndexer(String indexPath, String formatName) throws IOException {
         this.indexPath = Paths.get(indexPath);
         Files.createDirectories(this.indexPath);
 
         try {
-            // Create new index with default settings
-            // Note: BlackLab 4.0.0 requires format to be registered via .blf.yaml config
-            // For now, create with basic XML format
-            this.indexWriter = BlackLab.openForWriting(this.indexPath.toFile(), true, (String)null);
-            
-            // Create indexer with default format
-            this.indexer = Indexer.create(this.indexWriter);
+            this.indexWriter = BlackLab.openForWriting(this.indexPath.toFile(), true, formatName);
+            this.indexer = Indexer.create(this.indexWriter, formatName);
             
             // Set up listener for progress reporting
             this.indexer.setListener(new IndexListener() {
@@ -55,7 +50,7 @@ public class BlackLabConllUIndexer implements AutoCloseable {
 
                 @Override
                 public void tokensDone(int n) {
-                    tokenCount.set(n);
+                    tokenCount.addAndGet(n);
                 }
 
                 @Override
@@ -108,11 +103,15 @@ public class BlackLabConllUIndexer implements AutoCloseable {
     @Override
     public void close() throws IOException {
         if (indexer != null) {
-            // Indexer will close the writer
+            try {
+                indexer.close(); // commits segments and writes BlackLab field metadata
+            } catch (Exception e) {
+                throw new IOException("Failed to finalize index: " + e.getMessage(), e);
+            }
             System.out.println("Indexing complete!");
             System.out.println("  Documents: " + documentCount.get());
-            System.out.println("  Tokens: " + tokenCount.get());
-            System.out.println("  Index path: " + indexPath);
+            System.out.println("  Tokens:    " + tokenCount.get());
+            System.out.println("  Index:     " + indexPath);
         }
     }
 

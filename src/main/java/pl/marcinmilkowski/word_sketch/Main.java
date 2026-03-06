@@ -8,8 +8,18 @@ import pl.marcinmilkowski.word_sketch.indexer.blacklab.BlackLabConllUIndexer;
 import pl.marcinmilkowski.word_sketch.query.BlackLabQueryExecutor;
 import pl.marcinmilkowski.word_sketch.query.QueryExecutor;
 
+import nl.inl.blacklab.index.DocumentFormats;
+
+import java.io.BufferedReader;
+import java.io.BufferedWriter;
+import java.io.File;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.List;
+import java.util.regex.Pattern;
 
 /**
  * Main entry point for ConceptSketch using BlackLab backend.
@@ -115,23 +125,109 @@ public class Main {
         System.out.println();
     }
 
-    private static void handleBlackLabIndexCommand(String[] args) {
+    private static final Pattern MWT_OR_EMPTY = Pattern.compile("^\\d+-\\d+\t|^\\d+\\.\\d+\t");
+
+    private static void handleBlackLabIndexCommand(String[] args) throws IOException {
+        String inputPath = null;
+        String outputPath = null;
+        String formatDir = ".";
+
+        for (int i = 1; i < args.length; i++) {
+            switch (args[i]) {
+                case "--input": case "-i": inputPath = args[++i]; break;
+                case "--output": case "-o": outputPath = args[++i]; break;
+                case "--format-dir": formatDir = args[++i]; break;
+                default: System.err.println("Unknown option: " + args[i]);
+            }
+        }
+
+        if (inputPath == null || outputPath == null) {
+            System.err.println("Error: --input and --output are required");
+            System.err.println("Usage: blacklab-index --input corpus.conllu --output index-dir/ [--format-dir .]");
+            return;
+        }
+
         System.out.println("=== BlackLab Indexer ===");
+        System.out.println("Input:      " + inputPath);
+        System.out.println("Output:     " + outputPath);
+        System.out.println("Format dir: " + formatDir);
         System.out.println();
-        System.out.println("Note: BlackLab indexing requires the format configuration to be registered.");
-        System.out.println("For CoNLL-U indexing, please use BlackLab's command-line tools:");
+
+        // Step 1: Convert CoNLL-U → WPL chunk files (BlackLab indexes one file = one document)
+        System.out.println("Step 1/3: Converting CoNLL-U → WPL chunks (10 000 sentences/file)...");
+        Path wplTempDir = Files.createTempDirectory("conllu_wpl_");
+        Runtime.getRuntime().addShutdownHook(new Thread(() -> deleteRecursively(wplTempDir)));
+        long[] counts = convertConlluToWplChunks(Paths.get(inputPath), wplTempDir, 10_000);
+        System.out.printf("  → %,d sentences, %,d tokens in %,d chunk files%n%n",
+                counts[0], counts[1], counts[2]);
+
+        // Step 2: Register format(s) from the format directory
+        System.out.println("Step 2/3: Registering format 'conllu-sentences' from " + formatDir + "...");
+        DocumentFormats.addConfigFormatsInDirectories(List.of(new File(formatDir)));
+        System.out.println("  → Done");
         System.out.println();
-        System.out.println("  # Create index from CoNLL-U file");
-        System.out.println("  blacklab-index-create --format conllu output-dir/ input.conllu");
-        System.out.println();
-        System.out.println("Or use the BlackLab Server web interface for indexing.");
-        System.out.println();
-        System.out.println("Once indexed, you can query with:");
-        System.out.println("  java -jar concept-sketch.jar blacklab-query --index output-dir/ --lemma theory --deprel amod");
-        System.out.println();
-        
-        // Legacy indexing disabled due to BlackLab classpath scanning issues
-        // Users should use BlackLab CLI tools directly
+
+        // Step 3: Index the chunk directory with BlackLab
+        System.out.println("Step 3/3: Indexing with BlackLab...");
+        try (BlackLabConllUIndexer indexer = new BlackLabConllUIndexer(outputPath, "conllu-sentences")) {
+            indexer.indexFile(wplTempDir.toString());
+        }
+    }
+
+    /**
+     * Converts CoNLL-U to tabular WPL with &lt;s&gt; markers, split into chunk files.
+     * BlackLab's tabular indexer loads each file fully into memory, so large corpora
+     * must be split into manageable chunks (one file = one BlackLab document).
+     * Returns [sentenceCount, tokenCount, chunkCount].
+     */
+    private static long[] convertConlluToWplChunks(Path input, Path outputDir, int sentencesPerChunk)
+            throws IOException {
+        long sentences = 0, tokens = 0, chunks = 0;
+        boolean inSentence = false;
+        int sentencesInChunk = 0;
+        BufferedWriter w = null;
+
+        try (BufferedReader r = Files.newBufferedReader(input, StandardCharsets.UTF_8)) {
+            String line;
+            while ((line = r.readLine()) != null) {
+                if (line.startsWith("#")) continue;
+                if (line.isBlank()) {
+                    if (inSentence) {
+                        w.write("</s>\n");
+                        sentences++;
+                        sentencesInChunk++;
+                        inSentence = false;
+                        if (sentencesInChunk >= sentencesPerChunk) {
+                            w.close(); w = null; chunks++; sentencesInChunk = 0;
+                        }
+                    }
+                    continue;
+                }
+                if (MWT_OR_EMPTY.matcher(line).find()) continue;
+                if (!inSentence) {
+                    if (w == null) {
+                        Path chunk = outputDir.resolve(String.format("chunk_%06d.tsv", chunks));
+                        w = Files.newBufferedWriter(chunk, StandardCharsets.UTF_8);
+                    }
+                    w.write("<s>\n");
+                    inSentence = true;
+                }
+                w.write(line); w.write('\n');
+                tokens++;
+            }
+            if (inSentence && w != null) { w.write("</s>\n"); sentences++; }
+        } finally {
+            if (w != null) { w.close(); chunks++; }
+        }
+        return new long[]{sentences, tokens, chunks};
+    }
+
+    private static void deleteRecursively(Path dir) {
+        try (var stream = Files.walk(dir)) {
+            stream.sorted(java.util.Comparator.reverseOrder())
+                  .map(Path::toFile)
+                  .forEach(java.io.File::delete);
+        } catch (IOException ignored) {}
     }
 
     private static void handleBlackLabQueryCommand(String[] args) throws IOException {
