@@ -122,8 +122,8 @@ public class RadialPlot {
                 c.x = centerX + c.radius * Math.cos(c.angle);
                 c.y = centerY + c.radius * Math.sin(c.angle);
 
-                // Circle radius based on score, scaled to canvas
-                c.circleRadius = c.score * scale;
+                // Circle radius based on absolute score magnitude, scaled to canvas
+                c.circleRadius = Math.abs(c.score) * scale;
             }
         }
     }
