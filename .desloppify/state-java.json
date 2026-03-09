@@ -1,18 +1,18 @@
 {
   "version": 1,
   "created": "2026-03-09T18:35:28+00:00",
-  "last_scan": "2026-03-09T22:34:43+00:00",
-  "scan_count": 4,
-  "overall_score": 75.9,
-  "objective_score": 97.2,
-  "strict_score": 74.9,
-  "verified_strict_score": 92.0,
+  "last_scan": "2026-03-09T23:07:30+00:00",
+  "scan_count": 5,
+  "overall_score": 76.1,
+  "objective_score": 97.7,
+  "strict_score": 75.2,
+  "verified_strict_score": 94.4,
   "stats": {
     "total": 131,
-    "auto_resolved": 33,
+    "auto_resolved": 38,
     "false_positive": 0,
-    "fixed": 87,
-    "open": 9,
+    "fixed": 84,
+    "open": 7,
     "wontfix": 2,
     "by_tier": {
       "1": {
@@ -23,16 +23,16 @@
         "wontfix": 0
       },
       "2": {
-        "auto_resolved": 15,
+        "auto_resolved": 18,
         "false_positive": 0,
-        "fixed": 13,
-        "open": 2,
+        "fixed": 12,
+        "open": 0,
         "wontfix": 0
       },
       "3": {
-        "auto_resolved": 18,
+        "auto_resolved": 20,
         "false_positive": 0,
-        "fixed": 2,
+        "fixed": 0,
         "open": 2,
         "wontfix": 2
       },
@@ -52,27 +52,21 @@
       "file": "src/main/java/pl/marcinmilkowski/word_sketch/api/WordSketchApiServer.java",
       "tier": 3,
       "confidence": "medium",
-      "summary": "Large file: large (1248 LOC)",
+      "summary": "Large file: large (1106 LOC)",
       "detail": {
-        "loc": 1248
+        "loc": 1106
       },
-      "status": "fixed",
-      "note": "Extracted HttpApiUtils (sendJsonResponse, sendError, parseQueryParams) and PatternSubstitution (substituteCollocate, extractXposFromConstraint, escapeForRegex) helper classes. WordSketchApiServer reduced from 1248 to 1106 LOC.",
+      "status": "open",
+      "note": "Reopened (\u00d71) \u2014 reappeared in scan (was fixed)",
       "first_seen": "2026-03-09T18:35:34+00:00",
-      "last_seen": "2026-03-09T22:34:43+00:00",
-      "resolved_at": "2026-03-09T22:55:55+00:00",
-      "reopen_count": 0,
+      "last_seen": "2026-03-09T23:07:30+00:00",
+      "resolved_at": null,
+      "reopen_count": 1,
       "lang": "java",
       "zone": "production",
       "suppressed": false,
       "suppressed_at": null,
-      "suppression_pattern": null,
-      "resolution_attestation": {
-        "kind": "manual",
-        "text": "I have actually Extracted HttpApiUtils (sendJsonResponse, sendError, parseQueryParams) and PatternSubstitution (substituteCollocate, extractXposFromConstraint, escapeForRegex) helper classes. WordSketchApiServer reduced from 1248 to 1106 LOC. and I am not gaming the score.",
-        "attested_at": "2026-03-09T22:55:55+00:00",
-        "scan_verified": false
-      }
+      "suppression_pattern": null
     },
     "structural::src/main/java/pl/marcinmilkowski/word_sketch/indexer/hybrid/CollocationsBuilder.java": {
       "id": "structural::src/main/java/pl/marcinmilkowski/word_sketch/indexer/hybrid/CollocationsBuilder.java",
@@ -115,7 +109,7 @@
       "status": "wontfix",
       "note": "887 LOC \u2014 core semantic exploration engine with multi-seed algorithm",
       "first_seen": "2026-03-09T18:35:34+00:00",
-      "last_seen": "2026-03-09T22:34:43+00:00",
+      "last_seen": "2026-03-09T23:07:30+00:00",
       "resolved_at": "2026-03-09T22:55:57+00:00",
       "reopen_count": 0,
       "lang": "java",
@@ -146,16 +140,16 @@
       "file": "src/main/java/pl/marcinmilkowski/word_sketch/query/BlackLabQueryExecutor.java",
       "tier": 3,
       "confidence": "medium",
-      "summary": "Large file: large (887 LOC)",
+      "summary": "Large file: large (572 LOC)",
       "detail": {
-        "loc": 887
+        "loc": 572
       },
       "status": "open",
-      "note": null,
+      "note": "Reopened (\u00d71) \u2014 reappeared in scan (was fixed)",
       "first_seen": "2026-03-09T18:35:34+00:00",
-      "last_seen": "2026-03-09T22:34:43+00:00",
+      "last_seen": "2026-03-09T23:07:30+00:00",
       "resolved_at": null,
-      "reopen_count": 0,
+      "reopen_count": 1,
       "lang": "java",
       "zone": "production",
       "suppressed": false,
@@ -175,7 +169,7 @@
       "status": "wontfix",
       "note": "642 LOC \u2014 justified complexity, handles full grammar config parsing with validation",
       "first_seen": "2026-03-09T18:35:34+00:00",
-      "last_seen": "2026-03-09T22:34:43+00:00",
+      "last_seen": "2026-03-09T23:07:30+00:00",
       "resolved_at": "2026-03-09T22:55:56+00:00",
       "reopen_count": 0,
       "lang": "java",
@@ -378,11 +372,11 @@
         "content": "                        + \") must be between 1 and \" + tokenCount + \" (pattern has \" + tokenCount + \" tokens: \" + pattern + \")\");",
         "remediation": "Move secret to environment variable or secrets manager"
       },
-      "status": "fixed",
-      "note": "Fixed: renamed tokens variable to patternPositions in WordSketchApiServer.substituteCollocate() and reworded error message in GrammarConfigLoader",
+      "status": "auto_resolved",
+      "note": "Disappeared from scan \u2014 likely fixed",
       "first_seen": "2026-03-09T18:35:49+00:00",
       "last_seen": "2026-03-09T22:34:43+00:00",
-      "resolved_at": "2026-03-09T22:56:27+00:00",
+      "resolved_at": "2026-03-09T23:07:30+00:00",
       "reopen_count": 1,
       "zone": "production",
       "lang": "java",
@@ -390,10 +384,10 @@
       "suppressed_at": null,
       "suppression_pattern": null,
       "resolution_attestation": {
-        "kind": "manual",
-        "text": "I have actually Fixed: renamed tokens variable to patternPositions in WordSketchApiServer.substituteCollocate() and reworded error message in GrammarConfigLoader and I am not gaming the score.",
-        "attested_at": "2026-03-09T22:56:27+00:00",
-        "scan_verified": false
+        "kind": "scan_verified",
+        "text": "Disappeared from detector output",
+        "attested_at": "2026-03-09T23:07:30+00:00",
+        "scan_verified": true
       }
     },
     "security::src/main/java/pl/marcinmilkowski/word_sketch/indexer/hybrid/CollocationsBuilder.java::security::log_sensitive::src/main/java/pl/marcinmilkowski/word_sketch/indexer/hybrid/CollocationsBuilder.java::87": {
@@ -911,17 +905,23 @@
           ""
         ]
       },
-      "status": "open",
-      "note": null,
+      "status": "auto_resolved",
+      "note": "Disappeared from scan \u2014 likely fixed",
       "first_seen": "2026-03-09T18:36:04+00:00",
       "last_seen": "2026-03-09T22:34:43+00:00",
-      "resolved_at": null,
+      "resolved_at": "2026-03-09T23:07:30+00:00",
       "reopen_count": 0,
       "lang": "java",
       "zone": "production",
       "suppressed": false,
       "suppressed_at": null,
-      "suppression_pattern": null
+      "suppression_pattern": null,
+      "resolution_attestation": {
+        "kind": "scan_verified",
+        "text": "Disappeared from detector output",
+        "attested_at": "2026-03-09T23:07:30+00:00",
+        "scan_verified": true
+      }
     },
     "boilerplate_duplication::src/main/java/pl/marcinmilkowski/word_sketch/query/LemmaPredicate.java::cdcc20cb035606e2": {
       "id": "boilerplate_duplication::src/main/java/pl/marcinmilkowski/word_sketch/query/LemmaPredicate.java::cdcc20cb035606e2",
@@ -954,11 +954,11 @@
           "    private boolean matchesPattern(String value, String pattern) {"
         ]
       },
-      "status": "fixed",
-      "note": "Extracted shared matchesPattern/wildcardToRegex logic to AbstractPatternPredicate base class. LemmaPredicate, PosGroupPredicate, WordPredicate, TagPredicate now each ~10 lines.",
+      "status": "auto_resolved",
+      "note": "Disappeared from scan \u2014 likely fixed",
       "first_seen": "2026-03-09T18:36:04+00:00",
       "last_seen": "2026-03-09T22:34:43+00:00",
-      "resolved_at": "2026-03-09T22:56:57+00:00",
+      "resolved_at": "2026-03-09T23:07:30+00:00",
       "reopen_count": 0,
       "lang": "java",
       "zone": "production",
@@ -966,10 +966,10 @@
       "suppressed_at": null,
       "suppression_pattern": null,
       "resolution_attestation": {
-        "kind": "manual",
-        "text": "I have actually Extracted shared matchesPattern/wildcardToRegex logic to AbstractPatternPredicate base class. LemmaPredicate, PosGroupPredicate, WordPredicate, TagPredicate now each ~10 lines. and I am not gaming the score.",
-        "attested_at": "2026-03-09T22:56:57+00:00",
-        "scan_verified": false
+        "kind": "scan_verified",
+        "text": "Disappeared from detector output",
+        "attested_at": "2026-03-09T23:07:30+00:00",
+        "scan_verified": true
       }
     },
     "boilerplate_duplication::src/main/java/pl/marcinmilkowski/word_sketch/indexer/hybrid/LemmaIdsCodec.java::2b307952455b1f8b": {
@@ -1524,11 +1524,11 @@
         "references": 0
       },
       "status": "open",
-      "note": null,
+      "note": "Reopened (\u00d71) \u2014 reappeared in scan (was fixed)",
       "first_seen": "2026-03-09T18:36:05+00:00",
-      "last_seen": "2026-03-09T22:34:43+00:00",
+      "last_seen": "2026-03-09T23:07:30+00:00",
       "resolved_at": null,
-      "reopen_count": 0,
+      "reopen_count": 1,
       "lang": "java",
       "suppressed": false,
       "suppressed_at": null,
@@ -1546,11 +1546,11 @@
         "references": 0
       },
       "status": "open",
-      "note": null,
+      "note": "Reopened (\u00d71) \u2014 reappeared in scan (was fixed)",
       "first_seen": "2026-03-09T18:36:05+00:00",
-      "last_seen": "2026-03-09T22:34:43+00:00",
+      "last_seen": "2026-03-09T23:07:30+00:00",
       "resolved_at": null,
-      "reopen_count": 0,
+      "reopen_count": 1,
       "lang": "java",
       "suppressed": false,
       "suppressed_at": null,
@@ -1568,11 +1568,11 @@
         "references": 0
       },
       "status": "open",
-      "note": null,
+      "note": "Reopened (\u00d71) \u2014 reappeared in scan (was fixed)",
       "first_seen": "2026-03-09T18:36:05+00:00",
-      "last_seen": "2026-03-09T22:34:43+00:00",
+      "last_seen": "2026-03-09T23:07:30+00:00",
       "resolved_at": null,
-      "reopen_count": 0,
+      "reopen_count": 1,
       "lang": "java",
       "suppressed": false,
       "suppressed_at": null,
@@ -1590,11 +1590,11 @@
         "references": 0
       },
       "status": "open",
-      "note": null,
+      "note": "Reopened (\u00d71) \u2014 reappeared in scan (was fixed)",
       "first_seen": "2026-03-09T18:36:05+00:00",
-      "last_seen": "2026-03-09T22:34:43+00:00",
+      "last_seen": "2026-03-09T23:07:30+00:00",
       "resolved_at": null,
-      "reopen_count": 0,
+      "reopen_count": 1,
       "lang": "java",
       "suppressed": false,
       "suppressed_at": null,
@@ -4891,17 +4891,23 @@
         "content": "        logger.debug(\"DEBUG: substituteCollocate: tokens.size()={}, collocatePosition={}\", tokens.size(), collocatePosition);",
         "remediation": "Remove sensitive data from log statements"
       },
-      "status": "open",
-      "note": null,
+      "status": "auto_resolved",
+      "note": "Disappeared from scan \u2014 likely fixed",
       "first_seen": "2026-03-09T22:34:37+00:00",
       "last_seen": "2026-03-09T22:34:37+00:00",
-      "resolved_at": null,
+      "resolved_at": "2026-03-09T23:07:30+00:00",
       "reopen_count": 0,
       "zone": "production",
       "lang": "java",
       "suppressed": false,
       "suppressed_at": null,
-      "suppression_pattern": null
+      "suppression_pattern": null,
+      "resolution_attestation": {
+        "kind": "scan_verified",
+        "text": "Disappeared from detector output",
+        "attested_at": "2026-03-09T23:07:30+00:00",
+        "scan_verified": true
+      }
     },
     "security::src/main/java/pl/marcinmilkowski/word_sketch/api/WordSketchApiServer.java::security::log_sensitive::src/main/java/pl/marcinmilkowski/word_sketch/api/WordSketchApiServer.java::978": {
       "id": "security::src/main/java/pl/marcinmilkowski/word_sketch/api/WordSketchApiServer.java::security::log_sensitive::src/main/java/pl/marcinmilkowski/word_sketch/api/WordSketchApiServer.java::978",
@@ -4917,17 +4923,23 @@
         "content": "        logger.debug(\"DEBUG: Tokens: {}\", tokens);",
         "remediation": "Remove sensitive data from log statements"
       },
-      "status": "open",
-      "note": null,
+      "status": "auto_resolved",
+      "note": "Disappeared from scan \u2014 likely fixed",
       "first_seen": "2026-03-09T22:34:37+00:00",
       "last_seen": "2026-03-09T22:34:37+00:00",
-      "resolved_at": null,
+      "resolved_at": "2026-03-09T23:07:30+00:00",
       "reopen_count": 0,
       "zone": "production",
       "lang": "java",
       "suppressed": false,
       "suppressed_at": null,
-      "suppression_pattern": null
+      "suppression_pattern": null,
+      "resolution_attestation": {
+        "kind": "scan_verified",
+        "text": "Disappeared from detector output",
+        "attested_at": "2026-03-09T23:07:30+00:00",
+        "scan_verified": true
+      }
     },
     "stale_exclude::diagnostics::diagnostics": {
       "id": "stale_exclude::diagnostics::diagnostics",
@@ -4941,11 +4953,11 @@
         "references": 0
       },
       "status": "open",
-      "note": null,
+      "note": "Reopened (\u00d71) \u2014 reappeared in scan (was fixed)",
       "first_seen": "2026-03-09T22:34:43+00:00",
-      "last_seen": "2026-03-09T22:34:43+00:00",
+      "last_seen": "2026-03-09T23:07:30+00:00",
       "resolved_at": null,
-      "reopen_count": 0,
+      "reopen_count": 1,
       "lang": "java",
       "suppressed": false,
       "suppressed_at": null,
@@ -4990,7 +5002,7 @@
           "reason": "tool_failed_unparsed_output"
         }
       ],
-      "updated_at": "2026-03-09T22:34:43+00:00"
+      "updated_at": "2026-03-09T23:07:30+00:00"
     }
   },
   "score_confidence": {
@@ -5011,8 +5023,8 @@
     "dimensions": []
   },
   "subjective_integrity": {
-    "status": "disabled",
-    "target_score": null,
+    "status": "pass",
+    "target_score": 95.0,
     "matched_count": 0,
     "matched_dimensions": [],
     "reset_dimensions": []
@@ -5055,7 +5067,10 @@
     "design_coherence": {
       "score": 58.0,
       "source": "holistic",
-      "assessed_at": "2026-03-09T19:04:30+00:00"
+      "assessed_at": "2026-03-09T19:04:30+00:00",
+      "needs_review_refresh": true,
+      "refresh_reason": "mechanical_issues_changed",
+      "stale_since": "2026-03-09T23:07:30+00:00"
     },
     "contract_coherence": {
       "score": 63.0,
@@ -5104,7 +5119,10 @@
     "convention_outlier": {
       "score": 79.0,
       "source": "holistic",
-      "assessed_at": "2026-03-09T19:04:30+00:00"
+      "assessed_at": "2026-03-09T19:04:30+00:00",
+      "needs_review_refresh": true,
+      "refresh_reason": "mechanical_issues_changed",
+      "stale_since": "2026-03-09T23:07:30+00:00"
     },
     "error_consistency": {
       "score": 63.0,
@@ -5119,7 +5137,10 @@
     "abstraction_fitness": {
       "score": 72.0,
       "source": "holistic",
-      "assessed_at": "2026-03-09T19:04:30+00:00"
+      "assessed_at": "2026-03-09T19:04:30+00:00",
+      "needs_review_refresh": true,
+      "refresh_reason": "mechanical_issues_changed",
+      "stale_since": "2026-03-09T23:07:30+00:00"
     },
     "dependency_health": {
       "score": 72.0,
@@ -5640,6 +5661,131 @@
           "strict": 58.0
         }
       }
+    },
+    {
+      "timestamp": "2026-03-09T23:07:30+00:00",
+      "lang": "java",
+      "strict_score": 75.2,
+      "verified_strict_score": 94.4,
+      "objective_score": 97.7,
+      "overall_score": 76.1,
+      "open": 7,
+      "diff_new": 0,
+      "diff_resolved": 5,
+      "ignored": 0,
+      "raw_issues": 9,
+      "suppressed_pct": 0.0,
+      "ignore_patterns": 0,
+      "subjective_integrity": {
+        "status": "pass",
+        "matched_count": 0,
+        "reset_count": 0,
+        "target_score": 95.0
+      },
+      "score_confidence": {
+        "status": "reduced",
+        "confidence": 0.0,
+        "detector_count": 1,
+        "dimension_count": 0
+      },
+      "dimension_scores": {
+        "Code quality": {
+          "score": 100.0,
+          "strict": 100.0
+        },
+        "Security": {
+          "score": 100.0,
+          "strict": 100.0
+        },
+        "File health": {
+          "score": 95.6,
+          "strict": 91.2
+        },
+        "Naming quality": {
+          "score": 74.0,
+          "strict": 74.0
+        },
+        "Logic clarity": {
+          "score": 68.0,
+          "strict": 68.0
+        },
+        "Type safety": {
+          "score": 63.0,
+          "strict": 63.0
+        },
+        "Contracts": {
+          "score": 63.0,
+          "strict": 63.0
+        },
+        "Error consistency": {
+          "score": 63.0,
+          "strict": 63.0
+        },
+        "Abstraction fit": {
+          "score": 72.0,
+          "strict": 72.0
+        },
+        "AI generated debt": {
+          "score": 72.0,
+          "strict": 72.0
+        },
+        "High elegance": {
+          "score": 52.0,
+          "strict": 52.0
+        },
+        "Mid elegance": {
+          "score": 65.0,
+          "strict": 65.0
+        },
+        "Low elegance": {
+          "score": 58.0,
+          "strict": 58.0
+        },
+        "Cross-module arch": {
+          "score": 63.0,
+          "strict": 63.0
+        },
+        "Init coupling": {
+          "score": 77.0,
+          "strict": 77.0
+        },
+        "Convention drift": {
+          "score": 79.0,
+          "strict": 79.0
+        },
+        "Dep health": {
+          "score": 72.0,
+          "strict": 72.0
+        },
+        "Test strategy": {
+          "score": 42.0,
+          "strict": 42.0
+        },
+        "API coherence": {
+          "score": 57.0,
+          "strict": 57.0
+        },
+        "Auth consistency": {
+          "score": 82.0,
+          "strict": 82.0
+        },
+        "Stale migration": {
+          "score": 58.0,
+          "strict": 58.0
+        },
+        "Structure nav": {
+          "score": 60.0,
+          "strict": 60.0
+        },
+        "Design coherence": {
+          "score": 58.0,
+          "strict": 58.0
+        },
+        "Duplication": {
+          "score": 100.0,
+          "strict": 100.0
+        }
+      }
     }
   ],
   "lang_capabilities": {
@@ -5649,7 +5795,7 @@
     }
   },
   "zone_distribution": {
-    "production": 28,
+    "production": 32,
     "test": 15
   },
   "tool_hash": "c108a62acd1d",
@@ -5659,18 +5805,18 @@
   },
   "potentials": {
     "java": {
-      "structural": 28,
+      "structural": 32,
       "flat_dirs": 25,
-      "security": 28,
-      "boilerplate_duplication": 4,
+      "security": 32,
+      "boilerplate_duplication": 0,
       "dupes": 0,
-      "stale_wontfix": 0
+      "stale_wontfix": 2
     }
   },
   "codebase_metrics": {
     "java": {
-      "total_files": 43,
-      "total_loc": 8818,
+      "total_files": 47,
+      "total_loc": 8764,
       "total_directories": 14
     }
   },
@@ -5692,50 +5838,34 @@
       }
     },
     "Security": {
-      "score": 96.4,
-      "strict": 96.4,
-      "verified_strict_score": 92.9,
-      "checks": 28,
-      "failing": 2,
+      "score": 100.0,
+      "strict": 100.0,
+      "verified_strict_score": 100.0,
+      "checks": 32,
+      "failing": 0,
       "tier": 4,
       "detectors": {
         "security": {
-          "potential": 28,
-          "pass_rate": 0.9642857142857143,
-          "failing": 2,
-          "weighted_failures": 1.0
+          "potential": 32,
+          "pass_rate": 1.0,
+          "failing": 0,
+          "weighted_failures": 0.0
         }
       }
     },
     "File health": {
-      "score": 97.5,
-      "strict": 92.5,
-      "verified_strict_score": 90.0,
-      "checks": 28,
-      "failing": 1,
+      "score": 95.6,
+      "strict": 91.2,
+      "verified_strict_score": 91.2,
+      "checks": 32,
+      "failing": 2,
       "tier": 3,
       "detectors": {
         "structural": {
-          "potential": 28,
-          "pass_rate": 0.975,
-          "failing": 1,
-          "weighted_failures": 0.7
-        }
-      }
-    },
-    "Duplication": {
-      "score": 82.5,
-      "strict": 82.5,
-      "verified_strict_score": 65.0,
-      "checks": 4,
-      "failing": 1,
-      "tier": 3,
-      "detectors": {
-        "boilerplate_duplication": {
-          "potential": 4,
-          "pass_rate": 0.825,
-          "failing": 1,
-          "weighted_failures": 0.7
+          "potential": 32,
+          "pass_rate": 0.95625,
+          "failing": 2,
+          "weighted_failures": 1.4
         }
       }
     },
@@ -6158,13 +6288,31 @@
           "components": []
         }
       }
+    },
+    "Duplication": {
+      "score": 100.0,
+      "strict": 100.0,
+      "verified_strict_score": 65.0,
+      "checks": 4,
+      "failing": 0,
+      "tier": 3,
+      "detectors": {
+        "boilerplate_duplication": {
+          "potential": 4,
+          "pass_rate": 1.0,
+          "failing": 0,
+          "weighted_failures": 0.0
+        }
+      },
+      "carried_forward": true
     }
   },
   "reminder_history": {
-    "zone_classification": 2,
-    "report_scores": 2,
+    "zone_classification": 3,
+    "report_scores": 3,
     "review_issues_pending": 1,
-    "feedback_nudge": 1
+    "feedback_nudge": 2,
+    "wontfix_growing": 1
   },
   "review_cache": {
     "files": {},
