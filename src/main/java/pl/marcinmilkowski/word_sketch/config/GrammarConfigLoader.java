@@ -129,7 +129,7 @@ public class GrammarConfigLoader {
                 int tokenCount = countPatternTokens(pattern);
                 if (headPosition < 1 || headPosition > tokenCount || collocatePosition < 1 || collocatePosition > tokenCount) {
                     throw new IllegalArgumentException("Relation '" + id + "': positions (" + headPosition + "," + collocatePosition
-                        + ") must be between 1 and " + tokenCount + " (pattern has " + tokenCount + " tokens: " + pattern + ")");
+                        + ") must be between 1 and " + tokenCount + " (pattern has " + tokenCount + " positions: " + pattern + ")");
                 }
             }
 

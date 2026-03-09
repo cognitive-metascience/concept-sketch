@@ -950,14 +950,14 @@ public class WordSketchApiServer {
             return pattern;
         }
 
-        // Split pattern into tokens
-        List<String> tokens = new ArrayList<>();
+        // Split pattern into CQL positions
+        List<String> patternPositions = new ArrayList<>();
         int i = 0;
         while (i < pattern.length()) {
             if (pattern.charAt(i) == '[') {
                 int end = pattern.indexOf(']', i);
                 if (end > i) {
-                    tokens.add(pattern.substring(i, end + 1));
+                    patternPositions.add(pattern.substring(i, end + 1));
                     i = end + 1;
                 } else {
                     i++;
@@ -974,16 +974,16 @@ public class WordSketchApiServer {
             }
         }
 
-        logger.debug("DEBUG: substituteCollocate: tokens.size()={}, collocatePosition={}", tokens.size(), collocatePosition);
-        logger.debug("DEBUG: Tokens: {}", tokens);
+        logger.debug("DEBUG: substituteCollocate: patternPositions.size()={}, collocatePosition={}", patternPositions.size(), collocatePosition);
+        logger.debug("DEBUG: Pattern positions: {}", patternPositions);
 
-        if (collocatePosition > tokens.size()) {
+        if (collocatePosition > patternPositions.size()) {
             logger.debug("DEBUG: Returning early - position > size");
             return pattern;
         }
 
         // Replace the constraint at collocatePosition with lemma constraint for the collocate
-        String originalConstraint = tokens.get(collocatePosition - 1);
+        String originalConstraint = patternPositions.get(collocatePosition - 1);
         logger.debug("DEBUG: originalConstraint at position {}: {}", collocatePosition, originalConstraint);
         // Extract xpos/tag from original and merge with lemma
         String xposPattern = extractXposFromConstraint(originalConstraint);
@@ -996,8 +996,8 @@ public class WordSketchApiServer {
         newConstraint.append("]");
         logger.debug("DEBUG: newConstraint: {}", newConstraint);
 
-        tokens.set(collocatePosition - 1, newConstraint.toString());
-        String result = String.join(" ", tokens);
+        patternPositions.set(collocatePosition - 1, newConstraint.toString());
+        String result = String.join(" ", patternPositions);
         logger.debug("DEBUG: final result: {}", result);
         return result;
     }
