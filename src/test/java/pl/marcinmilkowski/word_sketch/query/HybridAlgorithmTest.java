@@ -3,6 +3,7 @@ package pl.marcinmilkowski.word_sketch.query;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import pl.marcinmilkowski.word_sketch.config.GrammarConfigLoader;
+import pl.marcinmilkowski.word_sketch.config.RelationConfig;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -60,7 +61,7 @@ class HybridAlgorithmTest {
     void testAllRelationsHavePatterns() {
         GrammarConfigLoader grammarConfig = GrammarConfigLoader.createDefaultEnglish();
 
-        for (GrammarConfigLoader.RelationConfig rel : grammarConfig.getRelations()) {
+        for (RelationConfig rel : grammarConfig.getRelations()) {
             assertNotNull(rel.pattern(), "Relation " + rel.id() + " should have pattern");
             assertFalse(rel.pattern().isEmpty(), "Relation " + rel.id() + " pattern should not be empty");
         }

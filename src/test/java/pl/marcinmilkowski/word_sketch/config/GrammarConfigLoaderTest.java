@@ -34,7 +34,7 @@ class GrammarConfigLoaderTest {
     void fromReader_loadsRelationNames() throws IOException {
         GrammarConfigLoader config = GrammarConfigLoader.fromReader(new StringReader(MINIMAL_JSON));
 
-        List<GrammarConfigLoader.RelationConfig> relations = config.getRelations();
+        List<RelationConfig> relations = config.getRelations();
         assertEquals(2, relations.size());
 
         assertEquals("noun_adj_predicates", relations.get(0).id());
