@@ -87,7 +87,7 @@ class HandlersTest {
 
     @Test
     void handleSemanticFieldExplore_missingSeed_returns400() throws Exception {
-        ExplorationHandlers handlers = new ExplorationHandlers(null, null, null);
+        ExplorationHandlers handlers = new ExplorationHandlers(null, null);
         MockExchange ex = new MockExchange("http://localhost/api/semantic-field/explore");
         handlers.handleSemanticFieldExplore(ex);
         assertEquals(400, ex.statusCode);
@@ -95,7 +95,7 @@ class HandlersTest {
 
     @Test
     void handleSemanticFieldExploreMulti_missingSeeds_returns400() throws Exception {
-        ExplorationHandlers handlers = new ExplorationHandlers(null, null, null);
+        ExplorationHandlers handlers = new ExplorationHandlers(null, null);
         MockExchange ex = new MockExchange("http://localhost/api/semantic-field/explore-multi");
         handlers.handleSemanticFieldExploreMulti(ex);
         assertEquals(400, ex.statusCode);
@@ -103,7 +103,7 @@ class HandlersTest {
 
     @Test
     void handleSemanticFieldExploreMulti_oneSeed_returns400() throws Exception {
-        ExplorationHandlers handlers = new ExplorationHandlers(null, null, null);
+        ExplorationHandlers handlers = new ExplorationHandlers(null, null);
         MockExchange ex = new MockExchange("http://localhost/api/semantic-field/explore-multi?seeds=theory");
         handlers.handleSemanticFieldExploreMulti(ex);
         assertEquals(400, ex.statusCode);

@@ -4,7 +4,6 @@ import com.sun.net.httpserver.HttpExchange;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import pl.marcinmilkowski.word_sketch.config.GrammarConfigLoader;
-import pl.marcinmilkowski.word_sketch.query.QueryExecutor;
 import pl.marcinmilkowski.word_sketch.config.PosGroup;
 import pl.marcinmilkowski.word_sketch.exploration.SemanticFieldExplorer;
 import pl.marcinmilkowski.word_sketch.model.AdjectiveProfile;
@@ -32,12 +31,10 @@ class ExplorationHandlers {
 
     private static final Logger logger = LoggerFactory.getLogger(ExplorationHandlers.class);
 
-    private final QueryExecutor executor;
     private final GrammarConfigLoader grammarConfig;
     private final SemanticFieldExplorer semanticFieldExplorer;
 
-    ExplorationHandlers(QueryExecutor executor, GrammarConfigLoader grammarConfig, SemanticFieldExplorer semanticFieldExplorer) {
-        this.executor = executor;
+    ExplorationHandlers(GrammarConfigLoader grammarConfig, SemanticFieldExplorer semanticFieldExplorer) {
         this.grammarConfig = grammarConfig;
         this.semanticFieldExplorer = semanticFieldExplorer;
     }
@@ -95,15 +92,15 @@ class ExplorationHandlers {
             seed, relationName, bcqlPattern, reverseCollocatePattern, opts);
 
         Map<String, Object> response = buildBaseExploreResponse(relationType, topCollocates, minShared, minLogDice);
-        response.put("seed", result.seed);
+        response.put("seed", result.getSeed());
         // nouns_per is specific to single-seed exploration
         ((Map<String, Object>) response.get("parameters")).put("nouns_per", nounsPerCollocate);
 
         List<Map<String, Object>> seedCollocs = new ArrayList<>();
-        if (result.seedCollocates != null) {
-            for (Map.Entry<String, Double> colloc : result.seedCollocates.entrySet()) {
-                long freq = result.seedCollocateFrequencies != null
-                    ? result.seedCollocateFrequencies.getOrDefault(colloc.getKey(), 0L) : 0L;
+        if (result.getSeedCollocates() != null) {
+            for (Map.Entry<String, Double> colloc : result.getSeedCollocates().entrySet()) {
+                long freq = result.getSeedCollocateFrequencies() != null
+                    ? result.getSeedCollocateFrequencies().getOrDefault(colloc.getKey(), 0L) : 0L;
                 seedCollocs.add(formatSeedCollocate(colloc.getKey(), colloc.getValue(), freq));
             }
         }
@@ -111,8 +108,8 @@ class ExplorationHandlers {
         response.put("seed_collocates_count", seedCollocs.size());
 
         List<Map<String, Object>> nouns = new ArrayList<>();
-        if (result.discoveredNouns != null) {
-            for (DiscoveredNoun dn : result.discoveredNouns) {
+        if (result.getDiscoveredNouns() != null) {
+            for (DiscoveredNoun dn : result.getDiscoveredNouns()) {
                 nouns.add(formatDiscoveredNoun(dn));
             }
         }
@@ -120,8 +117,8 @@ class ExplorationHandlers {
         response.put("discovered_nouns_count", nouns.size());
 
         List<Map<String, Object>> coreCollocs = new ArrayList<>();
-        if (result.coreCollocates != null) {
-            for (CoreCollocate ca : result.coreCollocates) {
+        if (result.getCoreCollocates() != null) {
+            for (CoreCollocate ca : result.getCoreCollocates()) {
                 coreCollocs.add(formatCoreCollocate(ca));
             }
         }
@@ -197,13 +194,13 @@ class ExplorationHandlers {
         Map<String, Object> response = buildBaseExploreResponse(relationType, topCollocates, minShared, minLogDice);
         response.put("seeds", new ArrayList<>(seeds));
         response.put("seed_count", seeds.size());
-        response.put("seed", result.seed);
+        response.put("seed", result.getSeed());
 
         List<Map<String, Object>> seedCollocs = new ArrayList<>();
-        if (result.seedCollocates != null) {
-            for (Map.Entry<String, Double> colloc : result.seedCollocates.entrySet()) {
-                long freq = result.seedCollocateFrequencies != null
-                    ? result.seedCollocateFrequencies.getOrDefault(colloc.getKey(), 0L) : 0L;
+        if (result.getSeedCollocates() != null) {
+            for (Map.Entry<String, Double> colloc : result.getSeedCollocates().entrySet()) {
+                long freq = result.getSeedCollocateFrequencies() != null
+                    ? result.getSeedCollocateFrequencies().getOrDefault(colloc.getKey(), 0L) : 0L;
                 seedCollocs.add(formatSeedCollocate(colloc.getKey(), colloc.getValue(), freq));
             }
         }
@@ -211,8 +208,8 @@ class ExplorationHandlers {
         response.put("seed_collocates_count", seedCollocs.size());
 
         List<String> commonCollocs = new ArrayList<>();
-        if (result.coreCollocates != null) {
-            for (CoreCollocate ca : result.coreCollocates) {
+        if (result.getCoreCollocates() != null) {
+            for (CoreCollocate ca : result.getCoreCollocates()) {
                 commonCollocs.add(ca.collocate);
             }
         }
@@ -220,8 +217,8 @@ class ExplorationHandlers {
         response.put("common_collocates_count", commonCollocs.size());
 
         List<Map<String, Object>> coreCollocs = new ArrayList<>();
-        if (result.coreCollocates != null) {
-            for (CoreCollocate ca : result.coreCollocates) {
+        if (result.getCoreCollocates() != null) {
+            for (CoreCollocate ca : result.getCoreCollocates()) {
                 coreCollocs.add(formatCoreCollocate(ca));
             }
         }
@@ -229,8 +226,8 @@ class ExplorationHandlers {
         response.put("core_collocates_count", coreCollocs.size());
 
         List<Map<String, Object>> discoveredNounsList = new ArrayList<>();
-        if (result.discoveredNouns != null) {
-            for (DiscoveredNoun dn : result.discoveredNouns) {
+        if (result.getDiscoveredNouns() != null) {
+            for (DiscoveredNoun dn : result.getDiscoveredNouns()) {
                 discoveredNounsList.add(formatDiscoveredNoun(dn));
             }
         }

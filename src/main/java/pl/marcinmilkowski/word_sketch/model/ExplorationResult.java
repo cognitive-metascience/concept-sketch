@@ -9,11 +9,11 @@ import java.util.stream.Collectors;
  * Result of semantic field exploration from a seed word.
  */
 public class ExplorationResult {
-    public final String seed;
-    public final Map<String, Double> seedCollocates;  // collocate -> logDice with seed
-    public final Map<String, Long> seedCollocateFrequencies;  // collocate -> raw frequency
-    public final List<DiscoveredNoun> discoveredNouns;
-    public final List<CoreCollocate> coreCollocates;
+    private final String seed;
+    private final Map<String, Double> seedCollocates;  // collocate -> logDice with seed
+    private final Map<String, Long> seedCollocateFrequencies;  // collocate -> raw frequency
+    private final List<DiscoveredNoun> discoveredNouns;
+    private final List<CoreCollocate> coreCollocates;
 
     public ExplorationResult(String seed, Map<String, Double> seedCollocates,
             Map<String, Long> seedCollocateFrequencies,
@@ -24,6 +24,12 @@ public class ExplorationResult {
         this.discoveredNouns = discoveredNouns;
         this.coreCollocates = coreCollocates;
     }
+
+    public String getSeed() { return seed; }
+    public Map<String, Double> getSeedCollocates() { return seedCollocates; }
+    public Map<String, Long> getSeedCollocateFrequencies() { return seedCollocateFrequencies; }
+    public List<DiscoveredNoun> getDiscoveredNouns() { return discoveredNouns; }
+    public List<CoreCollocate> getCoreCollocates() { return coreCollocates; }
 
     public static ExplorationResult empty(String seed) {
         return new ExplorationResult(seed, Map.of(), Map.of(), List.of(), List.of());
