@@ -1,0 +1,88 @@
+{
+  "batch": "ai_generated_debt",
+  "batch_index": 7,
+  "assessments": {"ai_generated_debt": 72.0},
+  "dimension_notes": {
+    "ai_generated_debt": {
+      "evidence": [
+        "BlackLabSnippetParser defines extractLemmaAt() as a one-line pass-through to extractCollocateFromXmlByPosition() with no added logic; extractHeadLemma() wraps extractLemmaAt(xml,1) with a single hardcoded argument; extractCollocateLemma() is a one-line call to the @Deprecated extractCollocateFromSnippet — three consecutive pass-through wrappers that add no behavior (BlackLabSnippetParser.java lines 300-320)",
+        "handleVisualRadial javadoc contains 'Render radial plot.' twice in its first two lines (WordSketchApiServer.java lines ~864-865)",
+        "SemanticFieldExplorer.exploreByPattern logs 7 info-level messages in sequence for a single invocation: separator line, seed, relation, pattern, positions, parameters, separator, then one more at each step — diagnostic trace logging embedded as permanent INFO, not DEBUG (SemanticFieldExplorer.java lines ~120-135, ~148, ~165)",
+        "QueryResults.ConcordanceResult has a 9-parameter constructor with a javadoc listing all nullable fields — legitimate documentation for a complex DTO, not AI debt",
+        "HttpApiUtils.parseQueryParams catches Exception (not UnsupportedEncodingException) around URLDecoder.decode with a literal charset string 'UTF-8' instead of StandardCharsets.UTF_8 — minor defensive overreach for a charset that cannot realistically be unsupported (HttpApiUtils.java lines ~83-91)"
+      ],
+      "impact_scope": "module",
+      "fix_scope": "multi_file_refactor",
+      "confidence": "medium"
+    }
+  },
+  "dimension_judgment": {
+    "ai_generated_debt": {
+      "strengths": [
+        "CqlUtils, LogDiceCalculator, and LongIntHashMap are tightly focused with no ceremony — comments explain math edge cases or algorithm choices, not restatements of the code",
+        "QueryExecutor javadoc precisely distinguishes four similarly-named methods with distinct purposes — adds genuine insight, not bloat",
+        "GrammarConfigLoader uses private constructor chaining cleanly; no defensive null-checks on values that can't be null at that point"
+      ],
+      "issue_character": "The debt is concentrated in two patterns: a cluster of pass-through wrapper methods in BlackLabSnippetParser that add only name aliasing over @Deprecated predecessors, and persistent INFO-level trace logging in SemanticFieldExplorer that should be DEBUG.",
+      "score_rationale": "Most of the codebase is purpose-driven with comments that add context. However, the BlackLabSnippetParser 'clean API' section introduces three consecutive wrappers — extractLemmaAt, extractHeadLemma, extractCollocateLemma — that delegate to deprecated methods without adding logic, a classic AI-style alias proliferation. Combined with step-by-step INFO logging in SemanticFieldExplorer that clutters production output, the codebase is above the 60 threshold (these are pockets, not pervasive) but falls short of 80 (the wrappers and trace logging are recurring patterns, not isolated incidents)."
+    }
+  },
+  "issues": [
+    {
+      "dimension": "ai_generated_debt",
+      "identifier": "snippet_parser_passthrough_wrappers",
+      "summary": "extractLemmaAt/extractHeadLemma/extractCollocateLemma are pass-through aliases with no added logic over the deprecated originals",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/query/BlackLabSnippetParser.java"
+      ],
+      "evidence": [
+        "extractLemmaAt(xml, pos) is a one-line body: return extractCollocateFromXmlByPosition(xml, position) — same logic, different name",
+        "extractHeadLemma(matchXml) calls extractLemmaAt(matchXml, 1) with no guard, transformation, or domain logic",
+        "extractCollocateLemma(matchXml) calls the @Deprecated extractCollocateFromSnippet — the 'clean' API delegates to the deprecated one, so callers of the new API still trigger deprecation internally"
+      ],
+      "suggestion": "Inline the logic from extractCollocateFromXmlByPosition directly into extractLemmaAt (making extractLemmaAt the canonical implementation), then update extractCollocateFromXmlByPosition to delegate to it instead. Remove extractHeadLemma and extractCollocateLemma if callers can use extractLemmaAt(xml,1) and extractLemmaAt(xml, n) directly, or give them non-trivial behavior (e.g., extractCollocateLemma should determine the collocate position from context, not just forward to a deprecated method).",
+      "confidence": "high",
+      "impact_scope": "module",
+      "fix_scope": "single_edit"
+    },
+    {
+      "dimension": "ai_generated_debt",
+      "identifier": "sef_trace_logging_at_info",
+      "summary": "SemanticFieldExplorer.exploreByPattern emits 7+ INFO-level trace messages that belong at DEBUG",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/query/SemanticFieldExplorer.java"
+      ],
+      "evidence": [
+        "Lines ~120-135 log a banner separator, seed, relation, pattern, head/collocate positions, and parameter block all at INFO on every invocation",
+        "Further INFO logs at each step ('Step 1: Finding collocates...', '  Found N collocates:', per-collocate lines) create a dense trace stream in production"
+      ],
+      "suggestion": "Change the banner and per-step trace messages from logger.info to logger.debug. Keep a single logger.info at entry summarising the operation (e.g., 'Exploring semantic field for seed={} relation={}') and one at exit ('Exploration complete: {} nouns discovered').",
+      "confidence": "high",
+      "impact_scope": "local",
+      "fix_scope": "single_edit"
+    },
+    {
+      "dimension": "ai_generated_debt",
+      "identifier": "duplicate_javadoc_line_radial",
+      "summary": "handleVisualRadial javadoc repeats 'Render radial plot.' as its first two lines",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/api/WordSketchApiServer.java"
+      ],
+      "evidence": [
+        "The method's opening javadoc block begins with two consecutive 'Render radial plot.' lines before the actual description"
+      ],
+      "suggestion": "Remove the duplicate first line from the javadoc.",
+      "confidence": "high",
+      "impact_scope": "local",
+      "fix_scope": "single_edit"
+    }
+  ],
+  "retrospective": {
+    "root_causes": [
+      "The 'clean API' section in BlackLabSnippetParser was added as a naming layer on top of deprecated methods without migrating the implementations, creating wrappers that look purposeful but add no logic",
+      "Step-by-step INFO logging likely left over from interactive development/debugging of the exploration algorithm"
+    ],
+    "likely_symptoms": ["snippet_parser_passthrough_wrappers"],
+    "possible_false_positives": []
+  }
+}

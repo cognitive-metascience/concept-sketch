@@ -1,0 +1,94 @@
+{
+  "batch": "mid_level_elegance",
+  "batch_index": 6,
+  "assessments": {"mid_level_elegance": 68.0},
+  "dimension_notes": {
+    "mid_level_elegance": {
+      "evidence": [
+        "WordSketchApiServer imports 6 inner result classes from SemanticFieldExplorer (ExplorationResult, DiscoveredNoun, CoreCollocate, ComparisonResult, AdjectiveProfile, ExploreOptions) — the API layer is structurally coupled to the query layer's internal DTO namespace (WordSketchApiServer.java lines 13-21)",
+        "handleSemanticFieldExploreMulti (WordSketchApiServer ~line 563) reimplements seed-collocate intersection logic inline (null-init + retainAll loop) instead of delegating to SemanticFieldExplorer.compare() or a dedicated multi-seed method; the semanticFieldExplorer field is present but unused in that handler",
+        "ExploreOptions record carries an 'executor' field that is always passed as null from all three call sites in WordSketchApiServer; callers must know to pass null, making the boundary contract misleading",
+        "Response-building is performed inline in every handler via raw Map<String, Object> construction, with no shared mapper/assembler; the same rounding idiom (Math.round(x * 100.0) / 100.0) appears ~10 times across two handlers",
+        "QueryExecutor interface is a clean seam: all query operations flow through a declared contract, allowing both test injection and production use without leaking BlackLab types to callers"
+      ],
+      "impact_scope": "subsystem",
+      "fix_scope": "multi_file_refactor",
+      "confidence": "high"
+    }
+  },
+  "dimension_judgment": {
+    "mid_level_elegance": {
+      "strengths": [
+        "QueryExecutor interface provides a clean, typed boundary between the api and query layers; BlackLab types never cross it",
+        "HttpApiUtils concentrates all response/CORS/method-guard logic in one place; handlers call it uniformly",
+        "BlackLabQueryExecutor delegates all XML parsing to BlackLabSnippetParser, keeping its own code focused on query orchestration"
+      ],
+      "issue_character": "The seam issues are concentrated at one boundary — the api-to-query handoff around SemanticFieldExplorer — where result DTOs leak outward as inner class imports, the multi-seed handler bypasses the explorer entirely with inline orchestration, and an unused ExploreOptions field silently misleads callers.",
+      "score_rationale": "The QueryExecutor/HttpApiUtils seams are genuinely well-designed and hold up across the codebase. However, the SEF boundary has three distinct problems: inner-class DTO leakage, bypassed orchestration in the multi-seed handler, and a misleading contract field (ExploreOptions.executor always null). These are not isolated rough edges — they represent the primary integration seam for the semantic-field feature, which is the newest and most prominent subsystem. That pulls the score into the 60-70 range: a developer navigating this seam encounters awkward implicit contracts and parallel implementations that undermine confidence in the module boundary."
+    }
+  },
+  "issues": [
+    {
+      "dimension": "mid_level_elegance",
+      "identifier": "sef_inner_class_leakage",
+      "summary": "API layer imports 6 inner result classes from SemanticFieldExplorer, coupling api to query internals",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/api/WordSketchApiServer.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/query/SemanticFieldExplorer.java"
+      ],
+      "evidence": [
+        "WordSketchApiServer lines 13-21 import SemanticFieldExplorer.ComparisonResult, AdjectiveProfile, ExplorationResult, DiscoveredNoun, CoreCollocate, ExploreOptions as named inner classes",
+        "SemanticFieldExplorer javadoc (line 55) acknowledges these should move to a dedicated model/ package"
+      ],
+      "suggestion": "Move ExplorationResult, DiscoveredNoun, CoreCollocate, ComparisonResult, AdjectiveProfile, ExploreOptions, and Edge into a new pl.marcinmilkowski.word_sketch.model package. Update imports in WordSketchApiServer and SemanticFieldExplorer. This severs the api→query inner-class dependency.",
+      "confidence": "high",
+      "impact_scope": "subsystem",
+      "fix_scope": "multi_file_refactor",
+      "root_cause_cluster": "sef_boundary_leakage"
+    },
+    {
+      "dimension": "mid_level_elegance",
+      "identifier": "multiseed_bypasses_explorer",
+      "summary": "handleSemanticFieldExploreMulti reimplements collocate intersection inline, bypassing SemanticFieldExplorer",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/api/WordSketchApiServer.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/query/SemanticFieldExplorer.java"
+      ],
+      "evidence": [
+        "handleSemanticFieldExploreMulti iterates seeds manually, calls executor.executeSurfacePattern per seed, and computes intersection via commonCollocates.retainAll — all inline (~lines 620-650)",
+        "SemanticFieldExplorer.compare() (line 293 of SemanticFieldExplorer) already provides multi-noun comparison with richer output; the multi-seed handler ignores it",
+        "semanticFieldExplorer field is available in the handler's class but is not called in handleSemanticFieldExploreMulti"
+      ],
+      "suggestion": "Add a SemanticFieldExplorer.exploreMulti(Set<String> seeds, String relationName, ...) method that encapsulates seed-loop and intersection logic. Have handleSemanticFieldExploreMulti delegate to it, mirroring how handleSemanticFieldExplore delegates to exploreByPattern.",
+      "confidence": "high",
+      "impact_scope": "subsystem",
+      "fix_scope": "multi_file_refactor",
+      "root_cause_cluster": "sef_boundary_leakage"
+    },
+    {
+      "dimension": "mid_level_elegance",
+      "identifier": "explore_options_null_executor",
+      "summary": "ExploreOptions.executor field is always passed null by all call sites, creating a misleading boundary contract",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/api/WordSketchApiServer.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/query/SemanticFieldExplorer.java"
+      ],
+      "evidence": [
+        "Both ExploreOptions construction sites in WordSketchApiServer pass null for the executor parameter (lines ~503 and ~638)",
+        "ExploreOptions is a record with an 'executor' field; a caller reading the signature cannot know it is always null in production use"
+      ],
+      "suggestion": "Remove the executor field from ExploreOptions if it is always null in practice. If it was intended for override injection, document the expected non-null contract and add a null-guard or assertion in exploreByPattern.",
+      "confidence": "high",
+      "impact_scope": "module",
+      "fix_scope": "single_edit"
+    }
+  ],
+  "retrospective": {
+    "root_causes": [
+      "SemanticFieldExplorer grew result DTOs as inner classes before a dedicated model layer was established; the API layer had to import them directly",
+      "Multi-seed feature was added to the API layer without routing through the existing explorer abstraction, creating a parallel implementation path"
+    ],
+    "likely_symptoms": ["sef_inner_class_leakage", "multiseed_bypasses_explorer"],
+    "possible_false_positives": []
+  }
+}

@@ -1,0 +1,57 @@
+{
+  "batch": "dependency_health",
+  "batch_index": 4,
+  "assessments": {"dependency_health": 72.0},
+  "dimension_notes": {
+    "dependency_health": {
+      "evidence": [
+        "pom.xml declares 4 production runtime dependencies: blacklab-engine 4.0.0, blacklab-query-parser 4.0.0, fastjson2 2.0.25, slf4j-api 2.0.7. This is a minimal, focused dependency set with no duplication of purpose.",
+        "No multiple libraries for the same purpose detected: one JSON library (fastjson2), one logging facade (SLF4J), one corpus engine (BlackLab), no competing HTTP client libraries.",
+        "com.sun.net.httpserver.HttpServer is used directly throughout WordSketchApiServer.java (e.g., 'private com.sun.net.httpserver.HttpServer server;' line 56, 'com.sun.net.httpserver.HttpServer.create(...)' line 74). This is a JDK internal package (com.sun.*) not part of the public Java SE API surface. Its use as a production HTTP server requires JDK-specific behavior that could change across JDK vendors or versions.",
+        "slf4j-simple is used as the runtime logging implementation (scope: runtime). This is a minimal no-configuration logger, appropriate for a standalone tool, but provides no log rotation, file output, or structured logging — acceptable for the project's current scope.",
+        "LongIntHashMap is a custom implementation of a long→int hash map rather than a library. This avoids a boxed HashMap<Long,Integer> for memory-critical collocations storage; the tradeoff is justified given the stated 700MB collocations.bin file and the O(1) lookup requirement.",
+        "No lock file (Maven does not produce lock files by default), so reproducible builds depend on repository availability. Not a code defect but a deployment risk."
+      ],
+      "impact_scope": "codebase",
+      "fix_scope": "multi_file_refactor",
+      "confidence": "high"
+    }
+  },
+  "dimension_judgment": {
+    "dependency_health": {
+      "strengths": [
+        "Minimal dependency footprint: 4 production runtime libraries, each serving a distinct purpose with no overlap.",
+        "No unused dependencies visible in pom.xml relative to what the code imports.",
+        "SLF4J logging facade correctly separates API from implementation (slf4j-simple at runtime scope)."
+      ],
+      "issue_character": "The only notable issue is the use of com.sun.net.httpserver as the production HTTP server, an internal JDK API that is not part of the public Java SE specification and could break on non-Oracle JDKs or future JDK releases.",
+      "score_rationale": "The dependency set is clean and minimal — most codebases of this size have more noise. The single notable issue is the use of a JDK internal API (com.sun.net.httpserver) for the production HTTP server, which is a portability and longevity risk. Replacing it with a standard library (Javalin, Jetty, Undertow, or the newer com.sun.net.httpserver replacement in Java 18+) would resolve the risk with minimal refactoring effort. The score reflects strong fundamentals with one concrete, actionable issue."
+    }
+  },
+  "issues": [
+    {
+      "dimension": "dependency_health",
+      "identifier": "com_sun_httpserver_internal_api",
+      "summary": "com.sun.net.httpserver.HttpServer is a JDK internal API used as the production HTTP server, risking portability and longevity",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/api/WordSketchApiServer.java"
+      ],
+      "evidence": [
+        "WordSketchApiServer declares 'private com.sun.net.httpserver.HttpServer server;' (line 56) and creates it via 'com.sun.net.httpserver.HttpServer.create(new InetSocketAddress(port), 0)' (line 74).",
+        "Handler registration uses 'com.sun.net.httpserver.HttpServer httpServer' as parameter type (line 185) and 'com.sun.net.httpserver.HttpHandler' as the handler type (line 186).",
+        "com.sun.* packages are internal JDK packages, not part of the public Java SE API. While widely available in practice, they are not guaranteed across all JDK vendors (e.g., GraalVM native image, IBM J9) and have been subject to removal or encapsulation in past JDK releases."
+      ],
+      "suggestion": "Replace com.sun.net.httpserver with a proper lightweight HTTP server dependency such as Javalin (which embeds Jetty), Eclipse Jetty embedded, or — if zero added dependencies is preferred — use the jdk.httpserver module explicitly declared in module-info.java (Java 9+ makes the server available via jdk.httpserver module, which is at least explicitly declared rather than a com.sun internal). Add the chosen server as a dependency in pom.xml so the dependency is explicit and version-pinned.",
+      "confidence": "high",
+      "impact_scope": "codebase",
+      "fix_scope": "multi_file_refactor"
+    }
+  ],
+  "retrospective": {
+    "root_causes": [
+      "com.sun.net.httpserver was used because it ships with the JDK and requires no additional dependency, but this convenience comes at the cost of using a non-public API."
+    ],
+    "likely_symptoms": [],
+    "possible_false_positives": []
+  }
+}

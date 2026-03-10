@@ -1,0 +1,95 @@
+{
+  "batch": "high_level_elegance",
+  "batch_index": 2,
+  "assessments": {"high_level_elegance": 55.0},
+  "dimension_notes": {
+    "high_level_elegance": {
+      "evidence": [
+        "WordSketchApiServer.java is 988 lines and performs route registration, OPTIONS/method-check wiring, request parameter parsing, business-logic orchestration, and response-map assembly all in a single class. Ten handler methods are all private, making the class a sealed monolith.",
+        "SemanticFieldExplorer defines 7 public inner classes (ExplorationResult, DiscoveredNoun, CoreCollocate, ComparisonResult, AdjectiveProfile, Edge, ExploreOptions) that act as the data contract between the query and api layers. A class responsible for semantic field computation should not also own the serialization-facing data shapes.",
+        "BlackLabQueryExecutor exposes two public methods not on the QueryExecutor interface — findDependencyCollocations (line 139) and executeDependencyPattern (line 364). Callers that need dependency queries must reference the concrete type or receive no type-safe access. Main.java calls findDependencyCollocations via the executor cast.",
+        "The utils package contains four unrelated concerns: LongIntHashMap (data structure), LogDiceCalculator (statistics), CqlUtils (parser), PosGroup (enum). There is no cohesion principle unifying them beyond 'not fitting elsewhere'.",
+        "Package top-level names (api, config, indexer, query, tagging, utils, viz) map to recognizable domain capabilities. A new engineer can infer purpose from the package name.",
+        "README documents all 4 endpoints, build steps, and CLI commands that match runtime reality. The CLAUDE.md also reflects the actual package structure."
+      ],
+      "impact_scope": "codebase",
+      "fix_scope": "multi_file_refactor",
+      "confidence": "high"
+    }
+  },
+  "dimension_judgment": {
+    "high_level_elegance": {
+      "strengths": [
+        "Package names (api, config, indexer, query, tagging, utils, viz) map directly to domain capabilities — a new engineer can orient quickly.",
+        "README and CLAUDE.md accurately describe the runtime structure, endpoint set, and CLI commands.",
+        "QueryExecutor interface cleanly localizes the corpus-query boundary."
+      ],
+      "issue_character": "The dominant pattern is responsibility concentration: WordSketchApiServer absorbs all HTTP concerns for every endpoint, and SemanticFieldExplorer owns both computation and data-contract types, making both classes far harder to navigate and change than their logical roles require.",
+      "score_rationale": "The top-level package decomposition is sound, and documentation is trustworthy — both would push the score higher. However, the 988-line god-class ApiServer, the absence of a model/DTO layer, and the two concrete-only methods on BlackLabQueryExecutor that escape the interface mean that change boundaries are not predictable at the class level. A codebase where each class's role is clear and change-impact is local would score 70+; this one sits in the mid-50s due to the scale of the ApiServer monolith and the ownership confusion around result types."
+    }
+  },
+  "issues": [
+    {
+      "dimension": "high_level_elegance",
+      "identifier": "api_server_god_class",
+      "summary": "WordSketchApiServer is a 988-line god class mixing route registration, request parsing, business logic, and response building",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/api/WordSketchApiServer.java"
+      ],
+      "evidence": [
+        "988 lines with 10 private handler methods: handleSketchRequest, handleFullSketch, handleRelationQuery, handleFullDependencySketch, handleDependencyRelationQuery, handleRelationQueryInternal, handleSemanticFieldExplore, handleSemanticFieldExploreMulti, handleSemanticField, handleSemanticFieldExamples, handleConcordanceExamples, handleVisualRadial, handleBcqlQueryPost.",
+        "Each handler method performs parameter extraction, validation, business-logic invocation, and response-map assembly. None of these concerns is separately testable without starting an HTTP server.",
+        "handleSemanticFieldExplore alone is ~120 lines (lines 437-557) building a response map field by field."
+      ],
+      "suggestion": "Extract request parsing and response building into dedicated handler classes or at minimum extract a response builder per logical feature area (SketchResponseBuilder, SemanticFieldResponseBuilder). Route registration belongs in a separate configuration method or a dedicated Router class. Each handler should receive already-parsed parameters and return a domain result, not a raw Map.",
+      "confidence": "high",
+      "impact_scope": "subsystem",
+      "fix_scope": "multi_file_refactor"
+    },
+    {
+      "dimension": "high_level_elegance",
+      "identifier": "result_dtos_inside_computation_class",
+      "summary": "SemanticFieldExplorer owns 7 public inner result classes that serve as the api/query data contract, blurring class ownership",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/query/SemanticFieldExplorer.java"
+      ],
+      "evidence": [
+        "7 public static inner classes defined inside SemanticFieldExplorer: ExplorationResult, DiscoveredNoun, CoreCollocate, ComparisonResult, AdjectiveProfile, Edge, ExploreOptions.",
+        "The class Javadoc explicitly acknowledges this: 'These should be extracted to a dedicated model/ package in a future refactor (see issue 28bc8918 / a430f585).'",
+        "WordSketchApiServer imports all 6 of these types to build API responses — the api layer's data shapes are governed by a class in the query package."
+      ],
+      "suggestion": "Create a pl.marcinmilkowski.word_sketch.model package and move all 7 inner classes there as top-level types. SemanticFieldExplorer returns model types; WordSketchApiServer imports from model, not query.",
+      "confidence": "high",
+      "impact_scope": "subsystem",
+      "fix_scope": "multi_file_refactor"
+    },
+    {
+      "dimension": "high_level_elegance",
+      "identifier": "concrete_executor_methods_off_interface",
+      "summary": "BlackLabQueryExecutor exposes findDependencyCollocations and executeDependencyPattern that are not on QueryExecutor, leaking concrete-type dependency to callers",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/query/BlackLabQueryExecutor.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/query/QueryExecutor.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/Main.java"
+      ],
+      "evidence": [
+        "findDependencyCollocations (line 139 of BlackLabQueryExecutor) is public but not declared on QueryExecutor.",
+        "executeDependencyPattern (line 364 of BlackLabQueryExecutor) is public but not on QueryExecutor.",
+        "Main.java calls executor.findDependencyCollocations(...) after casting the QueryExecutor reference to BlackLabQueryExecutor — the interface does not express the full contract."
+      ],
+      "suggestion": "Add findDependencyCollocations and executeDependencyPattern to the QueryExecutor interface (with proper Javadoc), or — if dependency queries are truly BlackLab-specific — introduce a sub-interface DependencyQueryExecutor that BlackLabQueryExecutor implements, so the type hierarchy reflects the actual capability boundary.",
+      "confidence": "high",
+      "impact_scope": "module",
+      "fix_scope": "multi_file_refactor"
+    }
+  ],
+  "retrospective": {
+    "root_causes": [
+      "No separation between HTTP plumbing and business logic led to the ApiServer monolith.",
+      "No model/DTO package caused result types to accumulate as inner classes inside compute classes.",
+      "Interface was designed conservatively (5 methods) and not expanded as new query capabilities were added."
+    ],
+    "likely_symptoms": ["The TODO comment in WordSketchApiServer about moving SEF imports is a symptom of the missing model layer."],
+    "possible_false_positives": []
+  }
+}

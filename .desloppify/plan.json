@@ -1,29 +1,11 @@
 {
   "version": 8,
   "created": "2026-03-09T18:36:05+00:00",
-  "updated": "2026-03-10T17:34:40+00:00",
+  "updated": "2026-03-10T17:53:24+00:00",
   "queue_order": [
-    "review::.::holistic::abstraction_fitness::queryexecutor_default_methods_one_impl::e2ee35a0",
-    "review::.::holistic::abstraction_fitness::snippet_parser_fragmented_extraction_api::321f810b",
-    "review::.::holistic::cross_module_architecture::api_reaches_into_query_internals::42e2a9a1",
-    "review::.::holistic::cross_module_architecture::semantic_explorer_concrete_dep::297b2b52",
-    "review::.::holistic::design_coherence::executeBcqlQuery_mixed_phases::8ed8f0b8",
-    "review::.::holistic::high_level_elegance::query_package_too_broad::a430f585",
-    "review::.::holistic::high_level_elegance::semantic_explorer_dual_role::28bc8918",
-    "review::.::holistic::incomplete_migration::cql_pattern_shim_in_grammar_loader::268346c4",
-    "review::.::holistic::incomplete_migration::legacy_tag_attribute_support::4bf87c03",
-    "review::.::holistic::incomplete_migration::queryexecutor_backward_compat_defaults::aa87d189",
-    "review::.::holistic::initialization_coupling::constructor_file_io::c19c157d",
-    "review::.::holistic::initialization_coupling::hardcoded_relative_grammar_path::e469c854",
-    "review::.::holistic::initialization_coupling::null_grammarconfig_propagation::a32123fd",
-    "review::.::holistic::initialization_coupling::server_split_init::595bb84c",
-    "review::.::holistic::low_level_elegance::radial_plot_inconsistent_string_building::a85c047f",
-    "review::.::holistic::low_level_elegance::simple_tagger_data_in_code::69e0017b",
-    "review::.::holistic::mid_level_elegance::executor_reimplements_snippet_parser::ab68f7f2",
-    "review::.::holistic::mid_level_elegance::explore_vs_explore_multi_pattern_inconsistency::907bf26f",
-    "review::.::holistic::mid_level_elegance::manual_amp_decode_in_handler::24b898b3",
-    "review::.::holistic::package_organization::query_package_overloaded::82270299",
-    "workflow::import-scores"
+    "workflow::import-scores",
+    "workflow::communicate-score",
+    "workflow::create-plan"
   ],
   "deferred": [],
   "skipped": {
@@ -97,45 +79,15 @@
       "review_after": null,
       "skipped_at_scan": 5
     },
-    "review::.::holistic::contract_coherence::handleConcordanceExamples_npe_before_null_check::b8736d55": {
-      "issue_id": "review::.::holistic::contract_coherence::handleConcordanceExamples_npe_before_null_check::b8736d55",
+    "security::src/main/java/pl/marcinmilkowski/word_sketch/indexer/blacklab/BlackLabConllUIndexer.java::security::log_sensitive::src/main/java/pl/marcinmilkowski/word_sketch/indexer/blacklab/BlackLabConllUIndexer.java::116": {
+      "issue_id": "security::src/main/java/pl/marcinmilkowski/word_sketch/indexer/blacklab/BlackLabConllUIndexer.java::security::log_sensitive::src/main/java/pl/marcinmilkowski/word_sketch/indexer/blacklab/BlackLabConllUIndexer.java::116",
       "kind": "permanent",
       "reason": null,
-      "note": "null check and replace on same line, no NPE possible - agent verified lines 852-853",
-      "attestation": "I have actually read WordSketchApiServer.java lines 851-853 and confirmed the null check and replace are on the same conditional line. I am not gaming the score \u2014 this is a genuine false positive.",
-      "created_at": "2026-03-10T16:57:41+00:00",
+      "note": "False positive: logging indexing completion stats (document/token counts) is standard operational logging, not sensitive data",
+      "attestation": "I have actually reviewed this finding; document/token counts are not sensitive data and I am not gaming the score.",
+      "created_at": "2026-03-10T17:53:24+00:00",
       "review_after": null,
-      "skipped_at_scan": 8
-    },
-    "review::.::holistic::test_strategy::test_no_snippet_parser_coverage::e0a544f6": {
-      "issue_id": "review::.::holistic::test_strategy::test_no_snippet_parser_coverage::e0a544f6",
-      "kind": "permanent",
-      "reason": null,
-      "note": "BlackLabSnippetParserTest.java was added in this session with 43 tests - already fixed",
-      "attestation": "I have actually verified that BlackLabSnippetParserTest.java exists at src/test/java/pl/marcinmilkowski/word_sketch/query/BlackLabSnippetParserTest.java with 43 comprehensive tests. I am not gaming the score - this was genuinely fixed.",
-      "created_at": "2026-03-10T17:03:37+00:00",
-      "review_after": null,
-      "skipped_at_scan": 8
-    },
-    "review::.::holistic::test_strategy::test_no_semantic_explorer_coverage::124e0e04": {
-      "issue_id": "review::.::holistic::test_strategy::test_no_semantic_explorer_coverage::124e0e04",
-      "kind": "permanent",
-      "reason": null,
-      "note": "SemanticFieldExplorerTest.java was added in this session with 8 tests - already fixed",
-      "attestation": "I have actually verified that SemanticFieldExplorerTest.java exists at src/test/java/pl/marcinmilkowski/word_sketch/query/SemanticFieldExplorerTest.java with 8 comprehensive tests. I am not gaming the score - this was genuinely fixed.",
-      "created_at": "2026-03-10T17:03:37+00:00",
-      "review_after": null,
-      "skipped_at_scan": 8
-    },
-    "review::.::holistic::authorization_consistency::auth_no_auth_anywhere::9322d8a1": {
-      "issue_id": "review::.::holistic::authorization_consistency::auth_no_auth_anywhere::9322d8a1",
-      "kind": "permanent",
-      "reason": null,
-      "note": "No auth is intentional for local research tool; wildcard CORS is documented design choice",
-      "attestation": "I have actually reviewed the WordSketchApiServer.java and confirmed this is a local-only research tool where no auth is an intentional design choice. I am not gaming the score \u2014 this is accepted debt for a single-user local tool.",
-      "created_at": "2026-03-10T17:03:37+00:00",
-      "review_after": null,
-      "skipped_at_scan": 8
+      "skipped_at_scan": 9
     }
   },
   "active_cluster": null,
@@ -1523,122 +1475,122 @@
     "review::.::holistic::cross_module_architecture::semantic_explorer_concrete_dep::297b2b52": {
       "issue_id": "review::.::holistic::cross_module_architecture::semantic_explorer_concrete_dep::297b2b52",
       "created_at": "2026-03-10T17:02:37+00:00",
-      "cluster": "design-structural",
-      "updated_at": "2026-03-10T17:02:37+00:00"
+      "cluster": null,
+      "updated_at": "2026-03-10T17:51:45+00:00"
     },
     "review::.::holistic::cross_module_architecture::api_reaches_into_query_internals::42e2a9a1": {
       "issue_id": "review::.::holistic::cross_module_architecture::api_reaches_into_query_internals::42e2a9a1",
       "created_at": "2026-03-10T17:02:37+00:00",
-      "cluster": "design-structural",
-      "updated_at": "2026-03-10T17:02:37+00:00"
+      "cluster": null,
+      "updated_at": "2026-03-10T17:51:45+00:00"
     },
     "review::.::holistic::high_level_elegance::query_package_too_broad::a430f585": {
       "issue_id": "review::.::holistic::high_level_elegance::query_package_too_broad::a430f585",
       "created_at": "2026-03-10T17:02:37+00:00",
-      "cluster": "design-structural",
-      "updated_at": "2026-03-10T17:02:37+00:00"
+      "cluster": null,
+      "updated_at": "2026-03-10T17:51:42+00:00"
     },
     "review::.::holistic::high_level_elegance::semantic_explorer_dual_role::28bc8918": {
       "issue_id": "review::.::holistic::high_level_elegance::semantic_explorer_dual_role::28bc8918",
       "created_at": "2026-03-10T17:02:37+00:00",
-      "cluster": "design-structural",
-      "updated_at": "2026-03-10T17:02:37+00:00"
+      "cluster": null,
+      "updated_at": "2026-03-10T17:51:47+00:00"
     },
     "review::.::holistic::abstraction_fitness::queryexecutor_default_methods_one_impl::e2ee35a0": {
       "issue_id": "review::.::holistic::abstraction_fitness::queryexecutor_default_methods_one_impl::e2ee35a0",
       "created_at": "2026-03-10T17:02:37+00:00",
-      "cluster": "design-structural",
-      "updated_at": "2026-03-10T17:02:37+00:00"
+      "cluster": null,
+      "updated_at": "2026-03-10T17:51:37+00:00"
     },
     "review::.::holistic::abstraction_fitness::snippet_parser_fragmented_extraction_api::321f810b": {
       "issue_id": "review::.::holistic::abstraction_fitness::snippet_parser_fragmented_extraction_api::321f810b",
       "created_at": "2026-03-10T17:02:37+00:00",
-      "cluster": "design-structural",
-      "updated_at": "2026-03-10T17:02:37+00:00"
+      "cluster": null,
+      "updated_at": "2026-03-10T17:51:42+00:00"
     },
     "review::.::holistic::low_level_elegance::simple_tagger_data_in_code::69e0017b": {
       "issue_id": "review::.::holistic::low_level_elegance::simple_tagger_data_in_code::69e0017b",
       "created_at": "2026-03-10T17:02:37+00:00",
-      "cluster": "design-structural",
-      "updated_at": "2026-03-10T17:02:37+00:00"
+      "cluster": null,
+      "updated_at": "2026-03-10T17:51:46+00:00"
     },
     "review::.::holistic::low_level_elegance::radial_plot_inconsistent_string_building::a85c047f": {
       "issue_id": "review::.::holistic::low_level_elegance::radial_plot_inconsistent_string_building::a85c047f",
       "created_at": "2026-03-10T17:02:37+00:00",
-      "cluster": "design-structural",
-      "updated_at": "2026-03-10T17:02:37+00:00"
+      "cluster": null,
+      "updated_at": "2026-03-10T17:51:46+00:00"
     },
     "review::.::holistic::mid_level_elegance::executor_reimplements_snippet_parser::ab68f7f2": {
       "issue_id": "review::.::holistic::mid_level_elegance::executor_reimplements_snippet_parser::ab68f7f2",
       "created_at": "2026-03-10T17:02:37+00:00",
-      "cluster": "design-structural",
-      "updated_at": "2026-03-10T17:02:37+00:00"
+      "cluster": null,
+      "updated_at": "2026-03-10T17:51:44+00:00"
     },
     "review::.::holistic::mid_level_elegance::explore_vs_explore_multi_pattern_inconsistency::907bf26f": {
       "issue_id": "review::.::holistic::mid_level_elegance::explore_vs_explore_multi_pattern_inconsistency::907bf26f",
       "created_at": "2026-03-10T17:02:37+00:00",
-      "cluster": "design-structural",
-      "updated_at": "2026-03-10T17:02:37+00:00"
+      "cluster": null,
+      "updated_at": "2026-03-10T17:51:44+00:00"
     },
     "review::.::holistic::mid_level_elegance::manual_amp_decode_in_handler::24b898b3": {
       "issue_id": "review::.::holistic::mid_level_elegance::manual_amp_decode_in_handler::24b898b3",
       "created_at": "2026-03-10T17:03:16+00:00",
-      "cluster": "design-structural",
-      "updated_at": "2026-03-10T17:03:16+00:00"
+      "cluster": null,
+      "updated_at": "2026-03-10T17:51:48+00:00"
     },
     "review::.::holistic::incomplete_migration::cql_pattern_shim_in_grammar_loader::268346c4": {
       "issue_id": "review::.::holistic::incomplete_migration::cql_pattern_shim_in_grammar_loader::268346c4",
       "created_at": "2026-03-10T17:03:16+00:00",
-      "cluster": "design-structural",
-      "updated_at": "2026-03-10T17:03:16+00:00"
+      "cluster": null,
+      "updated_at": "2026-03-10T17:51:38+00:00"
     },
     "review::.::holistic::incomplete_migration::queryexecutor_backward_compat_defaults::aa87d189": {
       "issue_id": "review::.::holistic::incomplete_migration::queryexecutor_backward_compat_defaults::aa87d189",
       "created_at": "2026-03-10T17:03:16+00:00",
-      "cluster": "design-structural",
-      "updated_at": "2026-03-10T17:03:16+00:00"
+      "cluster": null,
+      "updated_at": "2026-03-10T17:51:37+00:00"
     },
     "review::.::holistic::incomplete_migration::legacy_tag_attribute_support::4bf87c03": {
       "issue_id": "review::.::holistic::incomplete_migration::legacy_tag_attribute_support::4bf87c03",
       "created_at": "2026-03-10T17:03:16+00:00",
-      "cluster": "design-structural",
-      "updated_at": "2026-03-10T17:03:16+00:00"
+      "cluster": null,
+      "updated_at": "2026-03-10T17:51:38+00:00"
     },
     "review::.::holistic::package_organization::query_package_overloaded::82270299": {
       "issue_id": "review::.::holistic::package_organization::query_package_overloaded::82270299",
       "created_at": "2026-03-10T17:03:16+00:00",
-      "cluster": "design-structural",
-      "updated_at": "2026-03-10T17:03:16+00:00"
+      "cluster": null,
+      "updated_at": "2026-03-10T17:51:43+00:00"
     },
     "review::.::holistic::initialization_coupling::null_grammarconfig_propagation::a32123fd": {
       "issue_id": "review::.::holistic::initialization_coupling::null_grammarconfig_propagation::a32123fd",
       "created_at": "2026-03-10T17:03:16+00:00",
-      "cluster": "design-structural",
-      "updated_at": "2026-03-10T17:03:16+00:00"
+      "cluster": null,
+      "updated_at": "2026-03-10T17:51:40+00:00"
     },
     "review::.::holistic::initialization_coupling::constructor_file_io::c19c157d": {
       "issue_id": "review::.::holistic::initialization_coupling::constructor_file_io::c19c157d",
       "created_at": "2026-03-10T17:03:16+00:00",
-      "cluster": "design-structural",
-      "updated_at": "2026-03-10T17:03:16+00:00"
+      "cluster": null,
+      "updated_at": "2026-03-10T17:51:39+00:00"
     },
     "review::.::holistic::initialization_coupling::server_split_init::595bb84c": {
       "issue_id": "review::.::holistic::initialization_coupling::server_split_init::595bb84c",
       "created_at": "2026-03-10T17:03:16+00:00",
-      "cluster": "design-structural",
-      "updated_at": "2026-03-10T17:03:16+00:00"
+      "cluster": null,
+      "updated_at": "2026-03-10T17:51:41+00:00"
     },
     "review::.::holistic::initialization_coupling::hardcoded_relative_grammar_path::e469c854": {
       "issue_id": "review::.::holistic::initialization_coupling::hardcoded_relative_grammar_path::e469c854",
       "created_at": "2026-03-10T17:03:16+00:00",
-      "cluster": "design-structural",
-      "updated_at": "2026-03-10T17:03:16+00:00"
+      "cluster": null,
+      "updated_at": "2026-03-10T17:51:39+00:00"
     },
     "review::.::holistic::design_coherence::executeBcqlQuery_mixed_phases::8ed8f0b8": {
       "issue_id": "review::.::holistic::design_coherence::executeBcqlQuery_mixed_phases::8ed8f0b8",
       "created_at": "2026-03-10T17:03:16+00:00",
-      "cluster": "design-structural",
-      "updated_at": "2026-03-10T17:03:16+00:00"
+      "cluster": null,
+      "updated_at": "2026-03-10T17:51:41+00:00"
     },
     "review::.::holistic::convention_outlier::conv_html_decode_oneof::a7c3d3dd": {
       "issue_id": "review::.::holistic::convention_outlier::conv_html_decode_oneof::a7c3d3dd",
@@ -1660,23 +1612,6 @@
     }
   },
   "clusters": {
-    "auto/stale_exclude": {
-      "name": "auto/stale_exclude",
-      "description": "Fix 5 stale exclude issues",
-      "issue_ids": [
-        "stale_exclude::corpora_philscifpsyg_index::corpora_philscifpsyg_index",
-        "stale_exclude::udpipe_bin::udpipe_bin",
-        "stale_exclude::.history::.history",
-        "stale_exclude::viz_correct::viz_correct",
-        "stale_exclude::diagnostics::diagnostics"
-      ],
-      "created_at": "2026-03-09T18:36:05+00:00",
-      "updated_at": "2026-03-09T23:07:30+00:00",
-      "auto": true,
-      "cluster_key": "detector::stale_exclude",
-      "action": "remove stale exclusion or verify it's still needed",
-      "user_modified": false
-    },
     "security": {
       "name": "security",
       "description": "Fix all mechanical security findings",
@@ -2001,17 +1936,6 @@
           "done": true
         }
       ]
-    },
-    "auto/stale-review": {
-      "name": "auto/stale-review",
-      "description": "Re-review 10 stale subjective dimensions",
-      "issue_ids": [],
-      "created_at": "2026-03-09T22:34:43+00:00",
-      "updated_at": "2026-03-09T23:07:30+00:00",
-      "auto": true,
-      "cluster_key": "subjective::stale",
-      "action": "desloppify review --prepare --dimensions abstraction_fitness,ai_generated_debt,api_surface_coherence,convention_outlier,design_coherence,high_level_elegance,incomplete_migration,low_level_elegance,package_organization,test_strategy",
-      "user_modified": false
     },
     "stale-excludes": {
       "name": "stale-excludes",
@@ -2793,28 +2717,7 @@
     "design-structural": {
       "name": "design-structural",
       "description": "Larger structural improvements: package reorganization, SEF constructor injection, QueryExecutor interface cleanup, SnippetParser API consolidation, SimpleTagger lexicon externalization",
-      "issue_ids": [
-        "review::.::holistic::cross_module_architecture::semantic_explorer_concrete_dep::297b2b52",
-        "review::.::holistic::cross_module_architecture::api_reaches_into_query_internals::42e2a9a1",
-        "review::.::holistic::high_level_elegance::query_package_too_broad::a430f585",
-        "review::.::holistic::high_level_elegance::semantic_explorer_dual_role::28bc8918",
-        "review::.::holistic::abstraction_fitness::queryexecutor_default_methods_one_impl::e2ee35a0",
-        "review::.::holistic::abstraction_fitness::snippet_parser_fragmented_extraction_api::321f810b",
-        "review::.::holistic::low_level_elegance::simple_tagger_data_in_code::69e0017b",
-        "review::.::holistic::low_level_elegance::radial_plot_inconsistent_string_building::a85c047f",
-        "review::.::holistic::mid_level_elegance::executor_reimplements_snippet_parser::ab68f7f2",
-        "review::.::holistic::mid_level_elegance::explore_vs_explore_multi_pattern_inconsistency::907bf26f",
-        "review::.::holistic::mid_level_elegance::manual_amp_decode_in_handler::24b898b3",
-        "review::.::holistic::incomplete_migration::cql_pattern_shim_in_grammar_loader::268346c4",
-        "review::.::holistic::incomplete_migration::queryexecutor_backward_compat_defaults::aa87d189",
-        "review::.::holistic::incomplete_migration::legacy_tag_attribute_support::4bf87c03",
-        "review::.::holistic::package_organization::query_package_overloaded::82270299",
-        "review::.::holistic::initialization_coupling::null_grammarconfig_propagation::a32123fd",
-        "review::.::holistic::initialization_coupling::constructor_file_io::c19c157d",
-        "review::.::holistic::initialization_coupling::server_split_init::595bb84c",
-        "review::.::holistic::initialization_coupling::hardcoded_relative_grammar_path::e469c854",
-        "review::.::holistic::design_coherence::executeBcqlQuery_mixed_phases::8ed8f0b8"
-      ],
+      "issue_ids": [],
       "created_at": "2026-03-10T17:02:37+00:00",
       "updated_at": "2026-03-10T17:06:14+00:00",
       "auto": false,
@@ -2832,7 +2735,8 @@
             "aa87d189",
             "e2ee35a0",
             "24b898b3"
-          ]
+          ],
+          "done": true
         },
         {
           "title": "Fix initialization coupling: null grammarConfig propagation and hardcoded paths",
@@ -2843,7 +2747,8 @@
             "e469c854",
             "595bb84c",
             "c19c157d"
-          ]
+          ],
+          "done": true
         },
         {
           "title": "Refactor executeBcqlQuery phases and fix BlackLabQueryExecutor SnippetParser duplication",
@@ -2852,7 +2757,8 @@
           "issue_refs": [
             "8ed8f0b8",
             "ab68f7f2"
-          ]
+          ],
+          "done": true
         },
         {
           "title": "Package organization and SimpleTagger lexicon externalization",
@@ -2866,7 +2772,8 @@
             "28bc8918",
             "321f810b",
             "69e0017b"
-          ]
+          ],
+          "done": true
         }
       ],
       "depends_on_clusters": [
@@ -4098,6 +4005,1266 @@
       "original_summary": "Large file: large (854 LOC)",
       "status": "superseded",
       "superseded_at": "2026-03-09T23:07:30+00:00",
+      "remapped_to": null,
+      "candidates": []
+    },
+    "review::.::holistic::abstraction_fitness::dead_token_matching_methods::7de930fa": {
+      "original_id": "review::.::holistic::abstraction_fitness::dead_token_matching_methods::7de930fa",
+      "original_detector": "review",
+      "original_file": ".",
+      "original_summary": "Token.matchesTag/matchesLemma/matchesWord/matchesPosGroup are never called; duplicate and diverge from AbstractPatternPredicate",
+      "status": "superseded",
+      "superseded_at": "2026-03-10T17:52:18+00:00",
+      "remapped_to": null,
+      "candidates": []
+    },
+    "review::.::holistic::abstraction_fitness::hollow_postagger_interface::5f270cc8": {
+      "original_id": "review::.::holistic::abstraction_fitness::hollow_postagger_interface::5f270cc8",
+      "original_detector": "review",
+      "original_file": ".",
+      "original_summary": "PosTagger interface has one implementation (SimpleTagger) that is always referenced by its concrete type, making the interface earn no indirection benefit",
+      "status": "superseded",
+      "superseded_at": "2026-03-10T17:52:18+00:00",
+      "remapped_to": null,
+      "candidates": []
+    },
+    "review::.::holistic::abstraction_fitness::not_predicate_redundant_with_negate_default::66a1ad26": {
+      "original_id": "review::.::holistic::abstraction_fitness::not_predicate_redundant_with_negate_default::66a1ad26",
+      "original_detector": "review",
+      "original_file": ".",
+      "original_summary": "NotPredicate class duplicates TokenPredicate.negate() default method; neither is clearly canonical",
+      "status": "superseded",
+      "superseded_at": "2026-03-10T17:52:18+00:00",
+      "remapped_to": null,
+      "candidates": []
+    },
+    "review::.::holistic::abstraction_fitness::queryexecutor_default_methods_one_impl::e2ee35a0": {
+      "original_id": "review::.::holistic::abstraction_fitness::queryexecutor_default_methods_one_impl::e2ee35a0",
+      "original_detector": "review",
+      "original_file": ".",
+      "original_summary": "QueryExecutor declares executeBcqlQuery and executeSurfacePattern as default methods that fall back to lower-level calls, but there is only one real implementation, making the defaults unused scaffolding",
+      "status": "superseded",
+      "superseded_at": "2026-03-10T17:52:18+00:00",
+      "remapped_to": null,
+      "candidates": []
+    },
+    "review::.::holistic::abstraction_fitness::relation_type_leaks_query_language::ca604134": {
+      "original_id": "review::.::holistic::abstraction_fitness::relation_type_leaks_query_language::ca604134",
+      "original_detector": "review",
+      "original_file": ".",
+      "original_summary": "QueryExecutor.RelationType embeds BCQL/CQL pattern strings inside the interface, leaking a concrete query language into the abstraction boundary",
+      "status": "superseded",
+      "superseded_at": "2026-03-10T17:52:18+00:00",
+      "remapped_to": null,
+      "candidates": []
+    },
+    "review::.::holistic::abstraction_fitness::semantic_explorer_instantiated_inline_per_request::160c69e5": {
+      "original_id": "review::.::holistic::abstraction_fitness::semantic_explorer_instantiated_inline_per_request::160c69e5",
+      "original_detector": "review",
+      "original_file": ".",
+      "original_summary": "WordSketchApiServer instantiates SemanticFieldExplorer in four separate handler methods, creating a new wrapper object per request that adds no state beyond the already-held executor reference",
+      "status": "superseded",
+      "superseded_at": "2026-03-10T17:52:18+00:00",
+      "remapped_to": null,
+      "candidates": []
+    },
+    "review::.::holistic::abstraction_fitness::snippet_parser_fragmented_extraction_api::321f810b": {
+      "original_id": "review::.::holistic::abstraction_fitness::snippet_parser_fragmented_extraction_api::321f810b",
+      "original_detector": "review",
+      "original_file": ".",
+      "original_summary": "BlackLabSnippetParser exposes seven near-identical methods for extracting lemmas from XML or text at a given position, creating a fragmented API with overlapping responsibilities",
+      "status": "superseded",
+      "superseded_at": "2026-03-10T17:52:18+00:00",
+      "remapped_to": null,
+      "candidates": []
+    },
+    "review::.::holistic::ai_generated_debt::dead_copula_infrastructure::822833ee": {
+      "original_id": "review::.::holistic::ai_generated_debt::dead_copula_infrastructure::822833ee",
+      "original_detector": "review",
+      "original_file": ".",
+      "original_summary": "GrammarConfigLoader retains copulas/copulaSet fields and getCopulas()/isCopularVerb() methods that always return empty/false",
+      "status": "superseded",
+      "superseded_at": "2026-03-10T17:52:18+00:00",
+      "remapped_to": null,
+      "candidates": []
+    },
+    "review::.::holistic::ai_generated_debt::dead_grammar_config_methods::68d46c6f": {
+      "original_id": "review::.::holistic::ai_generated_debt::dead_grammar_config_methods::68d46c6f",
+      "original_detector": "review",
+      "original_file": ".",
+      "original_summary": "GrammarConfigLoader.getRelationsForHeadPos(), findRelationIdByType(), and RelationConfig.isLegacyFormat() are defined but never called",
+      "status": "superseded",
+      "superseded_at": "2026-03-10T17:52:18+00:00",
+      "remapped_to": null,
+      "candidates": []
+    },
+    "review::.::holistic::ai_generated_debt::dead_log_dice_scoring_methods::06443025": {
+      "original_id": "review::.::holistic::ai_generated_debt::dead_log_dice_scoring_methods::06443025",
+      "original_detector": "review",
+      "original_file": ".",
+      "original_summary": "LogDiceCalculator ships four extra scoring measures (MI3, TScore, LogLikelihood, FrequencyAggregator, CollocationResult) that are exercised only in tests and never used in production",
+      "status": "superseded",
+      "superseded_at": "2026-03-10T17:52:18+00:00",
+      "remapped_to": null,
+      "candidates": []
+    },
+    "review::.::holistic::ai_generated_debt::dead_relation_def_class::cd282c18": {
+      "original_id": "review::.::holistic::ai_generated_debt::dead_relation_def_class::cd282c18",
+      "original_detector": "review",
+      "original_file": ".",
+      "original_summary": "RelationDef inner static class in WordSketchApiServer is defined but never instantiated",
+      "status": "superseded",
+      "superseded_at": "2026-03-10T17:52:18+00:00",
+      "remapped_to": null,
+      "candidates": []
+    },
+    "review::.::holistic::ai_generated_debt::dead_to_legacy_relation_type::2875ee92": {
+      "original_id": "review::.::holistic::ai_generated_debt::dead_to_legacy_relation_type::2875ee92",
+      "original_detector": "review",
+      "original_file": ".",
+      "original_summary": "toLegacyRelationType() private method defined but never called",
+      "status": "superseded",
+      "superseded_at": "2026-03-10T17:52:18+00:00",
+      "remapped_to": null,
+      "candidates": []
+    },
+    "review::.::holistic::ai_generated_debt::duplicate_explore_algorithm::bff0195f": {
+      "original_id": "review::.::holistic::ai_generated_debt::duplicate_explore_algorithm::bff0195f",
+      "original_detector": "review",
+      "original_file": ".",
+      "original_summary": "SemanticFieldExplorer.explore() duplicates exploreByPattern() logic (~150 lines) and is never called from outside the class",
+      "status": "superseded",
+      "superseded_at": "2026-03-10T17:52:18+00:00",
+      "remapped_to": null,
+      "candidates": []
+    },
+    "review::.::holistic::ai_generated_debt::duplicate_relation_mapping_switch::90d6143d": {
+      "original_id": "review::.::holistic::ai_generated_debt::duplicate_relation_mapping_switch::90d6143d",
+      "original_detector": "review",
+      "original_file": ".",
+      "original_summary": "Identical relation-name-to-ID mapping switch is copy-pasted into handleSemanticFieldExplore and handleSemanticFieldExploreMulti",
+      "status": "superseded",
+      "superseded_at": "2026-03-10T17:52:18+00:00",
+      "remapped_to": null,
+      "candidates": []
+    },
+    "review::.::holistic::ai_generated_debt::logdice_long_overload_pass_through::31abc1a0": {
+      "original_id": "review::.::holistic::ai_generated_debt::logdice_long_overload_pass_through::31abc1a0",
+      "original_detector": "review",
+      "original_file": ".",
+      "original_summary": "LogDiceCalculator.compute(long, long, long) is a pure cast-and-delegate with a restating Javadoc",
+      "status": "superseded",
+      "superseded_at": "2026-03-10T17:52:18+00:00",
+      "remapped_to": null,
+      "candidates": []
+    },
+    "review::.::holistic::ai_generated_debt::nosy_entry_logging_explore_multi::b875d286": {
+      "original_id": "review::.::holistic::ai_generated_debt::nosy_entry_logging_explore_multi::b875d286",
+      "original_detector": "review",
+      "original_file": ".",
+      "original_summary": "handleSemanticFieldExploreMulti logs its own entry and every input parameter at INFO level before doing any work",
+      "status": "superseded",
+      "superseded_at": "2026-03-10T17:52:18+00:00",
+      "remapped_to": null,
+      "candidates": []
+    },
+    "review::.::holistic::ai_generated_debt::overbuilt_builder_pattern::692801fb": {
+      "original_id": "review::.::holistic::ai_generated_debt::overbuilt_builder_pattern::692801fb",
+      "original_detector": "review",
+      "original_file": ".",
+      "original_summary": "WordSketchApiServer uses a full 5-method Builder inner class for a 4-field object constructed exactly once",
+      "status": "superseded",
+      "superseded_at": "2026-03-10T17:52:18+00:00",
+      "remapped_to": null,
+      "candidates": []
+    },
+    "review::.::holistic::ai_generated_debt::parallel_token_matching_logic::3ce9ba20": {
+      "original_id": "review::.::holistic::ai_generated_debt::parallel_token_matching_logic::3ce9ba20",
+      "original_detector": "review",
+      "original_file": ".",
+      "original_summary": "Token class duplicates pattern-matching logic already present in the AbstractPatternPredicate hierarchy",
+      "status": "superseded",
+      "superseded_at": "2026-03-10T17:52:18+00:00",
+      "remapped_to": null,
+      "candidates": []
+    },
+    "review::.::holistic::ai_generated_debt::pass_through_wrappers_grammar_config::4afb5e48": {
+      "original_id": "review::.::holistic::ai_generated_debt::pass_through_wrappers_grammar_config::4afb5e48",
+      "original_detector": "review",
+      "original_file": ".",
+      "original_summary": "extractXposPattern and extractPosPattern in GrammarConfigLoader.RelationConfig are single-line pass-through wrappers with no added logic",
+      "status": "superseded",
+      "superseded_at": "2026-03-10T17:52:18+00:00",
+      "remapped_to": null,
+      "candidates": []
+    },
+    "review::.::holistic::ai_generated_debt::snippet_parser_restating_javadoc::08940874": {
+      "original_id": "review::.::holistic::ai_generated_debt::snippet_parser_restating_javadoc::08940874",
+      "original_detector": "review",
+      "original_file": ".",
+      "original_summary": "BlackLabSnippetParser carries Javadoc comments on most methods that merely restate the method signature without adding insight",
+      "status": "superseded",
+      "superseded_at": "2026-03-10T17:52:18+00:00",
+      "remapped_to": null,
+      "candidates": []
+    },
+    "review::.::holistic::ai_generated_debt::unused_raw_variable::23a92d60": {
+      "original_id": "review::.::holistic::ai_generated_debt::unused_raw_variable::23a92d60",
+      "original_detector": "review",
+      "original_file": ".",
+      "original_summary": "boolean raw is declared and populated but never used in handleBcqlQueryPost",
+      "status": "superseded",
+      "superseded_at": "2026-03-10T17:52:18+00:00",
+      "remapped_to": null,
+      "candidates": []
+    },
+    "review::.::holistic::api_surface_coherence::api_exploreByPattern_arity::dea22e2a": {
+      "original_id": "review::.::holistic::api_surface_coherence::api_exploreByPattern_arity::dea22e2a",
+      "original_detector": "review",
+      "original_file": ".",
+      "original_summary": "SemanticFieldExplorer.exploreByPattern takes 10 parameters, far exceeding the readable API boundary",
+      "status": "superseded",
+      "superseded_at": "2026-03-10T17:52:18+00:00",
+      "remapped_to": null,
+      "candidates": []
+    },
+    "review::.::holistic::api_surface_coherence::api_inconsistent_minlogdice_default::06003e11": {
+      "original_id": "review::.::holistic::api_surface_coherence::api_inconsistent_minlogdice_default::06003e11",
+      "original_detector": "review",
+      "original_file": ".",
+      "original_summary": "Sibling endpoints /explore and /explore-multi use different defaults for min_logdice (3.0 vs 2.0)",
+      "status": "superseded",
+      "superseded_at": "2026-03-10T17:52:18+00:00",
+      "remapped_to": null,
+      "candidates": []
+    },
+    "review::.::holistic::api_surface_coherence::api_overlapping_query_methods::d663abcb": {
+      "original_id": "review::.::holistic::api_surface_coherence::api_overlapping_query_methods::d663abcb",
+      "original_detector": "review",
+      "original_file": ".",
+      "original_summary": "QueryExecutor interface defines three overlapping query methods with unclear boundaries between findCollocations, executeBcqlQuery, and executeSurfacePattern",
+      "status": "superseded",
+      "superseded_at": "2026-03-10T17:52:18+00:00",
+      "remapped_to": null,
+      "candidates": []
+    },
+    "review::.::holistic::api_surface_coherence::api_unguarded_number_parse::f539885d": {
+      "original_id": "review::.::holistic::api_surface_coherence::api_unguarded_number_parse::f539885d",
+      "original_detector": "review",
+      "original_file": ".",
+      "original_summary": "Integer.parseInt and Double.parseDouble are called on raw user query parameters without error handling, producing 500 responses for malformed input",
+      "status": "superseded",
+      "superseded_at": "2026-03-10T17:52:18+00:00",
+      "remapped_to": null,
+      "candidates": []
+    },
+    "review::.::holistic::api_surface_coherence::bcql_error_returns_200::16250503": {
+      "original_id": "review::.::holistic::api_surface_coherence::bcql_error_returns_200::16250503",
+      "original_detector": "review",
+      "original_file": ".",
+      "original_summary": "BCQL error catch block returns HTTP 200 with {\"error\":...} instead of an error status code",
+      "status": "superseded",
+      "superseded_at": "2026-03-10T17:52:18+00:00",
+      "remapped_to": null,
+      "candidates": []
+    },
+    "review::.::holistic::api_surface_coherence::concordance_highlighted_positions_missing::731aab0f": {
+      "original_id": "review::.::holistic::api_surface_coherence::concordance_highlighted_positions_missing::731aab0f",
+      "original_detector": "review",
+      "original_file": ".",
+      "original_summary": "Concordance response documented with HTML highlighting and position arrays but code returns plain text and omits position fields",
+      "status": "superseded",
+      "superseded_at": "2026-03-10T17:52:18+00:00",
+      "remapped_to": null,
+      "candidates": []
+    },
+    "review::.::holistic::api_surface_coherence::cors_missing_from_error_responses::0fde8aad": {
+      "original_id": "review::.::holistic::api_surface_coherence::cors_missing_from_error_responses::0fde8aad",
+      "original_detector": "review",
+      "original_file": ".",
+      "original_summary": "sendError() omits Access-Control-Allow-Origin header, breaking browser CORS for all error responses",
+      "status": "superseded",
+      "superseded_at": "2026-03-10T17:52:18+00:00",
+      "remapped_to": null,
+      "candidates": []
+    },
+    "review::.::holistic::api_surface_coherence::duplicate_relation_alias_mapping::1eabe767": {
+      "original_id": "review::.::holistic::api_surface_coherence::duplicate_relation_alias_mapping::1eabe767",
+      "original_detector": "review",
+      "original_file": ".",
+      "original_summary": "Legacy relation alias switch is duplicated verbatim in handleSemanticFieldExplore and handleSemanticFieldExploreMulti",
+      "status": "superseded",
+      "superseded_at": "2026-03-10T17:52:18+00:00",
+      "remapped_to": null,
+      "candidates": []
+    },
+    "review::.::holistic::api_surface_coherence::edge_weight_field_naming_inconsistency::9242e195": {
+      "original_id": "review::.::holistic::api_surface_coherence::edge_weight_field_naming_inconsistency::9242e195",
+      "original_detector": "review",
+      "original_file": ".",
+      "original_summary": "Edge objects use 'logDice' key in /api/semantic-field but 'weight' in both explore endpoints",
+      "status": "superseded",
+      "superseded_at": "2026-03-10T17:52:18+00:00",
+      "remapped_to": null,
+      "candidates": []
+    },
+    "review::.::holistic::api_surface_coherence::phantom_grammar_active_endpoint::92337fef": {
+      "original_id": "review::.::holistic::api_surface_coherence::phantom_grammar_active_endpoint::92337fef",
+      "original_detector": "review",
+      "original_file": ".",
+      "original_summary": "README documents /api/grammar/active which is never registered in the server",
+      "status": "superseded",
+      "superseded_at": "2026-03-10T17:52:18+00:00",
+      "remapped_to": null,
+      "candidates": []
+    },
+    "review::.::holistic::api_surface_coherence::readme_startup_snippet_incomplete::74787ee2": {
+      "original_id": "review::.::holistic::api_surface_coherence::readme_startup_snippet_incomplete::74787ee2",
+      "original_detector": "review",
+      "original_file": ".",
+      "original_summary": "README startup-output example lists only 4 endpoints; the server actually registers 11+",
+      "status": "superseded",
+      "superseded_at": "2026-03-10T17:52:18+00:00",
+      "remapped_to": null,
+      "candidates": []
+    },
+    "review::.::holistic::api_surface_coherence::sketch_query_params_undocumented_unimplemented::74a31a26": {
+      "original_id": "review::.::holistic::api_surface_coherence::sketch_query_params_undocumented_unimplemented::74a31a26",
+      "original_detector": "review",
+      "original_file": ".",
+      "original_summary": "README documents ?pos, ?limit, and ?scoring params for /api/sketch/{lemma} but server ignores them all",
+      "status": "superseded",
+      "superseded_at": "2026-03-10T17:52:18+00:00",
+      "remapped_to": null,
+      "candidates": []
+    },
+    "review::.::holistic::authorization_consistency::auth_no_auth_anywhere::9322d8a1": {
+      "original_id": "review::.::holistic::authorization_consistency::auth_no_auth_anywhere::9322d8a1",
+      "original_detector": "review",
+      "original_file": ".",
+      "original_summary": "No authentication or authorization is applied to any endpoint; wildcard CORS is universal",
+      "status": "superseded",
+      "superseded_at": "2026-03-10T17:52:18+00:00",
+      "remapped_to": null,
+      "candidates": []
+    },
+    "review::.::holistic::contract_coherence::getCorpusSize_always_returns_zero::0e1a2550": {
+      "original_id": "review::.::holistic::contract_coherence::getCorpusSize_always_returns_zero::0e1a2550",
+      "original_detector": "review",
+      "original_file": ".",
+      "original_summary": "BlackLabQueryExecutor.getCorpusSize() always returns 0L, silently breaking any caller that expects a real corpus size",
+      "status": "superseded",
+      "superseded_at": "2026-03-10T17:52:18+00:00",
+      "remapped_to": null,
+      "candidates": []
+    },
+    "review::.::holistic::contract_coherence::handleConcordanceExamples_npe_before_null_check::b8736d55": {
+      "original_id": "review::.::holistic::contract_coherence::handleConcordanceExamples_npe_before_null_check::b8736d55",
+      "original_detector": "review",
+      "original_file": ".",
+      "original_summary": "word1.replace(\"&amp;\",\"&\") at line 851 is called before the null-check at line 856, causing NullPointerException when word1 is absent from query params",
+      "status": "superseded",
+      "superseded_at": "2026-03-10T17:52:18+00:00",
+      "remapped_to": null,
+      "candidates": []
+    },
+    "review::.::holistic::contract_coherence::multiseed_skips_headword_substitution::f64a0eb4": {
+      "original_id": "review::.::holistic::contract_coherence::multiseed_skips_headword_substitution::f64a0eb4",
+      "original_detector": "review",
+      "original_file": ".",
+      "original_summary": "handleSemanticFieldExploreMulti passes the raw pattern template to executeSurfacePattern for each seed, unlike the single-seed handler which calls getFullPattern(seed) first",
+      "status": "superseded",
+      "superseded_at": "2026-03-10T17:52:18+00:00",
+      "remapped_to": null,
+      "candidates": []
+    },
+    "review::.::holistic::convention_outlier::blacklabsnippetparser-package-private::502a1f74": {
+      "original_id": "review::.::holistic::convention_outlier::blacklabsnippetparser-package-private::502a1f74",
+      "original_detector": "review",
+      "original_file": ".",
+      "original_summary": "BlackLabSnippetParser has no public visibility modifier, making it package-private unlike all other main-source classes",
+      "status": "superseded",
+      "superseded_at": "2026-03-10T17:52:18+00:00",
+      "remapped_to": null,
+      "candidates": []
+    },
+    "review::.::holistic::convention_outlier::conv_dto_encapsulation_split::1f248689": {
+      "original_id": "review::.::holistic::convention_outlier::conv_dto_encapsulation_split::1f248689",
+      "original_detector": "review",
+      "original_file": ".",
+      "original_summary": "SemanticFieldExplorer inner DTO classes use public final fields while sibling QueryResults DTOs use private fields with getters",
+      "status": "superseded",
+      "superseded_at": "2026-03-10T17:52:18+00:00",
+      "remapped_to": null,
+      "candidates": []
+    },
+    "review::.::holistic::convention_outlier::conv_html_decode_oneof::a7c3d3dd": {
+      "original_id": "review::.::holistic::convention_outlier::conv_html_decode_oneof::a7c3d3dd",
+      "original_detector": "review",
+      "original_file": ".",
+      "original_summary": "handleConcordanceExamples applies manual '&amp;' replacement that no other handler performs",
+      "status": "superseded",
+      "superseded_at": "2026-03-10T17:52:18+00:00",
+      "remapped_to": null,
+      "candidates": []
+    },
+    "review::.::holistic::convention_outlier::conv_unimplemented_corpussize::19f1f331": {
+      "original_id": "review::.::holistic::convention_outlier::conv_unimplemented_corpussize::19f1f331",
+      "original_detector": "review",
+      "original_file": ".",
+      "original_summary": "BlackLabQueryExecutor.getCorpusSize() returns hardcoded 0L and is not declared on the QueryExecutor interface",
+      "status": "superseded",
+      "superseded_at": "2026-03-10T17:52:18+00:00",
+      "remapped_to": null,
+      "candidates": []
+    },
+    "review::.::holistic::convention_outlier::indexer-system-out-instead-of-logger::8adb12bf": {
+      "original_id": "review::.::holistic::convention_outlier::indexer-system-out-instead-of-logger::8adb12bf",
+      "original_detector": "review",
+      "original_file": ".",
+      "original_summary": "BlackLabConllUIndexer uses System.out/System.err instead of SLF4J, unlike every other non-trivial class",
+      "status": "superseded",
+      "superseded_at": "2026-03-10T17:52:18+00:00",
+      "remapped_to": null,
+      "candidates": []
+    },
+    "review::.::holistic::convention_outlier::relations-validation-not-junit::4fcd8622": {
+      "original_id": "review::.::holistic::convention_outlier::relations-validation-not-junit::4fcd8622",
+      "original_detector": "review",
+      "original_file": ".",
+      "original_summary": "RelationsValidationTest.java is a standalone script with main() and no JUnit annotations, misleadingly named as a test",
+      "status": "superseded",
+      "superseded_at": "2026-03-10T17:52:18+00:00",
+      "remapped_to": null,
+      "candidates": []
+    },
+    "review::.::holistic::convention_outlier::test-prefix-naming::b9d02bec": {
+      "original_id": "review::.::holistic::convention_outlier::test-prefix-naming::b9d02bec",
+      "original_detector": "review",
+      "original_file": ".",
+      "original_summary": "Two test files use 'Test*' prefix instead of the project-wide '*Test' suffix convention",
+      "status": "superseded",
+      "superseded_at": "2026-03-10T17:52:18+00:00",
+      "remapped_to": null,
+      "candidates": []
+    },
+    "review::.::holistic::convention_outlier::wildcard-import-inconsistency::e250c00a": {
+      "original_id": "review::.::holistic::convention_outlier::wildcard-import-inconsistency::e250c00a",
+      "original_detector": "review",
+      "original_file": ".",
+      "original_summary": "Seven source files use 'import java.util.*' wildcard while the majority use fully-qualified specific imports",
+      "status": "superseded",
+      "superseded_at": "2026-03-10T17:52:18+00:00",
+      "remapped_to": null,
+      "candidates": []
+    },
+    "review::.::holistic::cross_module_architecture::api_reaches_into_query_internals::42e2a9a1": {
+      "original_id": "review::.::holistic::cross_module_architecture::api_reaches_into_query_internals::42e2a9a1",
+      "original_detector": "review",
+      "original_file": ".",
+      "original_summary": "WordSketchApiServer imports five inner result classes from SemanticFieldExplorer, tightly coupling the API layer to exploration implementation internals",
+      "status": "superseded",
+      "superseded_at": "2026-03-10T17:52:18+00:00",
+      "remapped_to": null,
+      "candidates": []
+    },
+    "review::.::holistic::cross_module_architecture::semantic_explorer_concrete_dep::297b2b52": {
+      "original_id": "review::.::holistic::cross_module_architecture::semantic_explorer_concrete_dep::297b2b52",
+      "original_detector": "review",
+      "original_file": ".",
+      "original_summary": "SemanticFieldExplorer's primary constructor directly instantiates BlackLabQueryExecutor, bypassing the QueryExecutor abstraction it also accepts",
+      "status": "superseded",
+      "superseded_at": "2026-03-10T17:52:18+00:00",
+      "remapped_to": null,
+      "candidates": []
+    },
+    "review::.::holistic::dependency_health::fastjson_wrong_artifact_id::a58ece02": {
+      "original_id": "review::.::holistic::dependency_health::fastjson_wrong_artifact_id::a58ece02",
+      "original_detector": "review",
+      "original_file": ".",
+      "original_summary": "pom.xml declares com.alibaba:fastjson at version 2.0.25, but all code imports from com.alibaba.fastjson2.* \u2014 the correct artifact for that package is com.alibaba:fastjson2",
+      "status": "superseded",
+      "superseded_at": "2026-03-10T17:52:18+00:00",
+      "remapped_to": null,
+      "candidates": []
+    },
+    "review::.::holistic::dependency_health::unused_lucene_version_property::cee88873": {
+      "original_id": "review::.::holistic::dependency_health::unused_lucene_version_property::cee88873",
+      "original_detector": "review",
+      "original_file": ".",
+      "original_summary": "pom.xml defines a lucene.version property (8.11.1) that is never used as a direct dependency, creating a false impression of the Lucene version in use",
+      "status": "superseded",
+      "superseded_at": "2026-03-10T17:52:18+00:00",
+      "remapped_to": null,
+      "candidates": []
+    },
+    "review::.::holistic::design_coherence::dead_inner_class_relationdef::db1c332e": {
+      "original_id": "review::.::holistic::design_coherence::dead_inner_class_relationdef::db1c332e",
+      "original_detector": "review",
+      "original_file": ".",
+      "original_summary": "RelationDef private inner class in WordSketchApiServer is defined but never instantiated or referenced",
+      "status": "superseded",
+      "superseded_at": "2026-03-10T17:52:18+00:00",
+      "remapped_to": null,
+      "candidates": []
+    },
+    "review::.::holistic::design_coherence::debug_prefix_in_logger_messages::6e60cbde": {
+      "original_id": "review::.::holistic::design_coherence::debug_prefix_in_logger_messages::6e60cbde",
+      "original_detector": "review",
+      "original_file": ".",
+      "original_summary": "logger.debug() calls embed literal 'DEBUG:' text prefix in message strings, which is redundant and inconsistent with standard logging idiom",
+      "status": "superseded",
+      "superseded_at": "2026-03-10T17:52:18+00:00",
+      "remapped_to": null,
+      "candidates": []
+    },
+    "review::.::holistic::design_coherence::dual_relation_lookup_api::d1bab8d0": {
+      "original_id": "review::.::holistic::design_coherence::dual_relation_lookup_api::d1bab8d0",
+      "original_detector": "review",
+      "original_file": ".",
+      "original_summary": "GrammarConfigLoader exposes both getRelation() returning Optional and getRelationById() returning nullable for the same lookup",
+      "status": "superseded",
+      "superseded_at": "2026-03-10T17:52:18+00:00",
+      "remapped_to": null,
+      "candidates": []
+    },
+    "review::.::holistic::design_coherence::duplicate_relation_query_handlers::e78fe5ee": {
+      "original_id": "review::.::holistic::design_coherence::duplicate_relation_query_handlers::e78fe5ee",
+      "original_detector": "review",
+      "original_file": ".",
+      "original_summary": "handleRelationQuery and handleDependencyRelationQuery are structurally identical methods duplicated with only relationType string differing",
+      "status": "superseded",
+      "superseded_at": "2026-03-10T17:52:18+00:00",
+      "remapped_to": null,
+      "candidates": []
+    },
+    "review::.::holistic::design_coherence::duplicate_relations_endpoint_lambdas::25a90bd1": {
+      "original_id": "review::.::holistic::design_coherence::duplicate_relations_endpoint_lambdas::25a90bd1",
+      "original_detector": "review",
+      "original_file": ".",
+      "original_summary": "The /api/relations and /api/relations/dep endpoint lambdas duplicate the same loop body, differing only in the relationType filter",
+      "status": "superseded",
+      "superseded_at": "2026-03-10T17:52:18+00:00",
+      "remapped_to": null,
+      "candidates": []
+    },
+    "review::.::holistic::design_coherence::executeBcqlQuery_mixed_phases::8ed8f0b8": {
+      "original_id": "review::.::holistic::design_coherence::executeBcqlQuery_mixed_phases::8ed8f0b8",
+      "original_detector": "review",
+      "original_file": ".",
+      "original_summary": "executeBcqlQuery in BlackLabQueryExecutor conflates three distinct phases in one 100-line method: hit collection, collocate frequency accumulation, and result ranking",
+      "status": "superseded",
+      "superseded_at": "2026-03-10T17:52:18+00:00",
+      "remapped_to": null,
+      "candidates": []
+    },
+    "review::.::holistic::design_coherence::explorer_double_close::be452aa8": {
+      "original_id": "review::.::holistic::design_coherence::explorer_double_close::be452aa8",
+      "original_detector": "review",
+      "original_file": ".",
+      "original_summary": "SemanticFieldExplorer.close() unconditionally closes an injected executor it does not own, causing double-close at server shutdown",
+      "status": "superseded",
+      "superseded_at": "2026-03-10T17:52:18+00:00",
+      "remapped_to": null,
+      "candidates": []
+    },
+    "review::.::holistic::design_coherence::handleSemanticFieldExplore_too_many_responsibilities::a798cc0e": {
+      "original_id": "review::.::holistic::design_coherence::handleSemanticFieldExplore_too_many_responsibilities::a798cc0e",
+      "original_detector": "review",
+      "original_file": ".",
+      "original_summary": "handleSemanticFieldExplore mixes parameter parsing, exploration orchestration, and full JSON serialisation in one ~115-line method",
+      "status": "superseded",
+      "superseded_at": "2026-03-10T17:52:18+00:00",
+      "remapped_to": null,
+      "candidates": []
+    },
+    "review::.::holistic::design_coherence::inconsistent_invalidquery_handling::1b711f2d": {
+      "original_id": "review::.::holistic::design_coherence::inconsistent_invalidquery_handling::1b711f2d",
+      "original_detector": "review",
+      "original_file": ".",
+      "original_summary": "InvalidQuery swallowed silently in findCollocations but propagated as IOException in five other methods",
+      "status": "superseded",
+      "superseded_at": "2026-03-10T17:52:18+00:00",
+      "remapped_to": null,
+      "candidates": []
+    },
+    "review::.::holistic::error_consistency::err_config_mixed_exceptions::a0f5adfa": {
+      "original_id": "review::.::holistic::error_consistency::err_config_mixed_exceptions::a0f5adfa",
+      "original_detector": "review",
+      "original_file": ".",
+      "original_summary": "GrammarConfigLoader constructor throws both IOException and IllegalArgumentException for what callers treat as a single initialization failure",
+      "status": "superseded",
+      "superseded_at": "2026-03-10T17:52:18+00:00",
+      "remapped_to": null,
+      "candidates": []
+    },
+    "review::.::holistic::error_consistency::err_explorer_leak::849a08dc": {
+      "original_id": "review::.::holistic::error_consistency::err_explorer_leak::849a08dc",
+      "original_detector": "review",
+      "original_file": ".",
+      "original_summary": "SemanticFieldExplorer resources are not closed in try-with-resources, leaking on exception",
+      "status": "superseded",
+      "superseded_at": "2026-03-10T17:52:18+00:00",
+      "remapped_to": null,
+      "candidates": []
+    },
+    "review::.::holistic::error_consistency::err_silent_delete::c4c81417": {
+      "original_id": "review::.::holistic::error_consistency::err_silent_delete::c4c81417",
+      "original_detector": "review",
+      "original_file": ".",
+      "original_summary": "deleteRecursively silently swallows IOException with no log output",
+      "status": "superseded",
+      "superseded_at": "2026-03-10T17:52:18+00:00",
+      "remapped_to": null,
+      "candidates": []
+    },
+    "review::.::holistic::error_consistency::err_silent_frequency::fd991d3a": {
+      "original_id": "review::.::holistic::error_consistency::err_silent_frequency::fd991d3a",
+      "original_detector": "review",
+      "original_file": ".",
+      "original_summary": "getTotalFrequency swallows all exceptions and returns 0, silently corrupting logDice scores",
+      "status": "superseded",
+      "superseded_at": "2026-03-10T17:52:18+00:00",
+      "remapped_to": null,
+      "candidates": []
+    },
+    "review::.::holistic::high_level_elegance::api_server_god_class::e3abbf94": {
+      "original_id": "review::.::holistic::high_level_elegance::api_server_god_class::e3abbf94",
+      "original_detector": "review",
+      "original_file": ".",
+      "original_summary": "WordSketchApiServer is a 1000+ line monolith that handles routing, parameter parsing, validation, business orchestration, and JSON serialization for 10+ endpoints",
+      "status": "superseded",
+      "superseded_at": "2026-03-10T17:52:18+00:00",
+      "remapped_to": null,
+      "candidates": []
+    },
+    "review::.::holistic::high_level_elegance::bak-files-in-production-source::ad5d27ba": {
+      "original_id": "review::.::holistic::high_level_elegance::bak-files-in-production-source::ad5d27ba",
+      "original_detector": "review",
+      "original_file": ".",
+      "original_summary": "Two .bak files committed inside src/main/java production source tree",
+      "status": "superseded",
+      "superseded_at": "2026-03-10T17:52:18+00:00",
+      "remapped_to": null,
+      "candidates": []
+    },
+    "review::.::holistic::high_level_elegance::claude-md-phantom-classes::66b2433f": {
+      "original_id": "review::.::holistic::high_level_elegance::claude-md-phantom-classes::66b2433f",
+      "original_detector": "review",
+      "original_file": ".",
+      "original_summary": "CLAUDE.md code-structure diagram lists ~10 classes that do not exist in the source tree",
+      "status": "superseded",
+      "superseded_at": "2026-03-10T17:52:18+00:00",
+      "remapped_to": null,
+      "candidates": []
+    },
+    "review::.::holistic::high_level_elegance::dead-predicate-subsystem-in-query-package::034ac077": {
+      "original_id": "review::.::holistic::high_level_elegance::dead-predicate-subsystem-in-query-package::034ac077",
+      "original_detector": "review",
+      "original_file": ".",
+      "original_summary": "A full token-predicate evaluation subsystem (CQLVerifier, Token, TokenWindow, 6 predicate classes) lives in the query package but is never invoked on the production code path",
+      "status": "superseded",
+      "superseded_at": "2026-03-10T17:52:18+00:00",
+      "remapped_to": null,
+      "candidates": []
+    },
+    "review::.::holistic::high_level_elegance::dual-relation-type-systems::b6734c82": {
+      "original_id": "review::.::holistic::high_level_elegance::dual-relation-type-systems::b6734c82",
+      "original_detector": "review",
+      "original_file": ".",
+      "original_summary": "Two parallel representations of grammatical relation types (QueryExecutor.RelationType enum vs GrammarConfigLoader string-based relationType) require a bridge method in the API server",
+      "status": "superseded",
+      "superseded_at": "2026-03-10T17:52:18+00:00",
+      "remapped_to": null,
+      "candidates": []
+    },
+    "review::.::holistic::high_level_elegance::god-class-api-server::3e2b00f5": {
+      "original_id": "review::.::holistic::high_level_elegance::god-class-api-server::3e2b00f5",
+      "original_detector": "review",
+      "original_file": ".",
+      "original_summary": "WordSketchApiServer is a 1106-line God Class owning route registration, request parsing, business logic, and response serialisation for all endpoints",
+      "status": "superseded",
+      "superseded_at": "2026-03-10T17:52:18+00:00",
+      "remapped_to": null,
+      "candidates": []
+    },
+    "review::.::holistic::high_level_elegance::orphaned-sketch-grammar-parser::6f5d6612": {
+      "original_id": "review::.::holistic::high_level_elegance::orphaned-sketch-grammar-parser::6f5d6612",
+      "original_detector": "review",
+      "original_file": ".",
+      "original_summary": "SketchGrammarParser is a full production class in the grammar package that is never called in production code",
+      "status": "superseded",
+      "superseded_at": "2026-03-10T17:52:18+00:00",
+      "remapped_to": null,
+      "candidates": []
+    },
+    "review::.::holistic::high_level_elegance::query_package_too_broad::a430f585": {
+      "original_id": "review::.::holistic::high_level_elegance::query_package_too_broad::a430f585",
+      "original_detector": "review",
+      "original_file": ".",
+      "original_summary": "The query package subsumes executor infrastructure, result DTOs, snippet parsing utilities, semantic field exploration logic, and POS group constants \u2014 too many concerns for a single package",
+      "status": "superseded",
+      "superseded_at": "2026-03-10T17:52:18+00:00",
+      "remapped_to": null,
+      "candidates": []
+    },
+    "review::.::holistic::high_level_elegance::semantic_explorer_dual_role::28bc8918": {
+      "original_id": "review::.::holistic::high_level_elegance::semantic_explorer_dual_role::28bc8918",
+      "original_detector": "review",
+      "original_file": ".",
+      "original_summary": "SemanticFieldExplorer serves as both a service (exploration/comparison logic) and a result data container (6 static inner result classes), blurring its responsibility",
+      "status": "superseded",
+      "superseded_at": "2026-03-10T17:52:18+00:00",
+      "remapped_to": null,
+      "candidates": []
+    },
+    "review::.::holistic::incomplete_migration::bak_files_in_source_tree::c42309c3": {
+      "original_id": "review::.::holistic::incomplete_migration::bak_files_in_source_tree::c42309c3",
+      "original_detector": "review",
+      "original_file": ".",
+      "original_summary": "34 .bak files from the old hybrid/Lucene pipeline clutter the src/ tree and obscure the live architecture",
+      "status": "superseded",
+      "superseded_at": "2026-03-10T17:52:18+00:00",
+      "remapped_to": null,
+      "candidates": []
+    },
+    "review::.::holistic::incomplete_migration::claude_md_references_deleted_files::20539e94": {
+      "original_id": "review::.::holistic::incomplete_migration::claude_md_references_deleted_files::20539e94",
+      "original_detector": "review",
+      "original_file": ".",
+      "original_summary": "CLAUDE.md code-structure diagram and key-components section list six classes that no longer exist as .java files",
+      "status": "superseded",
+      "superseded_at": "2026-03-10T17:52:18+00:00",
+      "remapped_to": null,
+      "candidates": []
+    },
+    "review::.::holistic::incomplete_migration::cql_pattern_shim_in_grammar_loader::268346c4": {
+      "original_id": "review::.::holistic::incomplete_migration::cql_pattern_shim_in_grammar_loader::268346c4",
+      "original_detector": "review",
+      "original_file": ".",
+      "original_summary": "GrammarConfigLoader silently falls back to the old 'cql_pattern' JSON field when 'pattern' is absent, but the class Javadoc still documents the old field name as canonical",
+      "status": "superseded",
+      "superseded_at": "2026-03-10T17:52:18+00:00",
+      "remapped_to": null,
+      "candidates": []
+    },
+    "review::.::holistic::incomplete_migration::dead_query_executor_relation_type_enum::a9d2620e": {
+      "original_id": "review::.::holistic::incomplete_migration::dead_query_executor_relation_type_enum::a9d2620e",
+      "original_detector": "review",
+      "original_file": ".",
+      "original_summary": "QueryExecutor.RelationType enum and findGrammaticalRelation() default method carry hardcoded Lucene-era CQL patterns never used by BlackLabQueryExecutor",
+      "status": "superseded",
+      "superseded_at": "2026-03-10T17:52:18+00:00",
+      "remapped_to": null,
+      "candidates": []
+    },
+    "review::.::holistic::incomplete_migration::dead_to_legacy_relation_type_method::03112ebc": {
+      "original_id": "review::.::holistic::incomplete_migration::dead_to_legacy_relation_type_method::03112ebc",
+      "original_detector": "review",
+      "original_file": ".",
+      "original_summary": "WordSketchApiServer.toLegacyRelationType() is defined but never called anywhere",
+      "status": "superseded",
+      "superseded_at": "2026-03-10T17:52:18+00:00",
+      "remapped_to": null,
+      "candidates": []
+    },
+    "review::.::holistic::incomplete_migration::is_legacy_format_dead_method::b1ca3553": {
+      "original_id": "review::.::holistic::incomplete_migration::is_legacy_format_dead_method::b1ca3553",
+      "original_detector": "review",
+      "original_file": ".",
+      "original_summary": "GrammarConfigLoader.RelationConfig.isLegacyFormat() is defined but never called",
+      "status": "superseded",
+      "superseded_at": "2026-03-10T17:52:18+00:00",
+      "remapped_to": null,
+      "candidates": []
+    },
+    "review::.::holistic::incomplete_migration::legacy_tag_attribute_support::4bf87c03": {
+      "original_id": "review::.::holistic::incomplete_migration::legacy_tag_attribute_support::4bf87c03",
+      "original_detector": "review",
+      "original_file": ".",
+      "original_summary": "GrammarConfigLoader.posGroupFromConstraint handles both 'xpos=' (current) and 'tag=' (legacy) attribute names with no migration path or deprecation signal",
+      "status": "superseded",
+      "superseded_at": "2026-03-10T17:52:18+00:00",
+      "remapped_to": null,
+      "candidates": []
+    },
+    "review::.::holistic::incomplete_migration::orphaned_cql_grammar_classes::0d3e3c0c": {
+      "original_id": "review::.::holistic::incomplete_migration::orphaned_cql_grammar_classes::0d3e3c0c",
+      "original_detector": "review",
+      "original_file": ".",
+      "original_summary": "CQLParser, CQLPattern, CQLVerifier, and SketchGrammarParser are live production .java classes with no production callers",
+      "status": "superseded",
+      "superseded_at": "2026-03-10T17:52:18+00:00",
+      "remapped_to": null,
+      "candidates": []
+    },
+    "review::.::holistic::incomplete_migration::query_results_stale_javadoc::33a1cb4d": {
+      "original_id": "review::.::holistic::incomplete_migration::query_results_stale_javadoc::33a1cb4d",
+      "original_detector": "review",
+      "original_file": ".",
+      "original_summary": "QueryResults.java Javadoc still refers to the deleted WordSketchQueryExecutor class",
+      "status": "superseded",
+      "superseded_at": "2026-03-10T17:52:18+00:00",
+      "remapped_to": null,
+      "candidates": []
+    },
+    "review::.::holistic::incomplete_migration::queryexecutor_backward_compat_defaults::aa87d189": {
+      "original_id": "review::.::holistic::incomplete_migration::queryexecutor_backward_compat_defaults::aa87d189",
+      "original_detector": "review",
+      "original_file": ".",
+      "original_summary": "QueryExecutor default methods exist solely for backward compatibility with implementations that no longer exist",
+      "status": "superseded",
+      "superseded_at": "2026-03-10T17:52:18+00:00",
+      "remapped_to": null,
+      "candidates": []
+    },
+    "review::.::holistic::initialization_coupling::constructor_file_io::c19c157d": {
+      "original_id": "review::.::holistic::initialization_coupling::constructor_file_io::c19c157d",
+      "original_detector": "review",
+      "original_file": ".",
+      "original_summary": "Both BlackLabQueryExecutor and GrammarConfigLoader perform file I/O in their constructors, mixing construction with resource acquisition",
+      "status": "superseded",
+      "superseded_at": "2026-03-10T17:52:18+00:00",
+      "remapped_to": null,
+      "candidates": []
+    },
+    "review::.::holistic::initialization_coupling::hardcoded_relative_grammar_path::e469c854": {
+      "original_id": "review::.::holistic::initialization_coupling::hardcoded_relative_grammar_path::e469c854",
+      "original_detector": "review",
+      "original_file": ".",
+      "original_summary": "The grammar config path 'grammars/relations.json' is resolved relative to the JVM working directory at startup, creating a fragile environment dependency",
+      "status": "superseded",
+      "superseded_at": "2026-03-10T17:52:18+00:00",
+      "remapped_to": null,
+      "candidates": []
+    },
+    "review::.::holistic::initialization_coupling::null_grammarconfig_propagation::a32123fd": {
+      "original_id": "review::.::holistic::initialization_coupling::null_grammarconfig_propagation::a32123fd",
+      "original_detector": "review",
+      "original_file": ".",
+      "original_summary": "A null GrammarConfigLoader is passed through from Main into WordSketchApiServer and then null-checked in every single endpoint handler",
+      "status": "superseded",
+      "superseded_at": "2026-03-10T17:52:18+00:00",
+      "remapped_to": null,
+      "candidates": []
+    },
+    "review::.::holistic::initialization_coupling::server_split_init::595bb84c": {
+      "original_id": "review::.::holistic::initialization_coupling::server_split_init::595bb84c",
+      "original_detector": "review",
+      "original_file": ".",
+      "original_summary": "WordSketchApiServer stores the com.sun.net.httpserver.HttpServer instance in a field set during start(), leaving the object partially initialized between construction and start()",
+      "status": "superseded",
+      "superseded_at": "2026-03-10T17:52:18+00:00",
+      "remapped_to": null,
+      "candidates": []
+    },
+    "review::.::holistic::logic_clarity::logdice_dead_denominator_check::e45cd021": {
+      "original_id": "review::.::holistic::logic_clarity::logdice_dead_denominator_check::e45cd021",
+      "original_detector": "review",
+      "original_file": ".",
+      "original_summary": "LogDiceCalculator.compute contains a dead condition: 'if (denominator <= 0)' can never be true given the earlier guard",
+      "status": "superseded",
+      "superseded_at": "2026-03-10T17:52:18+00:00",
+      "remapped_to": null,
+      "candidates": []
+    },
+    "review::.::holistic::logic_clarity::multiseed_missing_pattern_substitution_per_seed::1758e9d6": {
+      "original_id": "review::.::holistic::logic_clarity::multiseed_missing_pattern_substitution_per_seed::1758e9d6",
+      "original_detector": "review",
+      "original_file": ".",
+      "original_summary": "The multi-seed loop uses a single shared pattern template rather than a per-seed substituted pattern, yielding different behaviour from the single-seed path",
+      "status": "superseded",
+      "superseded_at": "2026-03-10T17:52:18+00:00",
+      "remapped_to": null,
+      "candidates": []
+    },
+    "review::.::holistic::logic_clarity::simpletagger_am_tagged_as_past_tense::242ad359": {
+      "original_id": "review::.::holistic::logic_clarity::simpletagger_am_tagged_as_past_tense::242ad359",
+      "original_detector": "review",
+      "original_file": ".",
+      "original_summary": "SimpleTagger.determineVerbForm returns VBD (past tense) for 'am', but 'am' is VBP (first-person present indicative)",
+      "status": "superseded",
+      "superseded_at": "2026-03-10T17:52:18+00:00",
+      "remapped_to": null,
+      "candidates": []
+    },
+    "review::.::holistic::low_level_elegance::api_server_start_method_monolith::dbb07399": {
+      "original_id": "review::.::holistic::low_level_elegance::api_server_start_method_monolith::dbb07399",
+      "original_detector": "review",
+      "original_file": ".",
+      "original_summary": "WordSketchApiServer.start() is a 230+ line method registering 10 endpoint handlers inline with full request handling logic in each lambda body",
+      "status": "superseded",
+      "superseded_at": "2026-03-10T17:52:18+00:00",
+      "remapped_to": null,
+      "candidates": []
+    },
+    "review::.::holistic::low_level_elegance::dead-lemma-substitution::3d3c8b73": {
+      "original_id": "review::.::holistic::low_level_elegance::dead-lemma-substitution::3d3c8b73",
+      "original_detector": "review",
+      "original_file": ".",
+      "original_summary": "Lemma substitution code in CQLParser.buildElement extracts data and modifies target but the result is never used",
+      "status": "superseded",
+      "superseded_at": "2026-03-10T17:52:18+00:00",
+      "remapped_to": null,
+      "candidates": []
+    },
+    "review::.::holistic::low_level_elegance::derive-position-duplication::c9c31d2b": {
+      "original_id": "review::.::holistic::low_level_elegance::derive-position-duplication::c9c31d2b",
+      "original_detector": "review",
+      "original_file": ".",
+      "original_summary": "deriveHeadPositionFromPattern and deriveCollocatePositionFromPattern in GrammarConfigLoader are near-identical",
+      "status": "superseded",
+      "superseded_at": "2026-03-10T17:52:18+00:00",
+      "remapped_to": null,
+      "candidates": []
+    },
+    "review::.::holistic::low_level_elegance::double-query-execution::d549e262": {
+      "original_id": "review::.::holistic::low_level_elegance::double-query-execution::d549e262",
+      "original_detector": "review",
+      "original_file": ".",
+      "original_summary": "executeDependencyPattern executes the same BlackLab query twice unnecessarily",
+      "status": "superseded",
+      "superseded_at": "2026-03-10T17:52:18+00:00",
+      "remapped_to": null,
+      "candidates": []
+    },
+    "review::.::holistic::low_level_elegance::explore-duplication::d8c2fd33": {
+      "original_id": "review::.::holistic::low_level_elegance::explore-duplication::d8c2fd33",
+      "original_detector": "review",
+      "original_file": ".",
+      "original_summary": "exploreByPattern and explore implement an identical 4-step algorithm with 150+ lines copy-pasted",
+      "status": "superseded",
+      "superseded_at": "2026-03-10T17:52:18+00:00",
+      "remapped_to": null,
+      "candidates": []
+    },
+    "review::.::holistic::low_level_elegance::grammar-config-god-constructor::29381aae": {
+      "original_id": "review::.::holistic::low_level_elegance::grammar-config-god-constructor::29381aae",
+      "original_detector": "review",
+      "original_file": ".",
+      "original_summary": "GrammarConfigLoader constructor is a 120-line method mixing IO, validation, derivation, and indexing",
+      "status": "superseded",
+      "superseded_at": "2026-03-10T17:52:18+00:00",
+      "remapped_to": null,
+      "candidates": []
+    },
+    "review::.::holistic::low_level_elegance::logdice-pipeline-duplication::eb5ee714": {
+      "original_id": "review::.::holistic::low_level_elegance::logdice-pipeline-duplication::eb5ee714",
+      "original_detector": "review",
+      "original_file": ".",
+      "original_summary": "The 'group hits \u2192 compute logDice \u2192 build WordSketchResult list' pattern is duplicated four times in BlackLabQueryExecutor",
+      "status": "superseded",
+      "superseded_at": "2026-03-10T17:52:18+00:00",
+      "remapped_to": null,
+      "candidates": []
+    },
+    "review::.::holistic::low_level_elegance::oversized-executebcqlquery::a85a8167": {
+      "original_id": "review::.::holistic::low_level_elegance::oversized-executebcqlquery::a85a8167",
+      "original_detector": "review",
+      "original_file": ".",
+      "original_summary": "executeBcqlQuery is a 130-line method mixing concordance fetching, collocate extraction, frequency accumulation, and logDice scoring",
+      "status": "superseded",
+      "superseded_at": "2026-03-10T17:52:18+00:00",
+      "remapped_to": null,
+      "candidates": []
+    },
+    "review::.::holistic::low_level_elegance::radial_plot_inconsistent_string_building::a85c047f": {
+      "original_id": "review::.::holistic::low_level_elegance::radial_plot_inconsistent_string_building::a85c047f",
+      "original_detector": "review",
+      "original_file": ".",
+      "original_summary": "RadialPlot.toSVG() mixes string concatenation with StringBuilder.append and String.format in an inconsistent style within the same method",
+      "status": "superseded",
+      "superseded_at": "2026-03-10T17:52:18+00:00",
+      "remapped_to": null,
+      "candidates": []
+    },
+    "review::.::holistic::low_level_elegance::repitition-typo::59af47ae": {
+      "original_id": "review::.::holistic::low_level_elegance::repitition-typo::59af47ae",
+      "original_detector": "review",
+      "original_file": ".",
+      "original_summary": "Static constant REPITITION is a misspelling of REPETITION in CQLParser",
+      "status": "superseded",
+      "superseded_at": "2026-03-10T17:52:18+00:00",
+      "remapped_to": null,
+      "candidates": []
+    },
+    "review::.::holistic::low_level_elegance::semantic_explorer_not_in_try_with_resources::fb1f477c": {
+      "original_id": "review::.::holistic::low_level_elegance::semantic_explorer_not_in_try_with_resources::fb1f477c",
+      "original_detector": "review",
+      "original_file": ".",
+      "original_summary": "SemanticFieldExplorer implements AutoCloseable but is created and closed manually in handler methods, so exceptions between creation and close() leak resources",
+      "status": "superseded",
+      "superseded_at": "2026-03-10T17:52:18+00:00",
+      "remapped_to": null,
+      "candidates": []
+    },
+    "review::.::holistic::low_level_elegance::simple_tagger_data_in_code::69e0017b": {
+      "original_id": "review::.::holistic::low_level_elegance::simple_tagger_data_in_code::69e0017b",
+      "original_detector": "review",
+      "original_file": ".",
+      "original_summary": "SimpleTagger's constructor contains ~80 hard-coded lexicon.put() calls for word-to-tag mappings, embedding test corpus data as production code",
+      "status": "superseded",
+      "superseded_at": "2026-03-10T17:52:18+00:00",
+      "remapped_to": null,
+      "candidates": []
+    },
+    "review::.::holistic::low_level_elegance::split-outside-quotes-duplication::75ad285b": {
+      "original_id": "review::.::holistic::low_level_elegance::split-outside-quotes-duplication::75ad285b",
+      "original_detector": "review",
+      "original_file": ".",
+      "original_summary": "splitByOrOutsideQuotes and splitByAnd in CQLParser are identical except for the delimiter character",
+      "status": "superseded",
+      "superseded_at": "2026-03-10T17:52:18+00:00",
+      "remapped_to": null,
+      "candidates": []
+    },
+    "review::.::holistic::low_level_elegance::stream-to-logger-bug::960a3009": {
+      "original_id": "review::.::holistic::low_level_elegance::stream-to-logger-bug::960a3009",
+      "original_detector": "review",
+      "original_file": ".",
+      "original_summary": "SemanticFieldExplorer logs a Java Stream object reference instead of the list contents",
+      "status": "superseded",
+      "superseded_at": "2026-03-10T17:52:18+00:00",
+      "remapped_to": null,
+      "candidates": []
+    },
+    "review::.::holistic::mid_level_elegance::executor_reimplements_snippet_parser::ab68f7f2": {
+      "original_id": "review::.::holistic::mid_level_elegance::executor_reimplements_snippet_parser::ab68f7f2",
+      "original_detector": "review",
+      "original_file": ".",
+      "original_summary": "BlackLabQueryExecutor.extractDependentLemmaFromGroup and extractPosFromGroup duplicate BlackLabSnippetParser logic by directly accessing its static Pattern fields",
+      "status": "superseded",
+      "superseded_at": "2026-03-10T17:52:18+00:00",
+      "remapped_to": null,
+      "candidates": []
+    },
+    "review::.::holistic::mid_level_elegance::explore_vs_explore_multi_pattern_inconsistency::907bf26f": {
+      "original_id": "review::.::holistic::mid_level_elegance::explore_vs_explore_multi_pattern_inconsistency::907bf26f",
+      "original_detector": "review",
+      "original_file": ".",
+      "original_summary": "handleSemanticFieldExplore calls rel.getFullPattern(seed) to substitute the headword, but handleSemanticFieldExploreMulti uses the raw rel.pattern() without substitution",
+      "status": "superseded",
+      "superseded_at": "2026-03-10T17:52:18+00:00",
+      "remapped_to": null,
+      "candidates": []
+    },
+    "review::.::holistic::mid_level_elegance::manual_amp_decode_in_handler::24b898b3": {
+      "original_id": "review::.::holistic::mid_level_elegance::manual_amp_decode_in_handler::24b898b3",
+      "original_detector": "review",
+      "original_file": ".",
+      "original_summary": "handleConcordanceExamples manually replaces HTML entity &amp; after URL decoding, a concern that belongs in the parsing layer",
+      "status": "superseded",
+      "superseded_at": "2026-03-10T17:52:18+00:00",
+      "remapped_to": null,
+      "candidates": []
+    },
+    "review::.::holistic::mid_level_elegance::semantic_explorer_inline_lifecycle::cb142ad1": {
+      "original_id": "review::.::holistic::mid_level_elegance::semantic_explorer_inline_lifecycle::cb142ad1",
+      "original_detector": "review",
+      "original_file": ".",
+      "original_summary": "SemanticFieldExplorer is constructed, used, and closed inline in three separate handler methods instead of being shared or managed by a factory",
+      "status": "superseded",
+      "superseded_at": "2026-03-10T17:52:18+00:00",
+      "remapped_to": null,
+      "candidates": []
+    },
+    "review::.::holistic::naming_quality::SemanticFieldExplorer_name_doesnt_reflect_comparison_mode::0f0ee4f3": {
+      "original_id": "review::.::holistic::naming_quality::SemanticFieldExplorer_name_doesnt_reflect_comparison_mode::0f0ee4f3",
+      "original_detector": "review",
+      "original_file": ".",
+      "original_summary": "SemanticFieldExplorer contains both exploration (exploreByPattern) and comparison (compare, fetchExamples) functionality, but the name only communicates exploration",
+      "status": "superseded",
+      "superseded_at": "2026-03-10T17:52:18+00:00",
+      "remapped_to": null,
+      "candidates": []
+    },
+    "review::.::holistic::naming_quality::adjective_names_baked_into_generic_collocate_classes::beffa977": {
+      "original_id": "review::.::holistic::naming_quality::adjective_names_baked_into_generic_collocate_classes::beffa977",
+      "original_detector": "review",
+      "original_file": ".",
+      "original_summary": "ExplorationResult.seedAdjectives, CoreAdjective, DiscoveredNoun.sharedAdjectives embed 'adjective' semantics but the explorer supports verb and noun relations equally",
+      "status": "superseded",
+      "superseded_at": "2026-03-10T17:52:18+00:00",
+      "remapped_to": null,
+      "candidates": []
+    },
+    "review::.::holistic::naming_quality::getCorpusSize_misleads_about_stub_behaviour::df7c88da": {
+      "original_id": "review::.::holistic::naming_quality::getCorpusSize_misleads_about_stub_behaviour::df7c88da",
+      "original_detector": "review",
+      "original_file": ".",
+      "original_summary": "getCorpusSize() name implies it returns actual corpus size but the implementation always returns 0",
+      "status": "superseded",
+      "superseded_at": "2026-03-10T17:52:18+00:00",
+      "remapped_to": null,
+      "candidates": []
+    },
+    "review::.::holistic::package_organization::longinthashmaptest-wrong-package::3d4dd6de": {
+      "original_id": "review::.::holistic::package_organization::longinthashmaptest-wrong-package::3d4dd6de",
+      "original_detector": "review",
+      "original_file": ".",
+      "original_summary": "LongIntHashMapTest placed in query test package instead of utils test package",
+      "status": "superseded",
+      "superseded_at": "2026-03-10T17:52:18+00:00",
+      "remapped_to": null,
+      "candidates": []
+    },
+    "review::.::holistic::package_organization::pattern_manipulation_split_across_packages::087f4daa": {
+      "original_id": "review::.::holistic::package_organization::pattern_manipulation_split_across_packages::087f4daa",
+      "original_detector": "review",
+      "original_file": ".",
+      "original_summary": "CQL/BCQL pattern manipulation logic is independently implemented in both api/PatternSubstitution and config/GrammarConfigLoader.RelationConfig, with no shared abstraction",
+      "status": "superseded",
+      "superseded_at": "2026-03-10T17:52:18+00:00",
+      "remapped_to": null,
+      "candidates": []
+    },
+    "review::.::holistic::package_organization::query-package-blob::41a37fcc": {
+      "original_id": "review::.::holistic::package_organization::query-package-blob::41a37fcc",
+      "original_detector": "review",
+      "original_file": ".",
+      "original_summary": "query package is a catch-all blob mixing token model, predicate hierarchy, executors, result DTOs, and exploration logic",
+      "status": "superseded",
+      "superseded_at": "2026-03-10T17:52:18+00:00",
+      "remapped_to": null,
+      "candidates": []
+    },
+    "review::.::holistic::package_organization::query_package_overloaded::82270299": {
+      "original_id": "review::.::holistic::package_organization::query_package_overloaded::82270299",
+      "original_detector": "review",
+      "original_file": ".",
+      "original_summary": "The query/ package conflates four distinct concerns: query execution, XML parsing, data-transfer objects, and semantic exploration",
+      "status": "superseded",
+      "superseded_at": "2026-03-10T17:52:18+00:00",
+      "remapped_to": null,
+      "candidates": []
+    },
+    "review::.::holistic::package_organization::relationType-in-queryexecutor::81698ff1": {
+      "original_id": "review::.::holistic::package_organization::relationType-in-queryexecutor::81698ff1",
+      "original_detector": "review",
+      "original_file": ".",
+      "original_summary": "RelationType enum (grammatical relations) is nested inside QueryExecutor infrastructure interface",
+      "status": "superseded",
+      "superseded_at": "2026-03-10T17:52:18+00:00",
+      "remapped_to": null,
+      "candidates": []
+    },
+    "review::.::holistic::package_organization::utils-catch-all::d9433671": {
+      "original_id": "review::.::holistic::package_organization::utils-catch-all::d9433671",
+      "original_detector": "review",
+      "original_file": ".",
+      "original_summary": "utils package is a catch-all pairing an unrelated domain statistic class with a generic data structure",
+      "status": "superseded",
+      "superseded_at": "2026-03-10T17:52:18+00:00",
+      "remapped_to": null,
+      "candidates": []
+    },
+    "review::.::holistic::test_strategy::cql_verifier_shallow_assertions::24f75a1e": {
+      "original_id": "review::.::holistic::test_strategy::cql_verifier_shallow_assertions::24f75a1e",
+      "original_detector": "review",
+      "original_file": ".",
+      "original_summary": "CQLVerifierTest verifies only isMatched() boolean; matched position and collocate identity are never asserted",
+      "status": "superseded",
+      "superseded_at": "2026-03-10T17:52:18+00:00",
+      "remapped_to": null,
+      "candidates": []
+    },
+    "review::.::holistic::test_strategy::dummy_test_no_assertions::6c37555b": {
+      "original_id": "review::.::holistic::test_strategy::dummy_test_no_assertions::6c37555b",
+      "original_detector": "review",
+      "original_file": ".",
+      "original_summary": "BlackLabDummyTest has no assertions and silently swallows all exceptions",
+      "status": "superseded",
+      "superseded_at": "2026-03-10T17:52:18+00:00",
+      "remapped_to": null,
+      "candidates": []
+    },
+    "review::.::holistic::test_strategy::integration_tests_hardcoded_path::f2b41692": {
+      "original_id": "review::.::holistic::test_strategy::integration_tests_hardcoded_path::f2b41692",
+      "original_detector": "review",
+      "original_file": ".",
+      "original_summary": "DependencySketchTest and BlackLabBcqlConcordanceTest always skip in CI due to hardcoded local Windows paths",
+      "status": "superseded",
+      "superseded_at": "2026-03-10T17:52:18+00:00",
+      "remapped_to": null,
+      "candidates": []
+    },
+    "review::.::holistic::test_strategy::missing_coverage_api_and_explorer::018ce5d8": {
+      "original_id": "review::.::holistic::test_strategy::missing_coverage_api_and_explorer::018ce5d8",
+      "original_detector": "review",
+      "original_file": ".",
+      "original_summary": "WordSketchApiServer, SemanticFieldExplorer, and BlackLabSnippetParser have zero test coverage",
+      "status": "superseded",
+      "superseded_at": "2026-03-10T17:52:18+00:00",
+      "remapped_to": null,
+      "candidates": []
+    },
+    "review::.::holistic::test_strategy::relations_validation_not_junit::bb752027": {
+      "original_id": "review::.::holistic::test_strategy::relations_validation_not_junit::bb752027",
+      "original_detector": "review",
+      "original_file": ".",
+      "original_summary": "RelationsValidationTest uses main() not @Test \u2014 Maven Surefire never runs it",
+      "status": "superseded",
+      "superseded_at": "2026-03-10T17:52:18+00:00",
+      "remapped_to": null,
+      "candidates": []
+    },
+    "review::.::holistic::test_strategy::test_no_api_coverage::427b94a1": {
+      "original_id": "review::.::holistic::test_strategy::test_no_api_coverage::427b94a1",
+      "original_detector": "review",
+      "original_file": ".",
+      "original_summary": "WordSketchApiServer \u2014 the entire API layer with 10+ request handlers \u2014 has zero test coverage",
+      "status": "superseded",
+      "superseded_at": "2026-03-10T17:52:18+00:00",
+      "remapped_to": null,
+      "candidates": []
+    },
+    "review::.::holistic::test_strategy::test_no_pattern_substitution_coverage::11a28190": {
+      "original_id": "review::.::holistic::test_strategy::test_no_pattern_substitution_coverage::11a28190",
+      "original_detector": "review",
+      "original_file": ".",
+      "original_summary": "PatternSubstitution has no tests despite performing regex-sensitive string mutations on BCQL patterns",
+      "status": "superseded",
+      "superseded_at": "2026-03-10T17:52:18+00:00",
+      "remapped_to": null,
+      "candidates": []
+    },
+    "review::.::holistic::test_strategy::test_no_semantic_explorer_coverage::124e0e04": {
+      "original_id": "review::.::holistic::test_strategy::test_no_semantic_explorer_coverage::124e0e04",
+      "original_detector": "review",
+      "original_file": ".",
+      "original_summary": "SemanticFieldExplorer core logic has no unit tests despite being the primary business value of the application",
+      "status": "superseded",
+      "superseded_at": "2026-03-10T17:52:18+00:00",
+      "remapped_to": null,
+      "candidates": []
+    },
+    "review::.::holistic::test_strategy::test_no_snippet_parser_coverage::e0a544f6": {
+      "original_id": "review::.::holistic::test_strategy::test_no_snippet_parser_coverage::e0a544f6",
+      "original_detector": "review",
+      "original_file": ".",
+      "original_summary": "BlackLabSnippetParser \u2014 XML extraction utilities called on every query \u2014 has no unit tests",
+      "status": "superseded",
+      "superseded_at": "2026-03-10T17:52:18+00:00",
+      "remapped_to": null,
+      "candidates": []
+    },
+    "review::.::holistic::type_safety::boxed_boolean_exploration_enabled_in_record::69170286": {
+      "original_id": "review::.::holistic::type_safety::boxed_boolean_exploration_enabled_in_record::69170286",
+      "original_detector": "review",
+      "original_file": ".",
+      "original_summary": "RelationConfig record declares explorationEnabled as Boolean (boxed, nullable) but it is never treated as Optional \u2014 null is silently ignored at all usage sites",
+      "status": "superseded",
+      "superseded_at": "2026-03-10T17:52:18+00:00",
+      "remapped_to": null,
+      "candidates": []
+    },
+    "review::.::holistic::type_safety::missing_override_annotation_executeSurfacePattern::68952757": {
+      "original_id": "review::.::holistic::type_safety::missing_override_annotation_executeSurfacePattern::68952757",
+      "original_detector": "review",
+      "original_file": ".",
+      "original_summary": "BlackLabQueryExecutor.executeSurfacePattern overrides the interface default without @Override annotation",
+      "status": "superseded",
+      "superseded_at": "2026-03-10T17:52:18+00:00",
       "remapped_to": null,
       "candidates": []
     }
@@ -14237,6 +15404,738 @@
         "sha": "23021e31583e",
         "branch": "desloppify/code-health"
       }
+    },
+    {
+      "timestamp": "2026-03-10T17:51:36+00:00",
+      "action": "done",
+      "issue_ids": [
+        "e2ee35a0"
+      ],
+      "cluster_name": null,
+      "actor": "user",
+      "note": "Fixed as part of design-structural cluster: interface cleanup, migration debt removal, initialization coupling, phase extraction, SnippetParser API, lexicon externalization",
+      "detail": {}
+    },
+    {
+      "timestamp": "2026-03-10T17:51:37+00:00",
+      "action": "resolve",
+      "issue_ids": [
+        "review::.::holistic::abstraction_fitness::queryexecutor_default_methods_one_impl::e2ee35a0"
+      ],
+      "cluster_name": null,
+      "actor": "user",
+      "note": "Fixed as part of design-structural cluster: interface cleanup, migration debt removal, initialization coupling, phase extraction, SnippetParser API, lexicon externalization",
+      "detail": {
+        "status": "fixed",
+        "attestation": "I have actually fixed this in the source code and I am not gaming the score."
+      }
+    },
+    {
+      "timestamp": "2026-03-10T17:51:37+00:00",
+      "action": "done",
+      "issue_ids": [
+        "aa87d189"
+      ],
+      "cluster_name": null,
+      "actor": "user",
+      "note": "Fixed as part of design-structural cluster: interface cleanup, migration debt removal, initialization coupling, phase extraction, SnippetParser API, lexicon externalization",
+      "detail": {}
+    },
+    {
+      "timestamp": "2026-03-10T17:51:37+00:00",
+      "action": "resolve",
+      "issue_ids": [
+        "review::.::holistic::incomplete_migration::queryexecutor_backward_compat_defaults::aa87d189"
+      ],
+      "cluster_name": null,
+      "actor": "user",
+      "note": "Fixed as part of design-structural cluster: interface cleanup, migration debt removal, initialization coupling, phase extraction, SnippetParser API, lexicon externalization",
+      "detail": {
+        "status": "fixed",
+        "attestation": "I have actually fixed this in the source code and I am not gaming the score."
+      }
+    },
+    {
+      "timestamp": "2026-03-10T17:51:37+00:00",
+      "action": "done",
+      "issue_ids": [
+        "268346c4"
+      ],
+      "cluster_name": null,
+      "actor": "user",
+      "note": "Fixed as part of design-structural cluster: interface cleanup, migration debt removal, initialization coupling, phase extraction, SnippetParser API, lexicon externalization",
+      "detail": {}
+    },
+    {
+      "timestamp": "2026-03-10T17:51:38+00:00",
+      "action": "resolve",
+      "issue_ids": [
+        "review::.::holistic::incomplete_migration::cql_pattern_shim_in_grammar_loader::268346c4"
+      ],
+      "cluster_name": null,
+      "actor": "user",
+      "note": "Fixed as part of design-structural cluster: interface cleanup, migration debt removal, initialization coupling, phase extraction, SnippetParser API, lexicon externalization",
+      "detail": {
+        "status": "fixed",
+        "attestation": "I have actually fixed this in the source code and I am not gaming the score."
+      }
+    },
+    {
+      "timestamp": "2026-03-10T17:51:38+00:00",
+      "action": "done",
+      "issue_ids": [
+        "4bf87c03"
+      ],
+      "cluster_name": null,
+      "actor": "user",
+      "note": "Fixed as part of design-structural cluster: interface cleanup, migration debt removal, initialization coupling, phase extraction, SnippetParser API, lexicon externalization",
+      "detail": {}
+    },
+    {
+      "timestamp": "2026-03-10T17:51:38+00:00",
+      "action": "resolve",
+      "issue_ids": [
+        "review::.::holistic::incomplete_migration::legacy_tag_attribute_support::4bf87c03"
+      ],
+      "cluster_name": null,
+      "actor": "user",
+      "note": "Fixed as part of design-structural cluster: interface cleanup, migration debt removal, initialization coupling, phase extraction, SnippetParser API, lexicon externalization",
+      "detail": {
+        "status": "fixed",
+        "attestation": "I have actually fixed this in the source code and I am not gaming the score."
+      }
+    },
+    {
+      "timestamp": "2026-03-10T17:51:39+00:00",
+      "action": "done",
+      "issue_ids": [
+        "c19c157d"
+      ],
+      "cluster_name": null,
+      "actor": "user",
+      "note": "Fixed as part of design-structural cluster: interface cleanup, migration debt removal, initialization coupling, phase extraction, SnippetParser API, lexicon externalization",
+      "detail": {}
+    },
+    {
+      "timestamp": "2026-03-10T17:51:39+00:00",
+      "action": "resolve",
+      "issue_ids": [
+        "review::.::holistic::initialization_coupling::constructor_file_io::c19c157d"
+      ],
+      "cluster_name": null,
+      "actor": "user",
+      "note": "Fixed as part of design-structural cluster: interface cleanup, migration debt removal, initialization coupling, phase extraction, SnippetParser API, lexicon externalization",
+      "detail": {
+        "status": "fixed",
+        "attestation": "I have actually fixed this in the source code and I am not gaming the score."
+      }
+    },
+    {
+      "timestamp": "2026-03-10T17:51:39+00:00",
+      "action": "done",
+      "issue_ids": [
+        "e469c854"
+      ],
+      "cluster_name": null,
+      "actor": "user",
+      "note": "Fixed as part of design-structural cluster: interface cleanup, migration debt removal, initialization coupling, phase extraction, SnippetParser API, lexicon externalization",
+      "detail": {}
+    },
+    {
+      "timestamp": "2026-03-10T17:51:39+00:00",
+      "action": "resolve",
+      "issue_ids": [
+        "review::.::holistic::initialization_coupling::hardcoded_relative_grammar_path::e469c854"
+      ],
+      "cluster_name": null,
+      "actor": "user",
+      "note": "Fixed as part of design-structural cluster: interface cleanup, migration debt removal, initialization coupling, phase extraction, SnippetParser API, lexicon externalization",
+      "detail": {
+        "status": "fixed",
+        "attestation": "I have actually fixed this in the source code and I am not gaming the score."
+      }
+    },
+    {
+      "timestamp": "2026-03-10T17:51:40+00:00",
+      "action": "done",
+      "issue_ids": [
+        "a32123fd"
+      ],
+      "cluster_name": null,
+      "actor": "user",
+      "note": "Fixed as part of design-structural cluster: interface cleanup, migration debt removal, initialization coupling, phase extraction, SnippetParser API, lexicon externalization",
+      "detail": {}
+    },
+    {
+      "timestamp": "2026-03-10T17:51:40+00:00",
+      "action": "resolve",
+      "issue_ids": [
+        "review::.::holistic::initialization_coupling::null_grammarconfig_propagation::a32123fd"
+      ],
+      "cluster_name": null,
+      "actor": "user",
+      "note": "Fixed as part of design-structural cluster: interface cleanup, migration debt removal, initialization coupling, phase extraction, SnippetParser API, lexicon externalization",
+      "detail": {
+        "status": "fixed",
+        "attestation": "I have actually fixed this in the source code and I am not gaming the score."
+      }
+    },
+    {
+      "timestamp": "2026-03-10T17:51:40+00:00",
+      "action": "done",
+      "issue_ids": [
+        "595bb84c"
+      ],
+      "cluster_name": null,
+      "actor": "user",
+      "note": "Fixed as part of design-structural cluster: interface cleanup, migration debt removal, initialization coupling, phase extraction, SnippetParser API, lexicon externalization",
+      "detail": {}
+    },
+    {
+      "timestamp": "2026-03-10T17:51:41+00:00",
+      "action": "resolve",
+      "issue_ids": [
+        "review::.::holistic::initialization_coupling::server_split_init::595bb84c"
+      ],
+      "cluster_name": null,
+      "actor": "user",
+      "note": "Fixed as part of design-structural cluster: interface cleanup, migration debt removal, initialization coupling, phase extraction, SnippetParser API, lexicon externalization",
+      "detail": {
+        "status": "fixed",
+        "attestation": "I have actually fixed this in the source code and I am not gaming the score."
+      }
+    },
+    {
+      "timestamp": "2026-03-10T17:51:41+00:00",
+      "action": "done",
+      "issue_ids": [
+        "8ed8f0b8"
+      ],
+      "cluster_name": null,
+      "actor": "user",
+      "note": "Fixed as part of design-structural cluster: interface cleanup, migration debt removal, initialization coupling, phase extraction, SnippetParser API, lexicon externalization",
+      "detail": {}
+    },
+    {
+      "timestamp": "2026-03-10T17:51:41+00:00",
+      "action": "resolve",
+      "issue_ids": [
+        "review::.::holistic::design_coherence::executeBcqlQuery_mixed_phases::8ed8f0b8"
+      ],
+      "cluster_name": null,
+      "actor": "user",
+      "note": "Fixed as part of design-structural cluster: interface cleanup, migration debt removal, initialization coupling, phase extraction, SnippetParser API, lexicon externalization",
+      "detail": {
+        "status": "fixed",
+        "attestation": "I have actually fixed this in the source code and I am not gaming the score."
+      }
+    },
+    {
+      "timestamp": "2026-03-10T17:51:42+00:00",
+      "action": "done",
+      "issue_ids": [
+        "321f810b"
+      ],
+      "cluster_name": null,
+      "actor": "user",
+      "note": "Fixed as part of design-structural cluster: interface cleanup, migration debt removal, initialization coupling, phase extraction, SnippetParser API, lexicon externalization",
+      "detail": {}
+    },
+    {
+      "timestamp": "2026-03-10T17:51:42+00:00",
+      "action": "resolve",
+      "issue_ids": [
+        "review::.::holistic::abstraction_fitness::snippet_parser_fragmented_extraction_api::321f810b"
+      ],
+      "cluster_name": null,
+      "actor": "user",
+      "note": "Fixed as part of design-structural cluster: interface cleanup, migration debt removal, initialization coupling, phase extraction, SnippetParser API, lexicon externalization",
+      "detail": {
+        "status": "fixed",
+        "attestation": "I have actually fixed this in the source code and I am not gaming the score."
+      }
+    },
+    {
+      "timestamp": "2026-03-10T17:51:42+00:00",
+      "action": "done",
+      "issue_ids": [
+        "a430f585"
+      ],
+      "cluster_name": null,
+      "actor": "user",
+      "note": "Fixed as part of design-structural cluster: interface cleanup, migration debt removal, initialization coupling, phase extraction, SnippetParser API, lexicon externalization",
+      "detail": {}
+    },
+    {
+      "timestamp": "2026-03-10T17:51:42+00:00",
+      "action": "resolve",
+      "issue_ids": [
+        "review::.::holistic::high_level_elegance::query_package_too_broad::a430f585"
+      ],
+      "cluster_name": null,
+      "actor": "user",
+      "note": "Fixed as part of design-structural cluster: interface cleanup, migration debt removal, initialization coupling, phase extraction, SnippetParser API, lexicon externalization",
+      "detail": {
+        "status": "fixed",
+        "attestation": "I have actually fixed this in the source code and I am not gaming the score."
+      }
+    },
+    {
+      "timestamp": "2026-03-10T17:51:43+00:00",
+      "action": "done",
+      "issue_ids": [
+        "82270299"
+      ],
+      "cluster_name": null,
+      "actor": "user",
+      "note": "Fixed as part of design-structural cluster: interface cleanup, migration debt removal, initialization coupling, phase extraction, SnippetParser API, lexicon externalization",
+      "detail": {}
+    },
+    {
+      "timestamp": "2026-03-10T17:51:43+00:00",
+      "action": "resolve",
+      "issue_ids": [
+        "review::.::holistic::package_organization::query_package_overloaded::82270299"
+      ],
+      "cluster_name": null,
+      "actor": "user",
+      "note": "Fixed as part of design-structural cluster: interface cleanup, migration debt removal, initialization coupling, phase extraction, SnippetParser API, lexicon externalization",
+      "detail": {
+        "status": "fixed",
+        "attestation": "I have actually fixed this in the source code and I am not gaming the score."
+      }
+    },
+    {
+      "timestamp": "2026-03-10T17:51:43+00:00",
+      "action": "done",
+      "issue_ids": [
+        "ab68f7f2"
+      ],
+      "cluster_name": null,
+      "actor": "user",
+      "note": "Fixed as part of design-structural cluster: interface cleanup, migration debt removal, initialization coupling, phase extraction, SnippetParser API, lexicon externalization",
+      "detail": {}
+    },
+    {
+      "timestamp": "2026-03-10T17:51:44+00:00",
+      "action": "resolve",
+      "issue_ids": [
+        "review::.::holistic::mid_level_elegance::executor_reimplements_snippet_parser::ab68f7f2"
+      ],
+      "cluster_name": null,
+      "actor": "user",
+      "note": "Fixed as part of design-structural cluster: interface cleanup, migration debt removal, initialization coupling, phase extraction, SnippetParser API, lexicon externalization",
+      "detail": {
+        "status": "fixed",
+        "attestation": "I have actually fixed this in the source code and I am not gaming the score."
+      }
+    },
+    {
+      "timestamp": "2026-03-10T17:51:44+00:00",
+      "action": "done",
+      "issue_ids": [
+        "907bf26f"
+      ],
+      "cluster_name": null,
+      "actor": "user",
+      "note": "Fixed as part of design-structural cluster: interface cleanup, migration debt removal, initialization coupling, phase extraction, SnippetParser API, lexicon externalization",
+      "detail": {}
+    },
+    {
+      "timestamp": "2026-03-10T17:51:44+00:00",
+      "action": "resolve",
+      "issue_ids": [
+        "review::.::holistic::mid_level_elegance::explore_vs_explore_multi_pattern_inconsistency::907bf26f"
+      ],
+      "cluster_name": null,
+      "actor": "user",
+      "note": "Fixed as part of design-structural cluster: interface cleanup, migration debt removal, initialization coupling, phase extraction, SnippetParser API, lexicon externalization",
+      "detail": {
+        "status": "fixed",
+        "attestation": "I have actually fixed this in the source code and I am not gaming the score."
+      }
+    },
+    {
+      "timestamp": "2026-03-10T17:51:45+00:00",
+      "action": "done",
+      "issue_ids": [
+        "42e2a9a1"
+      ],
+      "cluster_name": null,
+      "actor": "user",
+      "note": "Fixed as part of design-structural cluster: interface cleanup, migration debt removal, initialization coupling, phase extraction, SnippetParser API, lexicon externalization",
+      "detail": {}
+    },
+    {
+      "timestamp": "2026-03-10T17:51:45+00:00",
+      "action": "resolve",
+      "issue_ids": [
+        "review::.::holistic::cross_module_architecture::api_reaches_into_query_internals::42e2a9a1"
+      ],
+      "cluster_name": null,
+      "actor": "user",
+      "note": "Fixed as part of design-structural cluster: interface cleanup, migration debt removal, initialization coupling, phase extraction, SnippetParser API, lexicon externalization",
+      "detail": {
+        "status": "fixed",
+        "attestation": "I have actually fixed this in the source code and I am not gaming the score."
+      }
+    },
+    {
+      "timestamp": "2026-03-10T17:51:45+00:00",
+      "action": "done",
+      "issue_ids": [
+        "297b2b52"
+      ],
+      "cluster_name": null,
+      "actor": "user",
+      "note": "Fixed as part of design-structural cluster: interface cleanup, migration debt removal, initialization coupling, phase extraction, SnippetParser API, lexicon externalization",
+      "detail": {}
+    },
+    {
+      "timestamp": "2026-03-10T17:51:45+00:00",
+      "action": "resolve",
+      "issue_ids": [
+        "review::.::holistic::cross_module_architecture::semantic_explorer_concrete_dep::297b2b52"
+      ],
+      "cluster_name": null,
+      "actor": "user",
+      "note": "Fixed as part of design-structural cluster: interface cleanup, migration debt removal, initialization coupling, phase extraction, SnippetParser API, lexicon externalization",
+      "detail": {
+        "status": "fixed",
+        "attestation": "I have actually fixed this in the source code and I am not gaming the score."
+      }
+    },
+    {
+      "timestamp": "2026-03-10T17:51:46+00:00",
+      "action": "done",
+      "issue_ids": [
+        "a85c047f"
+      ],
+      "cluster_name": null,
+      "actor": "user",
+      "note": "Fixed as part of design-structural cluster: interface cleanup, migration debt removal, initialization coupling, phase extraction, SnippetParser API, lexicon externalization",
+      "detail": {}
+    },
+    {
+      "timestamp": "2026-03-10T17:51:46+00:00",
+      "action": "resolve",
+      "issue_ids": [
+        "review::.::holistic::low_level_elegance::radial_plot_inconsistent_string_building::a85c047f"
+      ],
+      "cluster_name": null,
+      "actor": "user",
+      "note": "Fixed as part of design-structural cluster: interface cleanup, migration debt removal, initialization coupling, phase extraction, SnippetParser API, lexicon externalization",
+      "detail": {
+        "status": "fixed",
+        "attestation": "I have actually fixed this in the source code and I am not gaming the score."
+      }
+    },
+    {
+      "timestamp": "2026-03-10T17:51:46+00:00",
+      "action": "done",
+      "issue_ids": [
+        "69e0017b"
+      ],
+      "cluster_name": null,
+      "actor": "user",
+      "note": "Fixed as part of design-structural cluster: interface cleanup, migration debt removal, initialization coupling, phase extraction, SnippetParser API, lexicon externalization",
+      "detail": {}
+    },
+    {
+      "timestamp": "2026-03-10T17:51:46+00:00",
+      "action": "resolve",
+      "issue_ids": [
+        "review::.::holistic::low_level_elegance::simple_tagger_data_in_code::69e0017b"
+      ],
+      "cluster_name": null,
+      "actor": "user",
+      "note": "Fixed as part of design-structural cluster: interface cleanup, migration debt removal, initialization coupling, phase extraction, SnippetParser API, lexicon externalization",
+      "detail": {
+        "status": "fixed",
+        "attestation": "I have actually fixed this in the source code and I am not gaming the score."
+      }
+    },
+    {
+      "timestamp": "2026-03-10T17:51:47+00:00",
+      "action": "done",
+      "issue_ids": [
+        "28bc8918"
+      ],
+      "cluster_name": null,
+      "actor": "user",
+      "note": "Fixed as part of design-structural cluster: interface cleanup, migration debt removal, initialization coupling, phase extraction, SnippetParser API, lexicon externalization",
+      "detail": {}
+    },
+    {
+      "timestamp": "2026-03-10T17:51:47+00:00",
+      "action": "resolve",
+      "issue_ids": [
+        "review::.::holistic::high_level_elegance::semantic_explorer_dual_role::28bc8918"
+      ],
+      "cluster_name": null,
+      "actor": "user",
+      "note": "Fixed as part of design-structural cluster: interface cleanup, migration debt removal, initialization coupling, phase extraction, SnippetParser API, lexicon externalization",
+      "detail": {
+        "status": "fixed",
+        "attestation": "I have actually fixed this in the source code and I am not gaming the score."
+      }
+    },
+    {
+      "timestamp": "2026-03-10T17:51:47+00:00",
+      "action": "done",
+      "issue_ids": [
+        "24b898b3"
+      ],
+      "cluster_name": null,
+      "actor": "user",
+      "note": "Fixed as part of design-structural cluster: interface cleanup, migration debt removal, initialization coupling, phase extraction, SnippetParser API, lexicon externalization",
+      "detail": {}
+    },
+    {
+      "timestamp": "2026-03-10T17:51:48+00:00",
+      "action": "resolve",
+      "issue_ids": [
+        "review::.::holistic::mid_level_elegance::manual_amp_decode_in_handler::24b898b3"
+      ],
+      "cluster_name": null,
+      "actor": "user",
+      "note": "Fixed as part of design-structural cluster: interface cleanup, migration debt removal, initialization coupling, phase extraction, SnippetParser API, lexicon externalization",
+      "detail": {
+        "status": "fixed",
+        "attestation": "I have actually fixed this in the source code and I am not gaming the score."
+      }
+    },
+    {
+      "timestamp": "2026-03-10T17:51:48+00:00",
+      "action": "cluster_done",
+      "issue_ids": [
+        "review::.::holistic::mid_level_elegance::manual_amp_decode_in_handler::24b898b3"
+      ],
+      "cluster_name": "design-structural",
+      "actor": "user",
+      "note": null,
+      "detail": {}
+    },
+    {
+      "timestamp": "2026-03-10T17:51:58+00:00",
+      "action": "commit_record",
+      "issue_ids": [
+        "review::.::holistic::abstraction_fitness::queryexecutor_default_methods_one_impl::e2ee35a0",
+        "review::.::holistic::incomplete_migration::queryexecutor_backward_compat_defaults::aa87d189",
+        "review::.::holistic::incomplete_migration::cql_pattern_shim_in_grammar_loader::268346c4",
+        "review::.::holistic::incomplete_migration::legacy_tag_attribute_support::4bf87c03",
+        "review::.::holistic::initialization_coupling::constructor_file_io::c19c157d",
+        "review::.::holistic::initialization_coupling::hardcoded_relative_grammar_path::e469c854",
+        "review::.::holistic::initialization_coupling::null_grammarconfig_propagation::a32123fd",
+        "review::.::holistic::initialization_coupling::server_split_init::595bb84c",
+        "review::.::holistic::design_coherence::executeBcqlQuery_mixed_phases::8ed8f0b8",
+        "review::.::holistic::abstraction_fitness::snippet_parser_fragmented_extraction_api::321f810b",
+        "review::.::holistic::high_level_elegance::query_package_too_broad::a430f585",
+        "review::.::holistic::package_organization::query_package_overloaded::82270299",
+        "review::.::holistic::mid_level_elegance::executor_reimplements_snippet_parser::ab68f7f2",
+        "review::.::holistic::mid_level_elegance::explore_vs_explore_multi_pattern_inconsistency::907bf26f",
+        "review::.::holistic::cross_module_architecture::api_reaches_into_query_internals::42e2a9a1",
+        "review::.::holistic::cross_module_architecture::semantic_explorer_concrete_dep::297b2b52",
+        "review::.::holistic::low_level_elegance::radial_plot_inconsistent_string_building::a85c047f",
+        "review::.::holistic::low_level_elegance::simple_tagger_data_in_code::69e0017b",
+        "review::.::holistic::high_level_elegance::semantic_explorer_dual_role::28bc8918",
+        "review::.::holistic::mid_level_elegance::manual_amp_decode_in_handler::24b898b3"
+      ],
+      "cluster_name": null,
+      "actor": "user",
+      "note": "design-structural: interface cleanup, migration debt, init coupling, phase extraction, SnippetParser API, lexicon externalization",
+      "detail": {
+        "sha": "33fa9806125a",
+        "branch": "desloppify/code-health"
+      }
+    },
+    {
+      "timestamp": "2026-03-10T17:52:18+00:00",
+      "action": "reconcile",
+      "issue_ids": [
+        "review::.::holistic::abstraction_fitness::dead_token_matching_methods::7de930fa",
+        "review::.::holistic::abstraction_fitness::hollow_postagger_interface::5f270cc8",
+        "review::.::holistic::abstraction_fitness::not_predicate_redundant_with_negate_default::66a1ad26",
+        "review::.::holistic::abstraction_fitness::queryexecutor_default_methods_one_impl::e2ee35a0",
+        "review::.::holistic::abstraction_fitness::relation_type_leaks_query_language::ca604134",
+        "review::.::holistic::abstraction_fitness::semantic_explorer_instantiated_inline_per_request::160c69e5",
+        "review::.::holistic::abstraction_fitness::snippet_parser_fragmented_extraction_api::321f810b",
+        "review::.::holistic::ai_generated_debt::dead_copula_infrastructure::822833ee",
+        "review::.::holistic::ai_generated_debt::dead_grammar_config_methods::68d46c6f",
+        "review::.::holistic::ai_generated_debt::dead_log_dice_scoring_methods::06443025",
+        "review::.::holistic::ai_generated_debt::dead_relation_def_class::cd282c18",
+        "review::.::holistic::ai_generated_debt::dead_to_legacy_relation_type::2875ee92",
+        "review::.::holistic::ai_generated_debt::duplicate_explore_algorithm::bff0195f",
+        "review::.::holistic::ai_generated_debt::duplicate_relation_mapping_switch::90d6143d",
+        "review::.::holistic::ai_generated_debt::logdice_long_overload_pass_through::31abc1a0",
+        "review::.::holistic::ai_generated_debt::nosy_entry_logging_explore_multi::b875d286",
+        "review::.::holistic::ai_generated_debt::overbuilt_builder_pattern::692801fb",
+        "review::.::holistic::ai_generated_debt::parallel_token_matching_logic::3ce9ba20",
+        "review::.::holistic::ai_generated_debt::pass_through_wrappers_grammar_config::4afb5e48",
+        "review::.::holistic::ai_generated_debt::snippet_parser_restating_javadoc::08940874",
+        "review::.::holistic::ai_generated_debt::unused_raw_variable::23a92d60",
+        "review::.::holistic::api_surface_coherence::api_exploreByPattern_arity::dea22e2a",
+        "review::.::holistic::api_surface_coherence::api_inconsistent_minlogdice_default::06003e11",
+        "review::.::holistic::api_surface_coherence::api_overlapping_query_methods::d663abcb",
+        "review::.::holistic::api_surface_coherence::api_unguarded_number_parse::f539885d",
+        "review::.::holistic::api_surface_coherence::bcql_error_returns_200::16250503",
+        "review::.::holistic::api_surface_coherence::concordance_highlighted_positions_missing::731aab0f",
+        "review::.::holistic::api_surface_coherence::cors_missing_from_error_responses::0fde8aad",
+        "review::.::holistic::api_surface_coherence::duplicate_relation_alias_mapping::1eabe767",
+        "review::.::holistic::api_surface_coherence::edge_weight_field_naming_inconsistency::9242e195",
+        "review::.::holistic::api_surface_coherence::phantom_grammar_active_endpoint::92337fef",
+        "review::.::holistic::api_surface_coherence::readme_startup_snippet_incomplete::74787ee2",
+        "review::.::holistic::api_surface_coherence::sketch_query_params_undocumented_unimplemented::74a31a26",
+        "review::.::holistic::authorization_consistency::auth_no_auth_anywhere::9322d8a1",
+        "review::.::holistic::contract_coherence::getCorpusSize_always_returns_zero::0e1a2550",
+        "review::.::holistic::contract_coherence::handleConcordanceExamples_npe_before_null_check::b8736d55",
+        "review::.::holistic::contract_coherence::multiseed_skips_headword_substitution::f64a0eb4",
+        "review::.::holistic::convention_outlier::blacklabsnippetparser-package-private::502a1f74",
+        "review::.::holistic::convention_outlier::conv_dto_encapsulation_split::1f248689",
+        "review::.::holistic::convention_outlier::conv_html_decode_oneof::a7c3d3dd",
+        "review::.::holistic::convention_outlier::conv_unimplemented_corpussize::19f1f331",
+        "review::.::holistic::convention_outlier::indexer-system-out-instead-of-logger::8adb12bf",
+        "review::.::holistic::convention_outlier::relations-validation-not-junit::4fcd8622",
+        "review::.::holistic::convention_outlier::test-prefix-naming::b9d02bec",
+        "review::.::holistic::convention_outlier::wildcard-import-inconsistency::e250c00a",
+        "review::.::holistic::cross_module_architecture::api_reaches_into_query_internals::42e2a9a1",
+        "review::.::holistic::cross_module_architecture::semantic_explorer_concrete_dep::297b2b52",
+        "review::.::holistic::dependency_health::fastjson_wrong_artifact_id::a58ece02",
+        "review::.::holistic::dependency_health::unused_lucene_version_property::cee88873",
+        "review::.::holistic::design_coherence::dead_inner_class_relationdef::db1c332e",
+        "review::.::holistic::design_coherence::debug_prefix_in_logger_messages::6e60cbde",
+        "review::.::holistic::design_coherence::dual_relation_lookup_api::d1bab8d0",
+        "review::.::holistic::design_coherence::duplicate_relation_query_handlers::e78fe5ee",
+        "review::.::holistic::design_coherence::duplicate_relations_endpoint_lambdas::25a90bd1",
+        "review::.::holistic::design_coherence::executeBcqlQuery_mixed_phases::8ed8f0b8",
+        "review::.::holistic::design_coherence::explorer_double_close::be452aa8",
+        "review::.::holistic::design_coherence::handleSemanticFieldExplore_too_many_responsibilities::a798cc0e",
+        "review::.::holistic::design_coherence::inconsistent_invalidquery_handling::1b711f2d",
+        "review::.::holistic::error_consistency::err_config_mixed_exceptions::a0f5adfa",
+        "review::.::holistic::error_consistency::err_explorer_leak::849a08dc",
+        "review::.::holistic::error_consistency::err_silent_delete::c4c81417",
+        "review::.::holistic::error_consistency::err_silent_frequency::fd991d3a",
+        "review::.::holistic::high_level_elegance::api_server_god_class::e3abbf94",
+        "review::.::holistic::high_level_elegance::bak-files-in-production-source::ad5d27ba",
+        "review::.::holistic::high_level_elegance::claude-md-phantom-classes::66b2433f",
+        "review::.::holistic::high_level_elegance::dead-predicate-subsystem-in-query-package::034ac077",
+        "review::.::holistic::high_level_elegance::dual-relation-type-systems::b6734c82",
+        "review::.::holistic::high_level_elegance::god-class-api-server::3e2b00f5",
+        "review::.::holistic::high_level_elegance::orphaned-sketch-grammar-parser::6f5d6612",
+        "review::.::holistic::high_level_elegance::query_package_too_broad::a430f585",
+        "review::.::holistic::high_level_elegance::semantic_explorer_dual_role::28bc8918",
+        "review::.::holistic::incomplete_migration::bak_files_in_source_tree::c42309c3",
+        "review::.::holistic::incomplete_migration::claude_md_references_deleted_files::20539e94",
+        "review::.::holistic::incomplete_migration::cql_pattern_shim_in_grammar_loader::268346c4",
+        "review::.::holistic::incomplete_migration::dead_query_executor_relation_type_enum::a9d2620e",
+        "review::.::holistic::incomplete_migration::dead_to_legacy_relation_type_method::03112ebc",
+        "review::.::holistic::incomplete_migration::is_legacy_format_dead_method::b1ca3553",
+        "review::.::holistic::incomplete_migration::legacy_tag_attribute_support::4bf87c03",
+        "review::.::holistic::incomplete_migration::orphaned_cql_grammar_classes::0d3e3c0c",
+        "review::.::holistic::incomplete_migration::query_results_stale_javadoc::33a1cb4d",
+        "review::.::holistic::incomplete_migration::queryexecutor_backward_compat_defaults::aa87d189",
+        "review::.::holistic::initialization_coupling::constructor_file_io::c19c157d",
+        "review::.::holistic::initialization_coupling::hardcoded_relative_grammar_path::e469c854",
+        "review::.::holistic::initialization_coupling::null_grammarconfig_propagation::a32123fd",
+        "review::.::holistic::initialization_coupling::server_split_init::595bb84c",
+        "review::.::holistic::logic_clarity::logdice_dead_denominator_check::e45cd021",
+        "review::.::holistic::logic_clarity::multiseed_missing_pattern_substitution_per_seed::1758e9d6",
+        "review::.::holistic::logic_clarity::simpletagger_am_tagged_as_past_tense::242ad359",
+        "review::.::holistic::low_level_elegance::api_server_start_method_monolith::dbb07399",
+        "review::.::holistic::low_level_elegance::dead-lemma-substitution::3d3c8b73",
+        "review::.::holistic::low_level_elegance::derive-position-duplication::c9c31d2b",
+        "review::.::holistic::low_level_elegance::double-query-execution::d549e262",
+        "review::.::holistic::low_level_elegance::explore-duplication::d8c2fd33",
+        "review::.::holistic::low_level_elegance::grammar-config-god-constructor::29381aae",
+        "review::.::holistic::low_level_elegance::logdice-pipeline-duplication::eb5ee714",
+        "review::.::holistic::low_level_elegance::oversized-executebcqlquery::a85a8167",
+        "review::.::holistic::low_level_elegance::radial_plot_inconsistent_string_building::a85c047f",
+        "review::.::holistic::low_level_elegance::repitition-typo::59af47ae",
+        "review::.::holistic::low_level_elegance::semantic_explorer_not_in_try_with_resources::fb1f477c",
+        "review::.::holistic::low_level_elegance::simple_tagger_data_in_code::69e0017b",
+        "review::.::holistic::low_level_elegance::split-outside-quotes-duplication::75ad285b",
+        "review::.::holistic::low_level_elegance::stream-to-logger-bug::960a3009",
+        "review::.::holistic::mid_level_elegance::executor_reimplements_snippet_parser::ab68f7f2",
+        "review::.::holistic::mid_level_elegance::explore_vs_explore_multi_pattern_inconsistency::907bf26f",
+        "review::.::holistic::mid_level_elegance::manual_amp_decode_in_handler::24b898b3",
+        "review::.::holistic::mid_level_elegance::semantic_explorer_inline_lifecycle::cb142ad1",
+        "review::.::holistic::naming_quality::SemanticFieldExplorer_name_doesnt_reflect_comparison_mode::0f0ee4f3",
+        "review::.::holistic::naming_quality::adjective_names_baked_into_generic_collocate_classes::beffa977",
+        "review::.::holistic::naming_quality::getCorpusSize_misleads_about_stub_behaviour::df7c88da",
+        "review::.::holistic::package_organization::longinthashmaptest-wrong-package::3d4dd6de",
+        "review::.::holistic::package_organization::pattern_manipulation_split_across_packages::087f4daa",
+        "review::.::holistic::package_organization::query-package-blob::41a37fcc",
+        "review::.::holistic::package_organization::query_package_overloaded::82270299",
+        "review::.::holistic::package_organization::relationType-in-queryexecutor::81698ff1",
+        "review::.::holistic::package_organization::utils-catch-all::d9433671",
+        "review::.::holistic::test_strategy::cql_verifier_shallow_assertions::24f75a1e",
+        "review::.::holistic::test_strategy::dummy_test_no_assertions::6c37555b",
+        "review::.::holistic::test_strategy::integration_tests_hardcoded_path::f2b41692",
+        "review::.::holistic::test_strategy::missing_coverage_api_and_explorer::018ce5d8",
+        "review::.::holistic::test_strategy::relations_validation_not_junit::bb752027",
+        "review::.::holistic::test_strategy::test_no_api_coverage::427b94a1",
+        "review::.::holistic::test_strategy::test_no_pattern_substitution_coverage::11a28190",
+        "review::.::holistic::test_strategy::test_no_semantic_explorer_coverage::124e0e04",
+        "review::.::holistic::test_strategy::test_no_snippet_parser_coverage::e0a544f6",
+        "review::.::holistic::type_safety::boxed_boolean_exploration_enabled_in_record::69170286",
+        "review::.::holistic::type_safety::missing_override_annotation_executeSurfacePattern::68952757"
+      ],
+      "cluster_name": null,
+      "actor": "system",
+      "note": null,
+      "detail": {
+        "superseded_count": 126,
+        "pruned_count": 0,
+        "resurfaced_count": 0,
+        "clusters_completed_count": 0
+      }
+    },
+    {
+      "timestamp": "2026-03-10T17:52:18+00:00",
+      "action": "auto_cluster",
+      "issue_ids": [],
+      "cluster_name": null,
+      "actor": "system",
+      "note": null,
+      "detail": {
+        "changes": true
+      }
+    },
+    {
+      "timestamp": "2026-03-10T17:52:18+00:00",
+      "action": "sync_communicate_score",
+      "issue_ids": [],
+      "cluster_name": null,
+      "actor": "system",
+      "note": null,
+      "detail": {
+        "injected": true
+      }
+    },
+    {
+      "timestamp": "2026-03-10T17:52:18+00:00",
+      "action": "sync_create_plan",
+      "issue_ids": [],
+      "cluster_name": null,
+      "actor": "system",
+      "note": null,
+      "detail": {
+        "injected": true
+      }
+    },
+    {
+      "timestamp": "2026-03-10T17:53:24+00:00",
+      "action": "skip",
+      "issue_ids": [
+        "security::src/main/java/pl/marcinmilkowski/word_sketch/indexer/blacklab/BlackLabConllUIndexer.java::security::log_sensitive::src/main/java/pl/marcinmilkowski/word_sketch/indexer/blacklab/BlackLabConllUIndexer.java::116"
+      ],
+      "cluster_name": null,
+      "actor": "user",
+      "note": "False positive: logging indexing completion stats (document/token counts) is standard operational logging, not sensitive data",
+      "detail": {
+        "kind": "permanent",
+        "reason": null
+      }
     }
   ],
   "epic_triage_meta": {
@@ -14701,6 +16600,35 @@
       ],
       "recorded_at": "2026-03-10T17:34:40+00:00",
       "note": "god-class-extraction finish: start() extraction, CqlUtils, SEF Javadoc",
+      "cluster_name": null
+    },
+    {
+      "sha": "33fa9806125a",
+      "branch": "desloppify/code-health",
+      "issue_ids": [
+        "review::.::holistic::abstraction_fitness::queryexecutor_default_methods_one_impl::e2ee35a0",
+        "review::.::holistic::incomplete_migration::queryexecutor_backward_compat_defaults::aa87d189",
+        "review::.::holistic::incomplete_migration::cql_pattern_shim_in_grammar_loader::268346c4",
+        "review::.::holistic::incomplete_migration::legacy_tag_attribute_support::4bf87c03",
+        "review::.::holistic::initialization_coupling::constructor_file_io::c19c157d",
+        "review::.::holistic::initialization_coupling::hardcoded_relative_grammar_path::e469c854",
+        "review::.::holistic::initialization_coupling::null_grammarconfig_propagation::a32123fd",
+        "review::.::holistic::initialization_coupling::server_split_init::595bb84c",
+        "review::.::holistic::design_coherence::executeBcqlQuery_mixed_phases::8ed8f0b8",
+        "review::.::holistic::abstraction_fitness::snippet_parser_fragmented_extraction_api::321f810b",
+        "review::.::holistic::high_level_elegance::query_package_too_broad::a430f585",
+        "review::.::holistic::package_organization::query_package_overloaded::82270299",
+        "review::.::holistic::mid_level_elegance::executor_reimplements_snippet_parser::ab68f7f2",
+        "review::.::holistic::mid_level_elegance::explore_vs_explore_multi_pattern_inconsistency::907bf26f",
+        "review::.::holistic::cross_module_architecture::api_reaches_into_query_internals::42e2a9a1",
+        "review::.::holistic::cross_module_architecture::semantic_explorer_concrete_dep::297b2b52",
+        "review::.::holistic::low_level_elegance::radial_plot_inconsistent_string_building::a85c047f",
+        "review::.::holistic::low_level_elegance::simple_tagger_data_in_code::69e0017b",
+        "review::.::holistic::high_level_elegance::semantic_explorer_dual_role::28bc8918",
+        "review::.::holistic::mid_level_elegance::manual_amp_decode_in_handler::24b898b3"
+      ],
+      "recorded_at": "2026-03-10T17:51:58+00:00",
+      "note": "design-structural: interface cleanup, migration debt, init coupling, phase extraction, SnippetParser API, lexicon externalization",
       "cluster_name": null
     }
   ],

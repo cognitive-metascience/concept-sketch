@@ -1,0 +1,95 @@
+{
+  "batch": "error_consistency",
+  "batch_index": 16,
+  "assessments": {"error_consistency": 60.0},
+  "dimension_notes": {
+    "error_consistency": {
+      "evidence": [
+        "handleSemanticFieldExplore (lines 468-473) and handleSemanticFieldExploreMulti (lines 606-610) wrap parseInt/parseDouble in try/catch for NumberFormatException, but sibling handlers handleSemanticField (line 708-709), handleSemanticFieldExamples (line 786), and handleConcordanceExamples (line 813) use bare parseInt/parseDouble without guards — inconsistent error handling in sibling HTTP handlers",
+        "BlackLabQueryExecutor.getTotalFrequency: catches broad Exception, logs a warning, and silently returns 0; callers compute logDice with 0 total frequency, producing a score of 0.0 rather than surfacing that frequency lookup failed — silent swallowing that corrupts downstream scoring",
+        "SemanticFieldExplorer.close(): catch (Exception e) { throw new IOException(e); } — appropriate wrapping but uses maximally broad Exception catch when the underlying close() is known to throw checked exceptions",
+        "BlackLabConllUIndexer.errorOccurred(): logs and returns true to continue — intentional silencing of per-file index errors, but callers have no way to discover how many files failed",
+        "WordSketchApiServer.start(): wraps IOException in RuntimeException — intentional for startup failure, but this diverges from the IOException-first strategy used everywhere else",
+        "InvalidQuery in BlackLabQueryExecutor is consistently wrapped into IOException with message context preserved (e.g., 'BCQL parse error: ' + e.getMessage(), e) — good cause-chain preservation where it is applied",
+        "HTTP handlers in WordSketchApiServer use two tiers: some catch both IOException and Exception separately (explore, explore-multi), others catch only IOException (concordance examples, semantic field), and the catch-all Exception tier is absent from some handlers — error surface is uneven"
+      ],
+      "impact_scope": "subsystem",
+      "fix_scope": "multi_file_refactor",
+      "confidence": "high"
+    }
+  },
+  "dimension_judgment": {
+    "error_consistency": {
+      "strengths": [
+        "IOException is used as the primary checked exception throughout the query layer; InvalidQuery and other BlackLab exceptions are consistently wrapped with cause preserved",
+        "HTTP handlers log errors with the full exception before converting to JSON 500 responses — error information is not silently lost at the API boundary",
+        "GrammarConfigLoader uses IOException with descriptive messages for all configuration validation failures, giving callers actionable context"
+      ],
+      "issue_character": "The dominant pattern is sibling inconsistency: handlers that look nearly identical differ in whether they guard numeric parameter parsing, and the core frequency-lookup path silently swallows errors that would corrupt logDice results rather than propagating them.",
+      "score_rationale": "The codebase has a clear primary strategy (IOException wrapping) and applies it well in the query layer, but HTTP handler siblings diverge noticeably — some guard NumberFormatException, others don't, and the most consequential silent swallow is in getTotalFrequency which silently returns 0 when frequency lookup fails, producing incorrect logDice scores without any caller-visible signal. A codebase scoring above 70 would have consistent guard patterns across sibling handlers; above 80 would have no silent-swallow on correctness-critical paths. This falls below those thresholds."
+    }
+  },
+  "issues": [
+    {
+      "dimension": "error_consistency",
+      "identifier": "nfe_guard_missing_sibling_handlers",
+      "summary": "handleSemanticField, handleSemanticFieldExamples, and handleConcordanceExamples parse numeric URL params without NumberFormatException guard, unlike their sibling handlers",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/api/WordSketchApiServer.java"
+      ],
+      "evidence": [
+        "Line 708: double minLogDice = Double.parseDouble(params.getOrDefault(\"min_logdice\", \"3.0\")); — no try/catch",
+        "Line 709: int maxPerNoun = Integer.parseInt(params.getOrDefault(\"max_per_noun\", \"50\")); — no try/catch",
+        "Line 786: int maxExamples = Integer.parseInt(params.getOrDefault(\"max\", \"10\")); — no try/catch",
+        "Line 813: int limit = Integer.parseInt(params.getOrDefault(\"limit\", \"10\")); — no try/catch",
+        "Contrast: lines 468-473 in handleSemanticFieldExplore and lines 606-610 in handleSemanticFieldExploreMulti both wrap all parseInt/parseDouble in try/catch(NumberFormatException)"
+      ],
+      "suggestion": "Wrap all parseInt/parseDouble calls in handleSemanticField, handleSemanticFieldExamples, and handleConcordanceExamples with try/catch(NumberFormatException) that returns 400 with an error message, consistent with sibling handlers.",
+      "confidence": "high",
+      "impact_scope": "module",
+      "fix_scope": "single_edit"
+    },
+    {
+      "dimension": "error_consistency",
+      "identifier": "silent_swallow_total_frequency",
+      "summary": "getTotalFrequency silently swallows lookup exceptions and returns 0, causing callers to compute incorrect logDice scores without any failure signal",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/query/BlackLabQueryExecutor.java"
+      ],
+      "evidence": [
+        "getTotalFrequency: catch (Exception e) { logger.warn(\"Failed to retrieve frequency...\"); return 0; }",
+        "LogDiceCalculator.compute: when headwordFreq or collocateTotal is 0, returns 0.0 — callers receive a logDice of 0.0 and cannot tell whether the word is rare or the lookup failed",
+        "buildAndRankCollocates calls getTotalFrequency per collocate in a loop — a systematic failure would silently zero out all scores"
+      ],
+      "suggestion": "Either propagate the IOException from getTotalFrequency (declaring it throws IOException), or have the catch return a negative sentinel and document that callers must treat negatives as 'unknown'; do not silently return a valid-looking 0.",
+      "confidence": "high",
+      "impact_scope": "subsystem",
+      "fix_scope": "single_edit"
+    },
+    {
+      "dimension": "error_consistency",
+      "identifier": "indexer_error_silencing",
+      "summary": "BlackLabConllUIndexer.errorOccurred returns true to continue indexing but callers have no way to discover how many files failed",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/indexer/blacklab/BlackLabConllUIndexer.java"
+      ],
+      "evidence": [
+        "errorOccurred: logger.error(\"Indexing error in {}: {}\", path, e.getMessage()); return true; // continue indexing",
+        "documentCount and tokenCount are incremented in fileDone, but there is no errorCount AtomicLong — callers only see total success counts, not failure counts",
+        "getDocumentCount() and getTokenCount() are public; there is no getErrorCount() method"
+      ],
+      "suggestion": "Add an AtomicLong errorCount field, increment it in errorOccurred, and expose getErrorCount() so callers can assert or log how many files were skipped on errors.",
+      "confidence": "high",
+      "impact_scope": "local",
+      "fix_scope": "single_edit"
+    }
+  ],
+  "retrospective": {
+    "root_causes": [
+      "HTTP handler methods were written incrementally; later handlers added NFE guards but earlier sibling handlers were not retroactively updated",
+      "getTotalFrequency chose to return a safe default (0) to keep the hot-path working, but the silent-0 contract is not documented and corrupts scoring correctness"
+    ],
+    "likely_symptoms": ["nfe_guard_missing_sibling_handlers"],
+    "possible_false_positives": []
+  }
+}
