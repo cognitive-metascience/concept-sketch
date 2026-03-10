@@ -71,86 +71,31 @@ public class WordSketchApiServer {
 
             registerGetHandler(server, "/api/relations/dep", sketchHandlers::handleDepRelations);
 
-            registerGetHandler(server, "/api/semantic-field/explore", exchange -> {
+            registerGetHandler(server, "/api/semantic-field/explore", wrapHandler(exchange -> {
                 logger.info("Received request: {}", exchange.getRequestURI());
-                try {
-                    explorationHandlers.handleSemanticFieldExplore(exchange);
-                } catch (IOException e) {
-                    logger.error("Semantic field explore error", e);
-                    HttpApiUtils.sendError(exchange, 500, "Semantic field exploration failed: " + e.getMessage());
-                } catch (Exception e) {
-                    logger.error("Semantic field explore unexpected error", e);
-                    HttpApiUtils.sendError(exchange, 500, "Unexpected error: " + e.getMessage());
-                }
-            });
+                explorationHandlers.handleSemanticFieldExplore(exchange);
+            }, "Semantic field explore"));
 
-            registerGetHandler(server, "/api/semantic-field/explore-multi", exchange -> {
+            registerGetHandler(server, "/api/semantic-field/explore-multi", wrapHandler(exchange -> {
                 logger.info("Received request: {}", exchange.getRequestURI());
-                try {
-                    explorationHandlers.handleSemanticFieldExploreMulti(exchange);
-                } catch (IOException e) {
-                    logger.error("Semantic field explore-multi error", e);
-                    HttpApiUtils.sendError(exchange, 500, "Multi-seed exploration failed: " + e.getMessage());
-                } catch (Exception e) {
-                    logger.error("Semantic field explore-multi unexpected error", e);
-                    HttpApiUtils.sendError(exchange, 500, "Unexpected error: " + e.getMessage());
-                }
-            });
+                explorationHandlers.handleSemanticFieldExploreMulti(exchange);
+            }, "Multi-seed exploration"));
 
-            registerGetHandler(server, "/api/semantic-field", exchange -> {
-                try {
-                    explorationHandlers.handleSemanticField(exchange);
-                } catch (IOException e) {
-                    logger.error("Semantic field error", e);
-                    HttpApiUtils.sendError(exchange, 500, "Semantic field comparison failed: " + e.getMessage());
-                } catch (Exception e) {
-                    logger.error("Semantic field unexpected error", e);
-                    HttpApiUtils.sendError(exchange, 500, "Unexpected error: " + e.getMessage());
-                }
-            });
+            registerGetHandler(server, "/api/semantic-field",
+                wrapHandler(explorationHandlers::handleSemanticField, "Semantic field comparison"));
 
-            registerGetHandler(server, "/api/semantic-field/examples", exchange -> {
-                try {
-                    explorationHandlers.handleSemanticFieldExamples(exchange);
-                } catch (IOException e) {
-                    logger.error("Semantic field examples error", e);
-                    HttpApiUtils.sendError(exchange, 500, "Failed to fetch examples: " + e.getMessage());
-                } catch (Exception e) {
-                    logger.error("Semantic field examples unexpected error", e);
-                    HttpApiUtils.sendError(exchange, 500, "Unexpected error: " + e.getMessage());
-                }
-            });
+            registerGetHandler(server, "/api/semantic-field/examples",
+                wrapHandler(explorationHandlers::handleSemanticFieldExamples, "Semantic field examples"));
 
-            registerGetHandler(server, "/api/concordance/examples", exchange -> {
-                try {
-                    sketchHandlers.handleConcordanceExamples(exchange);
-                } catch (IOException e) {
-                    logger.error("Concordance examples error", e);
-                    HttpApiUtils.sendError(exchange, 500, "Failed to fetch concordance examples: " + e.getMessage());
-                } catch (Exception e) {
-                    logger.error("Concordance examples unexpected error", e);
-                    HttpApiUtils.sendError(exchange, 500, "Unexpected error: " + e.getMessage());
-                }
-            });
+            registerGetHandler(server, "/api/concordance/examples",
+                wrapHandler(sketchHandlers::handleConcordanceExamples, "Concordance examples"));
 
-            server.createContext("/api/visual/radial", exchange -> {
-                try {
-                    sketchHandlers.handleVisualRadial(exchange);
-                } catch (Exception e) {
-                    logger.error("Error rendering radial", e);
-                    HttpApiUtils.sendError(exchange, 500, "Failed to render radial: " + e.getMessage());
-                }
-            });
+            server.createContext("/api/visual/radial",
+                wrapHandler(sketchHandlers::handleVisualRadial, "Radial plot"));
 
             // POST with JSON body to avoid URL encoding issues
-            server.createContext("/api/bcql", exchange -> {
-                try {
-                    sketchHandlers.handleBcqlQueryPost(exchange);
-                } catch (Exception e) {
-                    logger.error("Error executing BCQL", e);
-                    HttpApiUtils.sendError(exchange, 500, "Failed to execute BCQL: " + e.getMessage());
-                }
-            });
+            server.createContext("/api/bcql",
+                wrapHandler(sketchHandlers::handleBcqlQueryPost, "BCQL query"));
 
             server.setExecutor(null);
             server.start();
@@ -190,6 +135,25 @@ public class WordSketchApiServer {
             if (!HttpApiUtils.requireMethod(exchange, "GET")) return;
             handler.handle(exchange);
         });
+    }
+
+    /**
+     * Wraps an {@link com.sun.net.httpserver.HttpHandler} with uniform error handling.
+     * Catches {@link IOException} and any other {@link Exception}, logs them, and sends a 500 response.
+     */
+    private com.sun.net.httpserver.HttpHandler wrapHandler(
+            com.sun.net.httpserver.HttpHandler handler, String description) {
+        return exchange -> {
+            try {
+                handler.handle(exchange);
+            } catch (IOException e) {
+                logger.error("{} error", description, e);
+                HttpApiUtils.sendError(exchange, 500, description + " failed: " + e.getMessage());
+            } catch (Exception e) {
+                logger.error("{} unexpected error", description, e);
+                HttpApiUtils.sendError(exchange, 500, "Unexpected error: " + e.getMessage());
+            }
+        };
     }
 
     public void stop() {

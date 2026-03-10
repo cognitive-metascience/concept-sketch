@@ -111,10 +111,7 @@ class ExplorationHandlers {
         List<Map<String, Object>> seedCollocs = new ArrayList<>();
         if (result.seedCollocates != null) {
             for (Map.Entry<String, Double> colloc : result.seedCollocates.entrySet()) {
-                Map<String, Object> collocMap = new HashMap<>();
-                collocMap.put("word", colloc.getKey());
-                collocMap.put("log_dice", Math.round(colloc.getValue() * 100.0) / 100.0);
-                seedCollocs.add(collocMap);
+                seedCollocs.add(formatSeedCollocate(colloc.getKey(), colloc.getValue()));
             }
         }
         response.put("seed_collocates", seedCollocs);
@@ -123,13 +120,7 @@ class ExplorationHandlers {
         List<Map<String, Object>> nouns = new ArrayList<>();
         if (result.discoveredNouns != null) {
             for (DiscoveredNoun dn : result.discoveredNouns) {
-                Map<String, Object> nounMap = new HashMap<>();
-                nounMap.put("word", dn.noun);
-                nounMap.put("shared_count", dn.sharedCount);
-                nounMap.put("similarity_score", Math.round(dn.similarityScore * 100.0) / 100.0);
-                nounMap.put("avg_logdice", Math.round(dn.avgLogDice * 100.0) / 100.0);
-                nounMap.put("shared_collocates", dn.getSharedCollocateList());
-                nouns.add(nounMap);
+                nouns.add(formatDiscoveredNoun(dn));
             }
         }
         response.put("discovered_nouns", nouns);
@@ -138,13 +129,7 @@ class ExplorationHandlers {
         List<Map<String, Object>> coreCollocs = new ArrayList<>();
         if (result.coreCollocates != null) {
             for (CoreCollocate ca : result.coreCollocates) {
-                Map<String, Object> collocMap = new HashMap<>();
-                collocMap.put("word", ca.collocate);
-                collocMap.put("shared_by_count", ca.sharedByCount);
-                collocMap.put("total_nouns", ca.totalNouns);
-                collocMap.put("coverage", Math.round(ca.getCoverage() * 100.0) / 100.0);
-                collocMap.put("seed_logdice", Math.round(ca.seedLogDice * 100.0) / 100.0);
-                coreCollocs.add(collocMap);
+                coreCollocs.add(formatCoreCollocate(ca));
             }
         }
         response.put("core_collocates", coreCollocs);
@@ -153,12 +138,7 @@ class ExplorationHandlers {
         List<Map<String, Object>> edges = new ArrayList<>();
         if (result.getEdges() != null) {
             for (Edge edge : result.getEdges()) {
-                Map<String, Object> edgeMap = new HashMap<>();
-                edgeMap.put("source", edge.source);
-                edgeMap.put("target", edge.target);
-                edgeMap.put("log_dice", Math.round(edge.weight * 100.0) / 100.0);
-                edgeMap.put("type", edge.type);
-                edges.add(edgeMap);
+                edges.add(formatEdge(edge));
             }
         }
         response.put("edges", edges);
@@ -218,34 +198,17 @@ class ExplorationHandlers {
             return;
         }
 
-        int headPos = relationConfig.get().headPosition();
-        int collocatePos = relationConfig.get().collocatePosition();
-
-        Map<String, List<QueryResults.WordSketchResult>> seedToCollocates = new HashMap<>();
-        Set<String> commonCollocates = null;
-
-        for (String seed : seeds) {
-            String bcqlPattern = relationConfig.get().getFullPattern(seed);
-            List<QueryResults.WordSketchResult> collocates;
-            collocates = executor.executeSurfacePattern(
-                seed, bcqlPattern, headPos, collocatePos, minLogDice, topCollocates);
-            seedToCollocates.put(seed, collocates);
-
-            Set<String> seedCollocates = new HashSet<>();
-            for (QueryResults.WordSketchResult wsr : collocates) {
-                seedCollocates.add(wsr.getLemma());
-            }
-
-            if (commonCollocates == null) {
-                commonCollocates = new HashSet<>(seedCollocates);
-            } else {
-                commonCollocates.retainAll(seedCollocates);
-            }
+        SemanticFieldExplorer.MultiSeedCollocates multiResult;
+        try {
+            multiResult = semanticFieldExplorer.exploreMultiSeed(
+                seeds, relationConfig.get(), minLogDice, topCollocates);
+        } catch (IOException e) {
+            HttpApiUtils.sendError(exchange, 500, "Multi-seed exploration failed: " + e.getMessage());
+            return;
         }
 
-        if (commonCollocates == null) {
-            commonCollocates = new HashSet<>();
-        }
+        Map<String, List<QueryResults.WordSketchResult>> seedToCollocates = multiResult.seedCollocates();
+        Set<String> commonCollocates = multiResult.commonCollocates();
 
         Map<String, Object> response = new HashMap<>();
         response.put("status", "ok");
@@ -263,9 +226,7 @@ class ExplorationHandlers {
         List<Map<String, Object>> discoveredCollocs = new ArrayList<>();
         for (Map.Entry<String, List<QueryResults.WordSketchResult>> entry : seedToCollocates.entrySet()) {
             for (QueryResults.WordSketchResult wsr : entry.getValue()) {
-                Map<String, Object> collocMap = new HashMap<>();
-                collocMap.put("word", wsr.getLemma());
-                collocMap.put("log_dice", wsr.getLogDice());
+                Map<String, Object> collocMap = formatSeedCollocate(wsr.getLemma(), wsr.getLogDice());
                 collocMap.put("frequency", wsr.getFrequency());
                 discoveredCollocs.add(collocMap);
             }
@@ -282,12 +243,7 @@ class ExplorationHandlers {
         for (Map.Entry<String, List<QueryResults.WordSketchResult>> entry : seedToCollocates.entrySet()) {
             String seed = entry.getKey();
             for (QueryResults.WordSketchResult wsr : entry.getValue()) {
-                Map<String, Object> edgeMap = new HashMap<>();
-                edgeMap.put("source", seed);
-                edgeMap.put("target", wsr.getLemma());
-                edgeMap.put("log_dice", wsr.getLogDice());
-                edgeMap.put("type", relationType);
-                edges.add(edgeMap);
+                edges.add(formatEdge(new Edge(seed, wsr.getLemma(), wsr.getLogDice(), relationType)));
             }
         }
         response.put("edges", edges);
@@ -365,11 +321,7 @@ class ExplorationHandlers {
         List<Map<String, Object>> edges = new ArrayList<>();
         if (result.getEdges() != null) {
             for (Edge edge : result.getEdges()) {
-                Map<String, Object> edgeMap = new HashMap<>();
-                edgeMap.put("source", edge.source);
-                edgeMap.put("target", edge.target);
-                edgeMap.put("log_dice", Math.round(edge.weight * 100.0) / 100.0);
-                edges.add(edgeMap);
+                edges.add(formatEdge(edge));
             }
         }
         response.put("edges", edges);
@@ -410,6 +362,42 @@ class ExplorationHandlers {
         response.put("count", examples.size());
 
         HttpApiUtils.sendJsonResponse(exchange, response);
+    }
+
+    private static Map<String, Object> formatSeedCollocate(String word, double logDice) {
+        Map<String, Object> m = new HashMap<>();
+        m.put("word", word);
+        m.put("log_dice", Math.round(logDice * 100.0) / 100.0);
+        return m;
+    }
+
+    private static Map<String, Object> formatDiscoveredNoun(DiscoveredNoun dn) {
+        Map<String, Object> m = new HashMap<>();
+        m.put("word", dn.noun);
+        m.put("shared_count", dn.sharedCount);
+        m.put("similarity_score", Math.round(dn.similarityScore * 100.0) / 100.0);
+        m.put("avg_logdice", Math.round(dn.avgLogDice * 100.0) / 100.0);
+        m.put("shared_collocates", dn.getSharedCollocateList());
+        return m;
+    }
+
+    private static Map<String, Object> formatCoreCollocate(CoreCollocate ca) {
+        Map<String, Object> m = new HashMap<>();
+        m.put("word", ca.collocate);
+        m.put("shared_by_count", ca.sharedByCount);
+        m.put("total_nouns", ca.totalNouns);
+        m.put("coverage", Math.round(ca.getCoverage() * 100.0) / 100.0);
+        m.put("seed_logdice", Math.round(ca.seedLogDice * 100.0) / 100.0);
+        return m;
+    }
+
+    private static Map<String, Object> formatEdge(Edge edge) {
+        Map<String, Object> m = new HashMap<>();
+        m.put("source", edge.source);
+        m.put("target", edge.target);
+        m.put("log_dice", Math.round(edge.weight * 100.0) / 100.0);
+        m.put("type", edge.type);
+        return m;
     }
 
     private static String resolveRelationAlias(String relation) {

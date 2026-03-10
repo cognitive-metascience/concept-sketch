@@ -4,8 +4,11 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
+import pl.marcinmilkowski.word_sketch.config.GrammarConfigLoader;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -434,6 +437,58 @@ public class SemanticFieldExplorer implements AutoCloseable {
             .distinct()
             .limit(maxExamples)
             .collect(Collectors.toList());
+    }
+
+    /**
+     * Result of a multi-seed exploration. Carries per-seed collocates and the
+     * intersection of collocate lemmas shared by all seeds.
+     */
+    public record MultiSeedCollocates(
+        Map<String, List<QueryResults.WordSketchResult>> seedCollocates,
+        Set<String> commonCollocates
+    ) {}
+
+    /**
+     * Fetches collocates for each seed using the given relation and computes their
+     * intersection.  The seeds are queried independently; the common-collocate set
+     * contains lemmas whose surface form appears in every seed's collocate list.
+     *
+     * @param seeds          ordered seed words (at least 2)
+     * @param relationConfig grammar relation to use for collocate lookup
+     * @param minLogDice     minimum logDice threshold for inclusion
+     * @param topCollocates  maximum collocates to fetch per seed
+     * @return per-seed collocate lists and their intersection
+     */
+    public MultiSeedCollocates exploreMultiSeed(
+            Set<String> seeds,
+            GrammarConfigLoader.RelationConfig relationConfig,
+            double minLogDice,
+            int topCollocates) throws IOException {
+        Map<String, List<QueryResults.WordSketchResult>> seedCollocates = new LinkedHashMap<>();
+        Set<String> commonCollocates = null;
+
+        for (String seed : seeds) {
+            String bcqlPattern = relationConfig.getFullPattern(seed);
+            List<QueryResults.WordSketchResult> collocates = executor.executeSurfacePattern(
+                seed, bcqlPattern,
+                relationConfig.headPosition(), relationConfig.collocatePosition(),
+                minLogDice, topCollocates);
+            seedCollocates.put(seed, collocates);
+
+            Set<String> seedLemmas = new HashSet<>();
+            for (QueryResults.WordSketchResult wsr : collocates) {
+                seedLemmas.add(wsr.getLemma());
+            }
+            if (commonCollocates == null) {
+                commonCollocates = new HashSet<>(seedLemmas);
+            } else {
+                commonCollocates.retainAll(seedLemmas);
+            }
+        }
+
+        return new MultiSeedCollocates(
+            seedCollocates,
+            commonCollocates != null ? commonCollocates : new HashSet<>());
     }
 
     @Override
