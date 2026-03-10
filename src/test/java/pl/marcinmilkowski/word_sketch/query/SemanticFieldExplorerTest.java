@@ -103,7 +103,7 @@ class SemanticFieldExplorerTest {
 
             List<AdjectiveProfile> fullyShared = result.getFullyShared();
             List<String> sharedNames = fullyShared.stream()
-                .map(p -> p.adjective).toList();
+                .map(p -> p.adjective()).toList();
 
             assertTrue(sharedNames.contains("empirical"),
                 "empirical should be fully shared; got: " + sharedNames);
@@ -125,7 +125,7 @@ class SemanticFieldExplorerTest {
                 explorer.compareCollocateProfiles(Set.of("theory", "model"), 0.0, 50);
 
             List<AdjectiveProfile> specific = result.getSpecific();
-            List<String> specificNames = specific.stream().map(p -> p.adjective).toList();
+            List<String> specificNames = specific.stream().map(p -> p.adjective()).toList();
 
             assertTrue(specificNames.contains("abstract"),
                 "abstract should be specific to theory; got: " + specificNames);
@@ -183,7 +183,7 @@ class SemanticFieldExplorerTest {
 
             // empirical is specific to theory (model has no adjectives)
             List<String> specificNames = result.getSpecific().stream()
-                .map(p -> p.adjective).toList();
+                .map(p -> p.adjective()).toList();
             assertTrue(specificNames.contains("empirical"),
                 "empirical should be specific when model has no adjectives; got: " + specificNames);
         }
@@ -220,7 +220,7 @@ class SemanticFieldExplorerTest {
                 explorer.compareCollocateProfiles(Set.of("theory", "model", "hypothesis"), 0.0, 50);
 
             List<String> partialNames = result.getPartiallyShared().stream()
-                .map(p -> p.adjective).toList();
+                .map(p -> p.adjective()).toList();
 
             assertTrue(partialNames.contains("theoretical"),
                 "theoretical (in 2/3 nouns) should be partially shared; got: " + partialNames);
@@ -244,10 +244,10 @@ class SemanticFieldExplorerTest {
 
             // Edge from abstract → theory should have weight ~9.0
             Edge theoryEdge = edges.stream()
-                .filter(e -> e.target.equals("theory") && e.source.equals("abstract"))
+                .filter(e -> e.target().equals("theory") && e.source().equals("abstract"))
                 .findFirst().orElse(null);
             assertNotNull(theoryEdge, "Should have abstract→theory edge");
-            assertEquals(9.0, theoryEdge.weight, 0.001);
+            assertEquals(9.0, theoryEdge.weight(), 0.001);
         }
     }
 }

@@ -66,7 +66,7 @@ public class CollocateProfileComparator {
         List<AdjectiveProfile> profiles = buildAdjectiveProfileList(nounList, rawProfiles);
 
         // Sort by commonality score (most shared first)
-        profiles.sort((a, b) -> Double.compare(b.commonalityScore, a.commonalityScore));
+        profiles.sort((a, b) -> Double.compare(b.commonalityScore(), a.commonalityScore()));
 
         logger.debug("Total unique adjectives: {}", profiles.size());
         logTopProfiles(profiles);
@@ -151,22 +151,22 @@ public class CollocateProfileComparator {
     private void logTopProfiles(List<AdjectiveProfile> profiles) {
         logger.debug("\nTop SHARED (high commonality):");
         profiles.stream()
-            .filter(p -> p.presentInCount >= 2)
+            .filter(p -> p.presentInCount() >= 2)
             .limit(10)
-            .forEach(p -> logger.debug("  {} (in {}/{} nouns, avg={})", p.adjective,
-                p.presentInCount, p.totalNouns, String.format("%.2f", p.avgLogDice)));
+            .forEach(p -> logger.debug("  {} (in {}/{} nouns, avg={})", p.adjective(),
+                p.presentInCount(), p.totalNouns(), String.format("%.2f", p.avgLogDice())));
 
         logger.debug("\nTop DISTINCTIVE (specific to 1 noun):");
         profiles.stream()
-            .filter(p -> p.presentInCount == 1)
-            .sorted((a, b) -> Double.compare(b.maxLogDice, a.maxLogDice))
+            .filter(p -> p.presentInCount() == 1)
+            .sorted((a, b) -> Double.compare(b.maxLogDice(), a.maxLogDice()))
             .limit(10)
             .forEach(p -> {
-                String specificNoun = p.nounScores.entrySet().stream()
+                String specificNoun = p.nounScores().entrySet().stream()
                     .filter(e -> e.getValue() > 0)
                     .map(Map.Entry::getKey)
                     .findFirst().orElse("?");
-                logger.debug("  {} -> {} ({})", p.adjective, specificNoun, String.format("%.2f", p.maxLogDice));
+                logger.debug("  {} -> {} ({})", p.adjective(), specificNoun, String.format("%.2f", p.maxLogDice()));
             });
     }
 

@@ -47,7 +47,7 @@ public class ExplorationResult {
     /** Get nouns sharing at least minShared collocates with seed */
     public List<DiscoveredNoun> getNounsWithMinShared(int minShared) {
         return discoveredNouns.stream()
-            .filter(n -> n.sharedCount >= minShared)
+            .filter(n -> n.sharedCount() >= minShared)
             .collect(Collectors.toList());
     }
 
@@ -62,8 +62,8 @@ public class ExplorationResult {
 
         // Edges from discovered nouns to shared collocates
         for (DiscoveredNoun noun : discoveredNouns) {
-            for (Map.Entry<String, Double> colloc : noun.sharedCollocates.entrySet()) {
-                edges.add(new Edge(noun.noun, colloc.getKey(), colloc.getValue(), "discovered_adj"));
+            for (Map.Entry<String, Double> colloc : noun.sharedCollocates().entrySet()) {
+                edges.add(new Edge(noun.noun(), colloc.getKey(), colloc.getValue(), "discovered_adj"));
             }
         }
 

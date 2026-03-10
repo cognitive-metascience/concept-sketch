@@ -98,6 +98,22 @@ public class SemanticFieldExplorer implements AutoCloseable {
      * @param opts          Tuning parameters and positional hints
      * @return ExplorationResult with discovered semantic class
      */
+    /**
+     * Convenience overload that extracts pattern strings from a {@link RelationConfig},
+     * mirroring the delegation style used by the multi-seed path.
+     */
+    public ExplorationResult exploreByPattern(
+            String seed,
+            RelationConfig relationConfig,
+            ExploreOptions opts) throws IOException {
+        return exploreByPattern(
+            seed,
+            relationConfig.name(),
+            relationConfig.getFullPattern(seed),
+            relationConfig.collocateReversePattern(),
+            opts);
+    }
+
     public ExplorationResult exploreByPattern(
             String seed,
             String relationName,
@@ -154,7 +170,7 @@ public class SemanticFieldExplorer implements AutoCloseable {
         // Step 3: Score nouns by shared collocate count
         logger.debug("\nStep 3: Scoring nouns by shared {}...", relationName);
         List<DiscoveredNoun> discoveredNouns = scoreNouns(nounProfiles, minShared);
-        discoveredNouns.sort((a, b) -> Double.compare(b.similarityScore, a.similarityScore));
+        discoveredNouns.sort((a, b) -> Double.compare(b.similarityScore(), a.similarityScore()));
         logger.debug("  Nouns with {}+ shared: {}", minShared, discoveredNouns.size());
 
         // Step 4: Identify core collocates
@@ -164,13 +180,13 @@ public class SemanticFieldExplorer implements AutoCloseable {
         logger.debug("\n--- RESULTS ---");
         logger.debug("\nSemantic class (nouns similar to '{}'):", seed);
         discoveredNouns.stream().limit(15).forEach(n ->
-            logger.debug("  {} (shared={}, score={}) <- {}", n.noun, n.sharedCount,
-                String.format("%.1f", n.similarityScore), String.join(", ", n.sharedCollocates.keySet())));
+            logger.debug("  {} (shared={}, score={}) <- {}", n.noun(), n.sharedCount(),
+                String.format("%.1f", n.similarityScore()), String.join(", ", n.sharedCollocates().keySet())));
 
         logger.debug("\nCore {} (define the class):", relationName);
         coreCollocates.stream().limit(10).forEach(a ->
-            logger.debug("  {} (in {}/{} nouns, avgLogDice={})", a.collocate, a.sharedByCount,
-                a.totalNouns, String.format("%.1f", a.avgLogDice)));
+            logger.debug("  {} (in {}/{} nouns, avgLogDice={})", a.collocate(), a.sharedByCount(),
+                a.totalNouns(), String.format("%.1f", a.avgLogDice())));
 
         logger.debug("------------------------------------------------------------");
 
@@ -244,7 +260,7 @@ public class SemanticFieldExplorer implements AutoCloseable {
         Map<String, Integer> collocFrequency = new LinkedHashMap<>();
         Map<String, Double> collocTotalScore = new LinkedHashMap<>();
         for (DiscoveredNoun dn : discoveredNouns) {
-            for (Map.Entry<String, Double> colloc : dn.sharedCollocates.entrySet()) {
+            for (Map.Entry<String, Double> colloc : dn.sharedCollocates().entrySet()) {
                 collocFrequency.merge(colloc.getKey(), 1, Integer::sum);
                 collocTotalScore.merge(colloc.getKey(), colloc.getValue(), Double::sum);
             }
@@ -261,8 +277,8 @@ public class SemanticFieldExplorer implements AutoCloseable {
             }
         }
         coreCollocates.sort((a, b) -> {
-            int cmp = Integer.compare(b.sharedByCount, a.sharedByCount);
-            return cmp != 0 ? cmp : Double.compare(b.avgLogDice, a.avgLogDice);
+            int cmp = Integer.compare(b.sharedByCount(), a.sharedByCount());
+            return cmp != 0 ? cmp : Double.compare(b.avgLogDice(), a.avgLogDice());
         });
         return coreCollocates;
     }

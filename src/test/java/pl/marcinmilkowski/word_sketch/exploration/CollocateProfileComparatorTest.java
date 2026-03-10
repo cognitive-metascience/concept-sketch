@@ -78,7 +78,7 @@ class CollocateProfileComparatorTest {
         // First profile must have the highest commonality score
         for (int i = 0; i < adjectives.size() - 1; i++) {
             assertTrue(
-                adjectives.get(i).commonalityScore >= adjectives.get(i + 1).commonalityScore,
+                adjectives.get(i).commonalityScore() >= adjectives.get(i + 1).commonalityScore(),
                 "Profiles should be sorted by commonalityScore descending"
             );
         }
@@ -98,17 +98,17 @@ class CollocateProfileComparatorTest {
 
         // "important" must be identified as fully shared (present in 3/3 nouns)
         List<AdjectiveProfile> fullyShared = result.getFullyShared();
-        assertTrue(fullyShared.stream().anyMatch(p -> "important".equals(p.adjective)),
+        assertTrue(fullyShared.stream().anyMatch(p -> "important".equals(p.adjective())),
                 "\"important\" should be fully shared across all three seeds");
 
         // "recent" must be partially shared (present in 2/3 nouns)
         List<AdjectiveProfile> partiallyShared = result.getPartiallyShared();
-        assertTrue(partiallyShared.stream().anyMatch(p -> "recent".equals(p.adjective)),
+        assertTrue(partiallyShared.stream().anyMatch(p -> "recent".equals(p.adjective())),
                 "\"recent\" should be partially shared across two seeds");
 
         // "large" must be specific to one noun
         List<AdjectiveProfile> specific = result.getSpecific();
-        assertTrue(specific.stream().anyMatch(p -> "large".equals(p.adjective)),
+        assertTrue(specific.stream().anyMatch(p -> "large".equals(p.adjective())),
                 "\"large\" should be specific to a single seed");
     }
 }

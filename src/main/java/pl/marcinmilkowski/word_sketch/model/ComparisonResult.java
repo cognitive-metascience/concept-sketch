@@ -27,29 +27,29 @@ public class ComparisonResult {
     /** Adjectives shared by ALL nouns */
     public List<AdjectiveProfile> getFullyShared() {
         return adjectives.stream()
-            .filter(a -> a.presentInCount == nouns.size())
+            .filter(a -> a.presentInCount() == nouns.size())
             .collect(Collectors.toList());
     }
 
     /** Adjectives shared by 2+ nouns but not all */
     public List<AdjectiveProfile> getPartiallyShared() {
         return adjectives.stream()
-            .filter(a -> a.presentInCount >= 2 && a.presentInCount < nouns.size())
+            .filter(a -> a.presentInCount() >= 2 && a.presentInCount() < nouns.size())
             .collect(Collectors.toList());
     }
 
     /** Adjectives specific to exactly one noun */
     public List<AdjectiveProfile> getSpecific() {
         return adjectives.stream()
-            .filter(a -> a.presentInCount == 1)
+            .filter(a -> a.presentInCount() == 1)
             .collect(Collectors.toList());
     }
 
     /** Get adjectives specific to a particular noun */
     public List<AdjectiveProfile> getSpecificTo(String noun) {
         return adjectives.stream()
-            .filter(a -> a.presentInCount == 1 && a.nounScores.getOrDefault(noun, 0.0) > 0)
-            .sorted((x, y) -> Double.compare(y.maxLogDice, x.maxLogDice))
+            .filter(a -> a.presentInCount() == 1 && a.nounScores().getOrDefault(noun, 0.0) > 0)
+            .sorted((x, y) -> Double.compare(y.maxLogDice(), x.maxLogDice()))
             .collect(Collectors.toList());
     }
 
@@ -57,9 +57,9 @@ public class ComparisonResult {
     public List<Edge> getEdges() {
         List<Edge> edges = new ArrayList<>();
         for (AdjectiveProfile adj : adjectives) {
-            for (Map.Entry<String, Double> entry : adj.nounScores.entrySet()) {
+            for (Map.Entry<String, Double> entry : adj.nounScores().entrySet()) {
                 if (entry.getValue() > 0) {
-                    edges.add(new Edge(adj.adjective, entry.getKey(),
+                    edges.add(new Edge(adj.adjective(), entry.getKey(),
                         entry.getValue(), "modifier"));
                 }
             }
@@ -69,8 +69,8 @@ public class ComparisonResult {
 
     @Override
     public String toString() {
-        int shared = (int) adjectives.stream().filter(a -> a.presentInCount >= 2).count();
-        int specific = (int) adjectives.stream().filter(a -> a.presentInCount == 1).count();
+        int shared = (int) adjectives.stream().filter(a -> a.presentInCount() >= 2).count();
+        int specific = (int) adjectives.stream().filter(a -> a.presentInCount() == 1).count();
         return String.format("ComparisonResult(%d nouns, %d adjectives: %d shared, %d specific)",
             nouns.size(), adjectives.size(), shared, specific);
     }

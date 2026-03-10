@@ -216,10 +216,18 @@ class SketchHandlers {
             collocations.add(formatWordSketchResult(result));
         }
 
+        Map<String, Object> relData = new HashMap<>();
+        relData.put("id", rel.id());
+        relData.put("name", rel.name());
+        relData.put("collocations", collocations);
+        relData.put("total_matches", results.stream().mapToInt(r -> (int) r.getFrequency()).sum());
+
+        Map<String, Object> relationsMap = new HashMap<>();
+        relationsMap.put(rel.id(), relData);
+
         Map<String, Object> response = new HashMap<>();
         response.put("lemma", lemma);
-        response.put("relation", relationId);
-        response.put("collocations", collocations);
+        response.put("relations", relationsMap);
 
         HttpApiUtils.sendJsonResponse(exchange, response);
     }
