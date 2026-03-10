@@ -1,26 +1,51 @@
 {
-  "command": "resolve",
-  "patterns": [
-    "model_type_strategy_inconsistency"
-  ],
-  "status": "fixed",
-  "resolved": [
-    "review::.::holistic::convention_outlier::model_type_strategy_inconsistency::8d7a211f"
-  ],
-  "count": 1,
-  "next_command": "desloppify next",
-  "overall_score": 70.4,
-  "objective_score": 99.4,
-  "strict_score": 70.4,
-  "verified_strict_score": 99.4,
-  "prev_overall_score": 70.4,
-  "prev_objective_score": 99.4,
-  "prev_strict_score": 70.4,
-  "prev_verified_strict_score": 99.4,
-  "attestation": "I have actually ExplorationResult now uses private fields + getters, consistent with ComparisonResult and other model classes. and I am not gaming the score.",
+  "command": "show",
+  "query": "2368f5ed",
+  "status_filter": "open",
+  "total": 1,
+  "summary": {
+    "by_tier": {
+      "T2": 1
+    },
+    "by_detector": {
+      "review": 1
+    },
+    "files": 1
+  },
+  "by_file": {
+    ".": [
+      {
+        "id": "review::.::holistic::convention_outlier::blacklab_query_not_in_subdirectory::2368f5ed",
+        "tier": 2,
+        "confidence": "medium",
+        "summary": "BlackLab query implementation sits at query/ root; indexer correctly isolates its BlackLab code in indexer/blacklab/",
+        "detail": {
+          "holistic": true,
+          "dimension": "convention_outlier",
+          "related_files": [
+            "src/main/java/pl/marcinmilkowski/word_sketch/query/BlackLabQueryExecutor.java",
+            "src/main/java/pl/marcinmilkowski/word_sketch/query/BlackLabSnippetParser.java",
+            "src/main/java/pl/marcinmilkowski/word_sketch/query/QueryExecutor.java",
+            "src/main/java/pl/marcinmilkowski/word_sketch/indexer/blacklab/BlackLabConllUIndexer.java",
+            "src/main/java/pl/marcinmilkowski/word_sketch/indexer/blacklab/ConlluConverter.java"
+          ],
+          "evidence": [
+            "indexer/blacklab/ contains BlackLabConllUIndexer and ConlluConverter \u2014 the BlackLab implementation is isolated from any future non-BlackLab indexer.",
+            "query/ contains QueryExecutor (interface), BlackLabQueryExecutor, and BlackLabSnippetParser at the same level \u2014 the interface and its sole implementation are peers, not separated as in the indexer package.",
+            "A developer adding a second query backend (e.g., a Lucene-direct executor) would follow the indexer convention and create query/lucene/ or query/blacklab/, but there is no existing signal in the query/ package that this is the expected pattern."
+          ],
+          "suggestion": "Move BlackLabQueryExecutor and BlackLabSnippetParser into a new query/blacklab/ subpackage (package pl.marcinmilkowski.word_sketch.query.blacklab), mirroring the indexer/blacklab/ convention. QueryExecutor remains in query/ as the interface. Update the two import sites (WordSketchApiServer, SemanticFieldExplorer).",
+          "reasoning": ""
+        }
+      }
+    ]
+  },
+  "total_matching": 1,
+  "noise_budget": 10,
+  "noise_global_budget": 0,
   "narrative": {
     "phase": "middle_grind",
-    "headline": "\u26a0 1 security issue \u2014 review before other cleanup. 39 issues open. Test strategy (14.0%) needs attention \u2014 run `desloppify next` to start. (33 review issues \u2014 run `desloppify show review --status open`)",
+    "headline": "\u26a0 1 security issue \u2014 review before other cleanup. 30 issues open. Test strategy (14.0%) needs attention \u2014 run `desloppify next` to start. (24 review issues \u2014 run `desloppify show review --status open`)",
     "dimensions": {
       "lowest_dimensions": [
         {
@@ -42,7 +67,7 @@
         {
           "name": "Abstraction fit",
           "strict": 40.9,
-          "failing": 2,
+          "failing": 1,
           "impact": 0.0,
           "subjective": true,
           "impact_description": "re-review to improve"
@@ -121,8 +146,8 @@
       {
         "type": "refactor",
         "detector": "review",
-        "count": 33,
-        "description": "33 review issues need investigation \u2014 run `desloppify show review --status open` to see them",
+        "count": 24,
+        "description": "24 review issues need investigation \u2014 run `desloppify show review --status open` to see them",
         "command": "desloppify show review --status open",
         "impact": 0.0,
         "dimension": "Unknown",
@@ -155,7 +180,7 @@
     "strategy": {
       "fixer_leverage": {
         "auto_fixable_count": 0,
-        "total_count": 105,
+        "total_count": 78,
         "coverage": 0.0,
         "impact_ratio": 0.0,
         "recommendation": "none"
@@ -190,7 +215,7 @@
         }
       },
       "can_parallelize": false,
-      "hint": "Work through actions in priority order. Rescan after each fix to track progress. Review: 33 issue(s) \u2014 `desloppify show review --status open`."
+      "hint": "Work through actions in priority order. Rescan after each fix to track progress. Review: 24 issue(s) \u2014 `desloppify show review --status open`."
     },
     "tools": {
       "fixers": [],
@@ -213,7 +238,7 @@
     },
     "debt": {
       "overall_gap": 0.0,
-      "wontfix_count": 13,
+      "wontfix_count": 14,
       "worst_dimension": null,
       "worst_gap": 0.0,
       "trend": "shrinking"
@@ -221,9 +246,9 @@
     "milestone": null,
     "primary_action": {
       "command": "desloppify show review --status open",
-      "description": "33 review issues need investigation \u2014 run `desloppify show review --status open` to see them"
+      "description": "24 review issues need investigation \u2014 run `desloppify show review --status open` to see them"
     },
-    "why_now": "Work through actions in priority order. Rescan after each fix to track progress. Review: 33 issue(s) \u2014 `desloppify show review --status open`.",
+    "why_now": "Work through actions in priority order. Rescan after each fix to track progress. Review: 24 issue(s) \u2014 `desloppify show review --status open`.",
     "verification_step": {
       "command": "desloppify scan",
       "reason": "revalidate after changes"
@@ -232,7 +257,7 @@
       {
         "type": "wontfix_gap",
         "severity": "medium",
-        "message": "Strict/lenient gap is 0.0 pts with 13 wontfix issues"
+        "message": "Strict/lenient gap is 0.0 pts with 14 wontfix issues"
       }
     ],
     "strict_target": {
@@ -242,31 +267,14 @@
       "state": "below",
       "warning": null
     },
-    "reminders": [
-      {
-        "type": "rereview_needed",
-        "message": "Subjective results may be stale after resolve. Re-run `desloppify review --prepare` to refresh, or reset with `desloppify scan --reset-subjective` before a clean rerun.",
-        "command": "desloppify review --prepare",
-        "priority": 1,
-        "severity": "high"
-      },
-      {
-        "type": "rescan_needed",
-        "message": "Rescan to verify \u2014 cascading effects may create new issues.",
-        "command": "desloppify scan",
-        "priority": 1,
-        "severity": "high"
-      }
-    ],
+    "reminders": [],
     "reminder_history": {
       "zone_classification": 3,
       "report_scores": 7,
       "review_issues_pending": 3,
       "feedback_nudge": 3,
       "wontfix_growing": 1,
-      "stagnant_nudge": 5,
-      "rereview_needed": 1,
-      "rescan_needed": 1
+      "stagnant_nudge": 5
     }
   },
   "config": {

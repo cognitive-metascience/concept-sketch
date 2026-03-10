@@ -12,7 +12,9 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 public class BlackLabDummyTest {
     @Test
     public void testSubjectOf() throws Exception {
-        String indexPath = "D:\\corpora_philsci\\bi";
+        String indexPath = System.getenv("CONCEPT_SKETCH_TEST_INDEX") != null
+                ? System.getenv("CONCEPT_SKETCH_TEST_INDEX")
+                : System.getProperty("conceptSketch.testIndex", "D:\\corpora_philsci\\bi");
         File indexDir = new File(indexPath);
         Assumptions.assumeTrue(indexDir.exists(), "Test skipped: index not available at " + indexPath);
 

@@ -18,7 +18,9 @@ import static org.junit.jupiter.api.Assertions.*;
  */
 public class DependencySketchTest {
 
-    private static final String INDEX_PATH = "D:\\corpora_philsci\\bi";
+    private static final String INDEX_PATH = System.getenv("CONCEPT_SKETCH_TEST_INDEX") != null
+            ? System.getenv("CONCEPT_SKETCH_TEST_INDEX")
+            : System.getProperty("conceptSketch.testIndex", "D:\\corpora_philsci\\bi");
 
     @Test
     public void testDependencyNsubjQuery() throws Exception {

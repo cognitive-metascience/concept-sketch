@@ -6,10 +6,14 @@ import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpPrincipal;
 import org.junit.jupiter.api.Test;
 import pl.marcinmilkowski.word_sketch.config.GrammarConfigHelper;
+import pl.marcinmilkowski.word_sketch.exploration.SemanticFieldExplorer;
+import pl.marcinmilkowski.word_sketch.model.QueryResults;
+import pl.marcinmilkowski.word_sketch.query.QueryExecutor;
 
 import java.io.*;
 import java.net.InetSocketAddress;
 import java.net.URI;
+import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -108,5 +112,46 @@ class HandlersTest {
         MockExchange ex = new MockExchange("http://localhost/api/semantic-field/explore-multi?seeds=theory");
         handlers.handleSemanticFieldExploreMulti(ex);
         assertEquals(400, ex.statusCode);
+    }
+
+    // --- Happy-path tests ---
+
+    /** Stub QueryExecutor that returns empty lists for all calls. */
+    private static QueryExecutor emptyExecutor() {
+        return new QueryExecutor() {
+            @Override
+            public List<QueryResults.WordSketchResult> findCollocations(
+                    String lemma, String cqlPattern, double minLogDice, int maxResults) {
+                return List.of();
+            }
+            @Override public List<QueryResults.ConcordanceResult> executeQuery(String p, int m) { return List.of(); }
+            @Override public List<QueryResults.CollocateResult> executeBcqlQuery(String p, int m) { return List.of(); }
+            @Override public long getTotalFrequency(String lemma) { return 0; }
+            @Override public List<QueryResults.WordSketchResult> executeSurfacePattern(
+                    String lemma, String pattern, double minLogDice, int maxResults) { return List.of(); }
+            @Override public List<QueryResults.WordSketchResult> executeDependencyPattern(
+                    String lemma, String deprel, String headPosConstraint,
+                    double minLogDice, int maxResults) { return List.of(); }
+            @Override public void close() {}
+        };
+    }
+
+    @Test
+    void handleSketchRequest_validLemma_returns200() throws Exception {
+        SketchHandlers handlers = new SketchHandlers(emptyExecutor(), GrammarConfigHelper.requireTestConfig());
+        MockExchange ex = new MockExchange("http://localhost/api/sketch/house");
+        handlers.handleSketchRequest(ex);
+        assertEquals(200, ex.statusCode);
+    }
+
+    @Test
+    void handleSemanticFieldExplore_validSeeds_returns200() throws Exception {
+        QueryExecutor executor = emptyExecutor();
+        SemanticFieldExplorer explorer = new SemanticFieldExplorer(executor);
+        ExplorationHandlers handlers = new ExplorationHandlers(GrammarConfigHelper.requireTestConfig(), explorer);
+        MockExchange ex = new MockExchange(
+                "http://localhost/api/semantic-field/explore-multi?seeds=theory,model&relation=noun_adj_predicates");
+        handlers.handleSemanticFieldExploreMulti(ex);
+        assertEquals(200, ex.statusCode);
     }
 }
