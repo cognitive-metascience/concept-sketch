@@ -12,7 +12,6 @@ import java.nio.file.Path;
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 
 /**
  * Loads and provides access to grammar configuration from JSON.
@@ -251,21 +250,6 @@ public class GrammarConfigLoader {
     }
 
     /**
-     * Get all configured copula lemmas.
-     */
-    public List<String> getCopulas() {
-        return copulas;
-    }
-
-    /**
-     * Check if a lemma is a copular verb.
-     */
-    public boolean isCopularVerb(String lemma) {
-        if (lemma == null) return false;
-        return copulas.contains(lemma.toLowerCase(Locale.ROOT));
-    }
-
-    /**
      * Get all configured relations.
      */
     public List<RelationConfig> getRelations() {
@@ -277,36 +261,6 @@ public class GrammarConfigLoader {
      */
     public Optional<RelationConfig> getRelation(String id) {
         return Optional.ofNullable(relationsById.get(id));
-    }
-
-    /**
-     * Get a relation by ID (direct access, returns null if not found).
-     */
-    public RelationConfig getRelationById(String id) {
-        return relationsById.get(id);
-    }
-
-    /**
-     * Get relations for a specific head POS group.
-     */
-    public List<RelationConfig> getRelationsForHeadPos(String headPos) {
-        // Filter by collocate POS group derived from pattern
-        return relations.stream()
-            .filter(r -> headPos.equalsIgnoreCase(r.collocatePosGroup()))
-            .collect(Collectors.toList());
-    }
-
-    /**
-     * Find the relation ID for a given relationType (e.g., "ADJ_PREDICATE").
-     * Returns the first matching relation's ID, or null if not found.
-     */
-    public String findRelationIdByType(String relationType) {
-        if (relationType == null) return null;
-        return relations.stream()
-            .filter(r -> relationType.equalsIgnoreCase(r.relationType()))
-            .map(RelationConfig::id)
-            .findFirst()
-            .orElse(null);
     }
 
     /**
@@ -515,19 +469,6 @@ public class GrammarConfigLoader {
         private static String escapeForRegex(String s) {
             if (s == null) return "";
             return s.replace("\\", "\\\\").replace("\"", "\\\"");
-        }
-
-        /**
-         * Check if this relation uses legacy format (single constraint without position).
-         * Legacy: cql_pattern like "[tag=NN.*]" without {head} or multiple elements.
-         */
-        public boolean isLegacyFormat() {
-            if (pattern == null || pattern.isEmpty()) return true;
-            // Legacy format is a single constraint without {head} placeholder
-            // and doesn't look like a multi-element pattern
-            String trimmed = pattern.trim();
-            // If it starts with [ and contains no space, it's a single constraint (legacy)
-            return !trimmed.contains("{head}") && !trimmed.matches(".*\\[.*\\].*\\[.*\\].*");
         }
 
         /**

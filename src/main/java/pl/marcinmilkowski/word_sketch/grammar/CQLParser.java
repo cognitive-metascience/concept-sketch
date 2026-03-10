@@ -41,9 +41,6 @@ public class CQLParser {
     private static final Pattern AGREEMENT_RULE = Pattern.compile(
         "&\\s*(\\d+)\\.(\\w+)\\s*(=|!=)\\s*(\\d+)\\.(\\w+)"
     );
-    private static final Pattern LEMMA_SUBSTITUTION = Pattern.compile(
-        "%\\((\\d+)\\.(\\w+)\\)"
-    );
     private static final Pattern PATTERN_ALTERNATIVE = Pattern.compile(
         "\\n?\\s*---\\s*\\n?"
     );
@@ -254,15 +251,6 @@ public class CQLParser {
         if (repetitionMatcher.lookingAt()) {
             minRepetition = Integer.parseInt(repetitionMatcher.group(1));
             maxRepetition = repetitionMatcher.group(2) != null ? Integer.parseInt(repetitionMatcher.group(2)) : minRepetition;
-        }
-
-        // Check for lemma substitution
-        Matcher lemmaMatcher = LEMMA_SUBSTITUTION.matcher(target);
-        if (lemmaMatcher.find()) {
-            int subPos = Integer.parseInt(lemmaMatcher.group(1));
-            String subField = lemmaMatcher.group(2);
-            target = lemmaMatcher.replaceFirst("");
-            // Store lemma substitution info - will be used during compilation
         }
 
         return new CQLPattern.PatternElement(position, target, constraint,
