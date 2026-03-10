@@ -7,21 +7,40 @@ import nl.inl.blacklab.search.BlackLabIndex;
 import nl.inl.blacklab.search.Concordance;
 import nl.inl.blacklab.search.ConcordanceType;
 import nl.inl.blacklab.search.lucene.BLSpanQuery;
-import nl.inl.blacklab.search.results.*;
+import nl.inl.blacklab.search.results.Concordances;
+import nl.inl.blacklab.search.results.ContextSize;
+import nl.inl.blacklab.search.results.Hit;
+import nl.inl.blacklab.search.results.HitGroup;
+import nl.inl.blacklab.search.results.HitGroups;
+import nl.inl.blacklab.search.results.Hits;
+import nl.inl.blacklab.search.results.QueryInfo;
+import nl.inl.blacklab.search.results.Results;
 import nl.inl.blacklab.searches.SearchHits;
 import nl.inl.blacklab.search.textpattern.TextPattern;
 import nl.inl.blacklab.search.textpattern.CompleteQuery;
 import nl.inl.blacklab.queryParser.contextql.ContextualQueryLanguageParser;
 import nl.inl.blacklab.exceptions.InvalidQuery;
-import nl.inl.blacklab.search.indexmetadata.*;
-import nl.inl.blacklab.resultproperty.*;
+import nl.inl.blacklab.search.indexmetadata.AnnotatedField;
+import nl.inl.blacklab.search.indexmetadata.Annotation;
+import nl.inl.blacklab.search.indexmetadata.AnnotationSensitivity;
+import nl.inl.blacklab.search.indexmetadata.MatchSensitivity;
+import nl.inl.blacklab.resultproperty.HitProperty;
+import nl.inl.blacklab.resultproperty.HitPropertyHitText;
 import nl.inl.blacklab.search.TermFrequencyList;
 
 import pl.marcinmilkowski.word_sketch.utils.LogDiceCalculator;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
 
 /**
  * Query executor using BlackLab for CoNLL-U dependency tree indexing and querying.

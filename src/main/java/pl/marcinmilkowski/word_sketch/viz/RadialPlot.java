@@ -2,7 +2,9 @@ package pl.marcinmilkowski.word_sketch.viz;
 
 import java.text.DecimalFormat;
 import java.text.DecimalFormatSymbols;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Locale;
 
 /**
  * Generate radial collocation plot (spiral/snail visualization) for a single word.
