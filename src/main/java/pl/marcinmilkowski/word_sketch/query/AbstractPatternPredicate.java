@@ -8,9 +8,16 @@ import java.util.regex.Pattern;
 abstract class AbstractPatternPredicate implements TokenPredicate {
 
     private final String pattern;
+    private final Pattern compiledPattern;
 
     protected AbstractPatternPredicate(String pattern) {
         this.pattern = pattern;
+        if (pattern == null || pattern.isEmpty() || pattern.equals("*")) {
+            this.compiledPattern = null;
+        } else {
+            String effectivePattern = isPatternCaseInsensitive() ? pattern.toLowerCase() : pattern;
+            this.compiledPattern = Pattern.compile(wildcardToRegex(effectivePattern));
+        }
     }
 
     protected String getPattern() {
@@ -30,13 +37,11 @@ abstract class AbstractPatternPredicate implements TokenPredicate {
 
     @Override
     public boolean test(Token token) {
-        if (pattern == null || pattern.isEmpty() || pattern.equals("*")) {
+        if (compiledPattern == null) {
             return true;
         }
         String value = extractValue(token);
-        String effectivePattern = isPatternCaseInsensitive() ? pattern.toLowerCase() : pattern;
-        String regex = wildcardToRegex(effectivePattern);
-        return Pattern.matches(regex, value.toLowerCase());
+        return compiledPattern.matcher(value.toLowerCase()).matches();
     }
 
     private String wildcardToRegex(String pat) {

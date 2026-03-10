@@ -105,7 +105,7 @@ public class CQLParser {
             String op = agreementMatcher.group(3);
             int secondPos = Integer.parseInt(agreementMatcher.group(4));
             String secondField = agreementMatcher.group(5);
-            parsed.addAgreementRule(new AgreementRule(firstPos, firstField, secondPos, secondField, op));
+            parsed.addAgreementRule(new CQLPattern.AgreementRule(firstPos, firstField, secondPos, secondField, op));
         }
         // Remove agreement rules from pattern
         remaining = remaining.replaceAll("&\\s*\\d+\\.\\w+\\s*(=|!=)\\s*\\d+\\.\\w+", "").trim();
@@ -435,24 +435,4 @@ public class CQLParser {
         public boolean hasAlternatives() { return !alternatives.isEmpty(); }
     }
 
-    // Re-export AgreementRule for convenience
-    public static class AgreementRule extends CQLPattern.AgreementRule {
-        public AgreementRule(int firstPosition, String firstField,
-                            int secondPosition, String secondField, String operator) {
-            super(firstPosition, firstField, secondPosition, secondField, operator);
-        }
-    }
-
-    // Re-export PatternElement for convenience
-    public static class PatternElement extends CQLPattern.PatternElement {
-        public PatternElement(int position, String target) {
-            super(position, target);
-        }
-
-        public PatternElement(int position, String target, CQLPattern.Constraint constraint,
-                              int minRepetition, int maxRepetition,
-                              int minDistance, int maxDistance, String label) {
-            super(position, target, constraint, minRepetition, maxRepetition, minDistance, maxDistance, label);
-        }
-    }
 }
