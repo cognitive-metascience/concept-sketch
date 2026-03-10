@@ -205,40 +205,7 @@ public class GrammarConfigLoader {
      * Returns default 1 if not found.
      */
     private static int deriveHeadPositionFromPattern(String pattern) {
-        if (pattern == null || pattern.isBlank()) {
-            return 1;
-        }
-        // Find position of "1:" in pattern - count tokens up to and including "1:"
-        int pos = 1;
-        int i = 0;
-        while (i < pattern.length()) {
-            // Skip whitespace
-            if (Character.isWhitespace(pattern.charAt(i))) {
-                i++;
-                continue;
-            }
-            // Check for "1:" prefix
-            if (i + 1 < pattern.length() && pattern.charAt(i) == '1' && pattern.charAt(i + 1) == ':') {
-                return pos;
-            }
-            // Check for "2:" prefix (not head)
-            if (i + 1 < pattern.length() && pattern.charAt(i) == '2' && pattern.charAt(i + 1) == ':') {
-                // Count this token but don't return
-            }
-            // Count tokens (start with [)
-            if (pattern.charAt(i) == '[') {
-                int end = pattern.indexOf(']', i);
-                if (end > i) {
-                    pos++;
-                    i = end + 1;
-                } else {
-                    i++;
-                }
-            } else {
-                i++;
-            }
-        }
-        return 1; // default
+        return deriveTokenPosition(pattern, '1', 1);
     }
 
     /**
@@ -247,27 +214,27 @@ public class GrammarConfigLoader {
      * Returns default 2 if not found.
      */
     private static int deriveCollocatePositionFromPattern(String pattern) {
+        return deriveTokenPosition(pattern, '2', 2);
+    }
+
+    /**
+     * Shared logic for deriving a token position from a numbered label in a CQL pattern.
+     * Scans the pattern counting [token] blocks; returns the count when the target label is found.
+     */
+    private static int deriveTokenPosition(String pattern, char targetLabel, int defaultPos) {
         if (pattern == null || pattern.isBlank()) {
-            return 2;
+            return defaultPos;
         }
-        // Find position of "2:" in pattern - count tokens up to and including "2:"
         int pos = 1;
         int i = 0;
         while (i < pattern.length()) {
-            // Skip whitespace
             if (Character.isWhitespace(pattern.charAt(i))) {
                 i++;
                 continue;
             }
-            // Check for "2:" prefix
-            if (i + 1 < pattern.length() && pattern.charAt(i) == '2' && pattern.charAt(i + 1) == ':') {
+            if (i + 1 < pattern.length() && pattern.charAt(i) == targetLabel && pattern.charAt(i + 1) == ':') {
                 return pos;
             }
-            // Check for "1:" prefix (not collocate)
-            if (i + 1 < pattern.length() && pattern.charAt(i) == '1' && pattern.charAt(i + 1) == ':') {
-                // Count this token but don't return
-            }
-            // Count tokens (start with [)
             if (pattern.charAt(i) == '[') {
                 int end = pattern.indexOf(']', i);
                 if (end > i) {
@@ -280,7 +247,7 @@ public class GrammarConfigLoader {
                 i++;
             }
         }
-        return 2; // default
+        return defaultPos;
     }
 
     /**
@@ -295,7 +262,7 @@ public class GrammarConfigLoader {
      */
     public boolean isCopularVerb(String lemma) {
         if (lemma == null) return false;
-        return copulaSet.contains(lemma.toLowerCase(Locale.ROOT));
+        return copulas.contains(lemma.toLowerCase(Locale.ROOT));
     }
 
     /**

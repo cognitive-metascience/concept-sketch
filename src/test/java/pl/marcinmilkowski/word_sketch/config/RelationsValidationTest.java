@@ -1,39 +1,54 @@
 package pl.marcinmilkowski.word_sketch.config;
 
-import java.io.IOException;
-import java.nio.file.Path;
-import java.nio.file.Paths;
+import org.junit.jupiter.api.Test;
+
 import java.util.List;
 
+import static org.junit.jupiter.api.Assertions.*;
+
 /**
- * Quick validation test for relations.json patterns.
+ * Validates that all relations in the default grammar config have required fields.
  */
 public class RelationsValidationTest {
 
-    public static void main(String[] args) throws IOException {
-        Path grammarPath = Paths.get("grammars/relations.json");
-        GrammarConfigLoader loader = new GrammarConfigLoader(grammarPath);
+    @Test
+    public void testAllRelationsHaveNonNullPattern() {
+        GrammarConfigLoader loader = GrammarConfigLoader.createDefaultEnglish();
         List<GrammarConfigLoader.RelationConfig> relations = loader.getRelations();
 
-        System.out.println("Total relations: " + relations.size());
-
-        int withPattern = 0;
-        int withoutPattern = 0;
+        assertFalse(relations.isEmpty(), "Grammar config should have at least one relation");
 
         for (GrammarConfigLoader.RelationConfig rel : relations) {
-            if (rel.pattern() != null && !rel.pattern().isBlank()) {
-                withPattern++;
-            } else {
-                withoutPattern++;
-                System.out.println("MISSING PATTERN: " + rel.id());
-            }
+            assertNotNull(rel.pattern(),
+                "Relation '" + rel.id() + "' has a null pattern");
+            assertFalse(rel.pattern().isBlank(),
+                "Relation '" + rel.id() + "' has a blank pattern");
         }
+    }
 
-        System.out.println("\nWith pattern: " + withPattern);
-        System.out.println("Without pattern: " + withoutPattern);
+    @Test
+    public void testAllRelationsHaveValidPositions() {
+        GrammarConfigLoader loader = GrammarConfigLoader.createDefaultEnglish();
+        List<GrammarConfigLoader.RelationConfig> relations = loader.getRelations();
 
-        if (withoutPattern > 0) {
-            System.exit(1);
+        for (GrammarConfigLoader.RelationConfig rel : relations) {
+            assertTrue(rel.headPosition() >= 1,
+                "Relation '" + rel.id() + "' has invalid headPosition: " + rel.headPosition());
+            assertTrue(rel.collocatePosition() >= 1,
+                "Relation '" + rel.id() + "' has invalid collocatePosition: " + rel.collocatePosition());
+            assertNotEquals(rel.headPosition(), rel.collocatePosition(),
+                "Relation '" + rel.id() + "' has same head and collocate position: " + rel.headPosition());
+        }
+    }
+
+    @Test
+    public void testAllRelationsHaveNonNullId() {
+        GrammarConfigLoader loader = GrammarConfigLoader.createDefaultEnglish();
+        List<GrammarConfigLoader.RelationConfig> relations = loader.getRelations();
+
+        for (GrammarConfigLoader.RelationConfig rel : relations) {
+            assertNotNull(rel.id(), "Relation has a null id");
+            assertFalse(rel.id().isBlank(), "Relation has a blank id");
         }
     }
 }
