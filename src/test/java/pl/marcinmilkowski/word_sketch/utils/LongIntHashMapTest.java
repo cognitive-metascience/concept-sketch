@@ -1,4 +1,4 @@
-package pl.marcinmilkowski.word_sketch.query;
+package pl.marcinmilkowski.word_sketch.utils;
 
 import org.junit.jupiter.api.Test;
 import pl.marcinmilkowski.word_sketch.utils.LongIntHashMap;
