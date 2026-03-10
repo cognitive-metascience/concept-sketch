@@ -5,21 +5,18 @@ import org.slf4j.LoggerFactory;
 import pl.marcinmilkowski.word_sketch.api.WordSketchApiServer;
 import pl.marcinmilkowski.word_sketch.config.GrammarConfigLoader;
 import pl.marcinmilkowski.word_sketch.indexer.blacklab.BlackLabConllUIndexer;
+import pl.marcinmilkowski.word_sketch.indexer.blacklab.ConlluConverter;
 import pl.marcinmilkowski.word_sketch.query.BlackLabQueryExecutor;
 import pl.marcinmilkowski.word_sketch.query.QueryExecutor;
 
 import nl.inl.blacklab.index.DocumentFormats;
 
-import java.io.BufferedReader;
-import java.io.BufferedWriter;
 import java.io.File;
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
-import java.util.regex.Pattern;
 
 /**
  * Main entry point for ConceptSketch using BlackLab backend.
@@ -111,8 +108,6 @@ public class Main {
         System.out.println();
     }
 
-    private static final Pattern MWT_OR_EMPTY = Pattern.compile("^\\d+-\\d+\t|^\\d+\\.\\d+\t");
-
     private static void handleBlackLabIndexCommand(String[] args) throws IOException {
         String inputPath = null;
         String outputPath = null;
@@ -143,7 +138,7 @@ public class Main {
         System.out.println("Step 1/3: Converting CoNLL-U → WPL chunks (10 000 sentences/file)...");
         Path wplTempDir = Files.createTempDirectory("conllu_wpl_");
         Runtime.getRuntime().addShutdownHook(new Thread(() -> deleteRecursively(wplTempDir)));
-        long[] counts = convertConlluToWplChunks(Paths.get(inputPath), wplTempDir, 10_000);
+        long[] counts = ConlluConverter.convertConlluToWplChunks(Paths.get(inputPath), wplTempDir, 10_000);
         System.out.printf("  → %,d sentences, %,d tokens in %,d chunk files%n%n",
                 counts[0], counts[1], counts[2]);
 
@@ -158,64 +153,6 @@ public class Main {
         try (BlackLabConllUIndexer indexer = new BlackLabConllUIndexer(outputPath, "conllu-sentences")) {
             indexer.indexFile(wplTempDir.toString());
         }
-    }
-
-    /**
-     * Converts CoNLL-U to tabular WPL with &lt;s&gt; markers, split into chunk files.
-     * BlackLab's tabular indexer loads each file fully into memory, so large corpora
-     * must be split into manageable chunks (one file = one BlackLab document).
-     * Returns [sentenceCount, tokenCount, chunkCount].
-     */
-    private static long[] convertConlluToWplChunks(Path input, Path outputDir, int sentencesPerChunk)
-            throws IOException {
-        long sentences = 0, tokens = 0, chunks = 0;
-        boolean inSentence = false;
-        int sentencesInChunk = 0;
-        BufferedWriter writer = null;
-
-        try (BufferedReader r = Files.newBufferedReader(input, StandardCharsets.UTF_8)) {
-            String line;
-            while ((line = r.readLine()) != null) {
-                if (line.startsWith("#")) continue;
-                if (line.isBlank()) {
-                    if (inSentence) {
-                        writer.write("</s>\n");
-                        sentences++;
-                        sentencesInChunk++;
-                        inSentence = false;
-                        if (sentencesInChunk >= sentencesPerChunk) {
-                            writer.close();
-                            writer = null;
-                            chunks++;
-                            sentencesInChunk = 0;
-                        }
-                    }
-                    continue;
-                }
-                if (MWT_OR_EMPTY.matcher(line).find()) continue;
-                if (!inSentence) {
-                    if (writer == null) {
-                        Path chunk = outputDir.resolve(String.format("chunk_%06d.tsv", chunks));
-                        writer = Files.newBufferedWriter(chunk, StandardCharsets.UTF_8);
-                    }
-                    writer.write("<s>\n");
-                    inSentence = true;
-                }
-                writer.write(line);
-                writer.write('\n');
-                tokens++;
-            }
-            if (inSentence && writer != null) {
-                writer.write("</s>\n");
-                sentences++;
-            }
-        } finally {
-            if (writer != null) {
-                writer.close();
-                chunks++;
-            }
-        }
-        return new long[]{sentences, tokens, chunks};
     }
 
     private static void deleteRecursively(Path dir) {
