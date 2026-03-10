@@ -86,8 +86,7 @@ public class SemanticFieldExplorer implements AutoCloseable {
             int minShared,
             boolean includeExamples,
             int headPos,
-            int collocatePos,
-            QueryExecutor executor) {}
+            int collocatePos) {}
 
     /**
      * Convenience constructor that creates an owned {@link BlackLabQueryExecutor} internally.

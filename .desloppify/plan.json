@@ -1,7 +1,7 @@
 {
   "version": 8,
   "created": "2026-03-09T18:36:05+00:00",
-  "updated": "2026-03-10T18:38:25+00:00",
+  "updated": "2026-03-10T18:39:36+00:00",
   "queue_order": [],
   "deferred": [],
   "skipped": {
@@ -182,26 +182,6 @@
       "note": null,
       "attestation": null,
       "created_at": "2026-03-10T18:21:42+00:00",
-      "review_after": null,
-      "skipped_at_scan": 12
-    },
-    "review::.::holistic::convention_outlier::deprecated_methods_not_removed::b9353583": {
-      "issue_id": "review::.::holistic::convention_outlier::deprecated_methods_not_removed::b9353583",
-      "kind": "temporary",
-      "reason": "skipping",
-      "note": null,
-      "attestation": null,
-      "created_at": "2026-03-10T18:21:49+00:00",
-      "review_after": null,
-      "skipped_at_scan": 12
-    },
-    "review::.::holistic::contract_coherence::deprecated_method_still_in_clean_api::d3b36c8f": {
-      "issue_id": "review::.::holistic::contract_coherence::deprecated_method_still_in_clean_api::d3b36c8f",
-      "kind": "temporary",
-      "reason": "skipping",
-      "note": null,
-      "attestation": null,
-      "created_at": "2026-03-10T18:21:49+00:00",
       "review_after": null,
       "skipped_at_scan": 12
     },
@@ -2155,14 +2135,14 @@
     "review::.::holistic::convention_outlier::deprecated_methods_not_removed::b9353583": {
       "issue_id": "review::.::holistic::convention_outlier::deprecated_methods_not_removed::b9353583",
       "created_at": "2026-03-10T18:15:37+00:00",
-      "cluster": "deprecated-api-cleanup",
-      "updated_at": "2026-03-10T18:15:37+00:00"
+      "cluster": null,
+      "updated_at": "2026-03-10T18:39:36+00:00"
     },
     "review::.::holistic::contract_coherence::deprecated_method_still_in_clean_api::d3b36c8f": {
       "issue_id": "review::.::holistic::contract_coherence::deprecated_method_still_in_clean_api::d3b36c8f",
       "created_at": "2026-03-10T18:15:38+00:00",
-      "cluster": "deprecated-api-cleanup",
-      "updated_at": "2026-03-10T18:15:38+00:00"
+      "cluster": null,
+      "updated_at": "2026-03-10T18:39:35+00:00"
     },
     "review::.::holistic::incomplete_migration::clean_api_still_delegates_to_deprecated::b9a139ac": {
       "issue_id": "review::.::holistic::incomplete_migration::clean_api_still_delegates_to_deprecated::b9a139ac",
@@ -3669,8 +3649,6 @@
       "name": "deprecated-api-cleanup",
       "description": "Complete the extractCollocate* -> extractLemmaAt migration: delete deprecated methods, fix the 'clean' replacement that still calls deprecated, update all callers",
       "issue_ids": [
-        "review::.::holistic::convention_outlier::deprecated_methods_not_removed::b9353583",
-        "review::.::holistic::contract_coherence::deprecated_method_still_in_clean_api::d3b36c8f",
         "review::.::holistic::incomplete_migration::clean_api_still_delegates_to_deprecated::b9a139ac",
         "review::.::holistic::incomplete_migration::deprecated_methods_still_called::d36dd055",
         "review::.::holistic::naming_quality::snippet_parser_naming_fog::04a52499"
@@ -22412,6 +22390,56 @@
         "sha": "74ccd3d49efd",
         "branch": "desloppify/code-health"
       }
+    },
+    {
+      "timestamp": "2026-03-10T18:39:35+00:00",
+      "action": "done",
+      "issue_ids": [
+        "review::.::holistic::contract_coherence::deprecated_method_still_in_clean_api::d3b36c8f"
+      ],
+      "cluster_name": null,
+      "actor": "user",
+      "note": "extractCollocateLemma() now has its own implementation (iterates LEMMA_ATTR to find last match) and no longer calls deprecated extractCollocateFromSnippet(); the deprecated methods have been deleted entirely from the class",
+      "detail": {}
+    },
+    {
+      "timestamp": "2026-03-10T18:39:35+00:00",
+      "action": "resolve",
+      "issue_ids": [
+        "review::.::holistic::contract_coherence::deprecated_method_still_in_clean_api::d3b36c8f"
+      ],
+      "cluster_name": null,
+      "actor": "user",
+      "note": "extractCollocateLemma() now has its own implementation (iterates LEMMA_ATTR to find last match) and no longer calls deprecated extractCollocateFromSnippet(); the deprecated methods have been deleted entirely from the class",
+      "detail": {
+        "status": "fixed",
+        "attestation": "I have actually verified by reading BlackLabSnippetParser.java lines 333-341 \u2014 extractCollocateLemma has its own LEMMA_ATTR iteration loop; I am not gaming the score"
+      }
+    },
+    {
+      "timestamp": "2026-03-10T18:39:36+00:00",
+      "action": "done",
+      "issue_ids": [
+        "review::.::holistic::convention_outlier::deprecated_methods_not_removed::b9353583"
+      ],
+      "cluster_name": null,
+      "actor": "user",
+      "note": "Deleted all 4 deprecated methods (extractCollocateFromSnippet, extractCollocateFromMatch, extractCollocateFromPlainText, extractTokenFromSnippet) from BlackLabSnippetParser; only extractPlainTextTokenAt and the extractLemmaAt/extractHeadLemma/extractCollocateLemma clean API remain",
+      "detail": {}
+    },
+    {
+      "timestamp": "2026-03-10T18:39:36+00:00",
+      "action": "resolve",
+      "issue_ids": [
+        "review::.::holistic::convention_outlier::deprecated_methods_not_removed::b9353583"
+      ],
+      "cluster_name": null,
+      "actor": "user",
+      "note": "Deleted all 4 deprecated methods (extractCollocateFromSnippet, extractCollocateFromMatch, extractCollocateFromPlainText, extractTokenFromSnippet) from BlackLabSnippetParser; only extractPlainTextTokenAt and the extractLemmaAt/extractHeadLemma/extractCollocateLemma clean API remain",
+      "detail": {
+        "status": "fixed",
+        "attestation": "I have actually verified by reading BlackLabSnippetParser.java \u2014 grep finds 0 @Deprecated annotations; I am not gaming the score"
+      }
     }
   ],
   "epic_triage_meta": {
@@ -22866,7 +22894,10 @@
       "cluster_name": null
     }
   ],
-  "uncommitted_issues": [],
+  "uncommitted_issues": [
+    "review::.::holistic::contract_coherence::deprecated_method_still_in_clean_api::d3b36c8f",
+    "review::.::holistic::convention_outlier::deprecated_methods_not_removed::b9353583"
+  ],
   "commit_tracking_branch": null,
   "scan_count_at_plan_start": 5
 }

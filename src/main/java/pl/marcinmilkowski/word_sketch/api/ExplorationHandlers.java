@@ -95,7 +95,7 @@ class ExplorationHandlers {
         int collocatePos = relationConfig.get().collocatePosition();
 
         ExploreOptions opts = new ExploreOptions(
-            topCollocates, nounsPerCollocate, minLogDice, minShared, false, headPos, collocatePos, null);
+            topCollocates, nounsPerCollocate, minLogDice, minShared, false, headPos, collocatePos);
         ExplorationResult result = semanticFieldExplorer.exploreByPattern(
             seed, relationName, bcqlPattern, simplePattern, opts);
 
@@ -317,8 +317,16 @@ class ExplorationHandlers {
         }
 
         Set<String> nouns = new LinkedHashSet<>(Arrays.asList(nounsParam.split(",")));
-        double minLogDice = Double.parseDouble(params.getOrDefault("min_logdice", "3.0"));
-        int maxPerNoun = Integer.parseInt(params.getOrDefault("max_per_noun", "50"));
+
+        double minLogDice;
+        int maxPerNoun;
+        try {
+            minLogDice = Double.parseDouble(params.getOrDefault("min_logdice", "3.0"));
+            maxPerNoun = Integer.parseInt(params.getOrDefault("max_per_noun", "50"));
+        } catch (NumberFormatException e) {
+            HttpApiUtils.sendError(exchange, 400, "Invalid numeric parameter: " + e.getMessage());
+            return;
+        }
 
         ComparisonResult result;
         result = semanticFieldExplorer.compare(nouns, minLogDice, maxPerNoun);
@@ -395,7 +403,13 @@ class ExplorationHandlers {
             return;
         }
 
-        int maxExamples = Integer.parseInt(params.getOrDefault("max", "10"));
+        int maxExamples;
+        try {
+            maxExamples = Integer.parseInt(params.getOrDefault("max", "10"));
+        } catch (NumberFormatException e) {
+            HttpApiUtils.sendError(exchange, 400, "Invalid numeric parameter: max");
+            return;
+        }
 
         List<String> examples;
         examples = semanticFieldExplorer.fetchExamples(adjective, noun, maxExamples);

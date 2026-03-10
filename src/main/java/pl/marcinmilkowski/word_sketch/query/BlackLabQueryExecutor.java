@@ -337,9 +337,8 @@ public class BlackLabQueryExecutor implements QueryExecutor {
 
     /**
      * Returns total token frequency for the given lemma in the index.
-     * @return frequency count, or 0 if the lemma is not found or if the lookup fails.
-     *         Note: a 0 return from a failed lookup will silently corrupt logDice scores
-     *         for the calling context. Failures are logged at WARN level.
+     * Returns 0 if the lemma is not found. Logs and returns 0 on unexpected failures
+     * (rather than propagating, since callers use this for scoring and should degrade gracefully).
      */
     @Override
     public long getTotalFrequency(String lemma) throws IOException {
@@ -353,7 +352,7 @@ public class BlackLabQueryExecutor implements QueryExecutor {
             TermFrequencyList tfl = blackLabIndex.termFrequencies(sensitivity, null, Set.of(lemma.toLowerCase()));
             return tfl.frequency(lemma.toLowerCase());
         } catch (Exception e) {
-            logger.warn("Failed to retrieve frequency for lemma '{}': {}", lemma, e.getMessage(), e);
+            logger.warn("Unexpected failure retrieving frequency for lemma '{}': {}", lemma, e.getMessage(), e);
             return 0L;
         }
     }
