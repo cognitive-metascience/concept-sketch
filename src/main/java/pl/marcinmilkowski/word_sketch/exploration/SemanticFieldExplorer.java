@@ -269,7 +269,7 @@ public class SemanticFieldExplorer implements AutoCloseable {
         List<CoreCollocate> coreCollocates = new ArrayList<>();
         for (String colloc : seedCollocScores.keySet()) {
             int freq = collocFrequency.getOrDefault(colloc, 0);
-            if (freq >= minNounsForCore || freq >= 2) {
+            if (freq >= minNounsForCore) {
                 double totalScore = collocTotalScore.getOrDefault(colloc, 0.0);
                 double seedScore = seedCollocScores.get(colloc);
                 coreCollocates.add(new CoreCollocate(

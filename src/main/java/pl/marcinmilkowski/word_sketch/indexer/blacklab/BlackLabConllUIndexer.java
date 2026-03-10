@@ -61,9 +61,7 @@ public class BlackLabConllUIndexer implements AutoCloseable {
                 @Override
                 public boolean errorOccurred(Throwable e, String path, File f) {
                     logger.error("Indexing error in {}: {}", path, e.getMessage());
-                    if (e != null) {
-                        logger.error("Stack trace:", e);
-                    }
+                    logger.error("Stack trace:", e);
                     return true; // continue indexing
                 }
             });

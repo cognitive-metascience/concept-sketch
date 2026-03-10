@@ -1,0 +1,75 @@
+{
+  "batch": "naming_quality",
+  "batch_index": 4,
+  "assessments": {"naming_quality": 79.0},
+  "dimension_notes": {
+    "naming_quality": {
+      "evidence": [
+        "Consistent `format*` convention used across ExplorationHandlers and SketchHandlers: formatSeedCollocate, formatDiscoveredNoun, formatCoreCollocate, formatEdge, formatAdjectiveProfile, formatWordSketchResult — all precisely named serialisation helpers.",
+        "`handleSemanticFieldExplore`, `handleSemanticFieldExploreMulti`, `handleSemanticFieldExamples` in ExplorationHandlers communicate intent precisely and distinguish between single-seed, multi-seed, and examples variants.",
+        "`resolveRelationAlias` in ExplorationHandlers is well-named — it makes explicit that it is an alias-resolution step, not a full lookup.",
+        "In SketchHandlers, four private methods use `Impl`/`Internal` suffixes: `handleRelationsImpl`, `handleFullSketchImpl`, `handleRelationQueryInternal`, `handleDependencyRelationQuery` → `handleRelationQueryInternal`. These say 'this is the real one' but not what distinguishes the implementation from its delegate variants. `handleRelationsImpl(exchange, relationType)` would be clearer as `sendRelationsForType` or `handleRelationsByType`.",
+        "`handleSemanticField` in ExplorationHandlers is ambiguous: given `handleSemanticFieldExplore`, `handleSemanticFieldExploreMulti`, and `handleSemanticFieldExamples`, the unprefixed `handleSemanticField` is easily confused with a catch-all handler. It actually performs noun-adjective profile *comparison* (calls `compareCollocateProfiles`), making `handleSemanticFieldComparison` a more precise name.",
+        "Local variable `ep` (ExploreParams) in ExplorationHandlers lines 65-69 is immediately destructured, so the abbreviation is tolerable but non-idiomatic given the longer names used elsewhere in the same file.",
+        "Model class names — ExplorationResult, DiscoveredNoun, CoreCollocate, AdjectiveProfile, ComparisonResult — are precise domain vocabulary with no generic verbs.",
+        "Package-level names (api, config, exploration, model, query, tagging, utils, viz) map cleanly to responsibilities."
+      ],
+      "impact_scope": "module",
+      "fix_scope": "multi_file_refactor",
+      "confidence": "high"
+    }
+  },
+  "dimension_judgment": {
+    "naming_quality": {
+      "strengths": [
+        "Consistent `format*` naming convention for all JSON-serialisation helpers across both handler classes, making serialisation sites easy to locate.",
+        "`handle*` prefix uniformly applied to every HTTP handler method across SketchHandlers and ExplorationHandlers, creating a clear and navigable surface.",
+        "Model DTOs use precise domain vocabulary (DiscoveredNoun, CoreCollocate, AdjectiveProfile) with no generic nouns like 'data' or 'info'.",
+        "`resolveRelationAlias` explicitly encodes its purpose — alias resolution — rather than hiding behind a generic name like `mapRelation`.",
+        "Public method names in SemanticFieldExplorer (`exploreByPattern`, `exploreMultiSeed`, `compareCollocateProfiles`, `fetchExamples`) describe operations in domain terms rather than technical/mechanical terms."
+      ],
+      "issue_character": "Issues are localised to a small cluster of private methods in SketchHandlers that use the recognised Java anti-pattern of `Impl`/`Internal` suffixes, plus one ambiguous public handler name in ExplorationHandlers — both locatable in a single-session reading.",
+      "score_rationale": "The codebase sits clearly above the 60 'significant drag' threshold: domain vocabulary is precise, naming conventions are consistent across files, and the public API surface is easy to navigate. The `Impl`/`Internal` suffix cluster (4 private methods) and the ambiguous `handleSemanticField` name are real defects that reduce clarity in SketchHandlers and ExplorationHandlers respectively, but they are scoped to two files and do not affect public API names or cross-cutting vocabulary. This places the score in the upper-70s range — solid but with a recognisable pattern of localised naming sloppiness that a careful reader would notice."
+    }
+  },
+  "issues": [
+    {
+      "dimension": "naming_quality",
+      "identifier": "impl_internal_suffix_handlers",
+      "summary": "`Impl`/`Internal` suffixes on private handler methods in SketchHandlers obscure what varies across delegate chains",
+      "related_files": ["src/main/java/pl/marcinmilkowski/word_sketch/api/SketchHandlers.java"],
+      "evidence": [
+        "`handleRelationsImpl(HttpExchange, RelationType)` is the shared body of `handleSurfaceRelations` and `handleDepRelations`; the `Impl` suffix says nothing about the relation-type axis it abstracts.",
+        "`handleFullSketchImpl(HttpExchange, String, RelationType)` is delegated to from both `handleFullSketch` (SURFACE) and `handleFullDependencySketch` (DEP); same pattern.",
+        "`handleRelationQueryInternal(HttpExchange, String, String, RelationType)` is delegated to from `handleRelationQuery` (SURFACE) and `handleDependencyRelationQuery` (DEP); `Internal` is marginally better than `Impl` but still opaque."
+      ],
+      "suggestion": "Rename to names that encode the discriminating parameter: `handleRelationsForType`, `handleFullSketchForType`, `handleRelationQueryForType`. The public delegates can then be one-liners calling these with a named constant, and the private method names communicate the abstraction cleanly.",
+      "confidence": "high",
+      "impact_scope": "local",
+      "fix_scope": "single_edit"
+    },
+    {
+      "dimension": "naming_quality",
+      "identifier": "handleSemanticField_ambiguous_name",
+      "summary": "`handleSemanticField` in ExplorationHandlers is misleadingly generic — it performs profile comparison, not generic semantic-field operations",
+      "related_files": ["src/main/java/pl/marcinmilkowski/word_sketch/api/ExplorationHandlers.java"],
+      "evidence": [
+        "Method signature: `void handleSemanticField(HttpExchange exchange)` at line 168, mapped to GET /api/semantic-field.",
+        "The method calls `semanticFieldExplorer.compareCollocateProfiles(nouns, minLogDice, maxPerNoun)` — it is a comparison handler.",
+        "Given sibling methods `handleSemanticFieldExplore`, `handleSemanticFieldExploreMulti`, `handleSemanticFieldExamples`, a developer reading the class expects `handleSemanticField` to be a catch-all or base handler, not the comparison endpoint."
+      ],
+      "suggestion": "Rename to `handleSemanticFieldComparison` to align with `compareCollocateProfiles` vocabulary and disambiguate from the explore/examples variants.",
+      "confidence": "high",
+      "impact_scope": "local",
+      "fix_scope": "single_edit"
+    }
+  ],
+  "retrospective": {
+    "root_causes": [
+      "The `Impl`/`Internal` pattern is a refactoring residue: two public entry points were unified into a single private method but the resulting name was left as a structural artefact rather than renamed to reflect what it actually abstracts.",
+      "The ambiguous `handleSemanticField` name likely predates the exploration/examples sibling methods and was never updated as those siblings were added, leaving a misleading naming gap."
+    ],
+    "likely_symptoms": [],
+    "possible_false_positives": []
+  }
+}

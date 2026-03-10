@@ -15,7 +15,7 @@ public record DiscoveredNoun(
         double avgLogDice,
         double similarityScore) {
 
-    public List<String> getSharedCollocateList() {
+    public List<String> sharedCollocateList() {
         return new ArrayList<>(sharedCollocates.keySet());
     }
 

@@ -24,8 +24,8 @@ public record AdjectiveProfile(
     public boolean isPartiallyShared() { return presentInCount >= 2 && presentInCount < totalNouns; }
     public boolean isSpecific() { return presentInCount == 1; }
 
-    /** Get the noun this adjective is most associated with */
-    public String getStrongestNoun() {
+    /** Returns the noun this adjective is most associated with */
+    public String strongestNoun() {
         return nounScores.entrySet().stream()
             .max(Comparator.comparingDouble(Map.Entry::getValue))
             .map(Map.Entry::getKey)

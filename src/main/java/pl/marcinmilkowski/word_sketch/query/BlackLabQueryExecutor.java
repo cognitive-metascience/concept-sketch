@@ -49,6 +49,9 @@ import java.util.Set;
 public class BlackLabQueryExecutor implements QueryExecutor {
     private static final Logger logger = LoggerFactory.getLogger(BlackLabQueryExecutor.class);
 
+    /** Over-fetch factor: request 3x as many hits as needed to compensate for scoring discards. */
+    private static final int OVER_FETCH_FACTOR = 3;
+
 
 
     private final BlackLabIndex blackLabIndex;
@@ -254,7 +257,7 @@ public class BlackLabQueryExecutor implements QueryExecutor {
     private List<QueryResults.CollocateResult> scoreHits(List<HitRecord> records,
             Map<String, Long> collocateFreqMap, long headwordFreq, int maxResults) throws IOException {
         List<QueryResults.CollocateResult> results = new ArrayList<>();
-        int limit = Math.min(records.size(), maxResults * 3);
+        int limit = Math.min(records.size(), maxResults * OVER_FETCH_FACTOR);
 
         for (int i = 0; i < limit; i++) {
             HitRecord rec = records.get(i);

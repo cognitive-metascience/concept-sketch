@@ -1,0 +1,126 @@
+{
+  "batch": "high_level_elegance",
+  "batch_index": 2,
+  "assessments": {
+    "high_level_elegance": 70.0
+  },
+  "dimension_notes": {
+    "high_level_elegance": {
+      "evidence": [
+        "Package decomposition maps clearly to domain capabilities: api, config, exploration, indexer, model, query, tagging, utils, viz — each with a predictable single-subject focus visible from directory listing alone.",
+        "API layer is split into SketchHandlers (word sketch + concordance) and ExplorationHandlers (semantic field exploration), with WordSketchApiServer acting as a thin routing orchestrator that delegates to both — a consistent handler-orchestrator pattern.",
+        "ExplorationResult.getEdges() and ComparisonResult.getEdges() both assemble visualization Edge objects from domain data inside the model package. Edge is consumed by viz/rendering code, making these model classes responsible for view preparation — a blurred layer boundary repeated across two classes.",
+        "QueryResults (WordSketchResult, CollocateResult) is placed in model but is labeled 'Used by BlackLabQueryExecutor' and carries raw query infrastructure types (offsets, rawXml). It belongs more naturally in the query package alongside the executor that produces it.",
+        "utils/PatternSubstitution contains CQL pattern manipulation logic specific to the query construction subsystem. Its placement in generic utils obscures that it is a query-subsystem concern, not a general utility.",
+        "resolveRelationAlias() in ExplorationHandlers maps public API relation names (adj_modifier, modifier) to internal IDs (noun_modifiers). It's a private static with no documentation about which aliases are stable API contracts, making the boundary between API surface and internal identifiers implicit.",
+        "CollocateProfileComparator was explicitly extracted from SemanticFieldExplorer to stay below a size threshold — a comment ('Extracted from SemanticFieldExplorer to keep that class below the 400-line threshold') reveals this was a mechanical split, not a domain-motivated ownership boundary.",
+        "WordSketchApiServer constructor TODO comment acknowledges that server creation and route registration happen in start() instead of the constructor, breaking construction/start separation — a known structural debt acknowledged but deferred."
+      ],
+      "impact_scope": "subsystem",
+      "fix_scope": "multi_file_refactor",
+      "confidence": "high"
+    }
+  },
+  "dimension_judgment": {
+    "high_level_elegance": {
+      "strengths": [
+        "Package names map one-to-one to domain capabilities (exploration, indexer, query, tagging, viz, config) — a new engineer can orient themselves from the directory tree alone.",
+        "The API layer uses a consistent handler-orchestrator split: WordSketchApiServer owns routing and CORS/method enforcement; SketchHandlers and ExplorationHandlers own domain-specific response logic.",
+        "GrammarConfigLoader and RelationConfig together form a coherent, domain-aligned grammar configuration subsystem with clear loading/access contracts.",
+        "ExploreOptions bundles exploration tuning parameters into a named record, reflecting deliberate parameter-object design that keeps caller sites readable.",
+        "HttpApiUtils is a focused utility class containing HTTP mechanics (JSON response, error, CORS, param parsing) with no business logic bleed."
+      ],
+      "issue_character": "Issues are mild but recurrent boundary violations — model classes taking on view-assembly responsibilities (getEdges in domain DTOs), infrastructure types placed in the wrong package (QueryResults in model, PatternSubstitution in utils), and one mechanical class split driven by a size limit rather than domain ownership — suggesting the layer discipline that governs most of the codebase is inconsistently applied at the edges.",
+      "score_rationale": "The codebase's package structure is intentional and domain-aligned; a developer can locate code predictably and ownership of each subsystem is clear enough to plan isolated changes. The handler-orchestrator pattern in the API layer and the config subsystem are genuinely well-decomposed. However, the same mild boundary violation — view-prep code (getEdges) inside domain model classes, a query infrastructure type (QueryResults) in the model package, and a query utility (PatternSubstitution) in generic utils — recurs across multiple areas rather than being isolated, and one class (CollocateProfileComparator) was split mechanically rather than by domain ownership. This places the codebase above 'significant drag' (60) because the foundation is sound, but noticeably below 'solid but uneven' (80) because the misalignments are patterned rather than one-off."
+    }
+  },
+  "issues": [
+    {
+      "dimension": "high_level_elegance",
+      "identifier": "model_owns_viz_edge_assembly",
+      "summary": "Domain model classes build visualization Edge objects, blurring the model/view boundary",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/model/ExplorationResult.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/model/ComparisonResult.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/model/Edge.java"
+      ],
+      "evidence": [
+        "ExplorationResult.getEdges() constructs Edge(seed, collocate, logDice, 'seed_adj') and Edge(noun, collocate, logDice, 'discovered_adj') — type strings are rendering hints, not domain concepts.",
+        "ComparisonResult.getEdges() constructs Edge(adj, noun, logDice, 'modifier') from adjective profiles, also a view-facing mapping.",
+        "Edge is a record with a 'type' field whose string values ('seed_adj', 'discovered_adj', 'modifier') only make sense in a graph visualization context, yet it lives in the model package alongside domain types like CoreCollocate."
+      ],
+      "suggestion": "Move edge-building logic out of domain model classes into the handler or a dedicated mapper. ExplorationHandlers and ExplorationResult serialisation code should assemble Edge objects for the response; domain models should expose their data without knowing about visualization types. Alternatively, move Edge and its builder methods to a viz or api.dto package to make the dependency direction explicit.",
+      "confidence": "high",
+      "impact_scope": "subsystem",
+      "fix_scope": "multi_file_refactor",
+      "root_cause_cluster": "layer_boundary_violations"
+    },
+    {
+      "dimension": "high_level_elegance",
+      "identifier": "query_results_mispackaged_in_model",
+      "summary": "QueryResults (query infrastructure DTOs) lives in model instead of query",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/model/QueryResults.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/query/BlackLabQueryExecutor.java"
+      ],
+      "evidence": [
+        "QueryResults Javadoc states 'Used by BlackLabQueryExecutor and SemanticFieldExplorer' — one of its two primary consumers is in query, making model an unexpected home.",
+        "WordSketchResult carries rawXml, startOffset, endOffset — low-level query execution fields that have no place in a domain model package.",
+        "CollocateResult.rawXml() and collocateLemma() are query-execution artifacts, not domain concepts."
+      ],
+      "suggestion": "Move QueryResults to the query package (or a shared query.dto sub-package). This aligns the type with its producer (BlackLabQueryExecutor) and makes the dependency direction from exploration → query explicit rather than both pointing at model.",
+      "confidence": "high",
+      "impact_scope": "module",
+      "fix_scope": "multi_file_refactor",
+      "root_cause_cluster": "layer_boundary_violations"
+    },
+    {
+      "dimension": "high_level_elegance",
+      "identifier": "pattern_substitution_mispackaged_in_utils",
+      "summary": "PatternSubstitution is a query-subsystem utility placed in generic utils, obscuring its ownership",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/utils/PatternSubstitution.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/api/SketchHandlers.java"
+      ],
+      "evidence": [
+        "PatternSubstitution manipulates CQL/BCQL patterns by splitting token positions and substituting lemma constraints — entirely a query construction concern.",
+        "Its only caller visible in the codebase is SketchHandlers.handleConcordanceExamples(), which uses it to build a BCQL query from a relation pattern and a collocate word.",
+        "utils/CqlUtils (also in utils) performs CQL token splitting — the two CQL-specific utilities are co-located with unrelated helpers (LogDiceCalculator, LongIntHashMap) rather than in a coherent home."
+      ],
+      "suggestion": "Move PatternSubstitution (and CqlUtils) to query or a new utils/cql sub-package. This makes it clear that CQL manipulation is a query-construction concern and keeps generic utilities (math, data structures) separate from language-specific pattern processing.",
+      "confidence": "medium",
+      "impact_scope": "module",
+      "fix_scope": "multi_file_refactor",
+      "root_cause_cluster": "layer_boundary_violations"
+    },
+    {
+      "dimension": "high_level_elegance",
+      "identifier": "collocate_profile_comparator_mechanical_split",
+      "summary": "CollocateProfileComparator was extracted for size reasons, not domain-ownership reasons, creating a module boundary without a domain rationale",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/exploration/CollocateProfileComparator.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/exploration/SemanticFieldExplorer.java"
+      ],
+      "evidence": [
+        "CollocateProfileComparator Javadoc: 'Extracted from SemanticFieldExplorer to keep that class below the 400-line threshold' — the stated reason is a size heuristic, not a domain ownership boundary.",
+        "SemanticFieldExplorer instantiates CollocateProfileComparator internally; there is no domain concept that separates 'comparison' from 'exploration' at the class level — they share the same QueryExecutor and operate on the same RelationConfig inputs.",
+        "The split means a developer looking for compareCollocateProfiles behavior must follow a delegation chain into a file whose name suggests a different concept than what SemanticFieldExplorer.compareCollocateProfiles does."
+      ],
+      "suggestion": "If the size threshold is the only driver, document that explicitly or merge the two classes back and accept the length. If there is a genuine domain split (single-seed exploration vs. multi-seed profile comparison), rename CollocateProfileComparator to SemanticProfileComparator or MultiSeedCollocateAnalyzer and give it a clear independent entry point rather than leaving it as a hidden delegate.",
+      "confidence": "medium",
+      "impact_scope": "module",
+      "fix_scope": "single_edit"
+    }
+  ],
+  "retrospective": {
+    "root_causes": [
+      "A consistent but mild 'convenience coupling' pattern: when a new feature was added (exploration, visualization), data-assembly for the response was placed directly on the model class rather than in a dedicated mapper or handler, gradually blurring the model/view boundary.",
+      "Package placement decisions appear to have been driven by 'where is this type first needed' rather than 'which subsystem owns this type', leading to QueryResults in model and PatternSubstitution in utils despite both being query-subsystem concerns."
+    ],
+    "likely_symptoms": [
+      "model_owns_viz_edge_assembly is likely symptom-level; the root cause is lack of a mapper/assembler layer between domain results and API responses.",
+      "collocate_profile_comparator_mechanical_split is a symptom of size management rather than a structural problem."
+    ],
+    "possible_false_positives": []
+  }
+}

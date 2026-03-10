@@ -1,153 +1,32 @@
 {
-  "command": "next",
-  "items": [
-    {
-      "id": "review::.::holistic::api_surface_coherence::explore_single_vs_multi_delegation_asymmetry::db78d2e0",
-      "kind": "issue",
-      "confidence": "medium",
-      "detector": "review",
-      "file": ".",
-      "summary": "Single-seed explore handler assembles domain config manually while multi-seed passes RelationConfig directly to the service",
-      "detail": {
-        "holistic": true,
-        "dimension": "api_surface_coherence",
-        "related_files": [
-          "src/main/java/pl/marcinmilkowski/word_sketch/api/ExplorationHandlers.java",
-          "src/main/java/pl/marcinmilkowski/word_sketch/exploration/SemanticFieldExplorer.java"
-        ],
-        "evidence": [
-          "handleSemanticFieldExplore (lines ~82-95): extracts bcqlPattern, reverseCollocatePattern, headPos, collocatePos from RelationConfig, constructs ExploreOptions, then calls semanticFieldExplorer.exploreByPattern(seed, name, bcql, reversePattern, opts) \u2014 5 arguments extracted from config",
-          "handleSemanticFieldExploreMulti: calls semanticFieldExplorer.exploreMultiSeed(seeds, relationConfig.get(), minLogDice, topCollocates, minShared) \u2014 passes RelationConfig directly",
-          "The handler even has a TODO comment acknowledging that domain object assembly should be delegated to a factory/service",
-          "This means evolving RelationConfig requires coordinated changes to the handler (single-seed) but not the service (multi-seed)"
-        ],
-        "suggestion": "Add an overload or refactor exploreByPattern to accept RelationConfig directly (mirroring exploreMultiSeed), and move bcqlPattern/reversePattern/position extraction into the service layer. This removes the domain-assembly responsibility from the HTTP handler.",
-        "reasoning": ""
-      },
-      "status": "open",
-      "primary_command": "desloppify plan resolve \"review::.::holistic::api_surface_coherence::explore_single_vs_multi_delegation_asymmetry::db78d2e0\" --note \"<what you did>\" --confirm",
-      "queue_position": 1,
-      "plan_cluster": {
-        "name": "api-polish3",
-        "description": "API surface consistency round 3: align response keys, null fallbacks, and response shapes across sibling endpoints in api_surface_coherence dimension",
-        "total_items": 2,
-        "action_steps": [
-          {
-            "title": "Change response.put('nouns', ...) to response.put('seeds', ...) in multi-seed handler to match input parameter name (802a3742)",
-            "detail": "ExplorationHandlers.java multi-seed response builder: change response.put('nouns', ...) to response.put('seeds', ...) to match the input parameter name",
-            "issue_refs": [
-              "802a3742"
-            ],
-            "effort": "small",
-            "done": true
-          },
-          {
-            "title": "Align handleConcordanceExamples raw field fallback to empty string matching bcql endpoint default (06f99a98)",
-            "detail": "ExplorationHandlers.java handleConcordanceExamples: change r.rawXml() fallback from sentence text to empty string '' to match bcql endpoint default",
-            "issue_refs": [
-              "06f99a98"
-            ],
-            "effort": "small",
-            "done": true
-          },
-          {
-            "title": "Wrap single-relation sketch collocations in per-relation object shape to match full-sketch endpoint structure (9fbcd7f8)",
-            "detail": "SketchHandlers.java single-relation endpoint: wrap returned collocations list in Map.of('relation', relName, 'collocations', list) matching the per-relation object shape of the full-sketch response",
-            "issue_refs": [
-              "9fbcd7f8"
-            ],
-            "effort": "small"
-          },
-          {
-            "title": "Add RelationConfig-accepting overload to exploreByPattern mirroring multi-seed path; remove manual config assembly from single-seed handler (db78d2e0)",
-            "detail": "SemanticFieldExplorer.java: add exploreByPattern(RelationConfig, String, int) overload; ExplorationHandlers.java single-seed handler: replace manual config assembly with this new overload",
-            "issue_refs": [
-              "db78d2e0"
-            ],
-            "effort": "small"
-          }
-        ]
-      }
-    },
-    {
-      "id": "review::.::holistic::api_surface_coherence::sketch_response_shape_divergence::9fbcd7f8",
-      "kind": "issue",
-      "confidence": "high",
-      "detector": "review",
-      "file": ".",
-      "summary": "Full-sketch and single-relation sketch endpoints return structurally incompatible response shapes",
-      "detail": {
-        "holistic": true,
-        "dimension": "api_surface_coherence",
-        "related_files": [
-          "src/main/java/pl/marcinmilkowski/word_sketch/api/SketchHandlers.java"
-        ],
-        "evidence": [
-          "handleFullSketchImpl returns {lemma, relations: {id: {name, cql, collocations:[...]}}} \u2014 collocations nested two levels deep under a relation-keyed map",
-          "handleRelationQueryInternal returns {lemma, relation, collocations:[...]} \u2014 collocations flat at the top level, no per-relation metadata",
-          "Both are served under /api/sketch/{lemma} and /api/sketch/{lemma}/{relation} \u2014 a client switching between the two must handle two incompatible schemas"
-        ],
-        "suggestion": "Have the single-relation endpoint wrap its collocations inside the same per-relation object shape as the full endpoint: {lemma, relations: {<id>: {name, cql, collocations:[...]}}}. This makes the single-relation response a predictable subset of the full-sketch response.",
-        "reasoning": ""
-      },
-      "status": "open",
-      "primary_command": "desloppify plan resolve \"review::.::holistic::api_surface_coherence::sketch_response_shape_divergence::9fbcd7f8\" --note \"<what you did>\" --confirm",
-      "queue_position": 2,
-      "plan_cluster": {
-        "name": "api-polish3",
-        "description": "API surface consistency round 3: align response keys, null fallbacks, and response shapes across sibling endpoints in api_surface_coherence dimension",
-        "total_items": 2,
-        "action_steps": [
-          {
-            "title": "Change response.put('nouns', ...) to response.put('seeds', ...) in multi-seed handler to match input parameter name (802a3742)",
-            "detail": "ExplorationHandlers.java multi-seed response builder: change response.put('nouns', ...) to response.put('seeds', ...) to match the input parameter name",
-            "issue_refs": [
-              "802a3742"
-            ],
-            "effort": "small",
-            "done": true
-          },
-          {
-            "title": "Align handleConcordanceExamples raw field fallback to empty string matching bcql endpoint default (06f99a98)",
-            "detail": "ExplorationHandlers.java handleConcordanceExamples: change r.rawXml() fallback from sentence text to empty string '' to match bcql endpoint default",
-            "issue_refs": [
-              "06f99a98"
-            ],
-            "effort": "small",
-            "done": true
-          },
-          {
-            "title": "Wrap single-relation sketch collocations in per-relation object shape to match full-sketch endpoint structure (9fbcd7f8)",
-            "detail": "SketchHandlers.java single-relation endpoint: wrap returned collocations list in Map.of('relation', relName, 'collocations', list) matching the per-relation object shape of the full-sketch response",
-            "issue_refs": [
-              "9fbcd7f8"
-            ],
-            "effort": "small"
-          },
-          {
-            "title": "Add RelationConfig-accepting overload to exploreByPattern mirroring multi-seed path; remove manual config assembly from single-seed handler (db78d2e0)",
-            "detail": "SemanticFieldExplorer.java: add exploreByPattern(RelationConfig, String, int) overload; ExplorationHandlers.java single-seed handler: replace manual config assembly with this new overload",
-            "issue_refs": [
-              "db78d2e0"
-            ],
-            "effort": "small"
-          }
-        ]
-      }
-    }
+  "command": "resolve",
+  "patterns": [
+    "55954907"
   ],
-  "queue": {
-    "total": 2
-  },
+  "status": "fixed",
+  "resolved": [
+    "review::.::holistic::low_level_elegance::explore_params_incomplete_extraction::55954907"
+  ],
+  "count": 1,
+  "next_command": "desloppify next",
+  "overall_score": 74.2,
+  "objective_score": 99.4,
+  "strict_score": 74.2,
+  "verified_strict_score": 99.4,
+  "prev_overall_score": 74.2,
+  "prev_objective_score": 99.4,
+  "prev_strict_score": 74.2,
+  "prev_verified_strict_score": 99.4,
+  "attestation": "I have actually Fixed: removed dead || freq>=2 condition, added OVER_FETCH_FACTOR constant, extracted GrammarConfigLoader constructor into helpers, added nounsPerSeed to ExploreParams. All 126 tests pass. and I am not gaming the score.",
   "narrative": {
     "phase": "middle_grind",
-    "headline": "\u26a0 1 security issue \u2014 review before other cleanup. 10 issues open. Mid elegance (41.0%) needs attention \u2014 run `desloppify next` to start. (4 review issues \u2014 run `desloppify show review --status open`)",
+    "headline": "20 issues open. API coherence (42.0%) needs attention \u2014 run `desloppify next` to start. (14 review issues \u2014 run `desloppify show review --status open`)",
     "dimensions": {
       "lowest_dimensions": [
         {
-          "name": "Mid elegance",
-          "strict": 41.0,
-          "failing": 0,
+          "name": "API coherence",
+          "strict": 42.0,
+          "failing": 4,
           "impact": 0.0,
           "subjective": true,
           "impact_description": "re-review to improve"
@@ -161,9 +40,9 @@
           "impact_description": "re-review to improve"
         },
         {
-          "name": "Naming quality",
-          "strict": 45.1,
-          "failing": 0,
+          "name": "Type safety",
+          "strict": 47.3,
+          "failing": 3,
           "impact": 0.0,
           "subjective": true,
           "impact_description": "re-review to improve"
@@ -177,23 +56,8 @@
           "stuck_scans": 5
         },
         {
-          "name": "Security",
-          "strict": 97.7,
-          "stuck_scans": 5
-        },
-        {
-          "name": "Naming quality",
-          "strict": 45.1,
-          "stuck_scans": 5
-        },
-        {
-          "name": "Logic clarity",
-          "strict": 46.4,
-          "stuck_scans": 5
-        },
-        {
-          "name": "Type safety",
-          "strict": 49.3,
+          "name": "File health",
+          "strict": 100.0,
           "stuck_scans": 5
         },
         {
@@ -202,13 +66,13 @@
           "stuck_scans": 5
         },
         {
-          "name": "AI generated debt",
-          "strict": 56.1,
+          "name": "Error consistency",
+          "strict": 59.3,
           "stuck_scans": 5
         },
         {
-          "name": "Cross-module arch",
-          "strict": 48.0,
+          "name": "AI generated debt",
+          "strict": 56.1,
           "stuck_scans": 5
         },
         {
@@ -239,31 +103,42 @@
         {
           "name": "Definition Directness",
           "strict": 56.7,
-          "stuck_scans": 3
+          "stuck_scans": 5
         },
         {
           "name": "Delegation Density",
           "strict": 67.1,
-          "stuck_scans": 3
+          "stuck_scans": 5
         },
         {
           "name": "Type Discipline",
           "strict": 43.6,
-          "stuck_scans": 3
+          "stuck_scans": 5
         }
       ]
     },
     "actions": [
       {
         "type": "refactor",
+        "detector": "boilerplate_duplication",
+        "count": 1,
+        "description": "1 boilerplate_duplication issues \u2014 extract shared boilerplate into reusable helpers or base classes",
+        "command": "desloppify show boilerplate_duplication --status open",
+        "impact": 0.0,
+        "dimension": "Duplication",
+        "priority": 1,
+        "lane": "refactor_0"
+      },
+      {
+        "type": "refactor",
         "detector": "review",
-        "count": 4,
-        "description": "4 review issues need investigation \u2014 run `desloppify show review --status open` to see them",
+        "count": 14,
+        "description": "14 review issues need investigation \u2014 run `desloppify show review --status open` to see them",
         "command": "desloppify show review --status open",
         "impact": 0.0,
         "dimension": "Unknown",
-        "priority": 1,
-        "lane": "refactor_0"
+        "priority": 2,
+        "lane": "refactor_1"
       },
       {
         "type": "manual_fix",
@@ -273,17 +148,6 @@
         "command": "desloppify show stale_exclude --status open",
         "impact": 0.0,
         "dimension": "Code quality",
-        "priority": 2,
-        "lane": "refactor_1"
-      },
-      {
-        "type": "manual_fix",
-        "detector": "security",
-        "count": 1,
-        "description": "1 security issues \u2014 review and fix security issues \u2014 prioritize by severity",
-        "command": "desloppify show security --status open",
-        "impact": 0.0,
-        "dimension": "Security",
         "priority": 3,
         "lane": "refactor_2"
       }
@@ -291,7 +155,7 @@
     "strategy": {
       "fixer_leverage": {
         "auto_fixable_count": 0,
-        "total_count": 18,
+        "total_count": 48,
         "coverage": 0.0,
         "impact_ratio": 0.0,
         "recommendation": "none"
@@ -310,7 +174,7 @@
           "actions": [
             2
           ],
-          "file_count": 5,
+          "file_count": 1,
           "total_impact": 0.0,
           "automation": "manual",
           "run_first": false
@@ -319,14 +183,14 @@
           "actions": [
             3
           ],
-          "file_count": 1,
+          "file_count": 5,
           "total_impact": 0.0,
           "automation": "manual",
           "run_first": false
         }
       },
       "can_parallelize": false,
-      "hint": "Work through actions in priority order. Rescan after each fix to track progress. Review: 4 issue(s) \u2014 `desloppify show review --status open`."
+      "hint": "Work through actions in priority order. Rescan after each fix to track progress. Review: 14 issue(s) \u2014 `desloppify show review --status open`."
     },
     "tools": {
       "fixers": [],
@@ -349,17 +213,17 @@
     },
     "debt": {
       "overall_gap": 0.0,
-      "wontfix_count": 17,
+      "wontfix_count": 24,
       "worst_dimension": null,
       "worst_gap": 0.0,
       "trend": "stable"
     },
     "milestone": null,
     "primary_action": {
-      "command": "desloppify show review --status open",
-      "description": "4 review issues need investigation \u2014 run `desloppify show review --status open` to see them"
+      "command": "desloppify show boilerplate_duplication --status open",
+      "description": "1 boilerplate_duplication issues \u2014 extract shared boilerplate into reusable helpers or base classes"
     },
-    "why_now": "Work through actions in priority order. Rescan after each fix to track progress. Review: 4 issue(s) \u2014 `desloppify show review --status open`.",
+    "why_now": "Work through actions in priority order. Rescan after each fix to track progress. Review: 14 issue(s) \u2014 `desloppify show review --status open`.",
     "verification_step": {
       "command": "desloppify scan",
       "reason": "revalidate after changes"
@@ -368,764 +232,43 @@
       {
         "type": "wontfix_gap",
         "severity": "medium",
-        "message": "Strict/lenient gap is 0.0 pts with 17 wontfix issues"
+        "message": "Strict/lenient gap is 0.0 pts with 24 wontfix issues"
       }
     ],
     "strict_target": {
       "target": 95.0,
-      "current": 71.4,
-      "gap": 23.6,
+      "current": 74.2,
+      "gap": 20.8,
       "state": "below",
       "warning": null
     },
-    "reminders": [],
+    "reminders": [
+      {
+        "type": "rereview_needed",
+        "message": "Subjective results may be stale after resolve. Re-run `desloppify review --prepare` to refresh, or reset with `desloppify scan --reset-subjective` before a clean rerun.",
+        "command": "desloppify review --prepare",
+        "priority": 1,
+        "severity": "high"
+      },
+      {
+        "type": "rescan_needed",
+        "message": "Rescan to verify \u2014 cascading effects may create new issues.",
+        "command": "desloppify scan",
+        "priority": 1,
+        "severity": "high"
+      }
+    ],
     "reminder_history": {
       "zone_classification": 3,
-      "report_scores": 7,
+      "report_scores": 8,
       "review_issues_pending": 3,
       "feedback_nudge": 3,
       "wontfix_growing": 1,
-      "stagnant_nudge": 5
+      "stagnant_nudge": 5,
+      "rereview_needed": 1,
+      "rescan_needed": 1
     }
   },
-  "agent_notes": [
-    "Do NOT use `desloppify plan skip` unless the user explicitly asks you to skip an item.",
-    "If you cannot fix an item, report it and move to the next one.",
-    "For cluster items: if the autofix_hint finds 0 results, drill into individual issues with the primary_command."
-  ],
-  "plan": {
-    "active": true,
-    "focus": null,
-    "clusters": [
-      {
-        "name": "security",
-        "description": "Fix all mechanical security findings",
-        "item_count": 0
-      },
-      {
-        "name": "dead-migration-code",
-        "description": "Remove dead code from incomplete BlackLab migration: indexer/hybrid/, root LuceneIndexer, .bak files",
-        "item_count": 0
-      },
-      {
-        "name": "interface-contract",
-        "description": "Fix QueryExecutor interface gap causing forced downcasts to BlackLabQueryExecutor",
-        "item_count": 0
-      },
-      {
-        "name": "debug-logging",
-        "description": "Replace all System.out.println with SLF4J logger calls",
-        "item_count": 0
-      },
-      {
-        "name": "dead-methods",
-        "description": "Remove dead methods, stubs, and copy-paste artifacts",
-        "item_count": 0
-      },
-      {
-        "name": "resource-management",
-        "description": "Fix per-request index opens that bypass injected executor",
-        "item_count": 0
-      },
-      {
-        "name": "test-coverage",
-        "description": "Add unit tests for the three currently uncovered production units: API handlers, query executor core logic, and RadialPlot SVG math",
-        "item_count": 0
-      },
-      {
-        "name": "stale-excludes",
-        "description": "5 stale_exclude items verified as valid non-source data directories",
-        "item_count": 5
-      },
-      {
-        "name": "structural-large",
-        "description": "2 large files already substantially reduced by extraction",
-        "item_count": 0
-      },
-      {
-        "name": "dead-ai-code",
-        "description": "Delete AI-generated dead code across GrammarConfigLoader, LogDiceCalculator, WordSketchApiServer, SemanticFieldExplorer. Issues: dead copula infrastructure (822833ee), dead grammar config methods (68d46c6f), dead LogDice scoring methods (06443025), RelationDef class (cd282c18), toLegacyRelationType() (2875ee92), duplicate explore() overloads (bff0195f).",
-        "item_count": 0
-      },
-      {
-        "name": "api-coherence",
-        "description": "Fix API coherence: BCQL error returns HTTP 200 (16250503); extract duplicate relation switch (90d6143d).",
-        "item_count": 0
-      },
-      {
-        "name": "abstraction-cleanup",
-        "description": "Remove hollow abstractions: dead Token match methods (7de930fa) and hollow PosTagger interface (5f270cc8).",
-        "item_count": 0
-      },
-      {
-        "name": "convention-fixes",
-        "description": "Fix convention issues: replace System.out with logger in BlackLabConllUIndexer, convert RelationsValidationTest to JUnit, fix test naming convention (Test prefix), remove debug prefix from logger.debug() calls, make BlackLabSnippetParser public, standardize wildcard imports",
-        "item_count": 0
-      },
-      {
-        "name": "migration-cleanup",
-        "description": "Clean up incomplete migration artifacts: .bak files, phantom class references in CLAUDE.md, stale javadoc in QueryResults, orphaned SketchGrammarParser and CQL grammar classes, dead predicate subsystem",
-        "item_count": 0
-      },
-      {
-        "name": "design-fixes",
-        "description": "Fix design defects: double-close bug, stream-to-logger bug, duplicate logDice pipeline (4x in BlackLabQueryExecutor), duplicate derivePosition methods, double query execution, REPITITION typo, duplicate split methods, dual relation lookup API, inconsistent InvalidQuery handling",
-        "item_count": 0
-      },
-      {
-        "name": "test-fixes",
-        "description": "Fix test infrastructure: RelationsValidationTest uses main() not @Test; LongIntHashMapTest is in wrong package; integration tests use hardcoded paths; CQL verifier has shallow assertions; dummy test has no assertions",
-        "item_count": 0
-      },
-      {
-        "name": "package-org",
-        "description": "Structural / documentation issues: utils catch-all package, query package blob (too many classes), phantom /api/grammar/active endpoint, README startup commands incomplete, sketch query params undocumented, GrammarConfigLoader god constructor, oversized executeBcqlQuery, god class API server",
-        "item_count": 0
-      },
-      {
-        "name": "bugs-first",
-        "description": "Fix genuine correctness bugs: multi-seed pattern substitution missing, SimpleTagger 'am' tagged wrong, remaining parseInt sites",
-        "item_count": 0
-      },
-      {
-        "name": "quick-wins",
-        "description": "Trivial one-liner fixes: remove unused variable, add @Override, remove dead code, fix pom.xml artifact, remove trivial Javadoc",
-        "item_count": 0
-      },
-      {
-        "name": "error-handling",
-        "description": "Fix resource leaks and silent exception swallowing: try-with-resources for SEF, unify exception types in GrammarConfigLoader",
-        "item_count": 0
-      },
-      {
-        "name": "stubs-cleanup",
-        "description": "Resolve getCorpusSize stub: either implement using BlackLab API or remove and add to interface as not-implemented",
-        "item_count": 0
-      },
-      {
-        "name": "god-class-extraction",
-        "description": "Break WordSketchApiServer monolith: extract duplicate handlers, try-with-resources, extract response builder helper",
-        "item_count": 0
-      },
-      {
-        "name": "design-structural",
-        "description": "Larger structural improvements: package reorganization, SEF constructor injection, QueryExecutor interface cleanup, SnippetParser API consolidation, SimpleTagger lexicon externalization",
-        "item_count": 0
-      },
-      {
-        "name": "deprecated-api-cleanup",
-        "description": "Complete the extractCollocate* -> extractLemmaAt migration: delete deprecated methods, fix the 'clean' replacement that still calls deprecated, update all callers",
-        "item_count": 0
-      },
-      {
-        "name": "sef-dto-extraction",
-        "description": "Move SemanticFieldExplorer's 6-7 result DTOs to a new model/ package to decouple the api/ layer from query/ internals",
-        "item_count": 0
-      },
-      {
-        "name": "interface-contract-gaps",
-        "description": "Align QueryExecutor interface with its implementation: add missing methods, remove dead ExploreOptions.executor field, standardize parameter naming",
-        "item_count": 0
-      },
-      {
-        "name": "silent-error-fixes",
-        "description": "Replace silent exception swallowing and missing input guards with proper error propagation and NumberFormatException handling",
-        "item_count": 0
-      },
-      {
-        "name": "logic-bugs",
-        "description": "Fix correctness bugs: no-copy intersection, silent pattern drop, CQL bracket parser, wrong fallback constant, scoreHits overflow, scoreHits default freq",
-        "item_count": 0
-      },
-      {
-        "name": "api-server-decomposition",
-        "description": "Decompose the 988-line WordSketchApiServer god class: extract shared helpers, eliminate handler duplication, inject dependencies",
-        "item_count": 0
-      },
-      {
-        "name": "minor-fixes",
-        "description": "Small cosmetic, naming, and API-surface fixes: duplicate Javadoc, log levels, Javadoc accuracy, nullable annotations, server binding",
-        "item_count": 0
-      },
-      {
-        "name": "cql-utils-consolidation",
-        "description": "Consolidate duplicate CQL bracket-walking logic: substituteHeadword in RelationConfig re-implements what CqlUtils.splitCqlTokens already provides",
-        "item_count": 0
-      },
-      {
-        "name": "grammar-config-bugs",
-        "description": "Fix contract bugs in GrammarConfigLoader: toJson NPE when configPath is null, and escapeForRegex duplication now consolidated to CqlUtils",
-        "item_count": 0
-      },
-      {
-        "name": "snippet-parser-cleanup",
-        "description": "Clean up BlackLabSnippetParser: remove or deprecate methods that have canonical replacements, unify near-duplicate lemma extraction",
-        "item_count": 0
-      },
-      {
-        "name": "query-executor-cleanup",
-        "description": "Fix exception handling, dead code, method naming, interface gaps, and unify duplicate dependency query methods in BlackLabQueryExecutor and QueryExecutor interface",
-        "item_count": 0
-      },
-      {
-        "name": "sef-refactor",
-        "description": "Fix compare() logic bug and oversize method, remove deprecated String constructor, rename compare(), move multi-seed orchestration from handler into SemanticFieldExplorer",
-        "item_count": 0
-      },
-      {
-        "name": "handler-cleanup",
-        "description": "Add requireParam helper, shared collocation formatter, fix error status codes, fix JSON key casing, name constants, rename methods and variables in ExplorationHandlers and SketchHandlers",
-        "item_count": 0
-      },
-      {
-        "name": "api-contracts",
-        "description": "Add typed constructors to ConcordanceResult, create SurfacePatternQuery parameter object, clarify LogDiceCalculator error return semantics",
-        "item_count": 0
-      },
-      {
-        "name": "infra-minimal",
-        "description": "Add shutdown log, document localhost-only policy, configure CORS origins, upgrade slf4j-simple to logback-classic",
-        "item_count": 0
-      },
-      {
-        "name": "tests",
-        "description": "Write unit tests for GrammarConfigLoader, HTTP handlers, and BlackLabQueryExecutor; remove or populate empty test directories",
-        "item_count": 0
-      },
-      {
-        "name": "multiseed-ownership",
-        "description": "Move multi-seed collocate-intersection logic from ExplorationHandlers into SemanticFieldExplorer where it belongs",
-        "item_count": 0
-      },
-      {
-        "name": "auto/review-mid_level_elegance",
-        "description": "Address 2 mid_level_elegance review issues",
-        "item_count": 0
-      },
-      {
-        "name": "auto/review-api_surface_coherence",
-        "description": "Address 2 api_surface_coherence review issues",
-        "item_count": 0
-      },
-      {
-        "name": "dead-fields2",
-        "description": "Remove 2 dead fields from recent refactoring: null indexPath in SemanticFieldExplorer, unused executor in ExplorationHandlers",
-        "item_count": 0
-      },
-      {
-        "name": "api-polish2",
-        "description": "API surface round 2: unify patterns/relations key, remove nouns alias, fix seed/seeds ambiguity, remove duplicate highlighted field, fix conditional BCQL fields",
-        "item_count": 1
-      },
-      {
-        "name": "model-consistency2",
-        "description": "Fix model encapsulation: ExplorationResult public fields vs ComparisonResult private+getters",
-        "item_count": 0
-      },
-      {
-        "name": "elegance-cleanup",
-        "description": "Handler improvements: de-duplicate response assembly, move domain logic out of HTTP handlers, fix error consistency",
-        "item_count": 8
-      },
-      {
-        "name": "test-additions",
-        "description": "Add test coverage: BlackLabQueryExecutor, CollocateProfileComparator, handler happy paths; fix disabled placeholder suites",
-        "item_count": 4
-      },
-      {
-        "name": "misc-cleanup",
-        "description": "Remaining cleanup: deprecated constructors, dead relay methods, duplicate constants, type lies, documentation gaps",
-        "item_count": 3
-      },
-      {
-        "name": "dead-fields3",
-        "description": "Dead-code sweep round 3: remove orphaned fields, dead branches, and side effects left by prior incremental refactoring in abstraction_fitness and design_coherence dimensions",
-        "item_count": 1
-      },
-      {
-        "name": "api-polish3",
-        "description": "API surface consistency round 3: align response keys, null fallbacks, and response shapes across sibling endpoints in api_surface_coherence dimension",
-        "item_count": 2
-      },
-      {
-        "name": "model-unification",
-        "description": "Converge all model value types to Java records to eliminate the three coexisting field-access strategies (public fields, private+getters, records) in the model package",
-        "item_count": 1
-      }
-    ],
-    "total_ordered": 7,
-    "total_skipped": 13,
-    "plan_overrides_narrative": true
-  },
-  "overall_score": 71.4,
-  "objective_score": 99.4,
-  "strict_score": 71.4,
-  "scorecard_dimensions": [
-    {
-      "name": "File health",
-      "score": 100.0,
-      "strict": 100.0,
-      "checks": 30,
-      "failing": 0,
-      "tier": 3,
-      "subjective": false
-    },
-    {
-      "name": "AI generated debt",
-      "score": 56.1,
-      "strict": 56.1,
-      "checks": 10,
-      "failing": 0,
-      "tier": 4,
-      "subjective": true,
-      "placeholder": false,
-      "cli_keys": [
-        "ai_generated_debt"
-      ]
-    },
-    {
-      "name": "API coherence",
-      "score": 49.1,
-      "strict": 49.1,
-      "checks": 10,
-      "failing": 2,
-      "tier": 4,
-      "subjective": true,
-      "placeholder": false,
-      "cli_keys": [
-        "api_surface_coherence"
-      ]
-    },
-    {
-      "name": "Abstraction fit",
-      "score": 68.7,
-      "strict": 68.7,
-      "checks": 10,
-      "failing": 0,
-      "tier": 4,
-      "subjective": true,
-      "placeholder": false,
-      "cli_keys": [
-        "abstraction_fitness",
-        "delegation_density",
-        "definition_directness",
-        "type_discipline"
-      ]
-    },
-    {
-      "name": "Auth consistency",
-      "score": 67.5,
-      "strict": 67.5,
-      "checks": 10,
-      "failing": 0,
-      "tier": 4,
-      "subjective": true,
-      "placeholder": false,
-      "cli_keys": [
-        "authorization_consistency"
-      ]
-    },
-    {
-      "name": "Code quality",
-      "score": 100.0,
-      "strict": 100.0,
-      "checks": 31,
-      "failing": 0,
-      "tier": 3,
-      "subjective": false
-    },
-    {
-      "name": "Convention drift",
-      "score": 67.5,
-      "strict": 67.5,
-      "checks": 10,
-      "failing": 1,
-      "tier": 4,
-      "subjective": true,
-      "placeholder": false,
-      "cli_keys": [
-        "convention_outlier"
-      ]
-    },
-    {
-      "name": "Cross-module arch",
-      "score": 48.0,
-      "strict": 48.0,
-      "checks": 10,
-      "failing": 0,
-      "tier": 4,
-      "subjective": true,
-      "placeholder": false,
-      "cli_keys": [
-        "cross_module_architecture"
-      ]
-    },
-    {
-      "name": "Dep health",
-      "score": 73.6,
-      "strict": 73.6,
-      "checks": 10,
-      "failing": 0,
-      "tier": 4,
-      "subjective": true,
-      "placeholder": false,
-      "cli_keys": [
-        "dependency_health"
-      ]
-    },
-    {
-      "name": "Design coherence",
-      "score": 50.7,
-      "strict": 50.7,
-      "checks": 10,
-      "failing": 1,
-      "tier": 4,
-      "subjective": true,
-      "placeholder": false,
-      "cli_keys": [
-        "design_coherence"
-      ]
-    },
-    {
-      "name": "Duplication",
-      "score": 100.0,
-      "strict": 100.0,
-      "checks": 2,
-      "failing": 0,
-      "tier": 3,
-      "subjective": false
-    },
-    {
-      "name": "Elegance",
-      "score": 48.3,
-      "strict": 48.3,
-      "checks": 30,
-      "failing": 0,
-      "tier": 4,
-      "subjective": true,
-      "placeholder": false,
-      "cli_keys": [
-        "high_level_elegance",
-        "mid_level_elegance",
-        "low_level_elegance"
-      ]
-    },
-    {
-      "name": "Error consistency",
-      "score": 59.3,
-      "strict": 59.3,
-      "checks": 10,
-      "failing": 0,
-      "tier": 4,
-      "subjective": true,
-      "placeholder": false,
-      "cli_keys": [
-        "error_consistency"
-      ]
-    },
-    {
-      "name": "Init coupling",
-      "score": 64.9,
-      "strict": 64.9,
-      "checks": 10,
-      "failing": 0,
-      "tier": 4,
-      "subjective": true,
-      "placeholder": false,
-      "cli_keys": [
-        "initialization_coupling"
-      ]
-    },
-    {
-      "name": "Logic clarity",
-      "score": 46.4,
-      "strict": 46.4,
-      "checks": 10,
-      "failing": 0,
-      "tier": 4,
-      "subjective": true,
-      "placeholder": false,
-      "cli_keys": [
-        "logic_clarity"
-      ]
-    },
-    {
-      "name": "Naming quality",
-      "score": 45.1,
-      "strict": 45.1,
-      "checks": 10,
-      "failing": 0,
-      "tier": 4,
-      "subjective": true,
-      "placeholder": false,
-      "cli_keys": [
-        "naming_quality"
-      ]
-    },
-    {
-      "name": "Security",
-      "score": 97.7,
-      "strict": 97.7,
-      "checks": 30,
-      "failing": 1,
-      "tier": 4,
-      "subjective": false
-    },
-    {
-      "name": "Stale migration",
-      "score": 58.9,
-      "strict": 58.9,
-      "checks": 10,
-      "failing": 0,
-      "tier": 4,
-      "subjective": true,
-      "placeholder": false,
-      "cli_keys": [
-        "incomplete_migration"
-      ]
-    },
-    {
-      "name": "Structure nav",
-      "score": 55.1,
-      "strict": 55.1,
-      "checks": 10,
-      "failing": 0,
-      "tier": 4,
-      "subjective": true,
-      "placeholder": false,
-      "cli_keys": [
-        "package_organization"
-      ]
-    },
-    {
-      "name": "Test strategy",
-      "score": 48.8,
-      "strict": 48.8,
-      "checks": 10,
-      "failing": 0,
-      "tier": 4,
-      "subjective": true,
-      "placeholder": false,
-      "cli_keys": [
-        "test_strategy"
-      ]
-    }
-  ],
-  "subjective_measures": [
-    {
-      "name": "AI generated debt",
-      "score": 56.1,
-      "strict": 56.1,
-      "checks": 10,
-      "failing": 0,
-      "tier": 4,
-      "subjective": true,
-      "placeholder": false,
-      "cli_keys": [
-        "ai_generated_debt"
-      ]
-    },
-    {
-      "name": "API coherence",
-      "score": 49.1,
-      "strict": 49.1,
-      "checks": 10,
-      "failing": 2,
-      "tier": 4,
-      "subjective": true,
-      "placeholder": false,
-      "cli_keys": [
-        "api_surface_coherence"
-      ]
-    },
-    {
-      "name": "Abstraction fit",
-      "score": 68.7,
-      "strict": 68.7,
-      "checks": 10,
-      "failing": 0,
-      "tier": 4,
-      "subjective": true,
-      "placeholder": false,
-      "cli_keys": [
-        "abstraction_fitness",
-        "delegation_density",
-        "definition_directness",
-        "type_discipline"
-      ]
-    },
-    {
-      "name": "Auth consistency",
-      "score": 67.5,
-      "strict": 67.5,
-      "checks": 10,
-      "failing": 0,
-      "tier": 4,
-      "subjective": true,
-      "placeholder": false,
-      "cli_keys": [
-        "authorization_consistency"
-      ]
-    },
-    {
-      "name": "Convention drift",
-      "score": 67.5,
-      "strict": 67.5,
-      "checks": 10,
-      "failing": 1,
-      "tier": 4,
-      "subjective": true,
-      "placeholder": false,
-      "cli_keys": [
-        "convention_outlier"
-      ]
-    },
-    {
-      "name": "Cross-module arch",
-      "score": 48.0,
-      "strict": 48.0,
-      "checks": 10,
-      "failing": 0,
-      "tier": 4,
-      "subjective": true,
-      "placeholder": false,
-      "cli_keys": [
-        "cross_module_architecture"
-      ]
-    },
-    {
-      "name": "Dep health",
-      "score": 73.6,
-      "strict": 73.6,
-      "checks": 10,
-      "failing": 0,
-      "tier": 4,
-      "subjective": true,
-      "placeholder": false,
-      "cli_keys": [
-        "dependency_health"
-      ]
-    },
-    {
-      "name": "Design coherence",
-      "score": 50.7,
-      "strict": 50.7,
-      "checks": 10,
-      "failing": 1,
-      "tier": 4,
-      "subjective": true,
-      "placeholder": false,
-      "cli_keys": [
-        "design_coherence"
-      ]
-    },
-    {
-      "name": "Elegance",
-      "score": 48.3,
-      "strict": 48.3,
-      "checks": 30,
-      "failing": 0,
-      "tier": 4,
-      "subjective": true,
-      "placeholder": false,
-      "cli_keys": [
-        "high_level_elegance",
-        "mid_level_elegance",
-        "low_level_elegance"
-      ]
-    },
-    {
-      "name": "Error consistency",
-      "score": 59.3,
-      "strict": 59.3,
-      "checks": 10,
-      "failing": 0,
-      "tier": 4,
-      "subjective": true,
-      "placeholder": false,
-      "cli_keys": [
-        "error_consistency"
-      ]
-    },
-    {
-      "name": "Init coupling",
-      "score": 64.9,
-      "strict": 64.9,
-      "checks": 10,
-      "failing": 0,
-      "tier": 4,
-      "subjective": true,
-      "placeholder": false,
-      "cli_keys": [
-        "initialization_coupling"
-      ]
-    },
-    {
-      "name": "Logic clarity",
-      "score": 46.4,
-      "strict": 46.4,
-      "checks": 10,
-      "failing": 0,
-      "tier": 4,
-      "subjective": true,
-      "placeholder": false,
-      "cli_keys": [
-        "logic_clarity"
-      ]
-    },
-    {
-      "name": "Naming quality",
-      "score": 45.1,
-      "strict": 45.1,
-      "checks": 10,
-      "failing": 0,
-      "tier": 4,
-      "subjective": true,
-      "placeholder": false,
-      "cli_keys": [
-        "naming_quality"
-      ]
-    },
-    {
-      "name": "Stale migration",
-      "score": 58.9,
-      "strict": 58.9,
-      "checks": 10,
-      "failing": 0,
-      "tier": 4,
-      "subjective": true,
-      "placeholder": false,
-      "cli_keys": [
-        "incomplete_migration"
-      ]
-    },
-    {
-      "name": "Structure nav",
-      "score": 55.1,
-      "strict": 55.1,
-      "checks": 10,
-      "failing": 0,
-      "tier": 4,
-      "subjective": true,
-      "placeholder": false,
-      "cli_keys": [
-        "package_organization"
-      ]
-    },
-    {
-      "name": "Test strategy",
-      "score": 48.8,
-      "strict": 48.8,
-      "checks": 10,
-      "failing": 0,
-      "tier": 4,
-      "subjective": true,
-      "placeholder": false,
-      "cli_keys": [
-        "test_strategy"
-      ]
-    }
-  ],
   "config": {
     "target_strict_score": 95,
     "review_max_age_days": 30,

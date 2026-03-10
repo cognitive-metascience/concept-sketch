@@ -67,14 +67,7 @@ class ExplorationHandlers {
         int topCollocates = ep.topCollocates();
         int minShared = ep.minShared();
         double minLogDice = ep.minLogDice();
-
-        int nounsPerCollocate;
-        try {
-            nounsPerCollocate = Integer.parseInt(params.getOrDefault("nouns_per", "30"));
-        } catch (NumberFormatException e) {
-            HttpApiUtils.sendError(exchange, 400, "Invalid numeric parameter: " + e.getMessage());
-            return;
-        }
+        int nounsPerCollocate = ep.nounsPerSeed();
 
         ExploreOptions opts = new ExploreOptions(
             topCollocates, nounsPerCollocate, minLogDice, minShared, false);
@@ -163,7 +156,7 @@ class ExplorationHandlers {
 
     /**
      * Handle semantic field comparison.
-     * GET /api/semantic-field?nouns=theory,model,hypothesis&min_logdice=3.0
+     * GET /api/semantic-field?seeds=theory,model,hypothesis&min_logdice=3.0
      */
     void handleSemanticField(HttpExchange exchange) throws IOException {
         String query = exchange.getRequestURI().getQuery();
@@ -171,11 +164,6 @@ class ExplorationHandlers {
 
         String nounsParam = HttpApiUtils.requireParam(exchange, params, "seeds");
         if (nounsParam == null) return;
-
-        if (nounsParam.isBlank()) {
-            HttpApiUtils.sendError(exchange, 400, "Parameter 'seeds' must not be empty");
-            return;
-        }
 
         Set<String> nouns = new LinkedHashSet<>(Arrays.asList(nounsParam.split(",")));
 
@@ -283,7 +271,7 @@ class ExplorationHandlers {
         m.put("shared_count", dn.sharedCount());
         m.put("similarity_score", Math.round(dn.similarityScore() * 100.0) / 100.0);
         m.put("avg_logdice", Math.round(dn.avgLogDice() * 100.0) / 100.0);
-        m.put("shared_collocates", dn.getSharedCollocateList());
+        m.put("shared_collocates", dn.sharedCollocateList());
         return m;
     }
 
@@ -292,7 +280,7 @@ class ExplorationHandlers {
         m.put("word", ca.collocate());
         m.put("shared_by_count", ca.sharedByCount());
         m.put("total_nouns", ca.totalNouns());
-        m.put("coverage", Math.round(ca.getCoverage() * 100.0) / 100.0);
+        m.put("coverage", Math.round(ca.coverage() * 100.0) / 100.0);
         m.put("seed_logdice", Math.round(ca.seedLogDice() * 100.0) / 100.0);
         return m;
     }
@@ -391,19 +379,20 @@ class ExplorationHandlers {
         adjMap.put("noun_scores", scores);
 
         if (adj.isSpecific()) {
-            adjMap.put("specific_to", adj.getStrongestNoun());
+            adjMap.put("specific_to", adj.strongestNoun());
         }
         return adjMap;
     }
 
-    private record ExploreParams(int topCollocates, int minShared, double minLogDice) {}
+    private record ExploreParams(int topCollocates, int minShared, double minLogDice, int nounsPerSeed) {}
 
     private ExploreParams parseExploreParams(HttpExchange exchange, Map<String, String> params) throws IOException {
         try {
             int top = Integer.parseInt(params.getOrDefault("top", "15"));
             int minShared = Integer.parseInt(params.getOrDefault("min_shared", "2"));
             double minLogDice = Double.parseDouble(params.getOrDefault("min_logdice", "3.0"));
-            return new ExploreParams(top, minShared, minLogDice);
+            int nounsPerSeed = Integer.parseInt(params.getOrDefault("nouns_per", "30"));
+            return new ExploreParams(top, minShared, minLogDice, nounsPerSeed);
         } catch (NumberFormatException e) {
             HttpApiUtils.sendError(exchange, 400, "Invalid numeric parameter: " + e.getMessage());
             return null;

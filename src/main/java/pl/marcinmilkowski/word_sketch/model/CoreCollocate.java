@@ -11,7 +11,7 @@ public record CoreCollocate(
         double avgLogDice) {
 
     /** Coverage ratio: how many of the discovered nouns share this collocate */
-    public double getCoverage() {
+    public double coverage() {
         return totalNouns > 0 ? (double) sharedByCount / totalNouns : 0.0;
     }
 

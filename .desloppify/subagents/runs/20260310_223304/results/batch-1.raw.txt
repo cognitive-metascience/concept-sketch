@@ -1,0 +1,80 @@
+{
+  "batch": "cross_module_architecture",
+  "batch_index": 1,
+  "assessments": {
+    "cross_module_architecture": 78.0
+  },
+  "dimension_notes": {
+    "cross_module_architecture": {
+      "evidence": [
+        "Dependency direction is consistently top-down: utils/model have zero internal imports; config and query depend only on utils/model; exploration depends on config/query/model; api depends on config/exploration/query/model/utils/viz; Main wires everything at the top. No cycles detected.",
+        "QueryExecutor is a proper interface in the query package; exploration.SemanticFieldExplorer and CollocateProfileComparator depend on it via the interface, not a concrete class. This is the correct coupling pattern.",
+        "The tagging package (PosTagger, SimpleTagger, TaggedToken) has zero import references in production code — not called from Main, api, query, indexer, or exploration. Only test code references it. It crosses a boundary by importing config.PosGroup in TaggedToken, adding a tagging→config edge with no live consumer.",
+        "PatternSubstitution lives in utils but is only imported by api.SketchHandlers for concordance example construction — an API-specific concern leaking into the shared utils namespace.",
+        "WordSketchApiServer directly instantiates SemanticFieldExplorer (a concrete class) in its constructor rather than programming to an interface, creating a hard compile-time dependency between the api and exploration packages.",
+        "The model package is a clean data-transfer layer with no internal dependencies, serving as the shared boundary type between query, exploration, and api without any upward coupling."
+      ],
+      "impact_scope": "module",
+      "fix_scope": "multi_file_refactor",
+      "confidence": "high"
+    }
+  },
+  "dimension_judgment": {
+    "cross_module_architecture": {
+      "strengths": [
+        "Strictly acyclic dependency graph: utils and model are leaf packages with no internal imports; the direction query→model, exploration→query/model, api→exploration/query/config/model/utils is maintained without exception.",
+        "QueryExecutor is an interface in the query package, allowing exploration and api to remain decoupled from the BlackLab implementation detail; BlackLabQueryExecutor is the only concrete class and is wired at the Main level.",
+        "The model package acts as a shared data-transfer boundary (QueryResults, ExplorationResult, etc.) with no upward coupling, keeping result types portable across the query, exploration, and api layers.",
+        "The indexer package is entirely self-contained with no internal cross-package imports, correctly isolated from runtime query and API concerns."
+      ],
+      "issue_character": "The structural issues are isolated rather than systemic: one dead subsystem (tagging) that was never wired into production code and carries an unnecessary cross-package dependency, and one minor misplacement (PatternSubstitution in utils). Neither indicates a pattern of boundary erosion — they are abandoned or misdirected additions rather than evidence of recurring layer confusion.",
+      "score_rationale": "The codebase scores well on the fundamentals that matter most for this dimension: no cycles, clear and consistently respected layer direction, and interface-based decoupling at the key query boundary. What prevents a higher score is the orphaned tagging subsystem — it contributes a live tagging→config cross-package dependency with zero production callers, representing exactly the kind of 'compatibility shim path that persists without active external need and blurs boundaries' the rubric flags. The minor misplacement of PatternSubstitution (an API-specific helper living in utils) adds a small additional boundary blur. Together these put the codebase in the 75-80 range: solid architecture that a developer would mostly trust, with two bounded issues that would cause a moment of 'why is this here?' during onboarding."
+    }
+  },
+  "issues": [
+    {
+      "dimension": "cross_module_architecture",
+      "identifier": "orphaned-tagging-subsystem",
+      "summary": "tagging package (PosTagger/SimpleTagger/TaggedToken) has no production callers and adds a live tagging→config cross-package edge",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/tagging/TaggedToken.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/tagging/PosTagger.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/tagging/SimpleTagger.java"
+      ],
+      "evidence": [
+        "No production file outside the tagging package imports any tagging type: grep for 'import.*tagging' across src/main returns zero hits outside tagging/ itself.",
+        "TaggedToken.java line 3: 'import pl.marcinmilkowski.word_sketch.config.PosGroup' — creates a tagging→config dependency arc that serves no live code path.",
+        "PosTagger.java documents 'UDPipe-backed taggers for production use' but no UDPipe integration exists in the codebase; the entire subsystem predates the BlackLab/CoNLL-U pivot and was never removed."
+      ],
+      "suggestion": "If SimpleTagger is not planned for reactivation in v2, delete the tagging package entirely (PosTagger, SimpleTagger, TaggedToken) along with SimpleTaggerTest. If it is planned, add a TODO linking it to the roadmap item and move PosGroup to the model package so the config package no longer carries a POS category concern for a disconnected subsystem.",
+      "confidence": "high",
+      "impact_scope": "module",
+      "fix_scope": "multi_file_refactor"
+    },
+    {
+      "dimension": "cross_module_architecture",
+      "identifier": "pattern-substitution-in-utils",
+      "summary": "PatternSubstitution lives in utils but is only used by api.SketchHandlers, leaking an API-specific concern into the shared utils namespace",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/utils/PatternSubstitution.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/api/SketchHandlers.java"
+      ],
+      "evidence": [
+        "grep for 'PatternSubstitution' across src/main shows the only import is in api.SketchHandlers line 13; no other package consumes it.",
+        "PatternSubstitution.substituteCollocate constructs concordance BCQL patterns for the /api/concordance/examples endpoint — a responsibility tied to HTTP handler logic, not general-purpose string utilities."
+      ],
+      "suggestion": "Move PatternSubstitution from utils to the api package (package-private, alongside SketchHandlers) since it has exactly one consumer. Alternatively, if collocate substitution is expected to be used by exploration or query layers in future, move it to the query package where CQL pattern manipulation already conceptually lives.",
+      "confidence": "medium",
+      "impact_scope": "module",
+      "fix_scope": "single_edit"
+    }
+  ],
+  "retrospective": {
+    "root_causes": [
+      "The tagging subsystem was built before the BlackLab/CoNLL-U pivot and never cleaned up; it represents an incomplete migration rather than a design error.",
+      "PatternSubstitution was placed in utils defensively (anticipating reuse) but reuse never materialised, leaving an API concern in the wrong layer."
+    ],
+    "likely_symptoms": [],
+    "possible_false_positives": []
+  }
+}

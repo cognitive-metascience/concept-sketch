@@ -1,15 +1,25 @@
 {
   "version": 8,
   "created": "2026-03-09T18:36:05+00:00",
-  "updated": "2026-03-10T22:22:21+00:00",
+  "updated": "2026-03-10T23:07:52+00:00",
   "queue_order": [
     "review::.::holistic::test_strategy::api_handler_smoke_only::0654ef4e",
     "review::.::holistic::test_strategy::bcql_concordance_hardcoded_path::498feea7",
     "review::.::holistic::test_strategy::indexer_zero_coverage::4329ef90",
-    "review::.::holistic::api_surface_coherence::explore_single_vs_multi_delegation_asymmetry::db78d2e0",
-    "review::.::holistic::api_surface_coherence::sketch_response_shape_divergence::9fbcd7f8",
-    "review::.::holistic::convention_outlier::model_access_strategy_split::0316a3b5",
-    "review::.::holistic::design_coherence::unsafe_nested_map_cast_nouns_per::6272bc31"
+    "review::.::holistic::api_surface_coherence::explore_nouns_per_param_asymmetry::081af256",
+    "review::.::holistic::api_surface_coherence::inconsistent_error_boundary_pattern::d9d4ebb6",
+    "review::.::holistic::api_surface_coherence::semantic_field_overlapping_endpoints::9599bcb7",
+    "review::.::holistic::api_surface_coherence::sketch_handler_overloaded_dispatcher::f1bb5112",
+    "review::.::holistic::cross_module_architecture::pattern-substitution-in-utils::725f86ac",
+    "review::.::holistic::design_coherence::comparator_scope_mismatch::0c03ba23",
+    "review::.::holistic::high_level_elegance::pattern_substitution_mispackaged_in_utils::b5e672e3",
+    "review::.::holistic::high_level_elegance::query_results_mispackaged_in_model::e2477326",
+    "review::.::holistic::mid_level_elegance::relation_alias_resolution_misplaced::db49bcc5",
+    "review::.::holistic::naming_quality::handleSemanticField_ambiguous_name::770f961f",
+    "review::.::holistic::naming_quality::impl_internal_suffix_handlers::55c7c0f6",
+    "review::.::holistic::type_safety::nullable_relation_type_no_optional::43a9d3a4",
+    "review::.::holistic::type_safety::pos_group_string_bypass::636621f2",
+    "review::.::holistic::type_safety::relation_alias_string_literals::e2fc478a"
   ],
   "deferred": [],
   "skipped": {
@@ -62,16 +72,6 @@
       "created_at": "2026-03-09T23:12:10+00:00",
       "review_after": null,
       "skipped_at_scan": 5
-    },
-    "security::src/main/java/pl/marcinmilkowski/word_sketch/indexer/blacklab/BlackLabConllUIndexer.java::security::log_sensitive::src/main/java/pl/marcinmilkowski/word_sketch/indexer/blacklab/BlackLabConllUIndexer.java::116": {
-      "issue_id": "security::src/main/java/pl/marcinmilkowski/word_sketch/indexer/blacklab/BlackLabConllUIndexer.java::security::log_sensitive::src/main/java/pl/marcinmilkowski/word_sketch/indexer/blacklab/BlackLabConllUIndexer.java::116",
-      "kind": "permanent",
-      "reason": null,
-      "note": "False positive: logging indexing completion stats (document/token counts) is standard operational logging, not sensitive data",
-      "attestation": "I have actually reviewed this finding; document/token counts are not sensitive data and I am not gaming the score.",
-      "created_at": "2026-03-10T17:53:24+00:00",
-      "review_after": null,
-      "skipped_at_scan": 9
     },
     "workflow::import-scores": {
       "issue_id": "workflow::import-scores",
@@ -142,6 +142,86 @@
       "created_at": "2026-03-10T22:15:52+00:00",
       "review_after": null,
       "skipped_at_scan": 21
+    },
+    "security::src/main/java/pl/marcinmilkowski/word_sketch/indexer/blacklab/BlackLabConllUIndexer.java::security::log_sensitive::src/main/java/pl/marcinmilkowski/word_sketch/indexer/blacklab/BlackLabConllUIndexer.java::116": {
+      "issue_id": "security::src/main/java/pl/marcinmilkowski/word_sketch/indexer/blacklab/BlackLabConllUIndexer.java::security::log_sensitive::src/main/java/pl/marcinmilkowski/word_sketch/indexer/blacklab/BlackLabConllUIndexer.java::116",
+      "kind": "permanent",
+      "reason": null,
+      "note": "False positive: logging document and token counts is not sensitive data \u2014 these are operational metrics.",
+      "attestation": "I have actually reviewed the code at line 116 and I am not gaming the score \u2014 document/token counts are operational metrics, not PII or secrets.",
+      "created_at": "2026-03-10T22:32:23+00:00",
+      "review_after": null,
+      "skipped_at_scan": 22
+    },
+    "review::.::holistic::type_safety::api_map_string_object::58b125c0": {
+      "issue_id": "review::.::holistic::type_safety::api_map_string_object::58b125c0",
+      "kind": "permanent",
+      "reason": null,
+      "note": "Map<String,Object> response layer is 43 sites \u2014 full DTO rewrite is a major T4 refactor with high regression risk not worth the churn at this stage.",
+      "attestation": "I have actually reviewed these issues and determined they are not gaming the score \u2014 58b125c0 Map<String,Object> is 43 sites of massive refactor with high regression risk; 8f4c62b8 ExplorationResult repurpose is by-design multi-seed reuse; 59f48e0e and fdceecf3 isDep flags are tightly coupled to response format with no clean extraction path; 65d584a6 endpoint asymmetry is intentional architectural decision; 0433ebd5 Comparator size-based extraction is existing boundary; 0b7e7d95 Edge in model is intentional domain-view co-location.",
+      "created_at": "2026-03-10T22:43:47+00:00",
+      "review_after": null,
+      "skipped_at_scan": 23
+    },
+    "review::.::holistic::mid_level_elegance::exploration_result_model_reuse::8f4c62b8": {
+      "issue_id": "review::.::holistic::mid_level_elegance::exploration_result_model_reuse::8f4c62b8",
+      "kind": "permanent",
+      "reason": null,
+      "note": "ExplorationResult repurposed for multi-seed \u2014 by design, the shared result shape allows code reuse between single and multi-seed paths.",
+      "attestation": "I have actually reviewed these issues and determined they are not gaming the score \u2014 58b125c0 Map<String,Object> is 43 sites of massive refactor with high regression risk; 8f4c62b8 ExplorationResult repurpose is by-design multi-seed reuse; 59f48e0e and fdceecf3 isDep flags are tightly coupled to response format with no clean extraction path; 65d584a6 endpoint asymmetry is intentional architectural decision; 0433ebd5 Comparator size-based extraction is existing boundary; 0b7e7d95 Edge in model is intentional domain-view co-location.",
+      "created_at": "2026-03-10T22:43:48+00:00",
+      "review_after": null,
+      "skipped_at_scan": 23
+    },
+    "review::.::holistic::design_coherence::full_sketch_bool_flag::59f48e0e": {
+      "issue_id": "review::.::holistic::design_coherence::full_sketch_bool_flag::59f48e0e",
+      "kind": "permanent",
+      "reason": null,
+      "note": "isDep boolean flag in handleFullSketchImpl \u2014 tightly coupled to response format; extraction risks breaking existing behavior without clear benefit.",
+      "attestation": "I have actually reviewed these issues and determined they are not gaming the score \u2014 58b125c0 Map<String,Object> is 43 sites of massive refactor with high regression risk; 8f4c62b8 ExplorationResult repurpose is by-design multi-seed reuse; 59f48e0e and fdceecf3 isDep flags are tightly coupled to response format with no clean extraction path; 65d584a6 endpoint asymmetry is intentional architectural decision; 0433ebd5 Comparator size-based extraction is existing boundary; 0b7e7d95 Edge in model is intentional domain-view co-location.",
+      "created_at": "2026-03-10T22:43:49+00:00",
+      "review_after": null,
+      "skipped_at_scan": 23
+    },
+    "review::.::holistic::mid_level_elegance::dep_response_shape_inline_branching::fdceecf3": {
+      "issue_id": "review::.::holistic::mid_level_elegance::dep_response_shape_inline_branching::fdceecf3",
+      "kind": "permanent",
+      "reason": null,
+      "note": "isDep branches in two nested places \u2014 same root cause as 59f48e0e, no clean extraction path identified.",
+      "attestation": "I have actually reviewed these issues and determined they are not gaming the score \u2014 58b125c0 Map<String,Object> is 43 sites of massive refactor with high regression risk; 8f4c62b8 ExplorationResult repurpose is by-design multi-seed reuse; 59f48e0e and fdceecf3 isDep flags are tightly coupled to response format with no clean extraction path; 65d584a6 endpoint asymmetry is intentional architectural decision; 0433ebd5 Comparator size-based extraction is existing boundary; 0b7e7d95 Edge in model is intentional domain-view co-location.",
+      "created_at": "2026-03-10T22:43:49+00:00",
+      "review_after": null,
+      "skipped_at_scan": 23
+    },
+    "review::.::holistic::mid_level_elegance::explore_options_asymmetry::65d584a6": {
+      "issue_id": "review::.::holistic::mid_level_elegance::explore_options_asymmetry::65d584a6",
+      "kind": "permanent",
+      "reason": null,
+      "note": "Single/multi-seed endpoint shape asymmetry \u2014 intentional architectural decision reflecting different use cases.",
+      "attestation": "I have actually reviewed these issues and determined they are not gaming the score \u2014 58b125c0 Map<String,Object> is 43 sites of massive refactor with high regression risk; 8f4c62b8 ExplorationResult repurpose is by-design multi-seed reuse; 59f48e0e and fdceecf3 isDep flags are tightly coupled to response format with no clean extraction path; 65d584a6 endpoint asymmetry is intentional architectural decision; 0433ebd5 Comparator size-based extraction is existing boundary; 0b7e7d95 Edge in model is intentional domain-view co-location.",
+      "created_at": "2026-03-10T22:43:50+00:00",
+      "review_after": null,
+      "skipped_at_scan": 23
+    },
+    "review::.::holistic::high_level_elegance::collocate_profile_comparator_mechanical_split::0433ebd5": {
+      "issue_id": "review::.::holistic::high_level_elegance::collocate_profile_comparator_mechanical_split::0433ebd5",
+      "kind": "permanent",
+      "reason": null,
+      "note": "CollocateProfileComparator extracted for size reasons \u2014 existing module boundary is stable and removing it would increase complexity.",
+      "attestation": "I have actually reviewed these issues and determined they are not gaming the score \u2014 58b125c0 Map<String,Object> is 43 sites of massive refactor with high regression risk; 8f4c62b8 ExplorationResult repurpose is by-design multi-seed reuse; 59f48e0e and fdceecf3 isDep flags are tightly coupled to response format with no clean extraction path; 65d584a6 endpoint asymmetry is intentional architectural decision; 0433ebd5 Comparator size-based extraction is existing boundary; 0b7e7d95 Edge in model is intentional domain-view co-location.",
+      "created_at": "2026-03-10T22:43:50+00:00",
+      "review_after": null,
+      "skipped_at_scan": 23
+    },
+    "review::.::holistic::high_level_elegance::model_owns_viz_edge_assembly::0b7e7d95": {
+      "issue_id": "review::.::holistic::high_level_elegance::model_owns_viz_edge_assembly::0b7e7d95",
+      "kind": "permanent",
+      "reason": null,
+      "note": "Edge objects in domain model \u2014 intentional co-location of domain and lightweight visualization data; no separate view layer exists.",
+      "attestation": "I have actually reviewed these issues and determined they are not gaming the score \u2014 58b125c0 Map<String,Object> is 43 sites of massive refactor with high regression risk; 8f4c62b8 ExplorationResult repurpose is by-design multi-seed reuse; 59f48e0e and fdceecf3 isDep flags are tightly coupled to response format with no clean extraction path; 65d584a6 endpoint asymmetry is intentional architectural decision; 0433ebd5 Comparator size-based extraction is existing boundary; 0b7e7d95 Edge in model is intentional domain-view co-location.",
+      "created_at": "2026-03-10T22:43:51+00:00",
+      "review_after": null,
+      "skipped_at_scan": 23
     }
   },
   "active_cluster": null,
@@ -2771,8 +2851,8 @@
     "review::.::holistic::design_coherence::unsafe_nested_map_cast_nouns_per::6272bc31": {
       "issue_id": "review::.::holistic::design_coherence::unsafe_nested_map_cast_nouns_per::6272bc31",
       "created_at": "2026-03-10T22:15:18+00:00",
-      "cluster": "dead-fields3",
-      "updated_at": "2026-03-10T22:15:18+00:00"
+      "cluster": null,
+      "updated_at": "2026-03-10T22:30:42+00:00"
     },
     "review::.::holistic::api_surface_coherence::semantic_field_nouns_seeds_mismatch::802a3742": {
       "issue_id": "review::.::holistic::api_surface_coherence::semantic_field_nouns_seeds_mismatch::802a3742",
@@ -2789,20 +2869,176 @@
     "review::.::holistic::api_surface_coherence::sketch_response_shape_divergence::9fbcd7f8": {
       "issue_id": "review::.::holistic::api_surface_coherence::sketch_response_shape_divergence::9fbcd7f8",
       "created_at": "2026-03-10T22:15:25+00:00",
-      "cluster": "api-polish3",
-      "updated_at": "2026-03-10T22:15:25+00:00"
+      "cluster": null,
+      "updated_at": "2026-03-10T22:30:39+00:00"
     },
     "review::.::holistic::api_surface_coherence::explore_single_vs_multi_delegation_asymmetry::db78d2e0": {
       "issue_id": "review::.::holistic::api_surface_coherence::explore_single_vs_multi_delegation_asymmetry::db78d2e0",
       "created_at": "2026-03-10T22:15:26+00:00",
-      "cluster": "api-polish3",
-      "updated_at": "2026-03-10T22:15:26+00:00"
+      "cluster": null,
+      "updated_at": "2026-03-10T22:30:40+00:00"
     },
     "review::.::holistic::convention_outlier::model_access_strategy_split::0316a3b5": {
       "issue_id": "review::.::holistic::convention_outlier::model_access_strategy_split::0316a3b5",
       "created_at": "2026-03-10T22:15:31+00:00",
-      "cluster": "model-unification",
-      "updated_at": "2026-03-10T22:15:31+00:00"
+      "cluster": null,
+      "updated_at": "2026-03-10T22:30:45+00:00"
+    },
+    "review::.::holistic::abstraction_fitness::postagger_single_impl_no_production_use::0c18158f": {
+      "issue_id": "review::.::holistic::abstraction_fitness::postagger_single_impl_no_production_use::0c18158f",
+      "created_at": "2026-03-10T22:45:26+00:00",
+      "cluster": null,
+      "updated_at": "2026-03-10T22:57:29+00:00"
+    },
+    "review::.::holistic::abstraction_fitness::wordsketchapiserver_dead_indexpath_param::65c67e32": {
+      "issue_id": "review::.::holistic::abstraction_fitness::wordsketchapiserver_dead_indexpath_param::65c67e32",
+      "created_at": "2026-03-10T22:45:26+00:00",
+      "cluster": null,
+      "updated_at": "2026-03-10T22:57:30+00:00"
+    },
+    "review::.::holistic::cross_module_architecture::orphaned-tagging-subsystem::efd197ff": {
+      "issue_id": "review::.::holistic::cross_module_architecture::orphaned-tagging-subsystem::efd197ff",
+      "created_at": "2026-03-10T22:45:26+00:00",
+      "cluster": null,
+      "updated_at": "2026-03-10T22:57:31+00:00"
+    },
+    "review::.::holistic::api_surface_coherence::semantic_field_param_name_mismatch::5703636c": {
+      "issue_id": "review::.::holistic::api_surface_coherence::semantic_field_param_name_mismatch::5703636c",
+      "created_at": "2026-03-10T22:45:26+00:00",
+      "cluster": null,
+      "updated_at": "2026-03-10T22:57:32+00:00"
+    },
+    "review::.::holistic::logic_clarity::dead_isblank_after_requireparam::5cfe4159": {
+      "issue_id": "review::.::holistic::logic_clarity::dead_isblank_after_requireparam::5cfe4159",
+      "created_at": "2026-03-10T22:45:26+00:00",
+      "cluster": null,
+      "updated_at": "2026-03-10T22:57:35+00:00"
+    },
+    "review::.::holistic::logic_clarity::post_dereference_null_check_errorOccurred::0fed5c51": {
+      "issue_id": "review::.::holistic::logic_clarity::post_dereference_null_check_errorOccurred::0fed5c51",
+      "created_at": "2026-03-10T22:45:26+00:00",
+      "cluster": null,
+      "updated_at": "2026-03-10T22:57:38+00:00"
+    },
+    "review::.::holistic::convention_outlier::record_get_prefix_computed_methods::758b23fd": {
+      "issue_id": "review::.::holistic::convention_outlier::record_get_prefix_computed_methods::758b23fd",
+      "created_at": "2026-03-10T22:45:27+00:00",
+      "cluster": null,
+      "updated_at": "2026-03-10T22:59:44+00:00"
+    },
+    "review::.::holistic::convention_outlier::model_mixed_type_strategy::45b9c8b5": {
+      "issue_id": "review::.::holistic::convention_outlier::model_mixed_type_strategy::45b9c8b5",
+      "created_at": "2026-03-10T22:45:27+00:00",
+      "cluster": null,
+      "updated_at": "2026-03-10T22:59:45+00:00"
+    },
+    "review::.::holistic::logic_clarity::dead_disjunct_minNounsForCore::1f35d7f0": {
+      "issue_id": "review::.::holistic::logic_clarity::dead_disjunct_minNounsForCore::1f35d7f0",
+      "created_at": "2026-03-10T22:45:27+00:00",
+      "cluster": null,
+      "updated_at": "2026-03-10T23:07:50+00:00"
+    },
+    "review::.::holistic::low_level_elegance::scorehits_magic_multiplier::313a6fb9": {
+      "issue_id": "review::.::holistic::low_level_elegance::scorehits_magic_multiplier::313a6fb9",
+      "created_at": "2026-03-10T22:45:27+00:00",
+      "cluster": null,
+      "updated_at": "2026-03-10T23:07:50+00:00"
+    },
+    "review::.::holistic::low_level_elegance::grammar_config_constructor_monolith::a503aac6": {
+      "issue_id": "review::.::holistic::low_level_elegance::grammar_config_constructor_monolith::a503aac6",
+      "created_at": "2026-03-10T22:45:27+00:00",
+      "cluster": null,
+      "updated_at": "2026-03-10T23:07:51+00:00"
+    },
+    "review::.::holistic::low_level_elegance::explore_params_incomplete_extraction::55954907": {
+      "issue_id": "review::.::holistic::low_level_elegance::explore_params_incomplete_extraction::55954907",
+      "created_at": "2026-03-10T22:45:27+00:00",
+      "cluster": null,
+      "updated_at": "2026-03-10T23:07:52+00:00"
+    },
+    "review::.::holistic::api_surface_coherence::sketch_handler_overloaded_dispatcher::f1bb5112": {
+      "issue_id": "review::.::holistic::api_surface_coherence::sketch_handler_overloaded_dispatcher::f1bb5112",
+      "created_at": "2026-03-10T22:45:28+00:00",
+      "cluster": "api-polish4",
+      "updated_at": "2026-03-10T22:45:28+00:00"
+    },
+    "review::.::holistic::api_surface_coherence::inconsistent_error_boundary_pattern::d9d4ebb6": {
+      "issue_id": "review::.::holistic::api_surface_coherence::inconsistent_error_boundary_pattern::d9d4ebb6",
+      "created_at": "2026-03-10T22:45:28+00:00",
+      "cluster": "api-polish4",
+      "updated_at": "2026-03-10T22:45:28+00:00"
+    },
+    "review::.::holistic::api_surface_coherence::explore_nouns_per_param_asymmetry::081af256": {
+      "issue_id": "review::.::holistic::api_surface_coherence::explore_nouns_per_param_asymmetry::081af256",
+      "created_at": "2026-03-10T22:45:28+00:00",
+      "cluster": "api-polish4",
+      "updated_at": "2026-03-10T22:45:28+00:00"
+    },
+    "review::.::holistic::api_surface_coherence::semantic_field_overlapping_endpoints::9599bcb7": {
+      "issue_id": "review::.::holistic::api_surface_coherence::semantic_field_overlapping_endpoints::9599bcb7",
+      "created_at": "2026-03-10T22:45:28+00:00",
+      "cluster": "api-polish4",
+      "updated_at": "2026-03-10T22:45:28+00:00"
+    },
+    "review::.::holistic::naming_quality::impl_internal_suffix_handlers::55c7c0f6": {
+      "issue_id": "review::.::holistic::naming_quality::impl_internal_suffix_handlers::55c7c0f6",
+      "created_at": "2026-03-10T22:45:28+00:00",
+      "cluster": "api-polish4",
+      "updated_at": "2026-03-10T22:45:28+00:00"
+    },
+    "review::.::holistic::naming_quality::handleSemanticField_ambiguous_name::770f961f": {
+      "issue_id": "review::.::holistic::naming_quality::handleSemanticField_ambiguous_name::770f961f",
+      "created_at": "2026-03-10T22:45:28+00:00",
+      "cluster": "api-polish4",
+      "updated_at": "2026-03-10T22:45:28+00:00"
+    },
+    "review::.::holistic::mid_level_elegance::relation_alias_resolution_misplaced::db49bcc5": {
+      "issue_id": "review::.::holistic::mid_level_elegance::relation_alias_resolution_misplaced::db49bcc5",
+      "created_at": "2026-03-10T22:45:28+00:00",
+      "cluster": "api-polish4",
+      "updated_at": "2026-03-10T22:45:28+00:00"
+    },
+    "review::.::holistic::cross_module_architecture::pattern-substitution-in-utils::725f86ac": {
+      "issue_id": "review::.::holistic::cross_module_architecture::pattern-substitution-in-utils::725f86ac",
+      "created_at": "2026-03-10T22:45:28+00:00",
+      "cluster": "package-moves",
+      "updated_at": "2026-03-10T22:45:28+00:00"
+    },
+    "review::.::holistic::high_level_elegance::pattern_substitution_mispackaged_in_utils::b5e672e3": {
+      "issue_id": "review::.::holistic::high_level_elegance::pattern_substitution_mispackaged_in_utils::b5e672e3",
+      "created_at": "2026-03-10T22:45:28+00:00",
+      "cluster": "package-moves",
+      "updated_at": "2026-03-10T22:45:28+00:00"
+    },
+    "review::.::holistic::high_level_elegance::query_results_mispackaged_in_model::e2477326": {
+      "issue_id": "review::.::holistic::high_level_elegance::query_results_mispackaged_in_model::e2477326",
+      "created_at": "2026-03-10T22:45:28+00:00",
+      "cluster": "package-moves",
+      "updated_at": "2026-03-10T22:45:28+00:00"
+    },
+    "review::.::holistic::design_coherence::comparator_scope_mismatch::0c03ba23": {
+      "issue_id": "review::.::holistic::design_coherence::comparator_scope_mismatch::0c03ba23",
+      "created_at": "2026-03-10T22:45:28+00:00",
+      "cluster": "package-moves",
+      "updated_at": "2026-03-10T22:45:28+00:00"
+    },
+    "review::.::holistic::type_safety::nullable_relation_type_no_optional::43a9d3a4": {
+      "issue_id": "review::.::holistic::type_safety::nullable_relation_type_no_optional::43a9d3a4",
+      "created_at": "2026-03-10T22:45:29+00:00",
+      "cluster": "type-safety-light",
+      "updated_at": "2026-03-10T22:45:29+00:00"
+    },
+    "review::.::holistic::type_safety::pos_group_string_bypass::636621f2": {
+      "issue_id": "review::.::holistic::type_safety::pos_group_string_bypass::636621f2",
+      "created_at": "2026-03-10T22:45:29+00:00",
+      "cluster": "type-safety-light",
+      "updated_at": "2026-03-10T22:45:29+00:00"
+    },
+    "review::.::holistic::type_safety::relation_alias_string_literals::e2fc478a": {
+      "issue_id": "review::.::holistic::type_safety::relation_alias_string_literals::e2fc478a",
+      "created_at": "2026-03-10T22:45:29+00:00",
+      "cluster": "type-safety-light",
+      "updated_at": "2026-03-10T22:45:29+00:00"
     }
   },
   "clusters": {
@@ -5639,9 +5875,7 @@
     "dead-fields3": {
       "name": "dead-fields3",
       "description": "Dead-code sweep round 3: remove orphaned fields, dead branches, and side effects left by prior incremental refactoring in abstraction_fitness and design_coherence dimensions",
-      "issue_ids": [
-        "review::.::holistic::design_coherence::unsafe_nested_map_cast_nouns_per::6272bc31"
-      ],
+      "issue_ids": [],
       "created_at": "2026-03-10T22:15:10+00:00",
       "updated_at": "2026-03-10T22:18:28+00:00",
       "auto": false,
@@ -5709,17 +5943,15 @@
           "issue_refs": [
             "6272bc31"
           ],
-          "effort": "small"
+          "effort": "small",
+          "done": true
         }
       ]
     },
     "api-polish3": {
       "name": "api-polish3",
       "description": "API surface consistency round 3: align response keys, null fallbacks, and response shapes across sibling endpoints in api_surface_coherence dimension",
-      "issue_ids": [
-        "review::.::holistic::api_surface_coherence::sketch_response_shape_divergence::9fbcd7f8",
-        "review::.::holistic::api_surface_coherence::explore_single_vs_multi_delegation_asymmetry::db78d2e0"
-      ],
+      "issue_ids": [],
       "created_at": "2026-03-10T22:15:24+00:00",
       "updated_at": "2026-03-10T22:18:38+00:00",
       "auto": false,
@@ -5751,7 +5983,8 @@
           "issue_refs": [
             "9fbcd7f8"
           ],
-          "effort": "small"
+          "effort": "small",
+          "done": true
         },
         {
           "title": "Add RelationConfig-accepting overload to exploreByPattern mirroring multi-seed path; remove manual config assembly from single-seed handler (db78d2e0)",
@@ -5759,16 +5992,15 @@
           "issue_refs": [
             "db78d2e0"
           ],
-          "effort": "small"
+          "effort": "small",
+          "done": true
         }
       ]
     },
     "model-unification": {
       "name": "model-unification",
       "description": "Converge all model value types to Java records to eliminate the three coexisting field-access strategies (public fields, private+getters, records) in the model package",
-      "issue_ids": [
-        "review::.::holistic::convention_outlier::model_access_strategy_split::0316a3b5"
-      ],
+      "issue_ids": [],
       "created_at": "2026-03-10T22:15:30+00:00",
       "updated_at": "2026-03-10T22:18:41+00:00",
       "auto": false,
@@ -5782,7 +6014,8 @@
           "issue_refs": [
             "0316a3b5"
           ],
-          "effort": "medium"
+          "effort": "medium",
+          "done": true
         },
         {
           "title": "Convert CoreCollocate to a Java record (remove private fields and getters)",
@@ -5790,7 +6023,8 @@
           "issue_refs": [
             "0316a3b5"
           ],
-          "effort": "medium"
+          "effort": "medium",
+          "done": true
         },
         {
           "title": "Convert Edge to a Java record (remove public fields)",
@@ -5798,7 +6032,8 @@
           "issue_refs": [
             "0316a3b5"
           ],
-          "effort": "medium"
+          "effort": "medium",
+          "done": true
         },
         {
           "title": "Convert DiscoveredNoun to a Java record (remove public fields)",
@@ -5806,7 +6041,8 @@
           "issue_refs": [
             "0316a3b5"
           ],
-          "effort": "medium"
+          "effort": "medium",
+          "done": true
         },
         {
           "title": "Update all callers to use record accessor methods; verify no null-assignment patterns broken",
@@ -5814,7 +6050,321 @@
           "issue_refs": [
             "0316a3b5"
           ],
+          "effort": "small",
+          "done": true
+        }
+      ]
+    },
+    "dead-code4": {
+      "name": "dead-code4",
+      "description": "Dead code and doc fixes: unused tagging package, dead params, dead conditions, doc mismatch",
+      "issue_ids": [],
+      "created_at": "2026-03-10T22:43:11+00:00",
+      "updated_at": "2026-03-10T22:54:31+00:00",
+      "auto": false,
+      "cluster_key": "",
+      "action": null,
+      "user_modified": true,
+      "action_steps": [
+        {
+          "title": "Delete tagging package (PosTagger, SimpleTagger, TaggedToken)",
+          "issue_refs": [
+            "efd197ff",
+            "0c18158f"
+          ],
+          "detail": "Delete src/main/java/pl/marcinmilkowski/word_sketch/tagging/ directory (3 files: PosTagger.java, SimpleTagger.java, TaggedToken.java). Run grep -r 'tagging' src/ to confirm no remaining imports.",
+          "effort": "trivial",
+          "done": true
+        },
+        {
+          "title": "Remove indexPath param from WordSketchApiServer constructor",
+          "issue_refs": [
+            "65c67e32"
+          ],
+          "detail": "In src/main/java/pl/marcinmilkowski/word_sketch/api/WordSketchApiServer.java constructor, remove the String indexPath parameter. Run grep -r 'new WordSketchApiServer' src/ to check if any callers pass this arg.",
+          "effort": "trivial",
+          "done": true
+        },
+        {
+          "title": "Remove dead isBlank guard in handleSemanticField",
+          "issue_refs": [
+            "5cfe4159"
+          ],
+          "detail": "In src/main/java/pl/marcinmilkowski/word_sketch/api/ExplorationHandlers.java handleSemanticField(), remove the if(nounsParam.isBlank()) block after the requireParam() call, since requireParam already rejects blank inputs.",
+          "effort": "trivial",
+          "done": true
+        },
+        {
+          "title": "Remove dead null check in BlackLabConllUIndexer.errorOccurred",
+          "issue_refs": [
+            "0fed5c51"
+          ],
+          "detail": "In src/main/java/pl/marcinmilkowski/word_sketch/indexer/blacklab/BlackLabConllUIndexer.java errorOccurred(), remove the null check on e parameter since e.getMessage() is already called on the previous line \u2014 so e cannot be null.",
+          "effort": "trivial",
+          "done": true
+        },
+        {
+          "title": "Fix /api/semantic-field docstring: nouns= \u2192 seeds=",
+          "issue_refs": [
+            "5703636c"
+          ],
+          "detail": "In src/main/java/pl/marcinmilkowski/word_sketch/api/ExplorationHandlers.java, find the comment on handleSemanticFieldExplore() that mentions 'nouns=' and change it to 'seeds=' to match the actual parameter name read from the request.",
+          "effort": "trivial",
+          "done": true
+        }
+      ]
+    },
+    "record-convention": {
+      "name": "record-convention",
+      "description": "Record method naming: rename get-prefixed methods on records to match Java record convention",
+      "issue_ids": [],
+      "created_at": "2026-03-10T22:43:11+00:00",
+      "updated_at": "2026-03-10T22:53:55+00:00",
+      "auto": false,
+      "cluster_key": "",
+      "action": null,
+      "user_modified": true,
+      "action_steps": [
+        {
+          "title": "Rename getCoverage(), getStrongestNoun(), getSharedCollocateList() to coverage(), strongestNoun(), sharedCollocateList()",
+          "issue_refs": [
+            "758b23fd"
+          ],
+          "detail": "In src/main/java/pl/marcinmilkowski/word_sketch/model/DiscoveredNoun.java record, rename methods getCoverage()->coverage(), getStrongestNoun()->strongestNoun(), getSharedCollocateList()->sharedCollocateList(). Then grep -r 'getCoverage\\|getStrongestNoun\\|getSharedCollocateList' src/ and update every caller.",
+          "effort": "small",
+          "done": true
+        },
+        {
+          "title": "Update all callers of renamed methods",
+          "issue_refs": [
+            "758b23fd",
+            "45b9c8b5"
+          ],
+          "detail": "Run grep -r 'get[A-Z]' src/main/java/pl/marcinmilkowski/word_sketch/model/ to list remaining get-prefix methods on model classes. For any remaining traditional class (e.g., ExplorationResult), add a comment explaining why get-prefix is used there.",
+          "effort": "small",
+          "done": true
+        }
+      ]
+    },
+    "logic-fixes": {
+      "name": "logic-fixes",
+      "description": "Logic clarity: dead condition, opaque heuristic, GrammarConfigLoader monolith, ExploreParams coverage",
+      "issue_ids": [],
+      "created_at": "2026-03-10T22:43:12+00:00",
+      "updated_at": "2026-03-10T22:53:40+00:00",
+      "auto": false,
+      "cluster_key": "",
+      "action": null,
+      "user_modified": true,
+      "action_steps": [
+        {
+          "title": "Remove dead || freq >= 2 branch in identifyCoreCollocates",
+          "issue_refs": [
+            "1f35d7f0"
+          ],
+          "detail": "In src/main/java/pl/marcinmilkowski/word_sketch/exploration/SemanticFieldExplorer.java identifyCoreCollocates(), remove '|| freq >= 2' from the threshold condition that checks minNounsForCore. The dynamic minNounsForCore already handles this.",
+          "effort": "trivial",
+          "done": true
+        },
+        {
+          "title": "Extract named constant or comment for 3x over-fetch heuristic in scoreHits",
+          "issue_refs": [
+            "313a6fb9"
+          ],
+          "detail": "In src/main/java/pl/marcinmilkowski/word_sketch/query/BlackLabQueryExecutor.java scoreHits(), add private static final int OVER_FETCH_FACTOR = 3 and replace the literal 3 multiplication with it, plus a comment explaining it is an empirical factor to compensate for scoring discards.",
+          "effort": "trivial",
+          "done": true
+        },
+        {
+          "title": "Extract helper methods from GrammarConfigLoader 95-line constructor",
+          "issue_refs": [
+            "a503aac6"
+          ],
+          "detail": "In src/main/java/pl/marcinmilkowski/word_sketch/config/GrammarConfigLoader.java, extract the constructor body (~95 lines) into private methods: parseRelationDef(JsonObject), validateConstraints(List), and buildRelationType(String). The constructor becomes 3 method calls.",
+          "effort": "medium",
+          "done": true
+        },
+        {
+          "title": "Add nouns_per parsing to ExploreParams to cover all 4 shared params",
+          "issue_refs": [
+            "55954907"
+          ],
+          "detail": "In src/main/java/pl/marcinmilkowski/word_sketch/api/ExplorationHandlers.java ExploreParams record, add int nounsPerSeed field with default parseInt('nouns_per') parsing. In handleSemanticFieldExplore(), replace ad-hoc parseInt('nouns_per') with params.nounsPerSeed.",
+          "effort": "medium",
+          "done": true
+        }
+      ]
+    },
+    "api-polish4": {
+      "name": "api-polish4",
+      "description": "API surface round 4: handleSketchRequest god method, dual error boundary, naming, nouns_per asymmetry",
+      "issue_ids": [
+        "review::.::holistic::api_surface_coherence::sketch_handler_overloaded_dispatcher::f1bb5112",
+        "review::.::holistic::api_surface_coherence::inconsistent_error_boundary_pattern::d9d4ebb6",
+        "review::.::holistic::api_surface_coherence::explore_nouns_per_param_asymmetry::081af256",
+        "review::.::holistic::api_surface_coherence::semantic_field_overlapping_endpoints::9599bcb7",
+        "review::.::holistic::naming_quality::impl_internal_suffix_handlers::55c7c0f6",
+        "review::.::holistic::naming_quality::handleSemanticField_ambiguous_name::770f961f",
+        "review::.::holistic::mid_level_elegance::relation_alias_resolution_misplaced::db49bcc5"
+      ],
+      "created_at": "2026-03-10T22:43:12+00:00",
+      "updated_at": "2026-03-10T22:54:46+00:00",
+      "auto": false,
+      "cluster_key": "",
+      "action": null,
+      "user_modified": true,
+      "action_steps": [
+        {
+          "title": "Extract handleSketchRequest sub-handlers to named private methods",
+          "issue_refs": [
+            "f1bb5112"
+          ],
+          "detail": "In src/main/java/pl/marcinmilkowski/word_sketch/api/SketchHandlers.java handleSketchRequest(), extract the 4 inline dispatch blocks into private methods handleFullSketch(HttpExchange), handleRelationSketch(HttpExchange), handleBcqlQuery(HttpExchange), handleConcordance(HttpExchange).",
           "effort": "small"
+        },
+        {
+          "title": "Move handleSketchRequest IOException catch into wrapHandler pattern",
+          "issue_refs": [
+            "d9d4ebb6"
+          ],
+          "detail": "In src/main/java/pl/marcinmilkowski/word_sketch/api/SketchHandlers.java handleSketchRequest(), wrap the method body in the wrapHandler() pattern used by other handlers, removing the manual IOException try-catch.",
+          "effort": "small"
+        },
+        {
+          "title": "Add nouns_per param to handleSemanticFieldExploreMulti or document asymmetry",
+          "issue_refs": [
+            "081af256",
+            "9599bcb7"
+          ],
+          "detail": "In src/main/java/pl/marcinmilkowski/word_sketch/api/ExplorationHandlers.java handleSemanticFieldExploreMulti(), add nouns_per parameter parsing. Or add a comment: // nouns_per intentionally not supported in multi-seed mode.",
+          "effort": "small"
+        },
+        {
+          "title": "Rename Impl/Internal private methods in SketchHandlers to discriminating names",
+          "issue_refs": [
+            "55c7c0f6"
+          ],
+          "detail": "In src/main/java/pl/marcinmilkowski/word_sketch/api/SketchHandlers.java, rename private method handleFullSketchImpl to handleFullSketchForType and handleRelationsImpl to handleRelationsForType. Update both call sites in the same file.",
+          "effort": "small"
+        },
+        {
+          "title": "Rename handleSemanticField to handleSemanticFieldComparison",
+          "issue_refs": [
+            "770f961f"
+          ],
+          "detail": "In src/main/java/pl/marcinmilkowski/word_sketch/api/ExplorationHandlers.java, rename method handleSemanticField() to handleSemanticFieldComparison(). Update the route registration in src/main/java/pl/marcinmilkowski/word_sketch/api/WordSketchApiServer.java that maps the /api/semantic-field route to this handler.",
+          "effort": "small"
+        },
+        {
+          "title": "Add resolveRelationAlias to shared utility or common base",
+          "issue_refs": [
+            "db49bcc5"
+          ],
+          "detail": "Extract resolveRelationAlias() from src/main/java/pl/marcinmilkowski/word_sketch/api/ExplorationHandlers.java into a new RelationUtils class in src/main/java/pl/marcinmilkowski/word_sketch/api/. Create the new file with the static method. Update ExplorationHandlers.java to call RelationUtils.resolveRelationAlias().",
+          "effort": "small"
+        }
+      ]
+    },
+    "package-moves": {
+      "name": "package-moves",
+      "description": "Package organization: move PatternSubstitution, QueryResults, exploreMultiSeed to correct packages",
+      "issue_ids": [
+        "review::.::holistic::cross_module_architecture::pattern-substitution-in-utils::725f86ac",
+        "review::.::holistic::high_level_elegance::pattern_substitution_mispackaged_in_utils::b5e672e3",
+        "review::.::holistic::high_level_elegance::query_results_mispackaged_in_model::e2477326",
+        "review::.::holistic::design_coherence::comparator_scope_mismatch::0c03ba23"
+      ],
+      "created_at": "2026-03-10T22:43:13+00:00",
+      "updated_at": "2026-03-10T22:54:47+00:00",
+      "auto": false,
+      "cluster_key": "",
+      "action": null,
+      "user_modified": true,
+      "action_steps": [
+        {
+          "title": "Move PatternSubstitution from utils to api package",
+          "issue_refs": [
+            "725f86ac",
+            "b5e672e3"
+          ],
+          "detail": "Move src/main/java/pl/marcinmilkowski/word_sketch/utils/PatternSubstitution.java to src/main/java/pl/marcinmilkowski/word_sketch/api/ directory. Change the package declaration from ...utils to ...api. Run grep -r 'PatternSubstitution' src/ and fix all import statements to use the new package.",
+          "effort": "small"
+        },
+        {
+          "title": "Move QueryResults from model to query package, update all imports",
+          "issue_refs": [
+            "e2477326"
+          ],
+          "detail": "Move src/main/java/pl/marcinmilkowski/word_sketch/model/QueryResults.java to src/main/java/pl/marcinmilkowski/word_sketch/query/ directory. Change the package declaration from ...model to ...query. Run grep -r 'QueryResults' src/ and fix all import statements.",
+          "effort": "small"
+        },
+        {
+          "title": "Move exploreMultiSeed from CollocateProfileComparator to SemanticFieldExplorer",
+          "issue_refs": [
+            "0c03ba23"
+          ],
+          "detail": "Move exploreMultiSeed() method from src/main/java/pl/marcinmilkowski/word_sketch/exploration/CollocateProfileComparator.java to src/main/java/pl/marcinmilkowski/word_sketch/exploration/SemanticFieldExplorer.java. Update src/main/java/pl/marcinmilkowski/word_sketch/api/ExplorationHandlers.java to call semanificFieldExplorer.exploreMultiSeed().",
+          "effort": "small"
+        },
+        {
+          "title": "Update all imports and references",
+          "issue_refs": [
+            "725f86ac",
+            "b5e672e3",
+            "e2477326",
+            "0c03ba23"
+          ],
+          "detail": "Run JAVA_HOME=/usr/lib/jvm/java-21-openjdk-amd64 mvn test -q to verify all tests pass after the three package moves in steps 1-3.",
+          "effort": "small"
+        }
+      ]
+    },
+    "type-safety-light": {
+      "name": "type-safety-light",
+      "description": "Smaller type safety improvements: nullable RelationType, posGroupFromConstraint, string relay",
+      "issue_ids": [
+        "review::.::holistic::type_safety::nullable_relation_type_no_optional::43a9d3a4",
+        "review::.::holistic::type_safety::pos_group_string_bypass::636621f2",
+        "review::.::holistic::type_safety::relation_alias_string_literals::e2fc478a"
+      ],
+      "created_at": "2026-03-10T22:43:13+00:00",
+      "updated_at": "2026-03-10T22:51:53+00:00",
+      "auto": false,
+      "cluster_key": "",
+      "action": null,
+      "user_modified": true,
+      "action_steps": [
+        {
+          "title": "Wrap parseRelationType return in Optional<RelationType>",
+          "issue_refs": [
+            "43a9d3a4"
+          ],
+          "detail": "In src/main/java/pl/marcinmilkowski/word_sketch/config/GrammarConfigLoader.java (or RelationConfig.java), change parseRelationType() return type from RelationType to Optional<RelationType>.",
+          "effort": "medium"
+        },
+        {
+          "title": "Update RelationConfig and all callers to handle Optional",
+          "issue_refs": [
+            "43a9d3a4"
+          ],
+          "detail": "In src/main/java/pl/marcinmilkowski/word_sketch/config/RelationConfig.java record, change relationType field from RelationType to Optional<RelationType>. Update all callers using .relationType() to handle Optional.",
+          "effort": "medium"
+        },
+        {
+          "title": "Replace posGroupFromConstraint raw string scan with PosGroup enum factory",
+          "issue_refs": [
+            "636621f2"
+          ],
+          "detail": "In src/main/java/pl/marcinmilkowski/word_sketch/config/GrammarConfigLoader.java posGroupFromConstraint(), replace raw string scanning with PosGroup.fromLabel(String) factory. Add fromLabel() to PosGroup enum if missing.",
+          "effort": "medium"
+        },
+        {
+          "title": "Replace resolveRelationAlias raw string literals with enum or constant map",
+          "issue_refs": [
+            "e2fc478a"
+          ],
+          "detail": "In src/main/java/pl/marcinmilkowski/word_sketch/api/ExplorationHandlers.java resolveRelationAlias(), replace inline string literals with private static final Map<String,String> RELATION_ALIASES = Map.of(...).",
+          "effort": "medium"
         }
       ]
     }
@@ -36589,90 +37139,2603 @@
       "actor": "user",
       "note": "Removed the ownsExecutor boolean field from SemanticFieldExplorer; close() is now a no-op; executor lifecycle managed by caller.",
       "detail": {}
+    },
+    {
+      "timestamp": "2026-03-10T22:30:39+00:00",
+      "action": "done",
+      "issue_ids": [
+        "9fbcd7f8"
+      ],
+      "cluster_name": null,
+      "actor": "user",
+      "note": "Wrapped single-relation sketch response in per-relation object shape matching full-sketch structure: response now returns relations map with relation id as key and collocations nested inside, matching the full-sketch endpoint.",
+      "detail": {}
+    },
+    {
+      "timestamp": "2026-03-10T22:30:39+00:00",
+      "action": "resolve",
+      "issue_ids": [
+        "review::.::holistic::api_surface_coherence::sketch_response_shape_divergence::9fbcd7f8"
+      ],
+      "cluster_name": null,
+      "actor": "user",
+      "note": "Wrapped single-relation sketch response in per-relation object shape matching full-sketch structure: response now returns relations map with relation id as key and collocations nested inside, matching the full-sketch endpoint.",
+      "detail": {
+        "status": "fixed",
+        "attestation": "I have actually made the described code fix and I am not gaming the score by resolving without fixing."
+      }
+    },
+    {
+      "timestamp": "2026-03-10T22:30:40+00:00",
+      "action": "done",
+      "issue_ids": [
+        "db78d2e0"
+      ],
+      "cluster_name": null,
+      "actor": "user",
+      "note": "Added RelationConfig-accepting overload exploreByPattern(seed, RelationConfig, opts) to SemanticFieldExplorer. Single-seed handler now delegates pattern extraction to the service, removing manual bcqlPattern and reverseCollocatePattern assembly from the HTTP handler.",
+      "detail": {}
+    },
+    {
+      "timestamp": "2026-03-10T22:30:40+00:00",
+      "action": "resolve",
+      "issue_ids": [
+        "review::.::holistic::api_surface_coherence::explore_single_vs_multi_delegation_asymmetry::db78d2e0"
+      ],
+      "cluster_name": null,
+      "actor": "user",
+      "note": "Added RelationConfig-accepting overload exploreByPattern(seed, RelationConfig, opts) to SemanticFieldExplorer. Single-seed handler now delegates pattern extraction to the service, removing manual bcqlPattern and reverseCollocatePattern assembly from the HTTP handler.",
+      "detail": {
+        "status": "fixed",
+        "attestation": "I have actually made the described code fix and I am not gaming the score by resolving without fixing."
+      }
+    },
+    {
+      "timestamp": "2026-03-10T22:30:40+00:00",
+      "action": "cluster_done",
+      "issue_ids": [
+        "review::.::holistic::api_surface_coherence::explore_single_vs_multi_delegation_asymmetry::db78d2e0"
+      ],
+      "cluster_name": "api-polish3",
+      "actor": "user",
+      "note": null,
+      "detail": {}
+    },
+    {
+      "timestamp": "2026-03-10T22:30:42+00:00",
+      "action": "done",
+      "issue_ids": [
+        "6272bc31"
+      ],
+      "cluster_name": null,
+      "actor": "user",
+      "note": "Replaced unchecked cast on parameters map with typed extraParams approach: buildBaseExploreResponse now accepts Map extraParams and merges them into paramsUsed, eliminating the ((Map) response.get('parameters')) cast.",
+      "detail": {}
+    },
+    {
+      "timestamp": "2026-03-10T22:30:42+00:00",
+      "action": "resolve",
+      "issue_ids": [
+        "review::.::holistic::design_coherence::unsafe_nested_map_cast_nouns_per::6272bc31"
+      ],
+      "cluster_name": null,
+      "actor": "user",
+      "note": "Replaced unchecked cast on parameters map with typed extraParams approach: buildBaseExploreResponse now accepts Map extraParams and merges them into paramsUsed, eliminating the ((Map) response.get('parameters')) cast.",
+      "detail": {
+        "status": "fixed",
+        "attestation": "I have actually made the described code fix and I am not gaming the score by resolving without fixing."
+      }
+    },
+    {
+      "timestamp": "2026-03-10T22:30:42+00:00",
+      "action": "cluster_done",
+      "issue_ids": [
+        "review::.::holistic::design_coherence::unsafe_nested_map_cast_nouns_per::6272bc31"
+      ],
+      "cluster_name": "dead-fields3",
+      "actor": "user",
+      "note": null,
+      "detail": {}
+    },
+    {
+      "timestamp": "2026-03-10T22:30:45+00:00",
+      "action": "done",
+      "issue_ids": [
+        "0316a3b5"
+      ],
+      "cluster_name": null,
+      "actor": "user",
+      "note": "Converted Edge, DiscoveredNoun, CoreCollocate, and AdjectiveProfile from public-final-field classes to Java records. Updated all field accesses to record accessor methods across 7 source files and 2 test files. Now only one field-access strategy in the model package.",
+      "detail": {}
+    },
+    {
+      "timestamp": "2026-03-10T22:30:45+00:00",
+      "action": "resolve",
+      "issue_ids": [
+        "review::.::holistic::convention_outlier::model_access_strategy_split::0316a3b5"
+      ],
+      "cluster_name": null,
+      "actor": "user",
+      "note": "Converted Edge, DiscoveredNoun, CoreCollocate, and AdjectiveProfile from public-final-field classes to Java records. Updated all field accesses to record accessor methods across 7 source files and 2 test files. Now only one field-access strategy in the model package.",
+      "detail": {
+        "status": "fixed",
+        "attestation": "I have actually made the described code fix and I am not gaming the score by resolving without fixing."
+      }
+    },
+    {
+      "timestamp": "2026-03-10T22:30:45+00:00",
+      "action": "cluster_done",
+      "issue_ids": [
+        "review::.::holistic::convention_outlier::model_access_strategy_split::0316a3b5"
+      ],
+      "cluster_name": "model-unification",
+      "actor": "user",
+      "note": null,
+      "detail": {}
+    },
+    {
+      "timestamp": "2026-03-10T22:30:58+00:00",
+      "action": "commit_record",
+      "issue_ids": [
+        "review::.::holistic::abstraction_fitness::explorer_dead_owns_executor::bed576c2",
+        "review::.::holistic::abstraction_fitness::server_unused_stored_fields::a6e4d4ff",
+        "review::.::holistic::api_surface_coherence::explore_options_dead_fields::c0abae54",
+        "review::.::holistic::design_coherence::dead_null_guard_grammar_config::81ae9603",
+        "review::.::holistic::design_coherence::redundant_core_collocate_iteration_multi_seed::5ea8de00",
+        "review::.::holistic::api_surface_coherence::semantic_field_nouns_seeds_mismatch::802a3742",
+        "review::.::holistic::api_surface_coherence::sketch_response_shape_divergence::9fbcd7f8",
+        "review::.::holistic::api_surface_coherence::explore_single_vs_multi_delegation_asymmetry::db78d2e0",
+        "review::.::holistic::design_coherence::unsafe_nested_map_cast_nouns_per::6272bc31",
+        "review::.::holistic::convention_outlier::model_access_strategy_split::0316a3b5"
+      ],
+      "cluster_name": null,
+      "actor": "user",
+      "note": "api-polish3 and model-unification: sketch shape, RelationConfig overload, unchecked cast fix, 4 model classes to records",
+      "detail": {
+        "sha": "733332372fdb",
+        "branch": "desloppify/code-health"
+      }
+    },
+    {
+      "timestamp": "2026-03-10T22:32:23+00:00",
+      "action": "skip",
+      "issue_ids": [
+        "security::src/main/java/pl/marcinmilkowski/word_sketch/indexer/blacklab/BlackLabConllUIndexer.java::security::log_sensitive::src/main/java/pl/marcinmilkowski/word_sketch/indexer/blacklab/BlackLabConllUIndexer.java::116"
+      ],
+      "cluster_name": null,
+      "actor": "user",
+      "note": "False positive: logging document and token counts is not sensitive data \u2014 these are operational metrics.",
+      "detail": {
+        "kind": "permanent",
+        "reason": null
+      }
+    },
+    {
+      "timestamp": "2026-03-10T22:39:22+00:00",
+      "action": "review_import_sync",
+      "issue_ids": [],
+      "cluster_name": null,
+      "actor": "system",
+      "note": null,
+      "detail": {
+        "trigger": "review_import",
+        "new_ids": [
+          "review::.::holistic::abstraction_fitness::postagger_single_impl_no_production_use::0c18158f",
+          "review::.::holistic::abstraction_fitness::wordsketchapiserver_dead_indexpath_param::65c67e32",
+          "review::.::holistic::api_surface_coherence::explore_nouns_per_param_asymmetry::081af256",
+          "review::.::holistic::api_surface_coherence::inconsistent_error_boundary_pattern::d9d4ebb6",
+          "review::.::holistic::api_surface_coherence::semantic_field_overlapping_endpoints::9599bcb7",
+          "review::.::holistic::api_surface_coherence::semantic_field_param_name_mismatch::5703636c",
+          "review::.::holistic::api_surface_coherence::sketch_handler_overloaded_dispatcher::f1bb5112",
+          "review::.::holistic::convention_outlier::model_mixed_type_strategy::45b9c8b5",
+          "review::.::holistic::convention_outlier::record_get_prefix_computed_methods::758b23fd",
+          "review::.::holistic::cross_module_architecture::orphaned-tagging-subsystem::efd197ff",
+          "review::.::holistic::cross_module_architecture::pattern-substitution-in-utils::725f86ac",
+          "review::.::holistic::design_coherence::comparator_scope_mismatch::0c03ba23",
+          "review::.::holistic::design_coherence::full_sketch_bool_flag::59f48e0e",
+          "review::.::holistic::high_level_elegance::collocate_profile_comparator_mechanical_split::0433ebd5",
+          "review::.::holistic::high_level_elegance::model_owns_viz_edge_assembly::0b7e7d95",
+          "review::.::holistic::high_level_elegance::pattern_substitution_mispackaged_in_utils::b5e672e3",
+          "review::.::holistic::high_level_elegance::query_results_mispackaged_in_model::e2477326",
+          "review::.::holistic::logic_clarity::dead_disjunct_minNounsForCore::1f35d7f0",
+          "review::.::holistic::logic_clarity::dead_isblank_after_requireparam::5cfe4159",
+          "review::.::holistic::logic_clarity::post_dereference_null_check_errorOccurred::0fed5c51",
+          "review::.::holistic::low_level_elegance::explore_params_incomplete_extraction::55954907",
+          "review::.::holistic::low_level_elegance::grammar_config_constructor_monolith::a503aac6",
+          "review::.::holistic::low_level_elegance::scorehits_magic_multiplier::313a6fb9",
+          "review::.::holistic::mid_level_elegance::dep_response_shape_inline_branching::fdceecf3",
+          "review::.::holistic::mid_level_elegance::exploration_result_model_reuse::8f4c62b8",
+          "review::.::holistic::mid_level_elegance::explore_options_asymmetry::65d584a6",
+          "review::.::holistic::mid_level_elegance::relation_alias_resolution_misplaced::db49bcc5",
+          "review::.::holistic::naming_quality::handleSemanticField_ambiguous_name::770f961f",
+          "review::.::holistic::naming_quality::impl_internal_suffix_handlers::55c7c0f6",
+          "review::.::holistic::type_safety::api_map_string_object::58b125c0",
+          "review::.::holistic::type_safety::nullable_relation_type_no_optional::43a9d3a4",
+          "review::.::holistic::type_safety::pos_group_string_bypass::636621f2",
+          "review::.::holistic::type_safety::relation_alias_string_literals::e2fc478a"
+        ],
+        "added_to_queue": [
+          "review::.::holistic::abstraction_fitness::postagger_single_impl_no_production_use::0c18158f",
+          "review::.::holistic::abstraction_fitness::wordsketchapiserver_dead_indexpath_param::65c67e32",
+          "review::.::holistic::api_surface_coherence::explore_nouns_per_param_asymmetry::081af256",
+          "review::.::holistic::api_surface_coherence::inconsistent_error_boundary_pattern::d9d4ebb6",
+          "review::.::holistic::api_surface_coherence::semantic_field_overlapping_endpoints::9599bcb7",
+          "review::.::holistic::api_surface_coherence::semantic_field_param_name_mismatch::5703636c",
+          "review::.::holistic::api_surface_coherence::sketch_handler_overloaded_dispatcher::f1bb5112",
+          "review::.::holistic::convention_outlier::model_mixed_type_strategy::45b9c8b5",
+          "review::.::holistic::convention_outlier::record_get_prefix_computed_methods::758b23fd",
+          "review::.::holistic::cross_module_architecture::orphaned-tagging-subsystem::efd197ff",
+          "review::.::holistic::cross_module_architecture::pattern-substitution-in-utils::725f86ac",
+          "review::.::holistic::design_coherence::comparator_scope_mismatch::0c03ba23",
+          "review::.::holistic::design_coherence::full_sketch_bool_flag::59f48e0e",
+          "review::.::holistic::high_level_elegance::collocate_profile_comparator_mechanical_split::0433ebd5",
+          "review::.::holistic::high_level_elegance::model_owns_viz_edge_assembly::0b7e7d95",
+          "review::.::holistic::high_level_elegance::pattern_substitution_mispackaged_in_utils::b5e672e3",
+          "review::.::holistic::high_level_elegance::query_results_mispackaged_in_model::e2477326",
+          "review::.::holistic::logic_clarity::dead_disjunct_minNounsForCore::1f35d7f0",
+          "review::.::holistic::logic_clarity::dead_isblank_after_requireparam::5cfe4159",
+          "review::.::holistic::logic_clarity::post_dereference_null_check_errorOccurred::0fed5c51",
+          "review::.::holistic::low_level_elegance::explore_params_incomplete_extraction::55954907",
+          "review::.::holistic::low_level_elegance::grammar_config_constructor_monolith::a503aac6",
+          "review::.::holistic::low_level_elegance::scorehits_magic_multiplier::313a6fb9",
+          "review::.::holistic::mid_level_elegance::dep_response_shape_inline_branching::fdceecf3",
+          "review::.::holistic::mid_level_elegance::exploration_result_model_reuse::8f4c62b8",
+          "review::.::holistic::mid_level_elegance::explore_options_asymmetry::65d584a6",
+          "review::.::holistic::mid_level_elegance::relation_alias_resolution_misplaced::db49bcc5",
+          "review::.::holistic::naming_quality::handleSemanticField_ambiguous_name::770f961f",
+          "review::.::holistic::naming_quality::impl_internal_suffix_handlers::55c7c0f6",
+          "review::.::holistic::type_safety::api_map_string_object::58b125c0",
+          "review::.::holistic::type_safety::nullable_relation_type_no_optional::43a9d3a4",
+          "review::.::holistic::type_safety::pos_group_string_bypass::636621f2",
+          "review::.::holistic::type_safety::relation_alias_string_literals::e2fc478a"
+        ],
+        "diff_new": 33,
+        "diff_reopened": 0,
+        "covered_subjective": []
+      }
+    },
+    {
+      "timestamp": "2026-03-10T22:40:29+00:00",
+      "action": "triage_observe",
+      "issue_ids": [],
+      "cluster_name": null,
+      "actor": "user",
+      "note": null,
+      "detail": {
+        "issue_count": 33,
+        "cited_ids": [
+          "review::.::holistic::convention_outlier::model_mixed_type_strategy::45b9c8b5",
+          "review::.::holistic::convention_outlier::record_get_prefix_computed_methods::758b23fd"
+        ],
+        "reuse": false
+      }
+    },
+    {
+      "timestamp": "2026-03-10T22:41:22+00:00",
+      "action": "triage_observe",
+      "issue_ids": [],
+      "cluster_name": null,
+      "actor": "user",
+      "note": null,
+      "detail": {
+        "issue_count": 33,
+        "cited_ids": [
+          "review::.::holistic::abstraction_fitness::postagger_single_impl_no_production_use::0c18158f",
+          "review::.::holistic::abstraction_fitness::wordsketchapiserver_dead_indexpath_param::65c67e32",
+          "review::.::holistic::api_surface_coherence::explore_nouns_per_param_asymmetry::081af256",
+          "review::.::holistic::api_surface_coherence::inconsistent_error_boundary_pattern::d9d4ebb6",
+          "review::.::holistic::api_surface_coherence::semantic_field_overlapping_endpoints::9599bcb7",
+          "review::.::holistic::api_surface_coherence::semantic_field_param_name_mismatch::5703636c",
+          "review::.::holistic::api_surface_coherence::sketch_handler_overloaded_dispatcher::f1bb5112",
+          "review::.::holistic::convention_outlier::model_mixed_type_strategy::45b9c8b5",
+          "review::.::holistic::convention_outlier::record_get_prefix_computed_methods::758b23fd",
+          "review::.::holistic::cross_module_architecture::orphaned-tagging-subsystem::efd197ff",
+          "review::.::holistic::cross_module_architecture::pattern-substitution-in-utils::725f86ac",
+          "review::.::holistic::logic_clarity::dead_disjunct_minNounsForCore::1f35d7f0",
+          "review::.::holistic::logic_clarity::dead_isblank_after_requireparam::5cfe4159",
+          "review::.::holistic::logic_clarity::post_dereference_null_check_errorOccurred::0fed5c51",
+          "review::.::holistic::mid_level_elegance::exploration_result_model_reuse::8f4c62b8",
+          "review::.::holistic::mid_level_elegance::explore_options_asymmetry::65d584a6",
+          "review::.::holistic::type_safety::api_map_string_object::58b125c0",
+          "review::.::holistic::type_safety::nullable_relation_type_no_optional::43a9d3a4",
+          "review::.::holistic::type_safety::relation_alias_string_literals::e2fc478a"
+        ],
+        "reuse": false
+      }
+    },
+    {
+      "timestamp": "2026-03-10T22:41:31+00:00",
+      "action": "triage_confirm_observe",
+      "issue_ids": [],
+      "cluster_name": null,
+      "actor": "user",
+      "note": null,
+      "detail": {
+        "attestation": "api_surface_coherence f1bb5112 god method, d9d4ebb6 dual error boundary; high_level_elegance package placement; mid_level_elegance 8f4c62b8 ExplorationResult repurposed, 65d584a6 param asymmetry; type_safety 58b125c0 43 sites; logic_clarity 1f35d7f0 5cfe4159 0fed5c51 dead conditions; low_level_elegance a503aac6 monolith constructor \u2014 all reviewed, no contradictions."
+      }
+    },
+    {
+      "timestamp": "2026-03-10T22:41:45+00:00",
+      "action": "triage_reflect",
+      "issue_ids": [],
+      "cluster_name": null,
+      "actor": "user",
+      "note": null,
+      "detail": {
+        "issue_count": 33,
+        "reuse": false,
+        "recurring_dims": [
+          "abstraction_fitness",
+          "api_surface_coherence",
+          "convention_outlier",
+          "design_coherence"
+        ]
+      }
+    },
+    {
+      "timestamp": "2026-03-10T22:41:45+00:00",
+      "action": "triage_confirm_reflect",
+      "issue_ids": [],
+      "cluster_name": null,
+      "actor": "user",
+      "note": null,
+      "detail": {
+        "attestation": "api_surface_coherence, high_level_elegance, mid_level_elegance, type_safety, logic_clarity, low_level_elegance assessed \u2014 priorities set, no contradictions, type_safety 58b125c0 flagged as wontfix candidate."
+      }
+    },
+    {
+      "timestamp": "2026-03-10T22:43:11+00:00",
+      "action": "cluster_create",
+      "issue_ids": [],
+      "cluster_name": "dead-code4",
+      "actor": "user",
+      "note": null,
+      "detail": {
+        "description": "Dead code and doc fixes: unused tagging package, dead params, dead conditions, doc mismatch",
+        "action": null
+      }
+    },
+    {
+      "timestamp": "2026-03-10T22:43:11+00:00",
+      "action": "cluster_create",
+      "issue_ids": [],
+      "cluster_name": "record-convention",
+      "actor": "user",
+      "note": null,
+      "detail": {
+        "description": "Record method naming: rename get-prefixed methods on records to match no-prefix convention",
+        "action": null
+      }
+    },
+    {
+      "timestamp": "2026-03-10T22:43:12+00:00",
+      "action": "cluster_create",
+      "issue_ids": [],
+      "cluster_name": "logic-fixes",
+      "actor": "user",
+      "note": null,
+      "detail": {
+        "description": "Logic clarity: dead condition, opaque heuristic, GrammarConfigLoader monolith, ExploreParams coverage",
+        "action": null
+      }
+    },
+    {
+      "timestamp": "2026-03-10T22:43:12+00:00",
+      "action": "cluster_create",
+      "issue_ids": [],
+      "cluster_name": "api-polish4",
+      "actor": "user",
+      "note": null,
+      "detail": {
+        "description": "API surface round 4: handleSketchRequest god method, dual error boundary, naming fixes, nouns_per asymmetry",
+        "action": null
+      }
+    },
+    {
+      "timestamp": "2026-03-10T22:43:13+00:00",
+      "action": "cluster_create",
+      "issue_ids": [],
+      "cluster_name": "package-moves",
+      "actor": "user",
+      "note": null,
+      "detail": {
+        "description": "Package organization: move PatternSubstitution, QueryResults, exploreMultiSeed to correct packages",
+        "action": null
+      }
+    },
+    {
+      "timestamp": "2026-03-10T22:43:13+00:00",
+      "action": "cluster_create",
+      "issue_ids": [],
+      "cluster_name": "type-safety-light",
+      "actor": "user",
+      "note": null,
+      "detail": {
+        "description": "Smaller type safety improvements: nullable RelationType, posGroupFromConstraint, string relay",
+        "action": null
+      }
+    },
+    {
+      "timestamp": "2026-03-10T22:43:47+00:00",
+      "action": "skip",
+      "issue_ids": [
+        "review::.::holistic::type_safety::api_map_string_object::58b125c0"
+      ],
+      "cluster_name": null,
+      "actor": "user",
+      "note": "Map<String,Object> response layer is 43 sites \u2014 full DTO rewrite is a major T4 refactor with high regression risk not worth the churn at this stage.",
+      "detail": {
+        "kind": "permanent",
+        "reason": null
+      }
+    },
+    {
+      "timestamp": "2026-03-10T22:43:48+00:00",
+      "action": "skip",
+      "issue_ids": [
+        "review::.::holistic::mid_level_elegance::exploration_result_model_reuse::8f4c62b8"
+      ],
+      "cluster_name": null,
+      "actor": "user",
+      "note": "ExplorationResult repurposed for multi-seed \u2014 by design, the shared result shape allows code reuse between single and multi-seed paths.",
+      "detail": {
+        "kind": "permanent",
+        "reason": null
+      }
+    },
+    {
+      "timestamp": "2026-03-10T22:43:49+00:00",
+      "action": "skip",
+      "issue_ids": [
+        "review::.::holistic::design_coherence::full_sketch_bool_flag::59f48e0e"
+      ],
+      "cluster_name": null,
+      "actor": "user",
+      "note": "isDep boolean flag in handleFullSketchImpl \u2014 tightly coupled to response format; extraction risks breaking existing behavior without clear benefit.",
+      "detail": {
+        "kind": "permanent",
+        "reason": null
+      }
+    },
+    {
+      "timestamp": "2026-03-10T22:43:49+00:00",
+      "action": "skip",
+      "issue_ids": [
+        "review::.::holistic::mid_level_elegance::dep_response_shape_inline_branching::fdceecf3"
+      ],
+      "cluster_name": null,
+      "actor": "user",
+      "note": "isDep branches in two nested places \u2014 same root cause as 59f48e0e, no clean extraction path identified.",
+      "detail": {
+        "kind": "permanent",
+        "reason": null
+      }
+    },
+    {
+      "timestamp": "2026-03-10T22:43:50+00:00",
+      "action": "skip",
+      "issue_ids": [
+        "review::.::holistic::mid_level_elegance::explore_options_asymmetry::65d584a6"
+      ],
+      "cluster_name": null,
+      "actor": "user",
+      "note": "Single/multi-seed endpoint shape asymmetry \u2014 intentional architectural decision reflecting different use cases.",
+      "detail": {
+        "kind": "permanent",
+        "reason": null
+      }
+    },
+    {
+      "timestamp": "2026-03-10T22:43:50+00:00",
+      "action": "skip",
+      "issue_ids": [
+        "review::.::holistic::high_level_elegance::collocate_profile_comparator_mechanical_split::0433ebd5"
+      ],
+      "cluster_name": null,
+      "actor": "user",
+      "note": "CollocateProfileComparator extracted for size reasons \u2014 existing module boundary is stable and removing it would increase complexity.",
+      "detail": {
+        "kind": "permanent",
+        "reason": null
+      }
+    },
+    {
+      "timestamp": "2026-03-10T22:43:51+00:00",
+      "action": "skip",
+      "issue_ids": [
+        "review::.::holistic::high_level_elegance::model_owns_viz_edge_assembly::0b7e7d95"
+      ],
+      "cluster_name": null,
+      "actor": "user",
+      "note": "Edge objects in domain model \u2014 intentional co-location of domain and lightweight visualization data; no separate view layer exists.",
+      "detail": {
+        "kind": "permanent",
+        "reason": null
+      }
+    },
+    {
+      "timestamp": "2026-03-10T22:45:26+00:00",
+      "action": "cluster_add",
+      "issue_ids": [
+        "review::.::holistic::abstraction_fitness::postagger_single_impl_no_production_use::0c18158f",
+        "review::.::holistic::abstraction_fitness::wordsketchapiserver_dead_indexpath_param::65c67e32",
+        "review::.::holistic::cross_module_architecture::orphaned-tagging-subsystem::efd197ff",
+        "review::.::holistic::api_surface_coherence::semantic_field_param_name_mismatch::5703636c",
+        "review::.::holistic::logic_clarity::dead_isblank_after_requireparam::5cfe4159",
+        "review::.::holistic::logic_clarity::post_dereference_null_check_errorOccurred::0fed5c51"
+      ],
+      "cluster_name": "dead-code4",
+      "actor": "user",
+      "note": null,
+      "detail": {}
+    },
+    {
+      "timestamp": "2026-03-10T22:45:27+00:00",
+      "action": "cluster_add",
+      "issue_ids": [
+        "review::.::holistic::convention_outlier::record_get_prefix_computed_methods::758b23fd",
+        "review::.::holistic::convention_outlier::model_mixed_type_strategy::45b9c8b5"
+      ],
+      "cluster_name": "record-convention",
+      "actor": "user",
+      "note": null,
+      "detail": {}
+    },
+    {
+      "timestamp": "2026-03-10T22:45:27+00:00",
+      "action": "cluster_add",
+      "issue_ids": [
+        "review::.::holistic::logic_clarity::dead_disjunct_minNounsForCore::1f35d7f0",
+        "review::.::holistic::low_level_elegance::scorehits_magic_multiplier::313a6fb9",
+        "review::.::holistic::low_level_elegance::grammar_config_constructor_monolith::a503aac6",
+        "review::.::holistic::low_level_elegance::explore_params_incomplete_extraction::55954907"
+      ],
+      "cluster_name": "logic-fixes",
+      "actor": "user",
+      "note": null,
+      "detail": {}
+    },
+    {
+      "timestamp": "2026-03-10T22:45:28+00:00",
+      "action": "cluster_add",
+      "issue_ids": [
+        "review::.::holistic::api_surface_coherence::sketch_handler_overloaded_dispatcher::f1bb5112",
+        "review::.::holistic::api_surface_coherence::inconsistent_error_boundary_pattern::d9d4ebb6",
+        "review::.::holistic::api_surface_coherence::explore_nouns_per_param_asymmetry::081af256",
+        "review::.::holistic::api_surface_coherence::semantic_field_overlapping_endpoints::9599bcb7",
+        "review::.::holistic::naming_quality::impl_internal_suffix_handlers::55c7c0f6",
+        "review::.::holistic::naming_quality::handleSemanticField_ambiguous_name::770f961f",
+        "review::.::holistic::mid_level_elegance::relation_alias_resolution_misplaced::db49bcc5"
+      ],
+      "cluster_name": "api-polish4",
+      "actor": "user",
+      "note": null,
+      "detail": {}
+    },
+    {
+      "timestamp": "2026-03-10T22:45:28+00:00",
+      "action": "cluster_add",
+      "issue_ids": [
+        "review::.::holistic::cross_module_architecture::pattern-substitution-in-utils::725f86ac",
+        "review::.::holistic::high_level_elegance::pattern_substitution_mispackaged_in_utils::b5e672e3",
+        "review::.::holistic::high_level_elegance::query_results_mispackaged_in_model::e2477326",
+        "review::.::holistic::design_coherence::comparator_scope_mismatch::0c03ba23"
+      ],
+      "cluster_name": "package-moves",
+      "actor": "user",
+      "note": null,
+      "detail": {}
+    },
+    {
+      "timestamp": "2026-03-10T22:45:29+00:00",
+      "action": "cluster_add",
+      "issue_ids": [
+        "review::.::holistic::type_safety::nullable_relation_type_no_optional::43a9d3a4",
+        "review::.::holistic::type_safety::pos_group_string_bypass::636621f2",
+        "review::.::holistic::type_safety::relation_alias_string_literals::e2fc478a"
+      ],
+      "cluster_name": "type-safety-light",
+      "actor": "user",
+      "note": null,
+      "detail": {}
+    },
+    {
+      "timestamp": "2026-03-10T22:45:57+00:00",
+      "action": "cluster_update",
+      "issue_ids": [],
+      "cluster_name": "dead-code4",
+      "actor": "user",
+      "note": null,
+      "detail": {
+        "description": "Dead code and doc fixes: unused tagging package, dead params, dead conditions, doc mismatch"
+      }
+    },
+    {
+      "timestamp": "2026-03-10T22:45:57+00:00",
+      "action": "cluster_update",
+      "issue_ids": [],
+      "cluster_name": "record-convention",
+      "actor": "user",
+      "note": null,
+      "detail": {
+        "description": "Record method naming: rename get-prefixed methods on records to match Java record convention"
+      }
+    },
+    {
+      "timestamp": "2026-03-10T22:45:58+00:00",
+      "action": "cluster_update",
+      "issue_ids": [],
+      "cluster_name": "logic-fixes",
+      "actor": "user",
+      "note": null,
+      "detail": {
+        "description": "Logic clarity: dead condition, opaque heuristic, GrammarConfigLoader monolith, ExploreParams coverage"
+      }
+    },
+    {
+      "timestamp": "2026-03-10T22:45:58+00:00",
+      "action": "cluster_update",
+      "issue_ids": [],
+      "cluster_name": "api-polish4",
+      "actor": "user",
+      "note": null,
+      "detail": {
+        "description": "API surface round 4: handleSketchRequest god method, dual error boundary, naming, nouns_per asymmetry"
+      }
+    },
+    {
+      "timestamp": "2026-03-10T22:46:09+00:00",
+      "action": "cluster_update",
+      "issue_ids": [],
+      "cluster_name": "package-moves",
+      "actor": "user",
+      "note": null,
+      "detail": {
+        "description": "Package organization: move PatternSubstitution, QueryResults, exploreMultiSeed to correct packages"
+      }
+    },
+    {
+      "timestamp": "2026-03-10T22:46:09+00:00",
+      "action": "cluster_update",
+      "issue_ids": [],
+      "cluster_name": "type-safety-light",
+      "actor": "user",
+      "note": null,
+      "detail": {
+        "description": "Smaller type safety improvements: nullable RelationType, posGroupFromConstraint, string relay"
+      }
+    },
+    {
+      "timestamp": "2026-03-10T22:46:17+00:00",
+      "action": "triage_organize",
+      "issue_ids": [],
+      "cluster_name": null,
+      "actor": "user",
+      "note": null,
+      "detail": {
+        "cluster_count": 11,
+        "reuse": false
+      }
+    },
+    {
+      "timestamp": "2026-03-10T22:46:31+00:00",
+      "action": "triage_confirm_organize",
+      "issue_ids": [],
+      "cluster_name": null,
+      "actor": "user",
+      "note": null,
+      "detail": {
+        "attestation": "dead-code4 for dead tagging package and conditions; api-polish4 for handler consistency; logic-fixes for dead freq condition; record-convention for get-prefix methods; package-moves for PatternSubstitution/QueryResults; type-safety-light for Optional/enum \u2014 all 33 issues assigned, 7 wontfix skipped.",
+        "coverage": "26/26"
+      }
+    },
+    {
+      "timestamp": "2026-03-10T22:47:06+00:00",
+      "action": "cluster_update",
+      "issue_ids": [],
+      "cluster_name": "dead-code4",
+      "actor": "user",
+      "note": null,
+      "detail": {
+        "description": null
+      }
+    },
+    {
+      "timestamp": "2026-03-10T22:47:06+00:00",
+      "action": "cluster_update",
+      "issue_ids": [],
+      "cluster_name": "dead-code4",
+      "actor": "user",
+      "note": null,
+      "detail": {
+        "description": null
+      }
+    },
+    {
+      "timestamp": "2026-03-10T22:47:07+00:00",
+      "action": "cluster_update",
+      "issue_ids": [],
+      "cluster_name": "dead-code4",
+      "actor": "user",
+      "note": null,
+      "detail": {
+        "description": null
+      }
+    },
+    {
+      "timestamp": "2026-03-10T22:47:07+00:00",
+      "action": "cluster_update",
+      "issue_ids": [],
+      "cluster_name": "dead-code4",
+      "actor": "user",
+      "note": null,
+      "detail": {
+        "description": null
+      }
+    },
+    {
+      "timestamp": "2026-03-10T22:47:08+00:00",
+      "action": "cluster_update",
+      "issue_ids": [],
+      "cluster_name": "dead-code4",
+      "actor": "user",
+      "note": null,
+      "detail": {
+        "description": null
+      }
+    },
+    {
+      "timestamp": "2026-03-10T22:47:08+00:00",
+      "action": "cluster_update",
+      "issue_ids": [],
+      "cluster_name": "record-convention",
+      "actor": "user",
+      "note": null,
+      "detail": {
+        "description": null
+      }
+    },
+    {
+      "timestamp": "2026-03-10T22:47:09+00:00",
+      "action": "cluster_update",
+      "issue_ids": [],
+      "cluster_name": "record-convention",
+      "actor": "user",
+      "note": null,
+      "detail": {
+        "description": null
+      }
+    },
+    {
+      "timestamp": "2026-03-10T22:47:20+00:00",
+      "action": "cluster_update",
+      "issue_ids": [],
+      "cluster_name": "logic-fixes",
+      "actor": "user",
+      "note": null,
+      "detail": {
+        "description": null
+      }
+    },
+    {
+      "timestamp": "2026-03-10T22:47:20+00:00",
+      "action": "cluster_update",
+      "issue_ids": [],
+      "cluster_name": "logic-fixes",
+      "actor": "user",
+      "note": null,
+      "detail": {
+        "description": null
+      }
+    },
+    {
+      "timestamp": "2026-03-10T22:47:21+00:00",
+      "action": "cluster_update",
+      "issue_ids": [],
+      "cluster_name": "logic-fixes",
+      "actor": "user",
+      "note": null,
+      "detail": {
+        "description": null
+      }
+    },
+    {
+      "timestamp": "2026-03-10T22:47:21+00:00",
+      "action": "cluster_update",
+      "issue_ids": [],
+      "cluster_name": "logic-fixes",
+      "actor": "user",
+      "note": null,
+      "detail": {
+        "description": null
+      }
+    },
+    {
+      "timestamp": "2026-03-10T22:47:22+00:00",
+      "action": "cluster_update",
+      "issue_ids": [],
+      "cluster_name": "api-polish4",
+      "actor": "user",
+      "note": null,
+      "detail": {
+        "description": null
+      }
+    },
+    {
+      "timestamp": "2026-03-10T22:47:22+00:00",
+      "action": "cluster_update",
+      "issue_ids": [],
+      "cluster_name": "api-polish4",
+      "actor": "user",
+      "note": null,
+      "detail": {
+        "description": null
+      }
+    },
+    {
+      "timestamp": "2026-03-10T22:47:23+00:00",
+      "action": "cluster_update",
+      "issue_ids": [],
+      "cluster_name": "api-polish4",
+      "actor": "user",
+      "note": null,
+      "detail": {
+        "description": null
+      }
+    },
+    {
+      "timestamp": "2026-03-10T22:47:23+00:00",
+      "action": "cluster_update",
+      "issue_ids": [],
+      "cluster_name": "api-polish4",
+      "actor": "user",
+      "note": null,
+      "detail": {
+        "description": null
+      }
+    },
+    {
+      "timestamp": "2026-03-10T22:47:24+00:00",
+      "action": "cluster_update",
+      "issue_ids": [],
+      "cluster_name": "api-polish4",
+      "actor": "user",
+      "note": null,
+      "detail": {
+        "description": null
+      }
+    },
+    {
+      "timestamp": "2026-03-10T22:47:24+00:00",
+      "action": "cluster_update",
+      "issue_ids": [],
+      "cluster_name": "api-polish4",
+      "actor": "user",
+      "note": null,
+      "detail": {
+        "description": null
+      }
+    },
+    {
+      "timestamp": "2026-03-10T22:47:34+00:00",
+      "action": "cluster_update",
+      "issue_ids": [],
+      "cluster_name": "package-moves",
+      "actor": "user",
+      "note": null,
+      "detail": {
+        "description": null
+      }
+    },
+    {
+      "timestamp": "2026-03-10T22:47:35+00:00",
+      "action": "cluster_update",
+      "issue_ids": [],
+      "cluster_name": "package-moves",
+      "actor": "user",
+      "note": null,
+      "detail": {
+        "description": null
+      }
+    },
+    {
+      "timestamp": "2026-03-10T22:47:35+00:00",
+      "action": "cluster_update",
+      "issue_ids": [],
+      "cluster_name": "package-moves",
+      "actor": "user",
+      "note": null,
+      "detail": {
+        "description": null
+      }
+    },
+    {
+      "timestamp": "2026-03-10T22:47:36+00:00",
+      "action": "cluster_update",
+      "issue_ids": [],
+      "cluster_name": "package-moves",
+      "actor": "user",
+      "note": null,
+      "detail": {
+        "description": null
+      }
+    },
+    {
+      "timestamp": "2026-03-10T22:47:36+00:00",
+      "action": "cluster_update",
+      "issue_ids": [],
+      "cluster_name": "type-safety-light",
+      "actor": "user",
+      "note": null,
+      "detail": {
+        "description": null
+      }
+    },
+    {
+      "timestamp": "2026-03-10T22:47:37+00:00",
+      "action": "cluster_update",
+      "issue_ids": [],
+      "cluster_name": "type-safety-light",
+      "actor": "user",
+      "note": null,
+      "detail": {
+        "description": null
+      }
+    },
+    {
+      "timestamp": "2026-03-10T22:47:37+00:00",
+      "action": "cluster_update",
+      "issue_ids": [],
+      "cluster_name": "type-safety-light",
+      "actor": "user",
+      "note": null,
+      "detail": {
+        "description": null
+      }
+    },
+    {
+      "timestamp": "2026-03-10T22:47:38+00:00",
+      "action": "cluster_update",
+      "issue_ids": [],
+      "cluster_name": "type-safety-light",
+      "actor": "user",
+      "note": null,
+      "detail": {
+        "description": null
+      }
+    },
+    {
+      "timestamp": "2026-03-10T22:48:05+00:00",
+      "action": "cluster_update",
+      "issue_ids": [],
+      "cluster_name": "dead-code4",
+      "actor": "user",
+      "note": null,
+      "detail": {
+        "description": null
+      }
+    },
+    {
+      "timestamp": "2026-03-10T22:48:29+00:00",
+      "action": "cluster_update",
+      "issue_ids": [],
+      "cluster_name": "dead-code4",
+      "actor": "user",
+      "note": null,
+      "detail": {
+        "description": null
+      }
+    },
+    {
+      "timestamp": "2026-03-10T22:48:29+00:00",
+      "action": "cluster_update",
+      "issue_ids": [],
+      "cluster_name": "dead-code4",
+      "actor": "user",
+      "note": null,
+      "detail": {
+        "description": null
+      }
+    },
+    {
+      "timestamp": "2026-03-10T22:48:30+00:00",
+      "action": "cluster_update",
+      "issue_ids": [],
+      "cluster_name": "dead-code4",
+      "actor": "user",
+      "note": null,
+      "detail": {
+        "description": null
+      }
+    },
+    {
+      "timestamp": "2026-03-10T22:48:30+00:00",
+      "action": "cluster_update",
+      "issue_ids": [],
+      "cluster_name": "dead-code4",
+      "actor": "user",
+      "note": null,
+      "detail": {
+        "description": null
+      }
+    },
+    {
+      "timestamp": "2026-03-10T22:48:31+00:00",
+      "action": "cluster_update",
+      "issue_ids": [],
+      "cluster_name": "record-convention",
+      "actor": "user",
+      "note": null,
+      "detail": {
+        "description": null
+      }
+    },
+    {
+      "timestamp": "2026-03-10T22:48:31+00:00",
+      "action": "cluster_update",
+      "issue_ids": [],
+      "cluster_name": "record-convention",
+      "actor": "user",
+      "note": null,
+      "detail": {
+        "description": null
+      }
+    },
+    {
+      "timestamp": "2026-03-10T22:48:50+00:00",
+      "action": "cluster_update",
+      "issue_ids": [],
+      "cluster_name": "logic-fixes",
+      "actor": "user",
+      "note": null,
+      "detail": {
+        "description": null
+      }
+    },
+    {
+      "timestamp": "2026-03-10T22:48:50+00:00",
+      "action": "cluster_update",
+      "issue_ids": [],
+      "cluster_name": "logic-fixes",
+      "actor": "user",
+      "note": null,
+      "detail": {
+        "description": null
+      }
+    },
+    {
+      "timestamp": "2026-03-10T22:48:51+00:00",
+      "action": "cluster_update",
+      "issue_ids": [],
+      "cluster_name": "logic-fixes",
+      "actor": "user",
+      "note": null,
+      "detail": {
+        "description": null
+      }
+    },
+    {
+      "timestamp": "2026-03-10T22:48:51+00:00",
+      "action": "cluster_update",
+      "issue_ids": [],
+      "cluster_name": "logic-fixes",
+      "actor": "user",
+      "note": null,
+      "detail": {
+        "description": null
+      }
+    },
+    {
+      "timestamp": "2026-03-10T22:48:52+00:00",
+      "action": "cluster_update",
+      "issue_ids": [],
+      "cluster_name": "api-polish4",
+      "actor": "user",
+      "note": null,
+      "detail": {
+        "description": null
+      }
+    },
+    {
+      "timestamp": "2026-03-10T22:48:52+00:00",
+      "action": "cluster_update",
+      "issue_ids": [],
+      "cluster_name": "api-polish4",
+      "actor": "user",
+      "note": null,
+      "detail": {
+        "description": null
+      }
+    },
+    {
+      "timestamp": "2026-03-10T22:48:53+00:00",
+      "action": "cluster_update",
+      "issue_ids": [],
+      "cluster_name": "api-polish4",
+      "actor": "user",
+      "note": null,
+      "detail": {
+        "description": null
+      }
+    },
+    {
+      "timestamp": "2026-03-10T22:48:53+00:00",
+      "action": "cluster_update",
+      "issue_ids": [],
+      "cluster_name": "api-polish4",
+      "actor": "user",
+      "note": null,
+      "detail": {
+        "description": null
+      }
+    },
+    {
+      "timestamp": "2026-03-10T22:48:54+00:00",
+      "action": "cluster_update",
+      "issue_ids": [],
+      "cluster_name": "api-polish4",
+      "actor": "user",
+      "note": null,
+      "detail": {
+        "description": null
+      }
+    },
+    {
+      "timestamp": "2026-03-10T22:48:54+00:00",
+      "action": "cluster_update",
+      "issue_ids": [],
+      "cluster_name": "api-polish4",
+      "actor": "user",
+      "note": null,
+      "detail": {
+        "description": null
+      }
+    },
+    {
+      "timestamp": "2026-03-10T22:49:07+00:00",
+      "action": "cluster_update",
+      "issue_ids": [],
+      "cluster_name": "package-moves",
+      "actor": "user",
+      "note": null,
+      "detail": {
+        "description": null
+      }
+    },
+    {
+      "timestamp": "2026-03-10T22:49:08+00:00",
+      "action": "cluster_update",
+      "issue_ids": [],
+      "cluster_name": "package-moves",
+      "actor": "user",
+      "note": null,
+      "detail": {
+        "description": null
+      }
+    },
+    {
+      "timestamp": "2026-03-10T22:49:08+00:00",
+      "action": "cluster_update",
+      "issue_ids": [],
+      "cluster_name": "package-moves",
+      "actor": "user",
+      "note": null,
+      "detail": {
+        "description": null
+      }
+    },
+    {
+      "timestamp": "2026-03-10T22:49:09+00:00",
+      "action": "cluster_update",
+      "issue_ids": [],
+      "cluster_name": "package-moves",
+      "actor": "user",
+      "note": null,
+      "detail": {
+        "description": null
+      }
+    },
+    {
+      "timestamp": "2026-03-10T22:49:09+00:00",
+      "action": "cluster_update",
+      "issue_ids": [],
+      "cluster_name": "type-safety-light",
+      "actor": "user",
+      "note": null,
+      "detail": {
+        "description": null
+      }
+    },
+    {
+      "timestamp": "2026-03-10T22:49:10+00:00",
+      "action": "cluster_update",
+      "issue_ids": [],
+      "cluster_name": "type-safety-light",
+      "actor": "user",
+      "note": null,
+      "detail": {
+        "description": null
+      }
+    },
+    {
+      "timestamp": "2026-03-10T22:49:10+00:00",
+      "action": "cluster_update",
+      "issue_ids": [],
+      "cluster_name": "type-safety-light",
+      "actor": "user",
+      "note": null,
+      "detail": {
+        "description": null
+      }
+    },
+    {
+      "timestamp": "2026-03-10T22:49:11+00:00",
+      "action": "cluster_update",
+      "issue_ids": [],
+      "cluster_name": "type-safety-light",
+      "actor": "user",
+      "note": null,
+      "detail": {
+        "description": null
+      }
+    },
+    {
+      "timestamp": "2026-03-10T22:49:27+00:00",
+      "action": "triage_enrich",
+      "issue_ids": [],
+      "cluster_name": null,
+      "actor": "user",
+      "note": null,
+      "detail": {
+        "shallow_count": 0,
+        "reuse": false
+      }
+    },
+    {
+      "timestamp": "2026-03-10T22:49:43+00:00",
+      "action": "cluster_update",
+      "issue_ids": [],
+      "cluster_name": "dead-code4",
+      "actor": "user",
+      "note": null,
+      "detail": {
+        "description": null
+      }
+    },
+    {
+      "timestamp": "2026-03-10T22:49:44+00:00",
+      "action": "cluster_update",
+      "issue_ids": [],
+      "cluster_name": "dead-code4",
+      "actor": "user",
+      "note": null,
+      "detail": {
+        "description": null
+      }
+    },
+    {
+      "timestamp": "2026-03-10T22:49:44+00:00",
+      "action": "cluster_update",
+      "issue_ids": [],
+      "cluster_name": "dead-code4",
+      "actor": "user",
+      "note": null,
+      "detail": {
+        "description": null
+      }
+    },
+    {
+      "timestamp": "2026-03-10T22:49:45+00:00",
+      "action": "cluster_update",
+      "issue_ids": [],
+      "cluster_name": "dead-code4",
+      "actor": "user",
+      "note": null,
+      "detail": {
+        "description": null
+      }
+    },
+    {
+      "timestamp": "2026-03-10T22:49:45+00:00",
+      "action": "cluster_update",
+      "issue_ids": [],
+      "cluster_name": "dead-code4",
+      "actor": "user",
+      "note": null,
+      "detail": {
+        "description": null
+      }
+    },
+    {
+      "timestamp": "2026-03-10T22:49:46+00:00",
+      "action": "cluster_update",
+      "issue_ids": [],
+      "cluster_name": "record-convention",
+      "actor": "user",
+      "note": null,
+      "detail": {
+        "description": null
+      }
+    },
+    {
+      "timestamp": "2026-03-10T22:49:46+00:00",
+      "action": "cluster_update",
+      "issue_ids": [],
+      "cluster_name": "record-convention",
+      "actor": "user",
+      "note": null,
+      "detail": {
+        "description": null
+      }
+    },
+    {
+      "timestamp": "2026-03-10T22:49:47+00:00",
+      "action": "cluster_update",
+      "issue_ids": [],
+      "cluster_name": "logic-fixes",
+      "actor": "user",
+      "note": null,
+      "detail": {
+        "description": null
+      }
+    },
+    {
+      "timestamp": "2026-03-10T22:49:47+00:00",
+      "action": "cluster_update",
+      "issue_ids": [],
+      "cluster_name": "logic-fixes",
+      "actor": "user",
+      "note": null,
+      "detail": {
+        "description": null
+      }
+    },
+    {
+      "timestamp": "2026-03-10T22:49:47+00:00",
+      "action": "cluster_update",
+      "issue_ids": [],
+      "cluster_name": "logic-fixes",
+      "actor": "user",
+      "note": null,
+      "detail": {
+        "description": null
+      }
+    },
+    {
+      "timestamp": "2026-03-10T22:49:48+00:00",
+      "action": "cluster_update",
+      "issue_ids": [],
+      "cluster_name": "logic-fixes",
+      "actor": "user",
+      "note": null,
+      "detail": {
+        "description": null
+      }
+    },
+    {
+      "timestamp": "2026-03-10T22:49:48+00:00",
+      "action": "cluster_update",
+      "issue_ids": [],
+      "cluster_name": "api-polish4",
+      "actor": "user",
+      "note": null,
+      "detail": {
+        "description": null
+      }
+    },
+    {
+      "timestamp": "2026-03-10T22:49:49+00:00",
+      "action": "cluster_update",
+      "issue_ids": [],
+      "cluster_name": "api-polish4",
+      "actor": "user",
+      "note": null,
+      "detail": {
+        "description": null
+      }
+    },
+    {
+      "timestamp": "2026-03-10T22:49:49+00:00",
+      "action": "cluster_update",
+      "issue_ids": [],
+      "cluster_name": "api-polish4",
+      "actor": "user",
+      "note": null,
+      "detail": {
+        "description": null
+      }
+    },
+    {
+      "timestamp": "2026-03-10T22:49:50+00:00",
+      "action": "cluster_update",
+      "issue_ids": [],
+      "cluster_name": "api-polish4",
+      "actor": "user",
+      "note": null,
+      "detail": {
+        "description": null
+      }
+    },
+    {
+      "timestamp": "2026-03-10T22:49:50+00:00",
+      "action": "cluster_update",
+      "issue_ids": [],
+      "cluster_name": "api-polish4",
+      "actor": "user",
+      "note": null,
+      "detail": {
+        "description": null
+      }
+    },
+    {
+      "timestamp": "2026-03-10T22:49:51+00:00",
+      "action": "cluster_update",
+      "issue_ids": [],
+      "cluster_name": "api-polish4",
+      "actor": "user",
+      "note": null,
+      "detail": {
+        "description": null
+      }
+    },
+    {
+      "timestamp": "2026-03-10T22:49:51+00:00",
+      "action": "cluster_update",
+      "issue_ids": [],
+      "cluster_name": "package-moves",
+      "actor": "user",
+      "note": null,
+      "detail": {
+        "description": null
+      }
+    },
+    {
+      "timestamp": "2026-03-10T22:49:52+00:00",
+      "action": "cluster_update",
+      "issue_ids": [],
+      "cluster_name": "package-moves",
+      "actor": "user",
+      "note": null,
+      "detail": {
+        "description": null
+      }
+    },
+    {
+      "timestamp": "2026-03-10T22:49:52+00:00",
+      "action": "cluster_update",
+      "issue_ids": [],
+      "cluster_name": "package-moves",
+      "actor": "user",
+      "note": null,
+      "detail": {
+        "description": null
+      }
+    },
+    {
+      "timestamp": "2026-03-10T22:49:53+00:00",
+      "action": "cluster_update",
+      "issue_ids": [],
+      "cluster_name": "package-moves",
+      "actor": "user",
+      "note": null,
+      "detail": {
+        "description": null
+      }
+    },
+    {
+      "timestamp": "2026-03-10T22:49:53+00:00",
+      "action": "cluster_update",
+      "issue_ids": [],
+      "cluster_name": "type-safety-light",
+      "actor": "user",
+      "note": null,
+      "detail": {
+        "description": null
+      }
+    },
+    {
+      "timestamp": "2026-03-10T22:49:54+00:00",
+      "action": "cluster_update",
+      "issue_ids": [],
+      "cluster_name": "type-safety-light",
+      "actor": "user",
+      "note": null,
+      "detail": {
+        "description": null
+      }
+    },
+    {
+      "timestamp": "2026-03-10T22:49:54+00:00",
+      "action": "cluster_update",
+      "issue_ids": [],
+      "cluster_name": "type-safety-light",
+      "actor": "user",
+      "note": null,
+      "detail": {
+        "description": null
+      }
+    },
+    {
+      "timestamp": "2026-03-10T22:49:55+00:00",
+      "action": "cluster_update",
+      "issue_ids": [],
+      "cluster_name": "type-safety-light",
+      "actor": "user",
+      "note": null,
+      "detail": {
+        "description": null
+      }
+    },
+    {
+      "timestamp": "2026-03-10T22:50:05+00:00",
+      "action": "triage_enrich",
+      "issue_ids": [],
+      "cluster_name": null,
+      "actor": "user",
+      "note": null,
+      "detail": {
+        "shallow_count": 0,
+        "reuse": true
+      }
+    },
+    {
+      "timestamp": "2026-03-10T22:50:21+00:00",
+      "action": "cluster_update",
+      "issue_ids": [],
+      "cluster_name": "package-moves",
+      "actor": "user",
+      "note": null,
+      "detail": {
+        "description": null
+      }
+    },
+    {
+      "timestamp": "2026-03-10T22:50:21+00:00",
+      "action": "cluster_update",
+      "issue_ids": [],
+      "cluster_name": "dead-code4",
+      "actor": "user",
+      "note": null,
+      "detail": {
+        "description": null
+      }
+    },
+    {
+      "timestamp": "2026-03-10T22:50:22+00:00",
+      "action": "cluster_update",
+      "issue_ids": [],
+      "cluster_name": "dead-code4",
+      "actor": "user",
+      "note": null,
+      "detail": {
+        "description": null
+      }
+    },
+    {
+      "timestamp": "2026-03-10T22:50:22+00:00",
+      "action": "cluster_update",
+      "issue_ids": [],
+      "cluster_name": "dead-code4",
+      "actor": "user",
+      "note": null,
+      "detail": {
+        "description": null
+      }
+    },
+    {
+      "timestamp": "2026-03-10T22:50:23+00:00",
+      "action": "cluster_update",
+      "issue_ids": [],
+      "cluster_name": "dead-code4",
+      "actor": "user",
+      "note": null,
+      "detail": {
+        "description": null
+      }
+    },
+    {
+      "timestamp": "2026-03-10T22:50:23+00:00",
+      "action": "cluster_update",
+      "issue_ids": [],
+      "cluster_name": "dead-code4",
+      "actor": "user",
+      "note": null,
+      "detail": {
+        "description": null
+      }
+    },
+    {
+      "timestamp": "2026-03-10T22:50:44+00:00",
+      "action": "cluster_update",
+      "issue_ids": [],
+      "cluster_name": "record-convention",
+      "actor": "user",
+      "note": null,
+      "detail": {
+        "description": null
+      }
+    },
+    {
+      "timestamp": "2026-03-10T22:50:44+00:00",
+      "action": "cluster_update",
+      "issue_ids": [],
+      "cluster_name": "record-convention",
+      "actor": "user",
+      "note": null,
+      "detail": {
+        "description": null
+      }
+    },
+    {
+      "timestamp": "2026-03-10T22:50:45+00:00",
+      "action": "cluster_update",
+      "issue_ids": [],
+      "cluster_name": "logic-fixes",
+      "actor": "user",
+      "note": null,
+      "detail": {
+        "description": null
+      }
+    },
+    {
+      "timestamp": "2026-03-10T22:50:45+00:00",
+      "action": "cluster_update",
+      "issue_ids": [],
+      "cluster_name": "logic-fixes",
+      "actor": "user",
+      "note": null,
+      "detail": {
+        "description": null
+      }
+    },
+    {
+      "timestamp": "2026-03-10T22:50:46+00:00",
+      "action": "cluster_update",
+      "issue_ids": [],
+      "cluster_name": "logic-fixes",
+      "actor": "user",
+      "note": null,
+      "detail": {
+        "description": null
+      }
+    },
+    {
+      "timestamp": "2026-03-10T22:50:46+00:00",
+      "action": "cluster_update",
+      "issue_ids": [],
+      "cluster_name": "logic-fixes",
+      "actor": "user",
+      "note": null,
+      "detail": {
+        "description": null
+      }
+    },
+    {
+      "timestamp": "2026-03-10T22:51:01+00:00",
+      "action": "cluster_update",
+      "issue_ids": [],
+      "cluster_name": "api-polish4",
+      "actor": "user",
+      "note": null,
+      "detail": {
+        "description": null
+      }
+    },
+    {
+      "timestamp": "2026-03-10T22:51:02+00:00",
+      "action": "cluster_update",
+      "issue_ids": [],
+      "cluster_name": "api-polish4",
+      "actor": "user",
+      "note": null,
+      "detail": {
+        "description": null
+      }
+    },
+    {
+      "timestamp": "2026-03-10T22:51:02+00:00",
+      "action": "cluster_update",
+      "issue_ids": [],
+      "cluster_name": "api-polish4",
+      "actor": "user",
+      "note": null,
+      "detail": {
+        "description": null
+      }
+    },
+    {
+      "timestamp": "2026-03-10T22:51:03+00:00",
+      "action": "cluster_update",
+      "issue_ids": [],
+      "cluster_name": "api-polish4",
+      "actor": "user",
+      "note": null,
+      "detail": {
+        "description": null
+      }
+    },
+    {
+      "timestamp": "2026-03-10T22:51:03+00:00",
+      "action": "cluster_update",
+      "issue_ids": [],
+      "cluster_name": "api-polish4",
+      "actor": "user",
+      "note": null,
+      "detail": {
+        "description": null
+      }
+    },
+    {
+      "timestamp": "2026-03-10T22:51:04+00:00",
+      "action": "cluster_update",
+      "issue_ids": [],
+      "cluster_name": "api-polish4",
+      "actor": "user",
+      "note": null,
+      "detail": {
+        "description": null
+      }
+    },
+    {
+      "timestamp": "2026-03-10T22:51:20+00:00",
+      "action": "cluster_update",
+      "issue_ids": [],
+      "cluster_name": "package-moves",
+      "actor": "user",
+      "note": null,
+      "detail": {
+        "description": null
+      }
+    },
+    {
+      "timestamp": "2026-03-10T22:51:20+00:00",
+      "action": "cluster_update",
+      "issue_ids": [],
+      "cluster_name": "package-moves",
+      "actor": "user",
+      "note": null,
+      "detail": {
+        "description": null
+      }
+    },
+    {
+      "timestamp": "2026-03-10T22:51:21+00:00",
+      "action": "cluster_update",
+      "issue_ids": [],
+      "cluster_name": "package-moves",
+      "actor": "user",
+      "note": null,
+      "detail": {
+        "description": null
+      }
+    },
+    {
+      "timestamp": "2026-03-10T22:51:21+00:00",
+      "action": "cluster_update",
+      "issue_ids": [],
+      "cluster_name": "package-moves",
+      "actor": "user",
+      "note": null,
+      "detail": {
+        "description": null
+      }
+    },
+    {
+      "timestamp": "2026-03-10T22:51:22+00:00",
+      "action": "cluster_update",
+      "issue_ids": [],
+      "cluster_name": "type-safety-light",
+      "actor": "user",
+      "note": null,
+      "detail": {
+        "description": null
+      }
+    },
+    {
+      "timestamp": "2026-03-10T22:51:22+00:00",
+      "action": "cluster_update",
+      "issue_ids": [],
+      "cluster_name": "type-safety-light",
+      "actor": "user",
+      "note": null,
+      "detail": {
+        "description": null
+      }
+    },
+    {
+      "timestamp": "2026-03-10T22:51:23+00:00",
+      "action": "cluster_update",
+      "issue_ids": [],
+      "cluster_name": "type-safety-light",
+      "actor": "user",
+      "note": null,
+      "detail": {
+        "description": null
+      }
+    },
+    {
+      "timestamp": "2026-03-10T22:51:23+00:00",
+      "action": "cluster_update",
+      "issue_ids": [],
+      "cluster_name": "type-safety-light",
+      "actor": "user",
+      "note": null,
+      "detail": {
+        "description": null
+      }
+    },
+    {
+      "timestamp": "2026-03-10T22:51:51+00:00",
+      "action": "cluster_update",
+      "issue_ids": [],
+      "cluster_name": "type-safety-light",
+      "actor": "user",
+      "note": null,
+      "detail": {
+        "description": null
+      }
+    },
+    {
+      "timestamp": "2026-03-10T22:51:52+00:00",
+      "action": "cluster_update",
+      "issue_ids": [],
+      "cluster_name": "type-safety-light",
+      "actor": "user",
+      "note": null,
+      "detail": {
+        "description": null
+      }
+    },
+    {
+      "timestamp": "2026-03-10T22:51:52+00:00",
+      "action": "cluster_update",
+      "issue_ids": [],
+      "cluster_name": "type-safety-light",
+      "actor": "user",
+      "note": null,
+      "detail": {
+        "description": null
+      }
+    },
+    {
+      "timestamp": "2026-03-10T22:51:53+00:00",
+      "action": "cluster_update",
+      "issue_ids": [],
+      "cluster_name": "type-safety-light",
+      "actor": "user",
+      "note": null,
+      "detail": {
+        "description": null
+      }
+    },
+    {
+      "timestamp": "2026-03-10T22:52:12+00:00",
+      "action": "cluster_update",
+      "issue_ids": [],
+      "cluster_name": "package-moves",
+      "actor": "user",
+      "note": null,
+      "detail": {
+        "description": null
+      }
+    },
+    {
+      "timestamp": "2026-03-10T22:52:13+00:00",
+      "action": "cluster_update",
+      "issue_ids": [],
+      "cluster_name": "package-moves",
+      "actor": "user",
+      "note": null,
+      "detail": {
+        "description": null
+      }
+    },
+    {
+      "timestamp": "2026-03-10T22:52:26+00:00",
+      "action": "cluster_update",
+      "issue_ids": [],
+      "cluster_name": "api-polish4",
+      "actor": "user",
+      "note": null,
+      "detail": {
+        "description": null
+      }
+    },
+    {
+      "timestamp": "2026-03-10T22:52:27+00:00",
+      "action": "cluster_update",
+      "issue_ids": [],
+      "cluster_name": "api-polish4",
+      "actor": "user",
+      "note": null,
+      "detail": {
+        "description": null
+      }
+    },
+    {
+      "timestamp": "2026-03-10T22:52:38+00:00",
+      "action": "cluster_update",
+      "issue_ids": [],
+      "cluster_name": "api-polish4",
+      "actor": "user",
+      "note": null,
+      "detail": {
+        "description": null
+      }
+    },
+    {
+      "timestamp": "2026-03-10T22:52:38+00:00",
+      "action": "cluster_update",
+      "issue_ids": [],
+      "cluster_name": "api-polish4",
+      "actor": "user",
+      "note": null,
+      "detail": {
+        "description": null
+      }
+    },
+    {
+      "timestamp": "2026-03-10T22:52:39+00:00",
+      "action": "cluster_update",
+      "issue_ids": [],
+      "cluster_name": "api-polish4",
+      "actor": "user",
+      "note": null,
+      "detail": {
+        "description": null
+      }
+    },
+    {
+      "timestamp": "2026-03-10T22:52:40+00:00",
+      "action": "cluster_update",
+      "issue_ids": [],
+      "cluster_name": "api-polish4",
+      "actor": "user",
+      "note": null,
+      "detail": {
+        "description": null
+      }
+    },
+    {
+      "timestamp": "2026-03-10T22:52:51+00:00",
+      "action": "cluster_update",
+      "issue_ids": [],
+      "cluster_name": "logic-fixes",
+      "actor": "user",
+      "note": null,
+      "detail": {
+        "description": null
+      }
+    },
+    {
+      "timestamp": "2026-03-10T22:53:04+00:00",
+      "action": "cluster_update",
+      "issue_ids": [],
+      "cluster_name": "logic-fixes",
+      "actor": "user",
+      "note": null,
+      "detail": {
+        "description": null
+      }
+    },
+    {
+      "timestamp": "2026-03-10T22:53:21+00:00",
+      "action": "cluster_update",
+      "issue_ids": [],
+      "cluster_name": "logic-fixes",
+      "actor": "user",
+      "note": null,
+      "detail": {
+        "description": null
+      }
+    },
+    {
+      "timestamp": "2026-03-10T22:53:40+00:00",
+      "action": "cluster_update",
+      "issue_ids": [],
+      "cluster_name": "logic-fixes",
+      "actor": "user",
+      "note": null,
+      "detail": {
+        "description": null
+      }
+    },
+    {
+      "timestamp": "2026-03-10T22:53:41+00:00",
+      "action": "cluster_update",
+      "issue_ids": [],
+      "cluster_name": "package-moves",
+      "actor": "user",
+      "note": null,
+      "detail": {
+        "description": null
+      }
+    },
+    {
+      "timestamp": "2026-03-10T22:53:55+00:00",
+      "action": "cluster_update",
+      "issue_ids": [],
+      "cluster_name": "record-convention",
+      "actor": "user",
+      "note": null,
+      "detail": {
+        "description": null
+      }
+    },
+    {
+      "timestamp": "2026-03-10T22:53:55+00:00",
+      "action": "cluster_update",
+      "issue_ids": [],
+      "cluster_name": "record-convention",
+      "actor": "user",
+      "note": null,
+      "detail": {
+        "description": null
+      }
+    },
+    {
+      "timestamp": "2026-03-10T22:54:10+00:00",
+      "action": "cluster_update",
+      "issue_ids": [],
+      "cluster_name": "dead-code4",
+      "actor": "user",
+      "note": null,
+      "detail": {
+        "description": null
+      }
+    },
+    {
+      "timestamp": "2026-03-10T22:54:30+00:00",
+      "action": "cluster_update",
+      "issue_ids": [],
+      "cluster_name": "dead-code4",
+      "actor": "user",
+      "note": null,
+      "detail": {
+        "description": null
+      }
+    },
+    {
+      "timestamp": "2026-03-10T22:54:30+00:00",
+      "action": "cluster_update",
+      "issue_ids": [],
+      "cluster_name": "dead-code4",
+      "actor": "user",
+      "note": null,
+      "detail": {
+        "description": null
+      }
+    },
+    {
+      "timestamp": "2026-03-10T22:54:31+00:00",
+      "action": "cluster_update",
+      "issue_ids": [],
+      "cluster_name": "dead-code4",
+      "actor": "user",
+      "note": null,
+      "detail": {
+        "description": null
+      }
+    },
+    {
+      "timestamp": "2026-03-10T22:54:46+00:00",
+      "action": "cluster_update",
+      "issue_ids": [],
+      "cluster_name": "api-polish4",
+      "actor": "user",
+      "note": null,
+      "detail": {
+        "description": null
+      }
+    },
+    {
+      "timestamp": "2026-03-10T22:54:46+00:00",
+      "action": "cluster_update",
+      "issue_ids": [],
+      "cluster_name": "package-moves",
+      "actor": "user",
+      "note": null,
+      "detail": {
+        "description": null
+      }
+    },
+    {
+      "timestamp": "2026-03-10T22:54:47+00:00",
+      "action": "cluster_update",
+      "issue_ids": [],
+      "cluster_name": "package-moves",
+      "actor": "user",
+      "note": null,
+      "detail": {
+        "description": null
+      }
+    },
+    {
+      "timestamp": "2026-03-10T22:54:52+00:00",
+      "action": "triage_confirm_enrich",
+      "issue_ids": [],
+      "cluster_name": null,
+      "actor": "user",
+      "note": null,
+      "detail": {
+        "attestation": "dead-code4, record-convention, logic-fixes, api-polish4, package-moves, type-safety-light \u2014 executor-ready."
+      }
+    },
+    {
+      "timestamp": "2026-03-10T22:55:03+00:00",
+      "action": "triage_sense_check",
+      "issue_ids": [],
+      "cluster_name": null,
+      "actor": "user",
+      "note": null,
+      "detail": {
+        "reuse": false
+      }
+    },
+    {
+      "timestamp": "2026-03-10T22:55:08+00:00",
+      "action": "triage_confirm_sense_check",
+      "issue_ids": [],
+      "cluster_name": null,
+      "actor": "user",
+      "note": null,
+      "detail": {
+        "attestation": "dead-code4, record-convention, logic-fixes, api-polish4, package-moves, type-safety-light \u2014 cross-cluster dependencies verified, step accuracy confirmed."
+      }
+    },
+    {
+      "timestamp": "2026-03-10T22:55:15+00:00",
+      "action": "triage_complete",
+      "issue_ids": [],
+      "cluster_name": null,
+      "actor": "user",
+      "note": null,
+      "detail": {
+        "strategy_len": 425,
+        "coverage": "26/26"
+      }
+    },
+    {
+      "timestamp": "2026-03-10T22:57:29+00:00",
+      "action": "done",
+      "issue_ids": [
+        "0c18158f"
+      ],
+      "cluster_name": null,
+      "actor": "user",
+      "note": "Fixed as part of dead-code4 cluster: removed dead tagging package, indexPath param, isBlank guard, null check, and fixed doc mismatch.",
+      "detail": {}
+    },
+    {
+      "timestamp": "2026-03-10T22:57:29+00:00",
+      "action": "resolve",
+      "issue_ids": [
+        "review::.::holistic::abstraction_fitness::postagger_single_impl_no_production_use::0c18158f"
+      ],
+      "cluster_name": null,
+      "actor": "user",
+      "note": "Fixed as part of dead-code4 cluster: removed dead tagging package, indexPath param, isBlank guard, null check, and fixed doc mismatch.",
+      "detail": {
+        "status": "fixed",
+        "attestation": "I have actually Fixed as part of dead-code4 cluster: removed dead tagging package, indexPath param, isBlank guard, null check, and fixed doc mismatch. and I am not gaming the score."
+      }
+    },
+    {
+      "timestamp": "2026-03-10T22:57:30+00:00",
+      "action": "done",
+      "issue_ids": [
+        "65c67e32"
+      ],
+      "cluster_name": null,
+      "actor": "user",
+      "note": "Fixed as part of dead-code4 cluster: removed dead tagging package, indexPath param, isBlank guard, null check, and fixed doc mismatch.",
+      "detail": {}
+    },
+    {
+      "timestamp": "2026-03-10T22:57:30+00:00",
+      "action": "resolve",
+      "issue_ids": [
+        "review::.::holistic::abstraction_fitness::wordsketchapiserver_dead_indexpath_param::65c67e32"
+      ],
+      "cluster_name": null,
+      "actor": "user",
+      "note": "Fixed as part of dead-code4 cluster: removed dead tagging package, indexPath param, isBlank guard, null check, and fixed doc mismatch.",
+      "detail": {
+        "status": "fixed",
+        "attestation": "I have actually Fixed as part of dead-code4 cluster: removed dead tagging package, indexPath param, isBlank guard, null check, and fixed doc mismatch. and I am not gaming the score."
+      }
+    },
+    {
+      "timestamp": "2026-03-10T22:57:31+00:00",
+      "action": "done",
+      "issue_ids": [
+        "efd197ff"
+      ],
+      "cluster_name": null,
+      "actor": "user",
+      "note": "Fixed as part of dead-code4 cluster: removed dead tagging package, indexPath param, isBlank guard, null check, and fixed doc mismatch.",
+      "detail": {}
+    },
+    {
+      "timestamp": "2026-03-10T22:57:31+00:00",
+      "action": "resolve",
+      "issue_ids": [
+        "review::.::holistic::cross_module_architecture::orphaned-tagging-subsystem::efd197ff"
+      ],
+      "cluster_name": null,
+      "actor": "user",
+      "note": "Fixed as part of dead-code4 cluster: removed dead tagging package, indexPath param, isBlank guard, null check, and fixed doc mismatch.",
+      "detail": {
+        "status": "fixed",
+        "attestation": "I have actually Fixed as part of dead-code4 cluster: removed dead tagging package, indexPath param, isBlank guard, null check, and fixed doc mismatch. and I am not gaming the score."
+      }
+    },
+    {
+      "timestamp": "2026-03-10T22:57:32+00:00",
+      "action": "done",
+      "issue_ids": [
+        "5703636c"
+      ],
+      "cluster_name": null,
+      "actor": "user",
+      "note": "Fixed as part of dead-code4 cluster: removed dead tagging package, indexPath param, isBlank guard, null check, and fixed doc mismatch.",
+      "detail": {}
+    },
+    {
+      "timestamp": "2026-03-10T22:57:32+00:00",
+      "action": "resolve",
+      "issue_ids": [
+        "review::.::holistic::api_surface_coherence::semantic_field_param_name_mismatch::5703636c"
+      ],
+      "cluster_name": null,
+      "actor": "user",
+      "note": "Fixed as part of dead-code4 cluster: removed dead tagging package, indexPath param, isBlank guard, null check, and fixed doc mismatch.",
+      "detail": {
+        "status": "fixed",
+        "attestation": "I have actually Fixed as part of dead-code4 cluster: removed dead tagging package, indexPath param, isBlank guard, null check, and fixed doc mismatch. and I am not gaming the score."
+      }
+    },
+    {
+      "timestamp": "2026-03-10T22:57:33+00:00",
+      "action": "done",
+      "issue_ids": [
+        "5cfe4159"
+      ],
+      "cluster_name": null,
+      "actor": "user",
+      "note": "Fixed as part of dead-code4 cluster: removed dead tagging package, indexPath param, isBlank guard, null check, and fixed doc mismatch.",
+      "detail": {}
+    },
+    {
+      "timestamp": "2026-03-10T22:57:35+00:00",
+      "action": "resolve",
+      "issue_ids": [
+        "review::.::holistic::logic_clarity::dead_isblank_after_requireparam::5cfe4159"
+      ],
+      "cluster_name": null,
+      "actor": "user",
+      "note": "Fixed as part of dead-code4 cluster: removed dead tagging package, indexPath param, isBlank guard, null check, and fixed doc mismatch.",
+      "detail": {
+        "status": "fixed",
+        "attestation": "I have actually Fixed as part of dead-code4 cluster: removed dead tagging package, indexPath param, isBlank guard, null check, and fixed doc mismatch. and I am not gaming the score."
+      }
+    },
+    {
+      "timestamp": "2026-03-10T22:57:35+00:00",
+      "action": "done",
+      "issue_ids": [
+        "0fed5c51"
+      ],
+      "cluster_name": null,
+      "actor": "user",
+      "note": "Fixed as part of dead-code4 cluster: removed dead tagging package, indexPath param, isBlank guard, null check, and fixed doc mismatch.",
+      "detail": {}
+    },
+    {
+      "timestamp": "2026-03-10T22:57:38+00:00",
+      "action": "resolve",
+      "issue_ids": [
+        "review::.::holistic::logic_clarity::post_dereference_null_check_errorOccurred::0fed5c51"
+      ],
+      "cluster_name": null,
+      "actor": "user",
+      "note": "Fixed as part of dead-code4 cluster: removed dead tagging package, indexPath param, isBlank guard, null check, and fixed doc mismatch.",
+      "detail": {
+        "status": "fixed",
+        "attestation": "I have actually Fixed as part of dead-code4 cluster: removed dead tagging package, indexPath param, isBlank guard, null check, and fixed doc mismatch. and I am not gaming the score."
+      }
+    },
+    {
+      "timestamp": "2026-03-10T22:57:38+00:00",
+      "action": "cluster_done",
+      "issue_ids": [
+        "review::.::holistic::logic_clarity::post_dereference_null_check_errorOccurred::0fed5c51"
+      ],
+      "cluster_name": "dead-code4",
+      "actor": "user",
+      "note": null,
+      "detail": {}
+    },
+    {
+      "timestamp": "2026-03-10T22:59:44+00:00",
+      "action": "done",
+      "issue_ids": [
+        "758b23fd"
+      ],
+      "cluster_name": null,
+      "actor": "user",
+      "note": "Renamed get-prefixed methods on records to no-prefix convention (getCoverage\u2192coverage, getStrongestNoun\u2192strongestNoun, getSharedCollocateList\u2192sharedCollocateList). Added comment to ComparisonResult explaining intentional get-prefix on traditional class.",
+      "detail": {}
+    },
+    {
+      "timestamp": "2026-03-10T22:59:44+00:00",
+      "action": "resolve",
+      "issue_ids": [
+        "review::.::holistic::convention_outlier::record_get_prefix_computed_methods::758b23fd"
+      ],
+      "cluster_name": null,
+      "actor": "user",
+      "note": "Renamed get-prefixed methods on records to no-prefix convention (getCoverage\u2192coverage, getStrongestNoun\u2192strongestNoun, getSharedCollocateList\u2192sharedCollocateList). Added comment to ComparisonResult explaining intentional get-prefix on traditional class.",
+      "detail": {
+        "status": "fixed",
+        "attestation": "I have actually Renamed get-prefixed methods on records to no-prefix convention (getCoverage\u2192coverage, getStrongestNoun\u2192strongestNoun, getSharedCollocateList\u2192sharedCollocateList). Added comment to ComparisonResult explaining intentional get-prefix on traditional class. and I am not gaming the score."
+      }
+    },
+    {
+      "timestamp": "2026-03-10T22:59:45+00:00",
+      "action": "done",
+      "issue_ids": [
+        "45b9c8b5"
+      ],
+      "cluster_name": null,
+      "actor": "user",
+      "note": "Renamed get-prefixed methods on records to no-prefix convention (getCoverage\u2192coverage, getStrongestNoun\u2192strongestNoun, getSharedCollocateList\u2192sharedCollocateList). Added comment to ComparisonResult explaining intentional get-prefix on traditional class.",
+      "detail": {}
+    },
+    {
+      "timestamp": "2026-03-10T22:59:45+00:00",
+      "action": "resolve",
+      "issue_ids": [
+        "review::.::holistic::convention_outlier::model_mixed_type_strategy::45b9c8b5"
+      ],
+      "cluster_name": null,
+      "actor": "user",
+      "note": "Renamed get-prefixed methods on records to no-prefix convention (getCoverage\u2192coverage, getStrongestNoun\u2192strongestNoun, getSharedCollocateList\u2192sharedCollocateList). Added comment to ComparisonResult explaining intentional get-prefix on traditional class.",
+      "detail": {
+        "status": "fixed",
+        "attestation": "I have actually Renamed get-prefixed methods on records to no-prefix convention (getCoverage\u2192coverage, getStrongestNoun\u2192strongestNoun, getSharedCollocateList\u2192sharedCollocateList). Added comment to ComparisonResult explaining intentional get-prefix on traditional class. and I am not gaming the score."
+      }
+    },
+    {
+      "timestamp": "2026-03-10T22:59:45+00:00",
+      "action": "cluster_done",
+      "issue_ids": [
+        "review::.::holistic::convention_outlier::model_mixed_type_strategy::45b9c8b5"
+      ],
+      "cluster_name": "record-convention",
+      "actor": "user",
+      "note": null,
+      "detail": {}
+    },
+    {
+      "timestamp": "2026-03-10T23:07:49+00:00",
+      "action": "done",
+      "issue_ids": [
+        "1f35d7f0"
+      ],
+      "cluster_name": null,
+      "actor": "user",
+      "note": "Fixed: removed dead || freq>=2 condition, added OVER_FETCH_FACTOR constant, extracted GrammarConfigLoader constructor into helpers, added nounsPerSeed to ExploreParams. All 126 tests pass.",
+      "detail": {}
+    },
+    {
+      "timestamp": "2026-03-10T23:07:50+00:00",
+      "action": "resolve",
+      "issue_ids": [
+        "review::.::holistic::logic_clarity::dead_disjunct_minNounsForCore::1f35d7f0"
+      ],
+      "cluster_name": null,
+      "actor": "user",
+      "note": "Fixed: removed dead || freq>=2 condition, added OVER_FETCH_FACTOR constant, extracted GrammarConfigLoader constructor into helpers, added nounsPerSeed to ExploreParams. All 126 tests pass.",
+      "detail": {
+        "status": "fixed",
+        "attestation": "I have actually Fixed: removed dead || freq>=2 condition, added OVER_FETCH_FACTOR constant, extracted GrammarConfigLoader constructor into helpers, added nounsPerSeed to ExploreParams. All 126 tests pass. and I am not gaming the score."
+      }
+    },
+    {
+      "timestamp": "2026-03-10T23:07:50+00:00",
+      "action": "done",
+      "issue_ids": [
+        "313a6fb9"
+      ],
+      "cluster_name": null,
+      "actor": "user",
+      "note": "Fixed: removed dead || freq>=2 condition, added OVER_FETCH_FACTOR constant, extracted GrammarConfigLoader constructor into helpers, added nounsPerSeed to ExploreParams. All 126 tests pass.",
+      "detail": {}
+    },
+    {
+      "timestamp": "2026-03-10T23:07:50+00:00",
+      "action": "resolve",
+      "issue_ids": [
+        "review::.::holistic::low_level_elegance::scorehits_magic_multiplier::313a6fb9"
+      ],
+      "cluster_name": null,
+      "actor": "user",
+      "note": "Fixed: removed dead || freq>=2 condition, added OVER_FETCH_FACTOR constant, extracted GrammarConfigLoader constructor into helpers, added nounsPerSeed to ExploreParams. All 126 tests pass.",
+      "detail": {
+        "status": "fixed",
+        "attestation": "I have actually Fixed: removed dead || freq>=2 condition, added OVER_FETCH_FACTOR constant, extracted GrammarConfigLoader constructor into helpers, added nounsPerSeed to ExploreParams. All 126 tests pass. and I am not gaming the score."
+      }
+    },
+    {
+      "timestamp": "2026-03-10T23:07:51+00:00",
+      "action": "done",
+      "issue_ids": [
+        "a503aac6"
+      ],
+      "cluster_name": null,
+      "actor": "user",
+      "note": "Fixed: removed dead || freq>=2 condition, added OVER_FETCH_FACTOR constant, extracted GrammarConfigLoader constructor into helpers, added nounsPerSeed to ExploreParams. All 126 tests pass.",
+      "detail": {}
+    },
+    {
+      "timestamp": "2026-03-10T23:07:51+00:00",
+      "action": "resolve",
+      "issue_ids": [
+        "review::.::holistic::low_level_elegance::grammar_config_constructor_monolith::a503aac6"
+      ],
+      "cluster_name": null,
+      "actor": "user",
+      "note": "Fixed: removed dead || freq>=2 condition, added OVER_FETCH_FACTOR constant, extracted GrammarConfigLoader constructor into helpers, added nounsPerSeed to ExploreParams. All 126 tests pass.",
+      "detail": {
+        "status": "fixed",
+        "attestation": "I have actually Fixed: removed dead || freq>=2 condition, added OVER_FETCH_FACTOR constant, extracted GrammarConfigLoader constructor into helpers, added nounsPerSeed to ExploreParams. All 126 tests pass. and I am not gaming the score."
+      }
+    },
+    {
+      "timestamp": "2026-03-10T23:07:52+00:00",
+      "action": "done",
+      "issue_ids": [
+        "55954907"
+      ],
+      "cluster_name": null,
+      "actor": "user",
+      "note": "Fixed: removed dead || freq>=2 condition, added OVER_FETCH_FACTOR constant, extracted GrammarConfigLoader constructor into helpers, added nounsPerSeed to ExploreParams. All 126 tests pass.",
+      "detail": {}
+    },
+    {
+      "timestamp": "2026-03-10T23:07:52+00:00",
+      "action": "resolve",
+      "issue_ids": [
+        "review::.::holistic::low_level_elegance::explore_params_incomplete_extraction::55954907"
+      ],
+      "cluster_name": null,
+      "actor": "user",
+      "note": "Fixed: removed dead || freq>=2 condition, added OVER_FETCH_FACTOR constant, extracted GrammarConfigLoader constructor into helpers, added nounsPerSeed to ExploreParams. All 126 tests pass.",
+      "detail": {
+        "status": "fixed",
+        "attestation": "I have actually Fixed: removed dead || freq>=2 condition, added OVER_FETCH_FACTOR constant, extracted GrammarConfigLoader constructor into helpers, added nounsPerSeed to ExploreParams. All 126 tests pass. and I am not gaming the score."
+      }
+    },
+    {
+      "timestamp": "2026-03-10T23:07:52+00:00",
+      "action": "cluster_done",
+      "issue_ids": [
+        "review::.::holistic::low_level_elegance::explore_params_incomplete_extraction::55954907"
+      ],
+      "cluster_name": "logic-fixes",
+      "actor": "user",
+      "note": null,
+      "detail": {}
     }
   ],
   "epic_triage_meta": {
     "triage_stages": {},
-    "issue_snapshot_hash": "0635dcda5a655e86",
+    "issue_snapshot_hash": "0e7fc9d3a48c6030",
     "triaged_ids": [
-      "review::.::holistic::abstraction_fitness::explorer_dead_owns_executor::bed576c2",
-      "review::.::holistic::abstraction_fitness::server_unused_stored_fields::a6e4d4ff",
-      "review::.::holistic::api_surface_coherence::explore_options_dead_fields::c0abae54",
-      "review::.::holistic::api_surface_coherence::explore_single_vs_multi_delegation_asymmetry::db78d2e0",
-      "review::.::holistic::api_surface_coherence::semantic_field_nouns_seeds_mismatch::802a3742",
-      "review::.::holistic::api_surface_coherence::sketch_response_shape_divergence::9fbcd7f8",
-      "review::.::holistic::convention_outlier::model_access_strategy_split::0316a3b5",
-      "review::.::holistic::design_coherence::dead_null_guard_grammar_config::81ae9603",
-      "review::.::holistic::design_coherence::redundant_core_collocate_iteration_multi_seed::5ea8de00",
-      "review::.::holistic::design_coherence::unsafe_nested_map_cast_nouns_per::6272bc31"
+      "review::.::holistic::abstraction_fitness::postagger_single_impl_no_production_use::0c18158f",
+      "review::.::holistic::abstraction_fitness::wordsketchapiserver_dead_indexpath_param::65c67e32",
+      "review::.::holistic::api_surface_coherence::explore_nouns_per_param_asymmetry::081af256",
+      "review::.::holistic::api_surface_coherence::inconsistent_error_boundary_pattern::d9d4ebb6",
+      "review::.::holistic::api_surface_coherence::semantic_field_overlapping_endpoints::9599bcb7",
+      "review::.::holistic::api_surface_coherence::semantic_field_param_name_mismatch::5703636c",
+      "review::.::holistic::api_surface_coherence::sketch_handler_overloaded_dispatcher::f1bb5112",
+      "review::.::holistic::convention_outlier::model_mixed_type_strategy::45b9c8b5",
+      "review::.::holistic::convention_outlier::record_get_prefix_computed_methods::758b23fd",
+      "review::.::holistic::cross_module_architecture::orphaned-tagging-subsystem::efd197ff",
+      "review::.::holistic::cross_module_architecture::pattern-substitution-in-utils::725f86ac",
+      "review::.::holistic::design_coherence::comparator_scope_mismatch::0c03ba23",
+      "review::.::holistic::high_level_elegance::pattern_substitution_mispackaged_in_utils::b5e672e3",
+      "review::.::holistic::high_level_elegance::query_results_mispackaged_in_model::e2477326",
+      "review::.::holistic::logic_clarity::dead_disjunct_minNounsForCore::1f35d7f0",
+      "review::.::holistic::logic_clarity::dead_isblank_after_requireparam::5cfe4159",
+      "review::.::holistic::logic_clarity::post_dereference_null_check_errorOccurred::0fed5c51",
+      "review::.::holistic::low_level_elegance::explore_params_incomplete_extraction::55954907",
+      "review::.::holistic::low_level_elegance::grammar_config_constructor_monolith::a503aac6",
+      "review::.::holistic::low_level_elegance::scorehits_magic_multiplier::313a6fb9",
+      "review::.::holistic::mid_level_elegance::relation_alias_resolution_misplaced::db49bcc5",
+      "review::.::holistic::naming_quality::handleSemanticField_ambiguous_name::770f961f",
+      "review::.::holistic::naming_quality::impl_internal_suffix_handlers::55c7c0f6",
+      "review::.::holistic::type_safety::nullable_relation_type_no_optional::43a9d3a4",
+      "review::.::holistic::type_safety::pos_group_string_bypass::636621f2",
+      "review::.::holistic::type_safety::relation_alias_string_literals::e2fc478a"
     ],
-    "strategy_summary": "Execution order: (1) Resolve dead-fields3 cluster issues (bed576c2, a6e4d4ff, c0abae54, 81ae9603, 5ea8de00, 6fdf8076, 802a3742, 06f99a98) \u2014 all already fixed in commit 9f30d97, just need plan resolution. (2) Execute api-polish3 cluster: fix sketch response shape divergence in SketchHandlers (9fbcd7f8), refactor single-seed config assembly to match multi-seed symmetry (db78d2e0), remove unchecked cast in single-seed parameters injection (6272bc31). (3) Execute model-unification cluster: convert Edge, DiscoveredNoun, CoreCollocate, AdjectiveProfile model classes to Java records to unify the three coexisting field-access strategies (0316a3b5). Verification: mvn test must pass (149+ tests) after each cluster. Then rescan.",
+    "strategy_summary": "Execute clusters in order: dead-code4 first (T1/T2 quick wins \u2014 tagging package, dead params, dead guards), then record-convention (cheap renames), then logic-fixes (dead condition, heuristic, monolith, params), then api-polish4 (handler consistency, naming), then package-moves (structural), then type-safety-light (Optional, enum). Skip wontfix items. Rescan and re-review api_surface_coherence after api-polish4 completes.",
     "trigger": "manual_triage",
-    "last_completed_at": "2026-03-10T22:21:53+00:00",
+    "last_completed_at": "2026-03-10T22:55:15+00:00",
     "last_triage": {
-      "completed_at": "2026-03-10T22:21:53+00:00",
+      "completed_at": "2026-03-10T22:55:15+00:00",
       "stages": {
         "observe": {
           "stage": "observe",
-          "report": "10 issues: dead fields (bed576c2 ownsExecutor, a6e4d4ff WordSketchApiServer, c0abae54 ExploreOptions headPos/collocatePos, 81ae9603 null guards, 5ea8de00 double iteration), API consistency (db78d2e0 single/multi-seed config asymmetry, 802a3742 nouns/seeds mismatch, 9fbcd7f8 sketch shape divergence), model convention (0316a3b5 3 field-access strategies), design (6272bc31 unchecked cast in single-seed handler parameters map)",
+          "report": "33 issues reviewed. abstraction_fitness: 0c18158f PosTagger unused as type, 65c67e32 indexPath dead param. api_surface_coherence: f1bb5112 handleSketchRequest god method dispatching to 4 sub-handlers, d9d4ebb6 dual error boundary pattern, 5703636c doc says nouns= but code reads seeds=, 081af256 nouns_per in explore but not explore-multi, 9599bcb7 semantic-field vs explore-multi shape divergence. convention_outlier: 758b23fd get-prefixed methods on records inconsistent with record conventions, 45b9c8b5 model mixes records and classes. cross_module_architecture: efd197ff tagging package has no production callers, 725f86ac PatternSubstitution in utils but only used by api. logic_clarity: 1f35d7f0 dead || freq>=2 condition, 5cfe4159 dead isBlank guard, 0fed5c51 dead null check in errorOccurred. type_safety: 58b125c0 Map<String,Object> at 43 sites, 43a9d3a4 nullable RelationType, e2fc478a raw string relay resolution. mid_level_elegance: 8f4c62b8 ExplorationResult repurposed for multi-seed, 65d584a6 single/multi-seed param asymmetry. No contradictions found between any issues.",
           "cited_ids": [
-            "review::.::holistic::abstraction_fitness::explorer_dead_owns_executor::bed576c2",
-            "review::.::holistic::abstraction_fitness::server_unused_stored_fields::a6e4d4ff",
-            "review::.::holistic::api_surface_coherence::explore_options_dead_fields::c0abae54",
-            "review::.::holistic::api_surface_coherence::explore_single_vs_multi_delegation_asymmetry::db78d2e0",
-            "review::.::holistic::api_surface_coherence::semantic_field_nouns_seeds_mismatch::802a3742",
-            "review::.::holistic::api_surface_coherence::sketch_response_shape_divergence::9fbcd7f8",
-            "review::.::holistic::convention_outlier::model_access_strategy_split::0316a3b5",
-            "review::.::holistic::design_coherence::dead_null_guard_grammar_config::81ae9603",
-            "review::.::holistic::design_coherence::redundant_core_collocate_iteration_multi_seed::5ea8de00",
-            "review::.::holistic::design_coherence::unsafe_nested_map_cast_nouns_per::6272bc31"
+            "review::.::holistic::abstraction_fitness::postagger_single_impl_no_production_use::0c18158f",
+            "review::.::holistic::abstraction_fitness::wordsketchapiserver_dead_indexpath_param::65c67e32",
+            "review::.::holistic::api_surface_coherence::explore_nouns_per_param_asymmetry::081af256",
+            "review::.::holistic::api_surface_coherence::inconsistent_error_boundary_pattern::d9d4ebb6",
+            "review::.::holistic::api_surface_coherence::semantic_field_overlapping_endpoints::9599bcb7",
+            "review::.::holistic::api_surface_coherence::semantic_field_param_name_mismatch::5703636c",
+            "review::.::holistic::api_surface_coherence::sketch_handler_overloaded_dispatcher::f1bb5112",
+            "review::.::holistic::convention_outlier::model_mixed_type_strategy::45b9c8b5",
+            "review::.::holistic::convention_outlier::record_get_prefix_computed_methods::758b23fd",
+            "review::.::holistic::cross_module_architecture::orphaned-tagging-subsystem::efd197ff",
+            "review::.::holistic::cross_module_architecture::pattern-substitution-in-utils::725f86ac",
+            "review::.::holistic::logic_clarity::dead_disjunct_minNounsForCore::1f35d7f0",
+            "review::.::holistic::logic_clarity::dead_isblank_after_requireparam::5cfe4159",
+            "review::.::holistic::logic_clarity::post_dereference_null_check_errorOccurred::0fed5c51",
+            "review::.::holistic::mid_level_elegance::exploration_result_model_reuse::8f4c62b8",
+            "review::.::holistic::mid_level_elegance::explore_options_asymmetry::65d584a6",
+            "review::.::holistic::type_safety::api_map_string_object::58b125c0",
+            "review::.::holistic::type_safety::nullable_relation_type_no_optional::43a9d3a4",
+            "review::.::holistic::type_safety::relation_alias_string_literals::e2fc478a"
           ],
-          "timestamp": "2026-03-10T22:21:00+00:00",
-          "issue_count": 10,
-          "confirmed_at": "2026-03-10T22:21:10+00:00",
-          "confirmed_text": "api_surface_coherence: 802a3742 (nouns/seeds) and c0abae54 (ExploreOptions dead fields) already fixed. abstraction_fitness: bed576c2, a6e4d4ff fixed. design_coherence: 81ae9603, 5ea8de00 fixed. convention_outlier: 0316a3b5 model unification needed."
+          "timestamp": "2026-03-10T22:41:22+00:00",
+          "issue_count": 33,
+          "confirmed_at": "2026-03-10T22:41:31+00:00",
+          "confirmed_text": "api_surface_coherence f1bb5112 god method, d9d4ebb6 dual error boundary; high_level_elegance package placement; mid_level_elegance 8f4c62b8 ExplorationResult repurposed, 65d584a6 param asymmetry; type_safety 58b125c0 43 sites; logic_clarity 1f35d7f0 5cfe4159 0fed5c51 dead conditions; low_level_elegance a503aac6 monolith constructor \u2014 all reviewed, no contradictions."
         },
         "reflect": {
           "stage": "reflect",
-          "report": "Comparing against 37 resolved issues reveals recurring loops in all four dimensions: abstraction_fitness (5 resolved, 3 still open), api_surface_coherence (6 resolved, 5 still open), convention_outlier (3 resolved, 1 still open), and design_coherence (3 resolved, 5 still open). The recurring abstraction_fitness loop is caused by incremental refactoring that leaves orphaned fields and dead branches rather than completing removal \u2014 ownsExecutor, WordSketchApiServer stored fields, and ExploreOptions headPos/collocatePos are all aftermath of prior fixes that stopped short. The recurring api_surface_coherence loop reflects organic API growth where response shape and key naming diverge between sibling endpoints. The design_coherence loop stems from HTTP handlers absorbing domain logic as features are added. No genuine contradictions exist: all issues point in the same cleanup direction. Two items warrant wontfix rather than full fixes: 47aea3e7 (delegation passthrough methods) is the natural consequence of the prior wontfix decision on CollocateProfileComparator \u2014 removing them would invert that architectural choice; f8c32411 (domain assembly in handler) is a real smell but the factory refactor is a multi-class change risking destabilisation under active API iteration, so a TODO comment is the right call now. The remaining 12 issues are clean, low-risk, and cluster into: quick dead-code sweeps (ownsExecutor bed576c2, unused server fields a6e4d4ff, dead ExploreOptions fields c0abae54, dead null guards 81ae9603, double iteration 5ea8de00, logger.warn side effect 6fdf8076) and API consistency fixes (nouns key 802a3742, raw fallback 06f99a98, sketch shape 9fbcd7f8, config assembly asymmetry db78d2e0). Model unification 0316a3b5 is a self-contained record conversion. Issue 6272bc31 (unchecked cast) fits naturally with the dead-code/design-coherence sweep. Priority: dead-code first to unblock cleaner API work, then API polish, then model unification.",
+          "report": "api_surface_coherence is recurring (3rd round); root cause is handler layer lacking consistent contracts. abstraction_fitness and cross_module_architecture issues are T1/T2 dead-code removals. logic_clarity has 3 independent mechanical dead-condition fixes. convention_outlier get-prefix on records (758b23fd) is a direct consequence of model-unification \u2014 cheap fix. high_level_elegance PatternSubstitution/QueryResults placement issues are structural moves. mid_level_elegance ExplorationResult repurposing (8f4c62b8) and design_coherence isDep mixing (59f48e0e, fdceecf3) share the same root: response-assembly layer has too many responsibilities. type_safety Map<String,Object> at 43 sites is high-cost T4 \u2014 likely wontfix; other type_safety issues (43a9d3a4, e2fc478a, 636621f2) are lower cost. low_level_elegance a503aac6 GrammarConfigLoader constructor monolith is extractable. Priority order: dead-code, logic-fixes, record-convention, then api-surface cluster.",
           "cited_ids": [],
-          "timestamp": "2026-03-10T22:21:10+00:00",
-          "issue_count": 10,
+          "timestamp": "2026-03-10T22:41:45+00:00",
+          "issue_count": 33,
           "recurring_dims": [
             "abstraction_fitness",
             "api_surface_coherence",
             "convention_outlier",
             "design_coherence"
           ],
-          "confirmed_at": "2026-03-10T22:21:01+00:00",
-          "confirmed_text": "Cluster dead-fields3 (6 issues already fixed). Cluster api-polish3 (9fbcd7f8, db78d2e0, 6272bc31). Cluster model-unification (0316a3b5)."
+          "confirmed_at": "2026-03-10T22:41:45+00:00",
+          "confirmed_text": "api_surface_coherence, high_level_elegance, mid_level_elegance, type_safety, logic_clarity, low_level_elegance assessed \u2014 priorities set, no contradictions, type_safety 58b125c0 flagged as wontfix candidate."
         },
         "organize": {
           "stage": "organize",
-          "report": "Three clusters defined. dead-fields3 (priority 1, 7 items, T1/T2): mechanical dead-code removals across abstraction_fitness and design_coherence \u2014 ownsExecutor, WordSketchApiServer stored fields, ExploreOptions dead fields, dead grammarConfig null guards, double getCoreCollocates iteration, logger.warn in pure method, unchecked cast. All are 1-3 file changes with no behaviour change risk. api-polish3 (priority 2, 4 items, T2): api_surface_coherence fixes \u2014 nouns/seeds key rename, raw null fallback alignment, single-relation sketch shape normalization, single/multi-seed config assembly symmetry. model-unification (priority 3, 1 item, T3): convention_outlier resolution \u2014 convert 4 model classes to Java records to unify field-access strategy. Wontfixed: 47aea3e7 (delegation passthrough, consequence of prior wontfix on comparator split) and f8c32411 (domain assembly in handler, deferred with TODO). Ordering rationale: dead-code removal first reduces context noise for API fixes; model unification last as broadest change with most callers to update.",
+          "report": "Six action clusters with steps and seven wontfix items. dead-code4 (T1/T2): remove tagging package, dead params, dead guards, fix doc. record-convention (T2): rename get-prefixed methods on records. logic-fixes (T2): dead condition, heuristic comment, monolith extract, ExploreParams coverage. api-polish4 (T2/T3): god method extract, error boundary, naming, nouns_per. package-moves (T3): PatternSubstitution, QueryResults, exploreMultiSeed relocation. type-safety-light (T3): Optional return, PosGroup enum, constant map. Wontfix: 58b125c0 8f4c62b8 59f48e0e fdceecf3 65d584a6 0433ebd5 0b7e7d95 \u2014 T4 or by-design decisions.",
           "cited_ids": [],
-          "timestamp": "2026-03-10T22:21:20+00:00",
-          "issue_count": 8,
-          "confirmed_at": "2026-03-10T22:21:21+00:00",
-          "confirmed_text": "api_surface_coherence issues in api-polish3 need sketch handler unification and config refactor. convention_outlier: 4 model classes need record conversion. design_coherence dead-fields3 all fixed."
+          "timestamp": "2026-03-10T22:46:17+00:00",
+          "issue_count": 11,
+          "confirmed_at": "2026-03-10T22:46:31+00:00",
+          "confirmed_text": "dead-code4 for dead tagging package and conditions; api-polish4 for handler consistency; logic-fixes for dead freq condition; record-convention for get-prefix methods; package-moves for PatternSubstitution/QueryResults; type-safety-light for Optional/enum \u2014 all 33 issues assigned, 7 wontfix skipped."
         },
         "enrich": {
           "stage": "enrich",
-          "report": "All 16 steps across 3 clusters are now executor-ready with specific file names, method names, and issue references. dead-fields3 (7 steps): each step names the exact file (SemanticFieldExplorer.java, WordSketchApiServer.java, ExploreOptions.java, ExplorationHandlers.java, RelationConfig.java + GrammarConfigLoader.java) and the specific field/method/branch to remove or move. api-polish3 (4 steps): each step names the handler file and the exact one-line change required. model-unification (5 steps): steps 1-4 each target a specific model class file; step 5 is the verification step (mvn test). All steps reference their issue hashes. No reorganization needed \u2014 clusters are correctly scoped to file areas and PR-sized.",
-          "timestamp": "2026-03-10T22:21:21+00:00",
+          "report": "All 25 steps across 6 clusters enriched with detail and issue refs. dead-code4 linked to 0c18158f 65c67e32 efd197ff 5703636c 5cfe4159 0fed5c51. record-convention linked to 758b23fd 45b9c8b5. logic-fixes linked to 1f35d7f0 313a6fb9 a503aac6 55954907. api-polish4 linked to f1bb5112 d9d4ebb6 081af256 9599bcb7 55c7c0f6 770f961f db49bcc5. package-moves linked to 725f86ac b5e672e3 e2477326 0c03ba23. type-safety-light linked to 43a9d3a4 636621f2 e2fc478a.",
+          "timestamp": "2026-03-10T22:50:05+00:00",
           "shallow_count": 0,
-          "confirmed_at": "2026-03-10T22:21:33+00:00",
-          "confirmed_text": "Steps are executor-ready: dead-fields3 resolve only (fixes in 9f30d97), api-polish3 code changes to sketch handlers and config assembly, model-unification convert Edge/DiscoveredNoun/CoreCollocate/AdjectiveProfile to Java records."
+          "confirmed_at": "2026-03-10T22:54:52+00:00",
+          "confirmed_text": "dead-code4, record-convention, logic-fixes, api-polish4, package-moves, type-safety-light \u2014 executor-ready."
         },
         "sense-check": {
           "stage": "sense-check",
-          "report": "Cross-cluster dependency check: dead-fields3 step 3 (remove ExploreOptions headPos/collocatePos setters) is a prerequisite for api-polish3 step 4 (refactor single-seed handler to use RelationConfig overload), since both touch ExplorationHandlers single-seed handler \u2014 execute dead-fields3 fully before api-polish3 to avoid merge conflicts in the same method. Within dead-fields3, steps 5 and 7 both touch ExplorationHandlers and should be done in the same commit to reduce handler churn. model-unification has no dependencies on the other clusters and can proceed independently after dead-fields3, but going last is still correct to keep the PR sequence readable. Accuracy checks: bed576c2 ownsExecutor \u2014 confirmed always false by static analysis (only set in deprecated constructor branch). a6e4d4ff \u2014 executor and indexPath confirmed not read after constructor delegation (verified in observe). c0abae54 \u2014 headPos/collocatePos confirmed set but never passed to SemanticFieldExplorer. 81ae9603 \u2014 grammarConfig null guard unreachable after constructor Objects.requireNonNull hardening in prior fix cycle. 802a3742 \u2014 'nouns' key confirmed present in response while 'seeds' is the input param. 06f99a98 \u2014 raw fallback confirmed inconsistent between handlers. No steps reference non-existent methods or wrong file names based on the codebase structure known from observe analysis. The 14th issue (6272bc31) is correctly included in dead-fields3 \u2014 it was the unchecked cast issue surfaced in observe but counted separately from the 13 listed in the task briefing.",
-          "timestamp": "2026-03-10T22:19:06+00:00",
-          "confirmed_at": "2026-03-10T22:21:44+00:00",
-          "confirmed_text": "Checked dead-fields3 (fixed), api-polish3 (api surface), model-unification (records): no contradictions."
+          "report": "Cross-cluster dependency: logic-fixes step 4 (add nounsPerSeed to ExploreParams) must complete before api-polish4 step 3 (add nouns_per to explore-multi). package-moves step 3 (move exploreMultiSeed to SemanticFieldExplorer) must be done before api-polish4 step 3 references it. dead-code4 step 1 (delete tagging package) has no dependents. record-convention step 1 renames methods on DiscoveredNoun record \u2014 verify CollocateProfileComparator and ExplorationResult callers are updated. All step file references verified against actual codebase paths.",
+          "timestamp": "2026-03-10T22:55:03+00:00",
+          "confirmed_at": "2026-03-10T22:55:08+00:00",
+          "confirmed_text": "dead-code4, record-convention, logic-fixes, api-polish4, package-moves, type-safety-light \u2014 cross-cluster dependencies verified, step accuracy confirmed."
         }
       },
-      "strategy": "Execution order: (1) Resolve dead-fields3 cluster issues (bed576c2, a6e4d4ff, c0abae54, 81ae9603, 5ea8de00, 6fdf8076, 802a3742, 06f99a98) \u2014 all already fixed in commit 9f30d97, just need plan resolution. (2) Execute api-polish3 cluster: fix sketch response shape divergence in SketchHandlers (9fbcd7f8), refactor single-seed config assembly to match multi-seed symmetry (db78d2e0), remove unchecked cast in single-seed parameters injection (6272bc31). (3) Execute model-unification cluster: convert Edge, DiscoveredNoun, CoreCollocate, AdjectiveProfile model classes to Java records to unify the three coexisting field-access strategies (0316a3b5). Verification: mvn test must pass (149+ tests) after each cluster. Then rescan."
+      "strategy": "Execute clusters in order: dead-code4 first (T1/T2 quick wins \u2014 tagging package, dead params, dead guards), then record-convention (cheap renames), then logic-fixes (dead condition, heuristic, monolith, params), then api-polish4 (handler consistency, naming), then package-moves (structural), then type-safety-light (Optional, enum). Skip wontfix items. Rescan and re-review api_surface_coherence after api-polish4 completes."
     }
   },
   "commit_log": [
@@ -37271,15 +40334,40 @@
       "recorded_at": "2026-03-10T22:19:31+00:00",
       "note": "dead-fields3+api-polish3: remove dead fields, fix API consistency issues",
       "cluster_name": null
+    },
+    {
+      "sha": "733332372fdb",
+      "branch": "desloppify/code-health",
+      "issue_ids": [
+        "review::.::holistic::abstraction_fitness::explorer_dead_owns_executor::bed576c2",
+        "review::.::holistic::abstraction_fitness::server_unused_stored_fields::a6e4d4ff",
+        "review::.::holistic::api_surface_coherence::explore_options_dead_fields::c0abae54",
+        "review::.::holistic::design_coherence::dead_null_guard_grammar_config::81ae9603",
+        "review::.::holistic::design_coherence::redundant_core_collocate_iteration_multi_seed::5ea8de00",
+        "review::.::holistic::api_surface_coherence::semantic_field_nouns_seeds_mismatch::802a3742",
+        "review::.::holistic::api_surface_coherence::sketch_response_shape_divergence::9fbcd7f8",
+        "review::.::holistic::api_surface_coherence::explore_single_vs_multi_delegation_asymmetry::db78d2e0",
+        "review::.::holistic::design_coherence::unsafe_nested_map_cast_nouns_per::6272bc31",
+        "review::.::holistic::convention_outlier::model_access_strategy_split::0316a3b5"
+      ],
+      "recorded_at": "2026-03-10T22:30:58+00:00",
+      "note": "api-polish3 and model-unification: sketch shape, RelationConfig overload, unchecked cast fix, 4 model classes to records",
+      "cluster_name": null
     }
   ],
   "uncommitted_issues": [
-    "review::.::holistic::abstraction_fitness::explorer_dead_owns_executor::bed576c2",
-    "review::.::holistic::abstraction_fitness::server_unused_stored_fields::a6e4d4ff",
-    "review::.::holistic::api_surface_coherence::explore_options_dead_fields::c0abae54",
-    "review::.::holistic::design_coherence::dead_null_guard_grammar_config::81ae9603",
-    "review::.::holistic::design_coherence::redundant_core_collocate_iteration_multi_seed::5ea8de00",
-    "review::.::holistic::api_surface_coherence::semantic_field_nouns_seeds_mismatch::802a3742"
+    "review::.::holistic::abstraction_fitness::postagger_single_impl_no_production_use::0c18158f",
+    "review::.::holistic::abstraction_fitness::wordsketchapiserver_dead_indexpath_param::65c67e32",
+    "review::.::holistic::cross_module_architecture::orphaned-tagging-subsystem::efd197ff",
+    "review::.::holistic::api_surface_coherence::semantic_field_param_name_mismatch::5703636c",
+    "review::.::holistic::logic_clarity::dead_isblank_after_requireparam::5cfe4159",
+    "review::.::holistic::logic_clarity::post_dereference_null_check_errorOccurred::0fed5c51",
+    "review::.::holistic::convention_outlier::record_get_prefix_computed_methods::758b23fd",
+    "review::.::holistic::convention_outlier::model_mixed_type_strategy::45b9c8b5",
+    "review::.::holistic::logic_clarity::dead_disjunct_minNounsForCore::1f35d7f0",
+    "review::.::holistic::low_level_elegance::scorehits_magic_multiplier::313a6fb9",
+    "review::.::holistic::low_level_elegance::grammar_config_constructor_monolith::a503aac6",
+    "review::.::holistic::low_level_elegance::explore_params_incomplete_extraction::55954907"
   ],
   "commit_tracking_branch": null,
   "scan_count_at_plan_start": 5

@@ -1,0 +1,89 @@
+{
+  "batch": "convention_outlier",
+  "batch_index": 3,
+  "assessments": {
+    "convention_outlier": 76.0
+  },
+  "dimension_notes": {
+    "convention_outlier": {
+      "evidence": [
+        "model package contains two distinct type strategies with no documented rationale: records (AdjectiveProfile, CoreCollocate, DiscoveredNoun, Edge, ExploreOptions) and traditional classes with get-prefixed accessors (ComparisonResult, ExplorationResult, QueryResults)",
+        "ExplorationHandlers.java mixes both accessor styles in adjacent lines: result.getSeed() / result.getSeedCollocates() (class getter) alongside ca.collocate() / ca.seedLogDice() (record accessor)",
+        "Some record computed methods use get-prefix (CoreCollocate.getCoverage(), AdjectiveProfile.getStrongestNoun(), DiscoveredNoun.getSharedCollocateList()) while direct record component accessors do not, creating intra-type accessor inconsistency",
+        "api package visibility is consistent: ExplorationHandlers and SketchHandlers are package-private; HttpApiUtils and WordSketchApiServer are public — a coherent intentional split",
+        "All handler method names follow handleXxx camelCase uniformly across SketchHandlers and ExplorationHandlers",
+        "Package decomposition (api, config, exploration, indexer, model, query, tagging, utils, viz) is applied consistently with no misplaced files observed"
+      ],
+      "impact_scope": "module",
+      "fix_scope": "multi_file_refactor",
+      "confidence": "medium"
+    }
+  },
+  "dimension_judgment": {
+    "convention_outlier": {
+      "strengths": [
+        "Java camelCase and PascalCase naming applied uniformly across all packages — no snake_case drift in method or class names",
+        "Handler class naming is parallel and predictable: ExplorationHandlers and SketchHandlers share the same -Handlers suffix and package-private visibility",
+        "Package decomposition is coherent and consistently applied — each package has a focused purpose with no obvious misplaced types",
+        "api package visibility split (package-private handlers, public server/utils) is applied consistently to all four files in the package"
+      ],
+      "issue_character": "The convention drift is localized to the model package, where the choice between Java records with direct component accessors and traditional classes with get-prefixed methods is applied inconsistently and without documented rationale, causing caller code to mix accessor styles in the same method.",
+      "score_rationale": "The codebase is broadly consistent: naming, package organisation, and handler structure all follow clear and uniform conventions. The drag is concentrated in the model layer, where roughly half the types are records (component accessors) and half are classes (get-prefixed accessors), with some records also mixing in get-prefixed computed methods. A developer writing new code against these types must inspect each class to discover which convention it uses, hitting the '80: solid but uneven — recurring friction' anchor. The drift does not span multiple subsystems and does not destabilise large areas of the codebase, keeping the score in the mid-70s rather than lower."
+    }
+  },
+  "issues": [
+    {
+      "dimension": "convention_outlier",
+      "identifier": "model_mixed_type_strategy",
+      "summary": "model package splits between records and traditional classes with get-prefixed accessors, with no documented rationale",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/model/AdjectiveProfile.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/model/CoreCollocate.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/model/DiscoveredNoun.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/model/ExplorationResult.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/model/ComparisonResult.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/api/ExplorationHandlers.java"
+      ],
+      "evidence": [
+        "AdjectiveProfile, CoreCollocate, DiscoveredNoun, Edge, ExploreOptions are records with direct component accessors (e.g. ca.collocate(), adj.adjective())",
+        "ComparisonResult and ExplorationResult are plain classes with explicit constructors and get-prefixed accessors (e.g. result.getSeed(), result.getNouns())",
+        "ExplorationHandlers.buildExploreResponseBody calls result.getSeedCollocates() (class getter) and colloc.getKey() in the same loop body as ca.collocate() / ca.seedLogDice() (record accessors) — both calling into model types"
+      ],
+      "suggestion": "Converge the model package on one strategy. The cleaner path is to convert ComparisonResult and ExplorationResult to records (both are immutable value holders). If mutability or computed filtering methods are needed, keep them as classes but remove the accessor style inconsistency by adding a brief comment in the package explaining the split (e.g. 'records for simple value tuples; classes for types with non-trivial computed views').",
+      "confidence": "medium",
+      "impact_scope": "module",
+      "fix_scope": "multi_file_refactor",
+      "root_cause_cluster": "model_type_strategy_drift"
+    },
+    {
+      "dimension": "convention_outlier",
+      "identifier": "record_get_prefix_computed_methods",
+      "summary": "get-prefixed computed methods on records (getCoverage, getStrongestNoun, getSharedCollocateList) are inconsistent with the no-prefix convention records establish for direct accessors",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/model/CoreCollocate.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/model/AdjectiveProfile.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/model/DiscoveredNoun.java"
+      ],
+      "evidence": [
+        "CoreCollocate is a record with direct component accessors (collocate(), sharedByCount(), seedLogDice()) but its computed method is named getCoverage() — mixing get-prefix with no-prefix on the same type",
+        "AdjectiveProfile record: direct accessors adjective(), nounScores(), presentInCount() — computed method getStrongestNoun()",
+        "DiscoveredNoun record: direct accessor sharedCollocates() — computed list method getSharedCollocateList()"
+      ],
+      "suggestion": "Drop the get-prefix from computed record methods to match the no-prefix convention records establish: rename CoreCollocate.getCoverage() to coverage(), AdjectiveProfile.getStrongestNoun() to strongestNoun(), and DiscoveredNoun.getSharedCollocateList() to sharedCollocateList(). Update all call sites (primarily in ExplorationHandlers.java).",
+      "confidence": "medium",
+      "impact_scope": "module",
+      "fix_scope": "multi_file_refactor",
+      "root_cause_cluster": "model_type_strategy_drift"
+    }
+  ],
+  "retrospective": {
+    "root_causes": [
+      "model_type_strategy_drift: ComparisonResult and ExplorationResult appear to predate the record-based types and were not migrated when the codebase adopted records for newer model types, leaving a permanent split"
+    ],
+    "likely_symptoms": [
+      "model_mixed_type_strategy",
+      "record_get_prefix_computed_methods"
+    ],
+    "possible_false_positives": []
+  }
+}

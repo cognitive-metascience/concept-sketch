@@ -39,7 +39,7 @@ public class WordSketchApiServer {
     private final ExplorationHandlers explorationHandlers;
     private com.sun.net.httpserver.HttpServer server;
 
-    public WordSketchApiServer(QueryExecutor executor, String indexPath, int port, GrammarConfigLoader grammarConfig) {
+    public WordSketchApiServer(QueryExecutor executor, int port, GrammarConfigLoader grammarConfig) {
         this.port = port;
         this.grammarConfig = grammarConfig;
         if (grammarConfig == null) {

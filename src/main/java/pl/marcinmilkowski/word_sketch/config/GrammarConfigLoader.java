@@ -96,99 +96,108 @@ public class GrammarConfigLoader {
     /** Primary constructor: parses JSON content directly. */
     private GrammarConfigLoader(String content, Path configPath) throws IOException {
         this.configPath = configPath;
-
         JSONObject root = JSON.parseObject(content);
+        this.version = parseAndValidateVersion(root);
+        validateNoLegacyKeys(root);
+        List<RelationConfig> loadedRelations = new ArrayList<>();
+        Map<String, RelationConfig> loadedRelationsById = new HashMap<>();
+        parseRelations(root, loadedRelations, loadedRelationsById);
+        this.relations = Collections.unmodifiableList(loadedRelations);
+        this.relationsById = Collections.unmodifiableMap(loadedRelationsById);
+        logger.info("Loaded grammar config version {}: {} relations{}",
+            version, relations.size(), configPath != null ? " from " + configPath : "");
+    }
 
-        // Validate version
+    /** Extracts and validates the 'version' field from the root JSON object. */
+    private static String parseAndValidateVersion(JSONObject root) throws IOException {
         String parsedVersion = root.getString("version");
         if (parsedVersion == null || parsedVersion.isBlank()) {
             throw new IOException("Config error: Missing 'version' field in grammar config");
         }
-        this.version = parsedVersion;
+        return parsedVersion;
+    }
 
-        // VALIDATION: Reject 'copulas' key - must be embedded in CQL patterns
+    /** Rejects deprecated top-level keys that must not appear in the config. */
+    private static void validateNoLegacyKeys(JSONObject root) throws IOException {
         if (root.containsKey("copulas")) {
             throw new IOException("Config error: Grammar config must NOT contain 'copulas' key. " +
                 "Copulas must be embedded in CQL patterns using [lemma=\"be|appear|seem|...\"]. " +
                 "See noun_adj_predicates for example.");
         }
+    }
 
-        // Load relations
+    /** Parses all relation entries from the JSON root into the provided mutable lists/maps. */
+    private static void parseRelations(JSONObject root,
+            List<RelationConfig> loadedRelations,
+            Map<String, RelationConfig> loadedRelationsById) throws IOException {
         JSONArray relationsArray = root.getJSONArray("relations");
         if (relationsArray == null || relationsArray.isEmpty()) {
             throw new IOException("Config error: Missing or empty 'relations' array in grammar config");
         }
-        List<RelationConfig> loadedRelations = new ArrayList<>();
-        Map<String, RelationConfig> loadedRelationsById = new HashMap<>();
-
         for (int i = 0; i < relationsArray.size(); i++) {
-            JSONObject relObj = relationsArray.getJSONObject(i);
-            if (relObj == null) {
-                throw new IOException("Config error: Invalid relation at index " + i);
+            RelationConfig config = parseRelation(relationsArray.getJSONObject(i), i);
+            if (loadedRelationsById.containsKey(config.id())) {
+                throw new IOException("Config error: Duplicate relation id: " + config.id());
             }
-
-            String id = relObj.getString("id");
-            if (id == null || id.isBlank()) {
-                throw new IOException("Config error: Missing 'id' field for relation at index " + i);
-            }
-
-            // Canonical field name is "pattern"; cql_pattern is no longer supported
-            String pattern = relObj.getString("pattern");
-            if (pattern == null || pattern.isBlank()) {
-                throw new IOException("Config error: Relation '" + id + "' has no 'pattern' field - every relation must have a BCQL pattern");
-            }
-
-            // Parse positions from numbered labels in pattern (1: for head, 2: for collocate)
-            // If explicit fields are provided, use those; otherwise derive from pattern
-            int derivedHeadPos = deriveHeadPositionFromPattern(pattern);
-            int derivedCollocatePos = deriveCollocatePositionFromPattern(pattern);
-
-            int headPosition = relObj.containsKey("head_position") ? relObj.getIntValue("head_position") : derivedHeadPos;
-            int collocatePosition = relObj.containsKey("collocate_position") ? relObj.getIntValue("collocate_position") : derivedCollocatePos;
-
-            // VALIDATION: Skip token count validation for:
-            // 1. Patterns with {head} or {deprel} placeholders (dependency relations)
-            // 2. Dual relations where head and collocate are the same
-            boolean hasHead = pattern.contains("{head}");
-            boolean hasDeprel = pattern.indexOf("{deprel") >= 0;
-            boolean hasPlaceholder = hasHead || hasDeprel;
-            boolean isDual = relObj.containsKey("dual") && relObj.getBoolean("dual");
-
-            if (!hasPlaceholder && !isDual) {
-                int tokenCount = countPatternTokens(pattern);
-                if (headPosition < 1 || headPosition > tokenCount || collocatePosition < 1 || collocatePosition > tokenCount) {
-                    throw new IOException("Config error: Relation '" + id + "': positions (" + headPosition + "," + collocatePosition
-                        + ") must be between 1 and " + tokenCount + " (pattern has " + tokenCount + " positions: " + pattern + ")");
-                }
-            }
-
-            boolean dual = isDual;
-
-            RelationConfig config = new RelationConfig(
-                id,
-                relObj.getString("name"),
-                relObj.getString("description"),
-                pattern,
-                headPosition,
-                collocatePosition,
-                dual,
-                relObj.getIntValue("default_slop", 10),
-                parseRelationType(relObj.getString("relation_type")),
-                relObj.getBooleanValue("exploration_enabled", false)
-            );
-
-            if (loadedRelationsById.containsKey(id)) {
-                throw new IOException("Config error: Duplicate relation id: " + id);
-            }
-
             loadedRelations.add(config);
-            loadedRelationsById.put(id, config);
+            loadedRelationsById.put(config.id(), config);
         }
-        this.relations = Collections.unmodifiableList(loadedRelations);
-        this.relationsById = Collections.unmodifiableMap(loadedRelationsById);
+    }
 
-        logger.info("Loaded grammar config version {}: {} relations{}",
-            version, relations.size(), configPath != null ? " from " + configPath : "");
+    /** Parses and validates a single relation JSON object into a {@link RelationConfig}. */
+    private static RelationConfig parseRelation(JSONObject relObj, int index) throws IOException {
+        if (relObj == null) {
+            throw new IOException("Config error: Invalid relation at index " + index);
+        }
+
+        String id = relObj.getString("id");
+        if (id == null || id.isBlank()) {
+            throw new IOException("Config error: Missing 'id' field for relation at index " + index);
+        }
+
+        // Canonical field name is "pattern"; cql_pattern is no longer supported
+        String pattern = relObj.getString("pattern");
+        if (pattern == null || pattern.isBlank()) {
+            throw new IOException("Config error: Relation '" + id + "' has no 'pattern' field - every relation must have a BCQL pattern");
+        }
+
+        int headPosition = relObj.containsKey("head_position")
+            ? relObj.getIntValue("head_position") : deriveHeadPositionFromPattern(pattern);
+        int collocatePosition = relObj.containsKey("collocate_position")
+            ? relObj.getIntValue("collocate_position") : deriveCollocatePositionFromPattern(pattern);
+
+        boolean isDual = relObj.containsKey("dual") && relObj.getBoolean("dual");
+        validatePositions(id, pattern, headPosition, collocatePosition, isDual);
+
+        return new RelationConfig(
+            id,
+            relObj.getString("name"),
+            relObj.getString("description"),
+            pattern,
+            headPosition,
+            collocatePosition,
+            isDual,
+            relObj.getIntValue("default_slop", 10),
+            parseRelationType(relObj.getString("relation_type")),
+            relObj.getBooleanValue("exploration_enabled", false)
+        );
+    }
+
+    /**
+     * Validates that head/collocate positions are in range for concrete (non-placeholder, non-dual) patterns.
+     * Skips validation for patterns containing {@code {head}} or {@code {deprel}} placeholders, or for
+     * dual relations where head and collocate refer to the same token.
+     */
+    private static void validatePositions(String id, String pattern,
+            int headPosition, int collocatePosition, boolean isDual) throws IOException {
+        boolean hasPlaceholder = pattern.contains("{head}") || pattern.indexOf("{deprel") >= 0;
+        if (!hasPlaceholder && !isDual) {
+            int tokenCount = countPatternTokens(pattern);
+            if (headPosition < 1 || headPosition > tokenCount || collocatePosition < 1 || collocatePosition > tokenCount) {
+                throw new IOException("Config error: Relation '" + id + "': positions (" + headPosition + "," + collocatePosition
+                    + ") must be between 1 and " + tokenCount + " (pattern has " + tokenCount + " positions: " + pattern + ")");
+            }
+        }
     }
 
     /**

@@ -1,0 +1,86 @@
+{
+  "batch": "design_coherence",
+  "batch_index": 10,
+  "assessments": {"design_coherence": 70.0},
+  "dimension_notes": {
+    "design_coherence": {
+      "evidence": [
+        "ExplorationHandlers splits single-seed and multi-seed handlers cleanly, sharing helpers buildBaseExploreResponse and buildExploreResponseBody; both handlers call parseExploreParams (private record ExploreParams) to group the three common numeric params.",
+        "CollocateProfileComparator.java (line 27 Javadoc): 'Extracted from SemanticFieldExplorer to keep that class below the 400-line threshold' — class was split for a mechanical line-count reason, not a semantic one.",
+        "CollocateProfileComparator hosts two unrelated operations: compareCollocateProfiles (adjective-profile comparison across seed nouns) and exploreMultiSeed (general relation-based collocate exploration). The class name matches only the first responsibility; exploreMultiSeed has no adjective-comparison logic and belongs semantically with SemanticFieldExplorer.",
+        "handleFullSketchImpl in SketchHandlers (lines 127-180) accepts a boolean-like RelationType argument and branches through the method body (isDep flag) for both response-shape and field selection, mixing two structural concerns in one body.",
+        "handleSemanticField in ExplorationHandlers (line 172) requires param key 'seeds' but the method Javadoc says '?nouns=theory,model,hypothesis' — parameter name inconsistency between documentation and implementation.",
+        "The flagged import-block duplication (ExplorationHandlers.java:7, CollocateProfileComparator.java:14) is both files importing domain model types; there is no structural code to extract and the signal does not represent a real design concern.",
+        "WordSketchApiServer.start() constructs the HttpServer, registers all routes, and logs startup info — three distinct activities mixed in one method, with a TODO comment acknowledging this (line 52)."
+      ],
+      "impact_scope": "module",
+      "fix_scope": "multi_file_refactor",
+      "confidence": "high"
+    }
+  },
+  "dimension_judgment": {
+    "design_coherence": {
+      "strengths": [
+        "Clean handler delegation: WordSketchApiServer holds no request-processing logic; it wires SketchHandlers and ExplorationHandlers, each with a clear scope (sketch/concordance vs. exploration).",
+        "Private record ExploreParams groups the three common numeric query parameters; parseExploreParams returns null-on-error with early return, keeping callers clean.",
+        "buildBaseExploreResponse and buildExploreResponseBody are extracted helpers shared by both single-seed and multi-seed handlers, eliminating response-building duplication.",
+        "resolveRelationAlias is a pure data-driven mapping in a switch expression, easy to extend without touching handler logic.",
+        "The exploration stack (ExplorationHandlers → SemanticFieldExplorer → CollocateProfileComparator/QueryExecutor) has clear layer boundaries: HTTP parsing, orchestration, and data access are distinct."
+      ],
+      "issue_character": "Issues are concentrated around one class whose cohesion was broken by a mechanical extraction (CollocateProfileComparator holding multi-seed exploration logic it is not named for), and two secondary concerns of boolean-flag branching and a documentation/API mismatch — localized rather than systemic.",
+      "score_rationale": "The codebase scores well on most design_coherence criteria: handlers are focused, abstractions are earned (ExploreParams, shared response builders), and delegation is consistent across the API layer. The main drag is CollocateProfileComparator, whose second public method (exploreMultiSeed) has nothing to do with its stated responsibility and was placed there for a mechanical rather than semantic reason — this is a genuine SRP violation that a developer navigating multi-seed logic will find surprising. The isDep flag in handleFullSketchImpl and the seeds/nouns parameter inconsistency are minor secondary issues. Against a scale where 80 is 'solid but uneven' and 60 is 'significant drag', this sits in the low-70s: clearly above average with real strengths, but the CollocateProfileComparator misplacement is a genuine design coherence failure that would mislead a developer trying to understand or extend multi-seed exploration."
+    }
+  },
+  "issues": [
+    {
+      "dimension": "design_coherence",
+      "identifier": "comparator_scope_mismatch",
+      "summary": "CollocateProfileComparator hosts exploreMultiSeed, a responsibility unrelated to its class name and adjective-comparison purpose",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/exploration/CollocateProfileComparator.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/exploration/SemanticFieldExplorer.java"
+      ],
+      "evidence": [
+        "Class Javadoc (line 24-27): 'Compares adjective collocate profiles across a set of seed nouns… Extracted from SemanticFieldExplorer to keep that class below the 400-line threshold.'",
+        "exploreMultiSeed (lines 188-262) takes RelationConfig and performs general collocate exploration across seeds using any relation; it contains no adjective-comparison logic and does not reference ADJECTIVE_PATTERN.",
+        "SemanticFieldExplorer.exploreMultiSeed() (the public API entry point) delegates directly to CollocateProfileComparator.exploreMultiSeed() — a developer looking for multi-seed exploration logic must know to look inside a class named 'Comparator'.",
+        "The split was explicitly driven by line-count, not by semantic boundary: 'to keep that class below the 400-line threshold'."
+      ],
+      "suggestion": "Move exploreMultiSeed back into SemanticFieldExplorer (or into a new MultiSeedExplorer class), leaving CollocateProfileComparator with only compareCollocateProfiles and its private helpers. SemanticFieldExplorer will grow but remain semantically coherent; alternatively, rename CollocateProfileComparator to CollocateAnalyzer or SemanticFieldAnalyzer to reflect its actual dual scope.",
+      "confidence": "high",
+      "impact_scope": "module",
+      "fix_scope": "multi_file_refactor",
+      "root_cause_cluster": "mechanical_extraction"
+    },
+    {
+      "dimension": "design_coherence",
+      "identifier": "full_sketch_bool_flag",
+      "summary": "handleFullSketchImpl uses an isDep boolean flag to control both response shape and field selection, mixing two structural concerns in one method body",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/api/SketchHandlers.java"
+      ],
+      "evidence": [
+        "handleFullSketchImpl (lines 127-180) derives boolean isDep = relationType == RelationType.DEP and uses it to branch on which response fields to include (lines 150-159: deprel/total_matches vs name/cql/collocate_pos_group) and on the outer response structure (lines 172-178: adds 'type':'dependency' only for dep).",
+        "The two branches produce structurally different JSON responses; they are not variations of the same logic but two distinct response shapes sharing query-execution boilerplate.",
+        "handleFullDependencySketch and handleFullSketch both delegate to handleFullSketchImpl solely to share the loop and query-execution code."
+      ],
+      "suggestion": "Extract the loop body into a private buildRelationData(RelationConfig rel, String lemma, boolean isDep) helper, and let handleFullSketch and handleFullDependencySketch each build their own response maps without sharing a flag-driven method. This makes each path's output structure explicit.",
+      "confidence": "medium",
+      "impact_scope": "local",
+      "fix_scope": "single_edit",
+      "root_cause_cluster": null
+    }
+  ],
+  "retrospective": {
+    "root_causes": [
+      "Mechanical extraction driven by line-count thresholds rather than semantic boundaries produced CollocateProfileComparator with an incoherent responsibility set.",
+      "Response-building logic for surface vs dependency sketches was unified prematurely, requiring a boolean flag to distinguish structurally different outputs."
+    ],
+    "likely_symptoms": [
+      "Developer confusion when tracing multi-seed exploration: entry point is SemanticFieldExplorer but implementation is in CollocateProfileComparator."
+    ],
+    "possible_false_positives": [
+      "boilerplate_duplication signal on import blocks at ExplorationHandlers.java:7 and CollocateProfileComparator.java:14 — these are independent consumers of the same model package and there is nothing to extract."
+    ]
+  }
+}
