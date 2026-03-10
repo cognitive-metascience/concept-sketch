@@ -52,7 +52,7 @@ public class WordSketchApiServer {
         }
         SemanticFieldExplorer semanticFieldExplorer = new SemanticFieldExplorer(executor);
         this.sketchHandlers = new SketchHandlers(executor, grammarConfig);
-        this.explorationHandlers = new ExplorationHandlers(executor, grammarConfig, semanticFieldExplorer);
+        this.explorationHandlers = new ExplorationHandlers(grammarConfig, semanticFieldExplorer);
         // TODO(595bb84c): Move HttpServer creation and route registration here so start() only calls server.start().
         //   Requires declaring IOException on this constructor, which is a breaking-API change — defer to v2.
     }

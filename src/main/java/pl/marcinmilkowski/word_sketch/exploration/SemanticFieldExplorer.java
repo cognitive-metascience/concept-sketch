@@ -6,7 +6,6 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import pl.marcinmilkowski.word_sketch.config.RelationConfig;
 import pl.marcinmilkowski.word_sketch.model.QueryResults;
-import pl.marcinmilkowski.word_sketch.query.BlackLabQueryExecutor;
 import pl.marcinmilkowski.word_sketch.query.QueryExecutor;
 import java.util.Map;
 import java.util.Set;
@@ -74,7 +73,6 @@ public class SemanticFieldExplorer implements AutoCloseable {
     private static final Logger logger = LoggerFactory.getLogger(SemanticFieldExplorer.class);
 
     private final QueryExecutor executor;
-    private final String indexPath;
     private final boolean ownsExecutor;
     private final CollocateProfileComparator comparator;
 
@@ -83,24 +81,8 @@ public class SemanticFieldExplorer implements AutoCloseable {
     private static final String NOUN_PATTERN = "[xpos=\"NN.*\"]";
 
 
-    /**
-     * Convenience constructor that creates an owned {@link BlackLabQueryExecutor} internally.
-     * Prefer {@link #SemanticFieldExplorer(QueryExecutor)} (dependency injection) for testability
-     * and to avoid double-open of the same index (see issue 297b2b52).
-     *
-     * @deprecated Use {@link #SemanticFieldExplorer(QueryExecutor)} to receive an injected executor.
-     */
-    @Deprecated
-    public SemanticFieldExplorer(String indexPath) throws IOException {
-        this.indexPath = indexPath;
-        this.executor = new BlackLabQueryExecutor(indexPath);
-        this.ownsExecutor = true;
-        this.comparator = new CollocateProfileComparator(this.executor);
-    }
-
     // Constructor for testing with mock executor
     public SemanticFieldExplorer(QueryExecutor executor) {
-        this.indexPath = null;
         this.executor = executor;
         this.ownsExecutor = false;
         this.comparator = new CollocateProfileComparator(executor);
