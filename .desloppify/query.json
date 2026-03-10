@@ -2,29 +2,19 @@
   "command": "next",
   "items": [
     {
-      "id": "review::.::holistic::api_surface_coherence::deprecated_method_on_interface::6440cdd0",
-      "kind": "issue",
-      "confidence": "medium",
-      "detector": "review",
+      "id": "triage::observe",
+      "kind": "workflow_stage",
+      "confidence": "high",
+      "detector": "triage",
       "file": ".",
-      "summary": "QueryExecutor interface retains @Deprecated findDependencyCollocations forcing all implementations to carry dead public API",
+      "summary": "Triage: Analyse issues & spot contradictions",
       "detail": {
-        "holistic": true,
-        "dimension": "api_surface_coherence",
-        "related_files": [
-          "src/main/java/pl/marcinmilkowski/word_sketch/query/QueryExecutor.java",
-          "src/main/java/pl/marcinmilkowski/word_sketch/query/BlackLabQueryExecutor.java"
-        ],
-        "evidence": [
-          "QueryExecutor.java: @Deprecated List<WordSketchResult> findDependencyCollocations(String lemma, String deprel, double minLogDice, int maxResults)",
-          "QueryExecutor Javadoc: 'Use executeDependencyPattern(String, String, String, double, int) with null for the head POS constraint.'",
-          "BlackLabQueryExecutor.java: @Deprecated @Override findDependencyCollocations delegates to executeDependencyPattern \u2014 so both implementations carry the method"
-        ],
-        "suggestion": "Remove findDependencyCollocations from the interface and its implementation. If backward compatibility with external callers is required, provide a static utility method or a default interface method that delegates to executeDependencyPattern.",
-        "reasoning": ""
+        "total_review_issues": 7,
+        "stage": "observe",
+        "stage_label": "Analyse issues & spot contradictions"
       },
-      "status": "open",
-      "primary_command": "desloppify plan resolve \"review::.::holistic::api_surface_coherence::deprecated_method_on_interface::6440cdd0\" --note \"<what you did>\" --confirm",
+      "status": null,
+      "primary_command": "desloppify plan triage --stage observe",
       "queue_position": 1
     }
   ],
@@ -33,7 +23,7 @@
   },
   "narrative": {
     "phase": "middle_grind",
-    "headline": "\u26a0 1 security issue \u2014 review before other cleanup. 28 issues open. Test strategy (12.3%) needs attention \u2014 run `desloppify next` to start. (22 review issues \u2014 run `desloppify show review --status open`)",
+    "headline": "\u26a0 1 security issue \u2014 review before other cleanup. 13 issues open. Test strategy (12.3%) needs attention \u2014 run `desloppify next` to start. (7 review issues \u2014 run `desloppify show review --status open`)",
     "dimensions": {
       "lowest_dimensions": [
         {
@@ -47,7 +37,7 @@
         {
           "name": "API coherence",
           "strict": 35.0,
-          "failing": 5,
+          "failing": 2,
           "impact": 0.0,
           "subjective": true,
           "impact_description": "re-review to improve"
@@ -74,8 +64,8 @@
       {
         "type": "refactor",
         "detector": "review",
-        "count": 22,
-        "description": "22 review issues need investigation \u2014 run `desloppify show review --status open` to see them",
+        "count": 7,
+        "description": "7 review issues need investigation \u2014 run `desloppify show review --status open` to see them",
         "command": "desloppify show review --status open",
         "impact": 0.0,
         "dimension": "Unknown",
@@ -108,7 +98,7 @@
     "strategy": {
       "fixer_leverage": {
         "auto_fixable_count": 0,
-        "total_count": 72,
+        "total_count": 27,
         "coverage": 0.0,
         "impact_ratio": 0.0,
         "recommendation": "none"
@@ -143,7 +133,7 @@
         }
       },
       "can_parallelize": false,
-      "hint": "Work through actions in priority order. Rescan after each fix to track progress. Review: 22 issue(s) \u2014 `desloppify show review --status open`."
+      "hint": "Work through actions in priority order. Rescan after each fix to track progress. Review: 7 issue(s) \u2014 `desloppify show review --status open`."
     },
     "tools": {
       "fixers": [],
@@ -174,9 +164,9 @@
     "milestone": null,
     "primary_action": {
       "command": "desloppify show review --status open",
-      "description": "22 review issues need investigation \u2014 run `desloppify show review --status open` to see them"
+      "description": "7 review issues need investigation \u2014 run `desloppify show review --status open` to see them"
     },
-    "why_now": "Work through actions in priority order. Rescan after each fix to track progress. Review: 22 issue(s) \u2014 `desloppify show review --status open`.",
+    "why_now": "Work through actions in priority order. Rescan after each fix to track progress. Review: 7 issue(s) \u2014 `desloppify show review --status open`.",
     "verification_step": {
       "command": "desloppify scan",
       "reason": "revalidate after changes"
@@ -198,7 +188,7 @@
     "reminders": [
       {
         "type": "review_issues_pending",
-        "message": "22 review issue(s) need investigation. Run `desloppify show review --status open` to see the work queue.",
+        "message": "7 review issue(s) need investigation. Run `desloppify show review --status open` to see the work queue.",
         "command": "desloppify show review --status open",
         "priority": 1,
         "severity": "high"
@@ -423,7 +413,7 @@
         "item_count": 0
       }
     ],
-    "total_ordered": 24,
+    "total_ordered": 15,
     "total_skipped": 70,
     "plan_overrides_narrative": true
   },
@@ -458,7 +448,7 @@
       "score": 35.0,
       "strict": 35.0,
       "checks": 10,
-      "failing": 5,
+      "failing": 2,
       "tier": 4,
       "subjective": true,
       "placeholder": false,
@@ -548,7 +538,7 @@
       "score": 56.1,
       "strict": 56.1,
       "checks": 10,
-      "failing": 4,
+      "failing": 0,
       "tier": 4,
       "subjective": true,
       "placeholder": false,
@@ -570,7 +560,7 @@
       "score": 46.0,
       "strict": 46.0,
       "checks": 30,
-      "failing": 13,
+      "failing": 5,
       "tier": 4,
       "subjective": true,
       "placeholder": false,
@@ -700,7 +690,7 @@
       "score": 35.0,
       "strict": 35.0,
       "checks": 10,
-      "failing": 5,
+      "failing": 2,
       "tier": 4,
       "subjective": true,
       "placeholder": false,
@@ -781,7 +771,7 @@
       "score": 56.1,
       "strict": 56.1,
       "checks": 10,
-      "failing": 4,
+      "failing": 0,
       "tier": 4,
       "subjective": true,
       "placeholder": false,
@@ -794,7 +784,7 @@
       "score": 46.0,
       "strict": 46.0,
       "checks": 30,
-      "failing": 13,
+      "failing": 5,
       "tier": 4,
       "subjective": true,
       "placeholder": false,
@@ -897,8 +887,8 @@
     }
   ],
   "warnings": [
-    "22 new review issue(s) not yet triaged. Run `desloppify plan triage` to incorporate.",
-    "TRIAGE RECOMMENDED \u2014 review issues changed since last triage. Run: desloppify plan triage"
+    "7 new review issue(s) not yet triaged. Run `desloppify plan triage` to incorporate.",
+    "TRIAGE PENDING \u2014 queued and will activate after objective work is complete."
   ],
   "config": {
     "target_strict_score": 95,

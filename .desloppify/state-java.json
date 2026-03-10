@@ -11,22 +11,22 @@
     "total": 431,
     "auto_resolved": 93,
     "false_positive": 0,
-    "fixed": 299,
-    "open": 26,
+    "fixed": 312,
+    "open": 13,
     "wontfix": 13,
     "by_tier": {
       "1": {
         "auto_resolved": 42,
         "false_positive": 0,
-        "fixed": 233,
-        "open": 14,
+        "fixed": 242,
+        "open": 5,
         "wontfix": 7
       },
       "2": {
         "auto_resolved": 26,
         "false_positive": 0,
-        "fixed": 64,
-        "open": 7,
+        "fixed": 68,
+        "open": 3,
         "wontfix": 6
       },
       "3": {
@@ -15668,16 +15668,22 @@
         "suggestion": "Move SemanticFieldExplorer to a new package, for example pl.marcinmilkowski.word_sketch.exploration, that owns the semantic field analysis domain. query/ would then have a single coherent responsibility: executing corpus queries via BlackLab. Update all import sites in api/ExplorationHandlers.java and test files.",
         "reasoning": ""
       },
-      "status": "open",
-      "note": null,
+      "status": "fixed",
+      "note": "package-reorg: PosGroup moved to config/, QueryResults moved to model/, SemanticFieldExplorer moved to exploration/; all imports updated across 10 files; 146 tests pass",
       "first_seen": "2026-03-10T20:17:33+00:00",
       "last_seen": "2026-03-10T20:17:33+00:00",
-      "resolved_at": null,
+      "resolved_at": "2026-03-10T20:52:07+00:00",
       "reopen_count": 0,
       "lang": "java",
       "suppressed": false,
       "suppressed_at": null,
-      "suppression_pattern": null
+      "suppression_pattern": null,
+      "resolution_attestation": {
+        "kind": "manual",
+        "text": "I have actually package-reorg: PosGroup moved to config/, QueryResults moved to model/, SemanticFieldExplorer moved to exploration/; all imports updated across 10 files; 146 tests pass and I am not gaming the score.",
+        "attested_at": "2026-03-10T20:52:07+00:00",
+        "scan_verified": false
+      }
     },
     "review::.::holistic::high_level_elegance::query_results_dtos_not_in_model::d6a649a3": {
       "id": "review::.::holistic::high_level_elegance::query_results_dtos_not_in_model::d6a649a3",
@@ -15701,16 +15707,22 @@
         "suggestion": "Move QueryResults.java (and its inner classes WordSketchResult and ConcordanceResult) into model/. Update imports in BlackLabQueryExecutor, SemanticFieldExplorer, and the api/ handlers. This unifies all domain result DTOs under one package with a clear ownership rule.",
         "reasoning": ""
       },
-      "status": "open",
-      "note": null,
+      "status": "fixed",
+      "note": "package-reorg: PosGroup moved to config/, QueryResults moved to model/, SemanticFieldExplorer moved to exploration/; all imports updated across 10 files; 146 tests pass",
       "first_seen": "2026-03-10T20:17:33+00:00",
       "last_seen": "2026-03-10T20:17:33+00:00",
-      "resolved_at": null,
+      "resolved_at": "2026-03-10T20:52:05+00:00",
       "reopen_count": 0,
       "lang": "java",
       "suppressed": false,
       "suppressed_at": null,
-      "suppression_pattern": null
+      "suppression_pattern": null,
+      "resolution_attestation": {
+        "kind": "manual",
+        "text": "I have actually package-reorg: PosGroup moved to config/, QueryResults moved to model/, SemanticFieldExplorer moved to exploration/; all imports updated across 10 files; 146 tests pass and I am not gaming the score.",
+        "attested_at": "2026-03-10T20:52:05+00:00",
+        "scan_verified": false
+      }
     },
     "review::.::holistic::high_level_elegance::posgroup_misplaced_as_utility::41c56aa8": {
       "id": "review::.::holistic::high_level_elegance::posgroup_misplaced_as_utility::41c56aa8",
@@ -15732,16 +15744,22 @@
         "suggestion": "Move PosGroup.java to pl.marcinmilkowski.word_sketch.config (alongside RelationType, which is the same category of domain enumeration) or to model/. Update imports in GrammarConfigLoader, tagging/, and api/ accordingly.",
         "reasoning": ""
       },
-      "status": "open",
-      "note": null,
+      "status": "fixed",
+      "note": "package-reorg: PosGroup moved to config/, QueryResults moved to model/, SemanticFieldExplorer moved to exploration/; all imports updated across 10 files; 146 tests pass",
       "first_seen": "2026-03-10T20:17:33+00:00",
       "last_seen": "2026-03-10T20:17:33+00:00",
-      "resolved_at": null,
+      "resolved_at": "2026-03-10T20:52:03+00:00",
       "reopen_count": 0,
       "lang": "java",
       "suppressed": false,
       "suppressed_at": null,
-      "suppression_pattern": null
+      "suppression_pattern": null,
+      "resolution_attestation": {
+        "kind": "manual",
+        "text": "I have actually package-reorg: PosGroup moved to config/, QueryResults moved to model/, SemanticFieldExplorer moved to exploration/; all imports updated across 10 files; 146 tests pass and I am not gaming the score.",
+        "attested_at": "2026-03-10T20:52:03+00:00",
+        "scan_verified": false
+      }
     },
     "review::.::holistic::high_level_elegance::stale_reference_doc_code_structure::0c1cf5ff": {
       "id": "review::.::holistic::high_level_elegance::stale_reference_doc_code_structure::0c1cf5ff",
@@ -15795,16 +15813,22 @@
         "suggestion": "Extract a private buildExploreResponse(ExplorationResult, ...) helper that accepts the result and parameters and returns a Map<String, Object>; this collapses the 35-line assembly block and enables reuse from handleSemanticFieldExploreMulti. The parameter-parsing preamble can stay inline or move to a record like ExploreContext.",
         "reasoning": ""
       },
-      "status": "open",
-      "note": null,
+      "status": "fixed",
+      "note": "extract-helpers: extracted scoreNounsBySharedCollocates, selectCoreCollocates, buildBaseExploreResponse, formatAdjectiveProfile, registerPostHandler into named private methods",
       "first_seen": "2026-03-10T20:17:33+00:00",
       "last_seen": "2026-03-10T20:17:33+00:00",
-      "resolved_at": null,
+      "resolved_at": "2026-03-10T20:50:50+00:00",
       "reopen_count": 0,
       "lang": "java",
       "suppressed": false,
       "suppressed_at": null,
-      "suppression_pattern": null
+      "suppression_pattern": null,
+      "resolution_attestation": {
+        "kind": "manual",
+        "text": "I have actually extract-helpers: extracted scoreNounsBySharedCollocates, selectCoreCollocates, buildBaseExploreResponse, formatAdjectiveProfile, registerPostHandler into named private methods and I am not gaming the score.",
+        "attested_at": "2026-03-10T20:50:50+00:00",
+        "scan_verified": false
+      }
     },
     "review::.::holistic::low_level_elegance::explore_multi_response_duplication::d5783b7c": {
       "id": "review::.::holistic::low_level_elegance::explore_multi_response_duplication::d5783b7c",
@@ -15826,16 +15850,22 @@
         "suggestion": "Consolidate shared response keys into a buildBaseExploreResponse(String relationType, ExploreParams params) helper returning a pre-populated Map. Both handlers call this and then append their specific fields (edges, collocates). Alternatively, introduce a lightweight ExploreResponseBuilder that both handlers configure.",
         "reasoning": ""
       },
-      "status": "open",
-      "note": null,
+      "status": "fixed",
+      "note": "extract-helpers: extracted scoreNounsBySharedCollocates, selectCoreCollocates, buildBaseExploreResponse, formatAdjectiveProfile, registerPostHandler into named private methods",
       "first_seen": "2026-03-10T20:17:33+00:00",
       "last_seen": "2026-03-10T20:17:33+00:00",
-      "resolved_at": null,
+      "resolved_at": "2026-03-10T20:50:52+00:00",
       "reopen_count": 0,
       "lang": "java",
       "suppressed": false,
       "suppressed_at": null,
-      "suppression_pattern": null
+      "suppression_pattern": null,
+      "resolution_attestation": {
+        "kind": "manual",
+        "text": "I have actually extract-helpers: extracted scoreNounsBySharedCollocates, selectCoreCollocates, buildBaseExploreResponse, formatAdjectiveProfile, registerPostHandler into named private methods and I am not gaming the score.",
+        "attested_at": "2026-03-10T20:50:52+00:00",
+        "scan_verified": false
+      }
     },
     "review::.::holistic::low_level_elegance::explore_by_pattern_oversized::baa8920b": {
       "id": "review::.::holistic::low_level_elegance::explore_by_pattern_oversized::baa8920b",
@@ -15857,16 +15887,22 @@
         "suggestion": "Extract scoreNounsBySharedCollocates(Map<String,Map<String,Double>> nounProfiles, int minShared) -> List<DiscoveredNoun> and buildCoreCollocates(Map<String,Double> seedScores, List<DiscoveredNoun> nouns) -> List<CoreCollocate> as private helpers. This reduces exploreByPattern to ~60 lines of orchestration.",
         "reasoning": ""
       },
-      "status": "open",
-      "note": null,
+      "status": "fixed",
+      "note": "extract-helpers: extracted scoreNounsBySharedCollocates, selectCoreCollocates, buildBaseExploreResponse, formatAdjectiveProfile, registerPostHandler into named private methods",
       "first_seen": "2026-03-10T20:17:33+00:00",
       "last_seen": "2026-03-10T20:17:33+00:00",
-      "resolved_at": null,
+      "resolved_at": "2026-03-10T20:50:45+00:00",
       "reopen_count": 0,
       "lang": "java",
       "suppressed": false,
       "suppressed_at": null,
-      "suppression_pattern": null
+      "suppression_pattern": null,
+      "resolution_attestation": {
+        "kind": "manual",
+        "text": "I have actually extract-helpers: extracted scoreNounsBySharedCollocates, selectCoreCollocates, buildBaseExploreResponse, formatAdjectiveProfile, registerPostHandler into named private methods and I am not gaming the score.",
+        "attested_at": "2026-03-10T20:50:45+00:00",
+        "scan_verified": false
+      }
     },
     "review::.::holistic::low_level_elegance::semantic_field_adjective_serialization::ed05bade": {
       "id": "review::.::holistic::low_level_elegance::semantic_field_adjective_serialization::ed05bade",
@@ -15888,16 +15924,22 @@
         "suggestion": "Extract a private static formatAdjectiveProfile(AdjectiveProfile adj) -> Map<String,Object> following the pattern already established by formatDiscoveredNoun and formatCoreCollocate.",
         "reasoning": ""
       },
-      "status": "open",
-      "note": null,
+      "status": "fixed",
+      "note": "extract-helpers: extracted scoreNounsBySharedCollocates, selectCoreCollocates, buildBaseExploreResponse, formatAdjectiveProfile, registerPostHandler into named private methods",
       "first_seen": "2026-03-10T20:17:33+00:00",
       "last_seen": "2026-03-10T20:17:33+00:00",
-      "resolved_at": null,
+      "resolved_at": "2026-03-10T20:50:55+00:00",
       "reopen_count": 0,
       "lang": "java",
       "suppressed": false,
       "suppressed_at": null,
-      "suppression_pattern": null
+      "suppression_pattern": null,
+      "resolution_attestation": {
+        "kind": "manual",
+        "text": "I have actually extract-helpers: extracted scoreNounsBySharedCollocates, selectCoreCollocates, buildBaseExploreResponse, formatAdjectiveProfile, registerPostHandler into named private methods and I am not gaming the score.",
+        "attested_at": "2026-03-10T20:50:55+00:00",
+        "scan_verified": false
+      }
     },
     "review::.::holistic::low_level_elegance::conllu_writer_null_state::46289537": {
       "id": "review::.::holistic::low_level_elegance::conllu_writer_null_state::46289537",
@@ -15919,16 +15961,22 @@
         "suggestion": "Encapsulate chunk-file management in a small ChunkWriter helper or use a local openNextChunk() / closeChunk() pair of lambdas to make each state transition explicit. Alternatively, rewrite with a try-with-resources for each chunk file opened within a helper method, eliminating the null field entirely.",
         "reasoning": ""
       },
-      "status": "open",
-      "note": null,
+      "status": "fixed",
+      "note": "conllu-converter: moved convertConlluToWplChunks to ConlluConverter class in indexer package; refactored to try-with-resources eliminating null-initialized writer",
       "first_seen": "2026-03-10T20:17:33+00:00",
       "last_seen": "2026-03-10T20:17:33+00:00",
-      "resolved_at": null,
+      "resolved_at": "2026-03-10T20:51:06+00:00",
       "reopen_count": 0,
       "lang": "java",
       "suppressed": false,
       "suppressed_at": null,
-      "suppression_pattern": null
+      "suppression_pattern": null,
+      "resolution_attestation": {
+        "kind": "manual",
+        "text": "I have actually conllu-converter: moved convertConlluToWplChunks to ConlluConverter class in indexer package; refactored to try-with-resources eliminating null-initialized writer and I am not gaming the score.",
+        "attested_at": "2026-03-10T20:51:06+00:00",
+        "scan_verified": false
+      }
     },
     "review::.::holistic::mid_level_elegance::dead_position_params_executeSurfacePattern::fedf716a": {
       "id": "review::.::holistic::mid_level_elegance::dead_position_params_executeSurfacePattern::fedf716a",
@@ -16085,16 +16133,22 @@
         "suggestion": "Extract steps 2-4 of exploreByPattern into private methods analogous to how compareCollocateProfiles decomposes into buildRawAdjectiveProfiles and buildAdjectiveProfileList. The method body should read as an orchestration of named phases, not as inline algorithmic steps.",
         "reasoning": ""
       },
-      "status": "open",
-      "note": null,
+      "status": "fixed",
+      "note": "extract-helpers: extracted scoreNounsBySharedCollocates, selectCoreCollocates, buildBaseExploreResponse, formatAdjectiveProfile, registerPostHandler into named private methods",
       "first_seen": "2026-03-10T20:17:33+00:00",
       "last_seen": "2026-03-10T20:17:33+00:00",
-      "resolved_at": null,
+      "resolved_at": "2026-03-10T20:50:47+00:00",
       "reopen_count": 0,
       "lang": "java",
       "suppressed": false,
       "suppressed_at": null,
-      "suppression_pattern": null
+      "suppression_pattern": null,
+      "resolution_attestation": {
+        "kind": "manual",
+        "text": "I have actually extract-helpers: extracted scoreNounsBySharedCollocates, selectCoreCollocates, buildBaseExploreResponse, formatAdjectiveProfile, registerPostHandler into named private methods and I am not gaming the score.",
+        "attested_at": "2026-03-10T20:50:47+00:00",
+        "scan_verified": false
+      }
     },
     "review::.::holistic::design_coherence::handler_response_assembly_mixed_with_parsing::4f95bda1": {
       "id": "review::.::holistic::design_coherence::handler_response_assembly_mixed_with_parsing::4f95bda1",
@@ -16117,16 +16171,22 @@
         "suggestion": "Extract the response assembly into a private buildExploreResponse(ExplorationResult, ...) method and a buildMultiSeedResponse(MultiSeedCollocates, ...) method. The handler methods should be: parse \u2192 call \u2192 respond, with each phase in a single line or delegated method. Also extract the common paramsUsed construction into a helper.",
         "reasoning": ""
       },
-      "status": "open",
-      "note": null,
+      "status": "fixed",
+      "note": "extract-helpers: extracted scoreNounsBySharedCollocates, selectCoreCollocates, buildBaseExploreResponse, formatAdjectiveProfile, registerPostHandler into named private methods",
       "first_seen": "2026-03-10T20:17:33+00:00",
       "last_seen": "2026-03-10T20:17:33+00:00",
-      "resolved_at": null,
+      "resolved_at": "2026-03-10T20:51:01+00:00",
       "reopen_count": 0,
       "lang": "java",
       "suppressed": false,
       "suppressed_at": null,
-      "suppression_pattern": null
+      "suppression_pattern": null,
+      "resolution_attestation": {
+        "kind": "manual",
+        "text": "I have actually extract-helpers: extracted scoreNounsBySharedCollocates, selectCoreCollocates, buildBaseExploreResponse, formatAdjectiveProfile, registerPostHandler into named private methods and I am not gaming the score.",
+        "attested_at": "2026-03-10T20:51:01+00:00",
+        "scan_verified": false
+      }
     },
     "review::.::holistic::design_coherence::post_handler_inline_options_gating::e997d717": {
       "id": "review::.::holistic::design_coherence::post_handler_inline_options_gating::e997d717",
@@ -16150,16 +16210,22 @@
         "suggestion": "Add a registerPostHandler method in WordSketchApiServer that mirrors registerGetHandler (handling OPTIONS + POST method validation), and use it to register /api/visual/radial and /api/bcql. Remove the inline OPTIONS/requireMethod boilerplate from handleVisualRadial and handleBcqlQueryPost.",
         "reasoning": ""
       },
-      "status": "open",
-      "note": null,
+      "status": "fixed",
+      "note": "extract-helpers: extracted scoreNounsBySharedCollocates, selectCoreCollocates, buildBaseExploreResponse, formatAdjectiveProfile, registerPostHandler into named private methods",
       "first_seen": "2026-03-10T20:17:33+00:00",
       "last_seen": "2026-03-10T20:17:33+00:00",
-      "resolved_at": null,
+      "resolved_at": "2026-03-10T20:50:58+00:00",
       "reopen_count": 0,
       "lang": "java",
       "suppressed": false,
       "suppressed_at": null,
-      "suppression_pattern": null
+      "suppression_pattern": null,
+      "resolution_attestation": {
+        "kind": "manual",
+        "text": "I have actually extract-helpers: extracted scoreNounsBySharedCollocates, selectCoreCollocates, buildBaseExploreResponse, formatAdjectiveProfile, registerPostHandler into named private methods and I am not gaming the score.",
+        "attested_at": "2026-03-10T20:50:58+00:00",
+        "scan_verified": false
+      }
     },
     "review::.::holistic::design_coherence::conllu_conversion_logic_in_main::822a0feb": {
       "id": "review::.::holistic::design_coherence::conllu_conversion_logic_in_main::822a0feb",
@@ -16183,16 +16249,22 @@
         "suggestion": "Move convertConlluToWplChunks (and the MWT_OR_EMPTY pattern) into BlackLabConllUIndexer or a new ConlluToWplConverter class in the indexer package. Main.handleBlackLabIndexCommand should only orchestrate: convert \u2192 index, delegating both steps to the indexer package.",
         "reasoning": ""
       },
-      "status": "open",
-      "note": null,
+      "status": "fixed",
+      "note": "conllu-converter: moved convertConlluToWplChunks to ConlluConverter class in indexer package; refactored to try-with-resources eliminating null-initialized writer",
       "first_seen": "2026-03-10T20:17:33+00:00",
       "last_seen": "2026-03-10T20:17:33+00:00",
-      "resolved_at": null,
+      "resolved_at": "2026-03-10T20:51:04+00:00",
       "reopen_count": 0,
       "lang": "java",
       "suppressed": false,
       "suppressed_at": null,
-      "suppression_pattern": null
+      "suppression_pattern": null,
+      "resolution_attestation": {
+        "kind": "manual",
+        "text": "I have actually conllu-converter: moved convertConlluToWplChunks to ConlluConverter class in indexer package; refactored to try-with-resources eliminating null-initialized writer and I am not gaming the score.",
+        "attested_at": "2026-03-10T20:51:04+00:00",
+        "scan_verified": false
+      }
     },
     "review::.::holistic::api_surface_coherence::explore_multi_phantom_param::876ab2d4": {
       "id": "review::.::holistic::api_surface_coherence::explore_multi_phantom_param::876ab2d4",
@@ -16326,16 +16398,22 @@
         "suggestion": "Adopt a single parameter name family \u2014 e.g. 'seed' for single-input and 'seeds' for multi-input endpoints, replacing 'nouns' in handleSemanticField to match the rest of the family.",
         "reasoning": ""
       },
-      "status": "open",
-      "note": null,
+      "status": "fixed",
+      "note": "api-coherence: aligned explore/explore-multi response shapes; formatSeedCollocate now includes frequency; /api/semantic-field accepts both seeds and nouns params",
       "first_seen": "2026-03-10T20:17:33+00:00",
       "last_seen": "2026-03-10T20:17:33+00:00",
-      "resolved_at": null,
+      "resolved_at": "2026-03-10T20:50:43+00:00",
       "reopen_count": 0,
       "lang": "java",
       "suppressed": false,
       "suppressed_at": null,
-      "suppression_pattern": null
+      "suppression_pattern": null,
+      "resolution_attestation": {
+        "kind": "manual",
+        "text": "I have actually api-coherence: aligned explore/explore-multi response shapes; formatSeedCollocate now includes frequency; /api/semantic-field accepts both seeds and nouns params and I am not gaming the score.",
+        "attested_at": "2026-03-10T20:50:43+00:00",
+        "scan_verified": false
+      }
     },
     "review::.::holistic::api_surface_coherence::deprecated_method_on_interface::6440cdd0": {
       "id": "review::.::holistic::api_surface_coherence::deprecated_method_on_interface::6440cdd0",
@@ -16467,8 +16545,8 @@
       "source": "holistic",
       "assessed_at": "2026-03-10T20:17:33+00:00",
       "needs_review_refresh": true,
-      "refresh_reason": "mechanical_issues_changed",
-      "stale_since": "2026-03-10T20:17:33+00:00"
+      "refresh_reason": "review_issue_fixed",
+      "stale_since": "2026-03-10T20:51:04+00:00"
     },
     "contract_coherence": {
       "score": 63.8,
@@ -16491,7 +16569,7 @@
       "assessed_at": "2026-03-10T20:17:33+00:00",
       "needs_review_refresh": true,
       "refresh_reason": "review_issue_fixed",
-      "stale_since": "2026-03-10T20:50:41+00:00"
+      "stale_since": "2026-03-10T20:50:43+00:00"
     },
     "authorization_consistency": {
       "score": 67.5,
@@ -16501,7 +16579,10 @@
     "high_level_elegance": {
       "score": 48.9,
       "source": "holistic",
-      "assessed_at": "2026-03-10T20:17:33+00:00"
+      "assessed_at": "2026-03-10T20:17:33+00:00",
+      "needs_review_refresh": true,
+      "refresh_reason": "review_issue_fixed",
+      "stale_since": "2026-03-10T20:52:07+00:00"
     },
     "test_strategy": {
       "score": 12.3,
@@ -16558,7 +16639,10 @@
     "low_level_elegance": {
       "score": 45.5,
       "source": "holistic",
-      "assessed_at": "2026-03-10T20:17:33+00:00"
+      "assessed_at": "2026-03-10T20:17:33+00:00",
+      "needs_review_refresh": true,
+      "refresh_reason": "review_issue_fixed",
+      "stale_since": "2026-03-10T20:51:06+00:00"
     },
     "mid_level_elegance": {
       "score": 43.5,
@@ -18958,13 +19042,13 @@
       "strict": 48.9,
       "verified_strict_score": 48.9,
       "checks": 10,
-      "failing": 4,
+      "failing": 1,
       "tier": 4,
       "detectors": {
         "subjective_assessment": {
           "potential": 10,
           "pass_rate": 0.489,
-          "failing": 4,
+          "failing": 1,
           "weighted_failures": 5.11,
           "assessment_score": 48.9,
           "placeholder": false,
@@ -19000,13 +19084,13 @@
       "strict": 45.5,
       "verified_strict_score": 45.5,
       "checks": 10,
-      "failing": 5,
+      "failing": 0,
       "tier": 4,
       "detectors": {
         "subjective_assessment": {
           "potential": 10,
           "pass_rate": 0.455,
-          "failing": 5,
+          "failing": 0,
           "weighted_failures": 5.45,
           "assessment_score": 45.5,
           "placeholder": false,
@@ -19126,13 +19210,13 @@
       "strict": 35.0,
       "verified_strict_score": 35.0,
       "checks": 10,
-      "failing": 3,
+      "failing": 2,
       "tier": 4,
       "detectors": {
         "subjective_assessment": {
           "potential": 10,
           "pass_rate": 0.35,
-          "failing": 3,
+          "failing": 2,
           "weighted_failures": 6.5,
           "assessment_score": 35.0,
           "placeholder": false,
@@ -19210,13 +19294,13 @@
       "strict": 56.1,
       "verified_strict_score": 56.1,
       "checks": 10,
-      "failing": 4,
+      "failing": 0,
       "tier": 4,
       "detectors": {
         "subjective_assessment": {
           "potential": 10,
           "pass_rate": 0.561,
-          "failing": 4,
+          "failing": 0,
           "weighted_failures": 4.39,
           "assessment_score": 56.1,
           "placeholder": false,

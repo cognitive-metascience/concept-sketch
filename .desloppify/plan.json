@@ -1,7 +1,7 @@
 {
   "version": 8,
   "created": "2026-03-09T18:36:05+00:00",
-  "updated": "2026-03-10T20:50:41+00:00",
+  "updated": "2026-03-10T20:52:16+00:00",
   "queue_order": [
     "triage::observe",
     "triage::reflect",
@@ -11,20 +11,7 @@
     "triage::commit",
     "review::.::holistic::api_surface_coherence::deprecated_method_on_interface::6440cdd0",
     "review::.::holistic::api_surface_coherence::explore_multi_phantom_param::876ab2d4",
-    "review::.::holistic::api_surface_coherence::seed_param_naming_inconsistency::64a2a251",
-    "review::.::holistic::design_coherence::conllu_conversion_logic_in_main::822a0feb",
-    "review::.::holistic::design_coherence::explore_by_pattern_inlined_phases::c7badabc",
-    "review::.::holistic::design_coherence::handler_response_assembly_mixed_with_parsing::4f95bda1",
-    "review::.::holistic::design_coherence::post_handler_inline_options_gating::e997d717",
-    "review::.::holistic::high_level_elegance::posgroup_misplaced_as_utility::41c56aa8",
-    "review::.::holistic::high_level_elegance::query_results_dtos_not_in_model::d6a649a3",
-    "review::.::holistic::high_level_elegance::semantic_explorer_misplaced_in_query::a1c8bccf",
     "review::.::holistic::high_level_elegance::stale_reference_doc_code_structure::0c1cf5ff",
-    "review::.::holistic::low_level_elegance::conllu_writer_null_state::46289537",
-    "review::.::holistic::low_level_elegance::explore_by_pattern_oversized::baa8920b",
-    "review::.::holistic::low_level_elegance::explore_handler_monolith::0552ce89",
-    "review::.::holistic::low_level_elegance::explore_multi_response_duplication::d5783b7c",
-    "review::.::holistic::low_level_elegance::semantic_field_adjective_serialization::ed05bade",
     "review::.::holistic::mid_level_elegance::concordance_result_union_type::639ade41",
     "review::.::holistic::mid_level_elegance::dead_position_params_executeSurfacePattern::fedf716a",
     "review::.::holistic::mid_level_elegance::findCollocations_implicit_pattern_contract::dfee9635",
@@ -29308,6 +29295,372 @@
         "status": "fixed",
         "attestation": "I have actually api-coherence: aligned explore/explore-multi response shapes; formatSeedCollocate now includes frequency; /api/semantic-field accepts both seeds and nouns params and I am not gaming the score."
       }
+    },
+    {
+      "timestamp": "2026-03-10T20:50:43+00:00",
+      "action": "done",
+      "issue_ids": [
+        "64a2a251"
+      ],
+      "cluster_name": null,
+      "actor": "user",
+      "note": "api-coherence: aligned explore/explore-multi response shapes; formatSeedCollocate now includes frequency; /api/semantic-field accepts both seeds and nouns params",
+      "detail": {}
+    },
+    {
+      "timestamp": "2026-03-10T20:50:43+00:00",
+      "action": "resolve",
+      "issue_ids": [
+        "review::.::holistic::api_surface_coherence::seed_param_naming_inconsistency::64a2a251"
+      ],
+      "cluster_name": null,
+      "actor": "user",
+      "note": "api-coherence: aligned explore/explore-multi response shapes; formatSeedCollocate now includes frequency; /api/semantic-field accepts both seeds and nouns params",
+      "detail": {
+        "status": "fixed",
+        "attestation": "I have actually api-coherence: aligned explore/explore-multi response shapes; formatSeedCollocate now includes frequency; /api/semantic-field accepts both seeds and nouns params and I am not gaming the score."
+      }
+    },
+    {
+      "timestamp": "2026-03-10T20:50:45+00:00",
+      "action": "done",
+      "issue_ids": [
+        "baa8920b"
+      ],
+      "cluster_name": null,
+      "actor": "user",
+      "note": "extract-helpers: extracted scoreNounsBySharedCollocates, selectCoreCollocates, buildBaseExploreResponse, formatAdjectiveProfile, registerPostHandler into named private methods",
+      "detail": {}
+    },
+    {
+      "timestamp": "2026-03-10T20:50:45+00:00",
+      "action": "resolve",
+      "issue_ids": [
+        "review::.::holistic::low_level_elegance::explore_by_pattern_oversized::baa8920b"
+      ],
+      "cluster_name": null,
+      "actor": "user",
+      "note": "extract-helpers: extracted scoreNounsBySharedCollocates, selectCoreCollocates, buildBaseExploreResponse, formatAdjectiveProfile, registerPostHandler into named private methods",
+      "detail": {
+        "status": "fixed",
+        "attestation": "I have actually extract-helpers: extracted scoreNounsBySharedCollocates, selectCoreCollocates, buildBaseExploreResponse, formatAdjectiveProfile, registerPostHandler into named private methods and I am not gaming the score."
+      }
+    },
+    {
+      "timestamp": "2026-03-10T20:50:47+00:00",
+      "action": "done",
+      "issue_ids": [
+        "c7badabc"
+      ],
+      "cluster_name": null,
+      "actor": "user",
+      "note": "extract-helpers: extracted scoreNounsBySharedCollocates, selectCoreCollocates, buildBaseExploreResponse, formatAdjectiveProfile, registerPostHandler into named private methods",
+      "detail": {}
+    },
+    {
+      "timestamp": "2026-03-10T20:50:47+00:00",
+      "action": "resolve",
+      "issue_ids": [
+        "review::.::holistic::design_coherence::explore_by_pattern_inlined_phases::c7badabc"
+      ],
+      "cluster_name": null,
+      "actor": "user",
+      "note": "extract-helpers: extracted scoreNounsBySharedCollocates, selectCoreCollocates, buildBaseExploreResponse, formatAdjectiveProfile, registerPostHandler into named private methods",
+      "detail": {
+        "status": "fixed",
+        "attestation": "I have actually extract-helpers: extracted scoreNounsBySharedCollocates, selectCoreCollocates, buildBaseExploreResponse, formatAdjectiveProfile, registerPostHandler into named private methods and I am not gaming the score."
+      }
+    },
+    {
+      "timestamp": "2026-03-10T20:50:49+00:00",
+      "action": "done",
+      "issue_ids": [
+        "0552ce89"
+      ],
+      "cluster_name": null,
+      "actor": "user",
+      "note": "extract-helpers: extracted scoreNounsBySharedCollocates, selectCoreCollocates, buildBaseExploreResponse, formatAdjectiveProfile, registerPostHandler into named private methods",
+      "detail": {}
+    },
+    {
+      "timestamp": "2026-03-10T20:50:50+00:00",
+      "action": "resolve",
+      "issue_ids": [
+        "review::.::holistic::low_level_elegance::explore_handler_monolith::0552ce89"
+      ],
+      "cluster_name": null,
+      "actor": "user",
+      "note": "extract-helpers: extracted scoreNounsBySharedCollocates, selectCoreCollocates, buildBaseExploreResponse, formatAdjectiveProfile, registerPostHandler into named private methods",
+      "detail": {
+        "status": "fixed",
+        "attestation": "I have actually extract-helpers: extracted scoreNounsBySharedCollocates, selectCoreCollocates, buildBaseExploreResponse, formatAdjectiveProfile, registerPostHandler into named private methods and I am not gaming the score."
+      }
+    },
+    {
+      "timestamp": "2026-03-10T20:50:51+00:00",
+      "action": "done",
+      "issue_ids": [
+        "d5783b7c"
+      ],
+      "cluster_name": null,
+      "actor": "user",
+      "note": "extract-helpers: extracted scoreNounsBySharedCollocates, selectCoreCollocates, buildBaseExploreResponse, formatAdjectiveProfile, registerPostHandler into named private methods",
+      "detail": {}
+    },
+    {
+      "timestamp": "2026-03-10T20:50:52+00:00",
+      "action": "resolve",
+      "issue_ids": [
+        "review::.::holistic::low_level_elegance::explore_multi_response_duplication::d5783b7c"
+      ],
+      "cluster_name": null,
+      "actor": "user",
+      "note": "extract-helpers: extracted scoreNounsBySharedCollocates, selectCoreCollocates, buildBaseExploreResponse, formatAdjectiveProfile, registerPostHandler into named private methods",
+      "detail": {
+        "status": "fixed",
+        "attestation": "I have actually extract-helpers: extracted scoreNounsBySharedCollocates, selectCoreCollocates, buildBaseExploreResponse, formatAdjectiveProfile, registerPostHandler into named private methods and I am not gaming the score."
+      }
+    },
+    {
+      "timestamp": "2026-03-10T20:50:54+00:00",
+      "action": "done",
+      "issue_ids": [
+        "ed05bade"
+      ],
+      "cluster_name": null,
+      "actor": "user",
+      "note": "extract-helpers: extracted scoreNounsBySharedCollocates, selectCoreCollocates, buildBaseExploreResponse, formatAdjectiveProfile, registerPostHandler into named private methods",
+      "detail": {}
+    },
+    {
+      "timestamp": "2026-03-10T20:50:55+00:00",
+      "action": "resolve",
+      "issue_ids": [
+        "review::.::holistic::low_level_elegance::semantic_field_adjective_serialization::ed05bade"
+      ],
+      "cluster_name": null,
+      "actor": "user",
+      "note": "extract-helpers: extracted scoreNounsBySharedCollocates, selectCoreCollocates, buildBaseExploreResponse, formatAdjectiveProfile, registerPostHandler into named private methods",
+      "detail": {
+        "status": "fixed",
+        "attestation": "I have actually extract-helpers: extracted scoreNounsBySharedCollocates, selectCoreCollocates, buildBaseExploreResponse, formatAdjectiveProfile, registerPostHandler into named private methods and I am not gaming the score."
+      }
+    },
+    {
+      "timestamp": "2026-03-10T20:50:57+00:00",
+      "action": "done",
+      "issue_ids": [
+        "e997d717"
+      ],
+      "cluster_name": null,
+      "actor": "user",
+      "note": "extract-helpers: extracted scoreNounsBySharedCollocates, selectCoreCollocates, buildBaseExploreResponse, formatAdjectiveProfile, registerPostHandler into named private methods",
+      "detail": {}
+    },
+    {
+      "timestamp": "2026-03-10T20:50:58+00:00",
+      "action": "resolve",
+      "issue_ids": [
+        "review::.::holistic::design_coherence::post_handler_inline_options_gating::e997d717"
+      ],
+      "cluster_name": null,
+      "actor": "user",
+      "note": "extract-helpers: extracted scoreNounsBySharedCollocates, selectCoreCollocates, buildBaseExploreResponse, formatAdjectiveProfile, registerPostHandler into named private methods",
+      "detail": {
+        "status": "fixed",
+        "attestation": "I have actually extract-helpers: extracted scoreNounsBySharedCollocates, selectCoreCollocates, buildBaseExploreResponse, formatAdjectiveProfile, registerPostHandler into named private methods and I am not gaming the score."
+      }
+    },
+    {
+      "timestamp": "2026-03-10T20:51:00+00:00",
+      "action": "done",
+      "issue_ids": [
+        "4f95bda1"
+      ],
+      "cluster_name": null,
+      "actor": "user",
+      "note": "extract-helpers: extracted scoreNounsBySharedCollocates, selectCoreCollocates, buildBaseExploreResponse, formatAdjectiveProfile, registerPostHandler into named private methods",
+      "detail": {}
+    },
+    {
+      "timestamp": "2026-03-10T20:51:01+00:00",
+      "action": "resolve",
+      "issue_ids": [
+        "review::.::holistic::design_coherence::handler_response_assembly_mixed_with_parsing::4f95bda1"
+      ],
+      "cluster_name": null,
+      "actor": "user",
+      "note": "extract-helpers: extracted scoreNounsBySharedCollocates, selectCoreCollocates, buildBaseExploreResponse, formatAdjectiveProfile, registerPostHandler into named private methods",
+      "detail": {
+        "status": "fixed",
+        "attestation": "I have actually extract-helpers: extracted scoreNounsBySharedCollocates, selectCoreCollocates, buildBaseExploreResponse, formatAdjectiveProfile, registerPostHandler into named private methods and I am not gaming the score."
+      }
+    },
+    {
+      "timestamp": "2026-03-10T20:51:02+00:00",
+      "action": "done",
+      "issue_ids": [
+        "822a0feb"
+      ],
+      "cluster_name": null,
+      "actor": "user",
+      "note": "conllu-converter: moved convertConlluToWplChunks to ConlluConverter class in indexer package; refactored to try-with-resources eliminating null-initialized writer",
+      "detail": {}
+    },
+    {
+      "timestamp": "2026-03-10T20:51:04+00:00",
+      "action": "resolve",
+      "issue_ids": [
+        "review::.::holistic::design_coherence::conllu_conversion_logic_in_main::822a0feb"
+      ],
+      "cluster_name": null,
+      "actor": "user",
+      "note": "conllu-converter: moved convertConlluToWplChunks to ConlluConverter class in indexer package; refactored to try-with-resources eliminating null-initialized writer",
+      "detail": {
+        "status": "fixed",
+        "attestation": "I have actually conllu-converter: moved convertConlluToWplChunks to ConlluConverter class in indexer package; refactored to try-with-resources eliminating null-initialized writer and I am not gaming the score."
+      }
+    },
+    {
+      "timestamp": "2026-03-10T20:51:06+00:00",
+      "action": "done",
+      "issue_ids": [
+        "46289537"
+      ],
+      "cluster_name": null,
+      "actor": "user",
+      "note": "conllu-converter: moved convertConlluToWplChunks to ConlluConverter class in indexer package; refactored to try-with-resources eliminating null-initialized writer",
+      "detail": {}
+    },
+    {
+      "timestamp": "2026-03-10T20:51:07+00:00",
+      "action": "resolve",
+      "issue_ids": [
+        "review::.::holistic::low_level_elegance::conllu_writer_null_state::46289537"
+      ],
+      "cluster_name": null,
+      "actor": "user",
+      "note": "conllu-converter: moved convertConlluToWplChunks to ConlluConverter class in indexer package; refactored to try-with-resources eliminating null-initialized writer",
+      "detail": {
+        "status": "fixed",
+        "attestation": "I have actually conllu-converter: moved convertConlluToWplChunks to ConlluConverter class in indexer package; refactored to try-with-resources eliminating null-initialized writer and I am not gaming the score."
+      }
+    },
+    {
+      "timestamp": "2026-03-10T20:51:32+00:00",
+      "action": "commit_record",
+      "issue_ids": [
+        "review::.::holistic::api_surface_coherence::explore_multi_missing_response_keys::89451ad0",
+        "review::.::holistic::api_surface_coherence::explore_vs_multi_seed_collocates_shape::18481eb4",
+        "review::.::holistic::api_surface_coherence::seed_param_naming_inconsistency::64a2a251",
+        "review::.::holistic::low_level_elegance::explore_by_pattern_oversized::baa8920b",
+        "review::.::holistic::design_coherence::explore_by_pattern_inlined_phases::c7badabc",
+        "review::.::holistic::low_level_elegance::explore_handler_monolith::0552ce89",
+        "review::.::holistic::low_level_elegance::explore_multi_response_duplication::d5783b7c",
+        "review::.::holistic::low_level_elegance::semantic_field_adjective_serialization::ed05bade",
+        "review::.::holistic::design_coherence::post_handler_inline_options_gating::e997d717",
+        "review::.::holistic::design_coherence::handler_response_assembly_mixed_with_parsing::4f95bda1",
+        "review::.::holistic::design_coherence::conllu_conversion_logic_in_main::822a0feb",
+        "review::.::holistic::low_level_elegance::conllu_writer_null_state::46289537"
+      ],
+      "cluster_name": null,
+      "actor": "user",
+      "note": "api-coherence, extract-helpers, conllu-converter clusters complete",
+      "detail": {
+        "sha": "697ec86423d3",
+        "branch": "desloppify/code-health"
+      }
+    },
+    {
+      "timestamp": "2026-03-10T20:52:03+00:00",
+      "action": "done",
+      "issue_ids": [
+        "41c56aa8"
+      ],
+      "cluster_name": null,
+      "actor": "user",
+      "note": "package-reorg: PosGroup moved to config/, QueryResults moved to model/, SemanticFieldExplorer moved to exploration/; all imports updated across 10 files; 146 tests pass",
+      "detail": {}
+    },
+    {
+      "timestamp": "2026-03-10T20:52:03+00:00",
+      "action": "resolve",
+      "issue_ids": [
+        "review::.::holistic::high_level_elegance::posgroup_misplaced_as_utility::41c56aa8"
+      ],
+      "cluster_name": null,
+      "actor": "user",
+      "note": "package-reorg: PosGroup moved to config/, QueryResults moved to model/, SemanticFieldExplorer moved to exploration/; all imports updated across 10 files; 146 tests pass",
+      "detail": {
+        "status": "fixed",
+        "attestation": "I have actually package-reorg: PosGroup moved to config/, QueryResults moved to model/, SemanticFieldExplorer moved to exploration/; all imports updated across 10 files; 146 tests pass and I am not gaming the score."
+      }
+    },
+    {
+      "timestamp": "2026-03-10T20:52:05+00:00",
+      "action": "done",
+      "issue_ids": [
+        "d6a649a3"
+      ],
+      "cluster_name": null,
+      "actor": "user",
+      "note": "package-reorg: PosGroup moved to config/, QueryResults moved to model/, SemanticFieldExplorer moved to exploration/; all imports updated across 10 files; 146 tests pass",
+      "detail": {}
+    },
+    {
+      "timestamp": "2026-03-10T20:52:05+00:00",
+      "action": "resolve",
+      "issue_ids": [
+        "review::.::holistic::high_level_elegance::query_results_dtos_not_in_model::d6a649a3"
+      ],
+      "cluster_name": null,
+      "actor": "user",
+      "note": "package-reorg: PosGroup moved to config/, QueryResults moved to model/, SemanticFieldExplorer moved to exploration/; all imports updated across 10 files; 146 tests pass",
+      "detail": {
+        "status": "fixed",
+        "attestation": "I have actually package-reorg: PosGroup moved to config/, QueryResults moved to model/, SemanticFieldExplorer moved to exploration/; all imports updated across 10 files; 146 tests pass and I am not gaming the score."
+      }
+    },
+    {
+      "timestamp": "2026-03-10T20:52:07+00:00",
+      "action": "done",
+      "issue_ids": [
+        "a1c8bccf"
+      ],
+      "cluster_name": null,
+      "actor": "user",
+      "note": "package-reorg: PosGroup moved to config/, QueryResults moved to model/, SemanticFieldExplorer moved to exploration/; all imports updated across 10 files; 146 tests pass",
+      "detail": {}
+    },
+    {
+      "timestamp": "2026-03-10T20:52:07+00:00",
+      "action": "resolve",
+      "issue_ids": [
+        "review::.::holistic::high_level_elegance::semantic_explorer_misplaced_in_query::a1c8bccf"
+      ],
+      "cluster_name": null,
+      "actor": "user",
+      "note": "package-reorg: PosGroup moved to config/, QueryResults moved to model/, SemanticFieldExplorer moved to exploration/; all imports updated across 10 files; 146 tests pass",
+      "detail": {
+        "status": "fixed",
+        "attestation": "I have actually package-reorg: PosGroup moved to config/, QueryResults moved to model/, SemanticFieldExplorer moved to exploration/; all imports updated across 10 files; 146 tests pass and I am not gaming the score."
+      }
+    },
+    {
+      "timestamp": "2026-03-10T20:52:16+00:00",
+      "action": "commit_record",
+      "issue_ids": [
+        "review::.::holistic::high_level_elegance::posgroup_misplaced_as_utility::41c56aa8",
+        "review::.::holistic::high_level_elegance::query_results_dtos_not_in_model::d6a649a3",
+        "review::.::holistic::high_level_elegance::semantic_explorer_misplaced_in_query::a1c8bccf"
+      ],
+      "cluster_name": null,
+      "actor": "user",
+      "note": "package-reorg cluster complete",
+      "detail": {
+        "sha": "697ec86423d3",
+        "branch": "desloppify/code-health"
+      }
     }
   ],
   "epic_triage_meta": {
@@ -29844,12 +30197,42 @@
       "recorded_at": "2026-03-10T20:13:45+00:00",
       "note": "minor-fixes, deprecated-api-cleanup, api-server-decomposition, multiseed-ownership all resolved",
       "cluster_name": null
+    },
+    {
+      "sha": "697ec86423d3",
+      "branch": "desloppify/code-health",
+      "issue_ids": [
+        "review::.::holistic::api_surface_coherence::explore_multi_missing_response_keys::89451ad0",
+        "review::.::holistic::api_surface_coherence::explore_vs_multi_seed_collocates_shape::18481eb4",
+        "review::.::holistic::api_surface_coherence::seed_param_naming_inconsistency::64a2a251",
+        "review::.::holistic::low_level_elegance::explore_by_pattern_oversized::baa8920b",
+        "review::.::holistic::design_coherence::explore_by_pattern_inlined_phases::c7badabc",
+        "review::.::holistic::low_level_elegance::explore_handler_monolith::0552ce89",
+        "review::.::holistic::low_level_elegance::explore_multi_response_duplication::d5783b7c",
+        "review::.::holistic::low_level_elegance::semantic_field_adjective_serialization::ed05bade",
+        "review::.::holistic::design_coherence::post_handler_inline_options_gating::e997d717",
+        "review::.::holistic::design_coherence::handler_response_assembly_mixed_with_parsing::4f95bda1",
+        "review::.::holistic::design_coherence::conllu_conversion_logic_in_main::822a0feb",
+        "review::.::holistic::low_level_elegance::conllu_writer_null_state::46289537"
+      ],
+      "recorded_at": "2026-03-10T20:51:32+00:00",
+      "note": "api-coherence, extract-helpers, conllu-converter clusters complete",
+      "cluster_name": null
+    },
+    {
+      "sha": "697ec86423d3",
+      "branch": "desloppify/code-health",
+      "issue_ids": [
+        "review::.::holistic::high_level_elegance::posgroup_misplaced_as_utility::41c56aa8",
+        "review::.::holistic::high_level_elegance::query_results_dtos_not_in_model::d6a649a3",
+        "review::.::holistic::high_level_elegance::semantic_explorer_misplaced_in_query::a1c8bccf"
+      ],
+      "recorded_at": "2026-03-10T20:52:16+00:00",
+      "note": "package-reorg cluster complete",
+      "cluster_name": null
     }
   ],
-  "uncommitted_issues": [
-    "review::.::holistic::api_surface_coherence::explore_multi_missing_response_keys::89451ad0",
-    "review::.::holistic::api_surface_coherence::explore_vs_multi_seed_collocates_shape::18481eb4"
-  ],
+  "uncommitted_issues": [],
   "commit_tracking_branch": null,
   "scan_count_at_plan_start": 5
 }

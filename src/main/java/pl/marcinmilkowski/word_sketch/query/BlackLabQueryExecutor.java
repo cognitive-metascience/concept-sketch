@@ -158,7 +158,7 @@ public class BlackLabQueryExecutor implements QueryExecutor {
                 String[] parts = conc.parts();
                 String snippet = parts[0] + parts[1] + parts[2];
 
-                results.add(QueryResults.ConcordanceResult.forSnippet(
+                results.add(new QueryResults.SnippetResult(
                     snippet, hit.start(), hit.end(), String.valueOf(hit.doc())));
             }
 
@@ -174,7 +174,7 @@ public class BlackLabQueryExecutor implements QueryExecutor {
                              String collocateLemma, int docId, int start, int end) {}
 
     @Override
-    public List<QueryResults.ConcordanceResult> executeBcqlQuery(String bcqlPattern, int maxResults) throws IOException {
+    public List<QueryResults.CollocateResult> executeBcqlQuery(String bcqlPattern, int maxResults) throws IOException {
         try {
             TextPattern pattern = nl.inl.blacklab.queryParser.corpusql.CorpusQueryLanguageParser.parse(bcqlPattern, "lemma");
             BLSpanQuery query = pattern.toQuery(QueryInfo.create(blackLabIndex));
@@ -190,11 +190,11 @@ public class BlackLabQueryExecutor implements QueryExecutor {
             List<HitRecord> hitRecords = collectHits(hits, sampleSize, collocatePos, collocateFreqMap);
 
             // Phase 2: score hits with logDice
-            List<QueryResults.ConcordanceResult> scored = scoreHits(hitRecords, collocateFreqMap, headwordFreq, maxResults);
+            List<QueryResults.CollocateResult> scored = scoreHits(hitRecords, collocateFreqMap, headwordFreq, maxResults);
 
             // Phase 3: rank and limit
             return scored.stream()
-                .sorted(Comparator.comparingDouble(QueryResults.ConcordanceResult::getLogDice).reversed())
+                .sorted(Comparator.comparingDouble(QueryResults.CollocateResult::logDice).reversed())
                 .limit(maxResults)
                 .toList();
 
@@ -245,12 +245,12 @@ public class BlackLabQueryExecutor implements QueryExecutor {
     }
 
     /**
-     * Phase 2 — collocate frequency accumulation into scored ConcordanceResults.
+     * Phase 2 — collocate frequency accumulation into scored CollocateResults.
      * Computes logDice for each hit using corpus frequencies.
      */
-    private List<QueryResults.ConcordanceResult> scoreHits(List<HitRecord> records,
+    private List<QueryResults.CollocateResult> scoreHits(List<HitRecord> records,
             Map<String, Long> collocateFreqMap, long headwordFreq, int maxResults) throws IOException {
-        List<QueryResults.ConcordanceResult> results = new ArrayList<>();
+        List<QueryResults.CollocateResult> results = new ArrayList<>();
         int limit = Math.min(records.size(), maxResults * 3);
 
         for (int i = 0; i < limit; i++) {
@@ -273,7 +273,7 @@ public class BlackLabQueryExecutor implements QueryExecutor {
 
             String plainText = BlackLabSnippetParser.trimToSentence(rec.leftText(), rec.matchText(), rec.rightText());
 
-            results.add(QueryResults.ConcordanceResult.forCollocate(
+            results.add(new QueryResults.CollocateResult(
                 plainText, rec.xmlSnippet(),
                 rec.start(), rec.end(), String.valueOf(rec.docId()),
                 collocateLemma, f_xy, logDice));

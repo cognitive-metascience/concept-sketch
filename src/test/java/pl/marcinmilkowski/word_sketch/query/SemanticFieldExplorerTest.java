@@ -59,7 +59,7 @@ class SemanticFieldExplorerTest {
         }
 
         @Override
-        public List<QueryResults.ConcordanceResult> executeBcqlQuery(String bcqlPattern, int maxResults) {
+        public List<QueryResults.CollocateResult> executeBcqlQuery(String bcqlPattern, int maxResults) {
             return Collections.emptyList();
         }
 

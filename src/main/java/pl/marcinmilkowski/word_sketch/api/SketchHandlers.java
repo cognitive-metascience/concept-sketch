@@ -280,7 +280,7 @@ class SketchHandlers {
             logger.debug("Using fallback BCQL: {}", bcqlQuery);
         }
 
-        List<QueryResults.ConcordanceResult> results = executor.executeBcqlQuery(bcqlQuery, limit);
+        List<QueryResults.CollocateResult> results = executor.executeBcqlQuery(bcqlQuery, limit);
 
         Map<String, Object> response = new HashMap<>();
         response.put("status", "ok");
@@ -292,11 +292,11 @@ class SketchHandlers {
         response.put("total", results.size());
 
         List<Map<String, Object>> examplesList = new ArrayList<>();
-        for (QueryResults.ConcordanceResult r : results) {
+        for (QueryResults.CollocateResult r : results) {
             Map<String, Object> exMap = new HashMap<>();
             exMap.put("sentence", r.getSentence());
             exMap.put("highlighted", r.getSentence());
-            exMap.put("raw", r.getRawXml() != null ? r.getRawXml() : r.getSentence());
+            exMap.put("raw", r.rawXml() != null ? r.rawXml() : r.sentence());
             examplesList.add(exMap);
         }
         response.put("examples", examplesList);
@@ -361,7 +361,7 @@ class SketchHandlers {
 
             logger.debug("BCQL query: {}", bcqlQuery);
 
-            List<QueryResults.ConcordanceResult> results = executor.executeBcqlQuery(bcqlQuery, limit);
+            List<QueryResults.CollocateResult> results = executor.executeBcqlQuery(bcqlQuery, limit);
 
             Map<String, Object> response = new HashMap<>();
             response.put("query", bcqlQuery);
@@ -369,18 +369,18 @@ class SketchHandlers {
             response.put("limit", limit);
 
             List<Map<String, Object>> resultsList = new ArrayList<>();
-            for (QueryResults.ConcordanceResult r : results) {
+            for (QueryResults.CollocateResult r : results) {
                 Map<String, Object> resultMap = new HashMap<>();
                 resultMap.put("sentence", r.getSentence());
-                if (r.getRawXml() != null) {
-                    resultMap.put("raw", r.getRawXml());
+                if (r.rawXml() != null) {
+                    resultMap.put("raw", r.rawXml());
                 }
                 resultMap.put("match_start", r.getStartOffset());
                 resultMap.put("match_end", r.getEndOffset());
-                if (r.getCollocateLemma() != null) {
-                    resultMap.put("collocate_lemma", r.getCollocateLemma());
-                    resultMap.put("frequency", r.getFrequency());
-                    resultMap.put("log_dice", r.getLogDice());
+                if (r.collocateLemma() != null) {
+                    resultMap.put("collocate_lemma", r.collocateLemma());
+                    resultMap.put("frequency", r.frequency());
+                    resultMap.put("log_dice", r.logDice());
                 }
                 resultsList.add(resultMap);
             }

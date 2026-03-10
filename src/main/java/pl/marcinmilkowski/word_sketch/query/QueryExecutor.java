@@ -70,7 +70,7 @@ public interface QueryExecutor extends Closeable {
      * @param maxResults   Maximum number of results after ranking
      * @throws IOException if index access or parsing fails
      */
-    List<QueryResults.ConcordanceResult> executeBcqlQuery(String bcqlPattern, int maxResults) throws IOException;
+    List<QueryResults.CollocateResult> executeBcqlQuery(String bcqlPattern, int maxResults) throws IOException;
 
     /**
      * Get the total frequency of a lemma in the corpus.

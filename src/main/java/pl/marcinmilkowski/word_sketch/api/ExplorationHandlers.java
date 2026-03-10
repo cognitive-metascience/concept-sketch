@@ -5,7 +5,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import pl.marcinmilkowski.word_sketch.config.GrammarConfigLoader;
 import pl.marcinmilkowski.word_sketch.query.QueryExecutor;
-import pl.marcinmilkowski.word_sketch.model.QueryResults;
 import pl.marcinmilkowski.word_sketch.config.PosGroup;
 import pl.marcinmilkowski.word_sketch.exploration.SemanticFieldExplorer;
 import pl.marcinmilkowski.word_sketch.model.AdjectiveProfile;
@@ -186,45 +185,62 @@ class ExplorationHandlers {
         int minShared = ep.minShared();
         double minLogDice = ep.minLogDice();
 
-        SemanticFieldExplorer.MultiSeedCollocates multiResult;
+        ExplorationResult result;
         try {
-            multiResult = semanticFieldExplorer.exploreMultiSeed(
+            result = semanticFieldExplorer.exploreMultiSeed(
                 seeds, relationConfig.get(), minLogDice, topCollocates, minShared);
         } catch (IOException e) {
             HttpApiUtils.sendError(exchange, 500, "Multi-seed exploration failed: " + e.getMessage());
             return;
         }
 
-        Map<String, List<QueryResults.WordSketchResult>> seedToCollocates = multiResult.seedCollocates();
-        Set<String> commonCollocates = multiResult.commonCollocates();
-
         Map<String, Object> response = buildBaseExploreResponse(relationType, topCollocates, minShared, minLogDice);
         response.put("seeds", new ArrayList<>(seeds));
         response.put("seed_count", seeds.size());
+        response.put("seed", result.seed);
 
-        List<Map<String, Object>> discoveredCollocs = new ArrayList<>();
-        for (Map.Entry<String, List<QueryResults.WordSketchResult>> entry : seedToCollocates.entrySet()) {
-            for (QueryResults.WordSketchResult wsr : entry.getValue()) {
-                discoveredCollocs.add(formatSeedCollocate(wsr.getLemma(), wsr.getLogDice(), wsr.getFrequency()));
+        List<Map<String, Object>> seedCollocs = new ArrayList<>();
+        if (result.seedCollocates != null) {
+            for (Map.Entry<String, Double> colloc : result.seedCollocates.entrySet()) {
+                long freq = result.seedCollocateFrequencies != null
+                    ? result.seedCollocateFrequencies.getOrDefault(colloc.getKey(), 0L) : 0L;
+                seedCollocs.add(formatSeedCollocate(colloc.getKey(), colloc.getValue(), freq));
             }
         }
-        response.put("seed_collocates", discoveredCollocs);
-        response.put("seed_collocates_count", discoveredCollocs.size());
-        response.put("common_collocates", new ArrayList<>(commonCollocates));
-        response.put("common_collocates_count", commonCollocates.size());
+        response.put("seed_collocates", seedCollocs);
+        response.put("seed_collocates_count", seedCollocs.size());
 
-        response.put("core_collocates", new ArrayList<>());
-        response.put("core_collocates_count", 0);
+        List<String> commonCollocs = new ArrayList<>();
+        if (result.coreCollocates != null) {
+            for (CoreCollocate ca : result.coreCollocates) {
+                commonCollocs.add(ca.collocate);
+            }
+        }
+        response.put("common_collocates", commonCollocs);
+        response.put("common_collocates_count", commonCollocs.size());
 
-        List<String> seedsList = new ArrayList<>(seeds);
-        response.put("discovered_nouns", seedsList);
-        response.put("discovered_nouns_count", seedsList.size());
+        List<Map<String, Object>> coreCollocs = new ArrayList<>();
+        if (result.coreCollocates != null) {
+            for (CoreCollocate ca : result.coreCollocates) {
+                coreCollocs.add(formatCoreCollocate(ca));
+            }
+        }
+        response.put("core_collocates", coreCollocs);
+        response.put("core_collocates_count", coreCollocs.size());
+
+        List<Map<String, Object>> discoveredNounsList = new ArrayList<>();
+        if (result.discoveredNouns != null) {
+            for (DiscoveredNoun dn : result.discoveredNouns) {
+                discoveredNounsList.add(formatDiscoveredNoun(dn));
+            }
+        }
+        response.put("discovered_nouns", discoveredNounsList);
+        response.put("discovered_nouns_count", discoveredNounsList.size());
 
         List<Map<String, Object>> edges = new ArrayList<>();
-        for (Map.Entry<String, List<QueryResults.WordSketchResult>> entry : seedToCollocates.entrySet()) {
-            String seed = entry.getKey();
-            for (QueryResults.WordSketchResult wsr : entry.getValue()) {
-                edges.add(formatEdge(new Edge(seed, wsr.getLemma(), wsr.getLogDice(), relationType)));
+        if (result.getEdges() != null) {
+            for (Edge edge : result.getEdges()) {
+                edges.add(formatEdge(edge));
             }
         }
         response.put("edges", edges);

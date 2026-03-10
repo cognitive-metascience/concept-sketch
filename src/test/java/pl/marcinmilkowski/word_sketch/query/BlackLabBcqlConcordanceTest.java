@@ -25,9 +25,9 @@ public class BlackLabBcqlConcordanceTest {
         try (BlackLabQueryExecutor executor = new BlackLabQueryExecutor(INDEX_PATH)) {
             String bcqlPattern = "1:[lemma=\"theory\"] [lemma=\"be\"] 2:[xpos=\"JJ.*\"]";
 
-            List<QueryResults.ConcordanceResult> results = executor.executeBcqlQuery(bcqlPattern, 5);
+            List<QueryResults.CollocateResult> results = executor.executeBcqlQuery(bcqlPattern, 5);
 
-            for (QueryResults.ConcordanceResult r : results) {
+            for (QueryResults.CollocateResult r : results) {
                 assertNotNull(r.getSentence(), "Sentence should not be null");
                 assertFalse(r.getSentence().isEmpty(), "Sentence should not be empty");
 
@@ -35,8 +35,8 @@ public class BlackLabBcqlConcordanceTest {
                 boolean isFullSentence = sentence.contains(".") || sentence.split("\\s+").length > 10;
                 assertTrue(isFullSentence, "Should return full sentence, got: " + sentence);
 
-                assertNotNull(r.getCollocateLemma(), "Collocate should not be null");
-                assertFalse(r.getCollocateLemma().isEmpty(), "Collocate should not be empty");
+                assertNotNull(r.collocateLemma(), "Collocate should not be null");
+                assertFalse(r.collocateLemma().isEmpty(), "Collocate should not be empty");
             }
 
             assertTrue(results.size() > 0, "Should find at least some results for 'theory is <adj>'");
@@ -49,11 +49,11 @@ public class BlackLabBcqlConcordanceTest {
         try (BlackLabQueryExecutor executor = new BlackLabQueryExecutor(INDEX_PATH)) {
             String bcqlPattern = "1:[lemma=\"concept\"] [lemma=\"be\"] 2:[xpos=\"JJ.*\"]";
 
-            List<QueryResults.ConcordanceResult> results = executor.executeBcqlQuery(bcqlPattern, 5);
+            List<QueryResults.CollocateResult> results = executor.executeBcqlQuery(bcqlPattern, 5);
 
             assertTrue(results.size() > 0, "Should find results for 'concept is <adj>'");
 
-            for (QueryResults.ConcordanceResult r : results) {
+            for (QueryResults.CollocateResult r : results) {
                 String sentence = r.getSentence();
                 assertTrue(sentence.toLowerCase().contains("concept"),
                     "Sentence should contain 'concept', got: " + sentence);
