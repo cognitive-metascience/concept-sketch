@@ -36,6 +36,7 @@ public class HttpApiUtils {
         byte[] bytes = json.getBytes("UTF-8");
 
         exchange.getResponseHeaders().set("Content-Type", "application/json");
+        exchange.getResponseHeaders().set("Access-Control-Allow-Origin", "*");
         exchange.sendResponseHeaders(code, bytes.length);
 
         try (OutputStream os = exchange.getResponseBody()) {

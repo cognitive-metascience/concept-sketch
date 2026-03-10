@@ -496,15 +496,7 @@ public class WordSketchApiServer {
         }
 
         // Parse relation - look up from grammar config
-        String relationId = params.getOrDefault("relation", "noun_adj_predicates").toLowerCase();
-        // Map legacy names to grammar config IDs
-        relationId = switch (relationId) {
-            case "adj_modifier", "modifier" -> "noun_modifiers";
-            case "adj_predicate", "predicate" -> "noun_adj_predicates";
-            case "subject_of", "subject" -> "noun_verbs";
-            case "object_of", "object" -> "verb_nouns";
-            default -> relationId;
-        };
+        String relationId = normalizeRelationId(params.getOrDefault("relation", "noun_adj_predicates").toLowerCase());
 
         if (grammarConfig == null) {
             HttpApiUtils.sendError(exchange, 500, "Grammar configuration not loaded");
@@ -607,7 +599,7 @@ public class WordSketchApiServer {
                 Map<String, Object> edgeMap = new HashMap<>();
                 edgeMap.put("source", edge.source);
                 edgeMap.put("target", edge.target);
-                edgeMap.put("weight", Math.round(edge.weight * 100.0) / 100.0);
+                edgeMap.put("logDice", Math.round(edge.weight * 100.0) / 100.0);
                 edgeMap.put("type", edge.type);
                 edges.add(edgeMap);
             }
@@ -649,14 +641,7 @@ public class WordSketchApiServer {
         }
 
         // Parse relation
-        String relationId = params.getOrDefault("relation", "noun_adj_predicates").toLowerCase();
-        relationId = switch (relationId) {
-            case "adj_modifier", "modifier" -> "noun_modifiers";
-            case "adj_predicate", "predicate" -> "noun_adj_predicates";
-            case "subject_of", "subject" -> "noun_verbs";
-            case "object_of", "object" -> "verb_nouns";
-            default -> relationId;
-        };
+        String relationId = normalizeRelationId(params.getOrDefault("relation", "noun_adj_predicates").toLowerCase());
 
         if (grammarConfig == null) {
             HttpApiUtils.sendError(exchange, 500, "Grammar configuration not loaded");
@@ -750,7 +735,7 @@ public class WordSketchApiServer {
                 Map<String, Object> edgeMap = new HashMap<>();
                 edgeMap.put("source", seed);
                 edgeMap.put("target", wsr.getLemma());
-                edgeMap.put("weight", wsr.getLogDice());
+                edgeMap.put("logDice", wsr.getLogDice());
                 edgeMap.put("type", relationType);
                 edges.add(edgeMap);
             }
@@ -1059,26 +1044,8 @@ public class WordSketchApiServer {
             HttpApiUtils.sendJsonResponse(exchange, response);
         } catch (Exception e) {
             logger.error("BCQL query error", e);
-            Map<String, Object> errorResponse = new HashMap<>();
-            errorResponse.put("error", e.getMessage());
-            HttpApiUtils.sendJsonResponse(exchange, errorResponse);
+            HttpApiUtils.sendError(exchange, 400, "BCQL query error: " + e.getMessage());
         }
-    }
-
-    /**
-     * Convert grammar relation_type string to QueryExecutor.RelationType enum.
-     */
-    private QueryExecutor.RelationType toLegacyRelationType(String relationType) {
-        if (relationType == null) {
-            return QueryExecutor.RelationType.ADJ_PREDICATE;
-        }
-        return switch (relationType.toUpperCase()) {
-            case "ADJ_MODIFIER" -> QueryExecutor.RelationType.ADJ_MODIFIER;
-            case "ADJ_PREDICATE" -> QueryExecutor.RelationType.ADJ_PREDICATE;
-            case "SUBJECT_OF" -> QueryExecutor.RelationType.SUBJECT_OF;
-            case "OBJECT_OF" -> QueryExecutor.RelationType.OBJECT_OF;
-            default -> QueryExecutor.RelationType.ADJ_PREDICATE;
-        };
     }
 
     public void stop() {
@@ -1088,19 +1055,15 @@ public class WordSketchApiServer {
         }
     }
 
-    private static class RelationDef {
-        final String id;
-        final String name;
-        final String description;
-        final String deprel;
-        final boolean showInUi;
-
-        RelationDef(String id, String name, String deprel, boolean showInUi) {
-            this.id = id;
-            this.name = name;
-            this.description = name;
-            this.deprel = deprel;
-            this.showInUi = showInUi;
-        }
+    private static String normalizeRelationId(String relation) {
+        if (relation == null) return null;
+        return switch (relation) {
+            case "adj_modifier", "modifier" -> "noun_modifiers";
+            case "adj_predicate", "predicate" -> "noun_adj_predicates";
+            case "subject_of", "subject" -> "noun_verbs";
+            case "object_of", "object" -> "verb_nouns";
+            default -> relation;
+        };
     }
+
 }
