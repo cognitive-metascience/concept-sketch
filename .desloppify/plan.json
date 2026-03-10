@@ -1,13 +1,28 @@
 {
   "version": 8,
   "created": "2026-03-09T18:36:05+00:00",
-  "updated": "2026-03-10T22:06:31+00:00",
+  "updated": "2026-03-10T22:17:55+00:00",
   "queue_order": [
+    "triage::enrich",
+    "triage::sense-check",
+    "triage::commit",
     "review::.::holistic::test_strategy::api_handler_smoke_only::0654ef4e",
     "review::.::holistic::test_strategy::bcql_concordance_hardcoded_path::498feea7",
     "review::.::holistic::test_strategy::indexer_zero_coverage::4329ef90",
     "workflow::score-checkpoint",
-    "workflow::create-plan"
+    "workflow::create-plan",
+    "review::.::holistic::abstraction_fitness::explorer_dead_owns_executor::bed576c2",
+    "review::.::holistic::abstraction_fitness::server_unused_stored_fields::a6e4d4ff",
+    "review::.::holistic::api_surface_coherence::concordance_raw_null_fallback_inconsistency::06f99a98",
+    "review::.::holistic::api_surface_coherence::explore_options_dead_fields::c0abae54",
+    "review::.::holistic::api_surface_coherence::explore_single_vs_multi_delegation_asymmetry::db78d2e0",
+    "review::.::holistic::api_surface_coherence::semantic_field_nouns_seeds_mismatch::802a3742",
+    "review::.::holistic::api_surface_coherence::sketch_response_shape_divergence::9fbcd7f8",
+    "review::.::holistic::convention_outlier::model_access_strategy_split::0316a3b5",
+    "review::.::holistic::design_coherence::dead_null_guard_grammar_config::81ae9603",
+    "review::.::holistic::design_coherence::redundant_core_collocate_iteration_multi_seed::5ea8de00",
+    "review::.::holistic::design_coherence::side_effect_in_record_method::6fdf8076",
+    "review::.::holistic::design_coherence::unsafe_nested_map_cast_nouns_per::6272bc31"
   ],
   "deferred": [],
   "skipped": {
@@ -120,6 +135,26 @@
       "created_at": "2026-03-10T21:56:40+00:00",
       "review_after": null,
       "skipped_at_scan": 19
+    },
+    "review::.::holistic::abstraction_fitness::explorer_delegation_passthrough::47aea3e7": {
+      "issue_id": "review::.::holistic::abstraction_fitness::explorer_delegation_passthrough::47aea3e7",
+      "kind": "permanent",
+      "reason": null,
+      "note": "Delegation passthrough methods are the natural consequence of the prior wontfix decision on CollocateProfileComparator being a mechanical split. Removing these one-liner delegations would invert that architectural decision.",
+      "attestation": "I have actually reviewed the CollocateProfileComparator split history and the prior wontfix decision, and I am not gaming the score \u2014 removing these delegations would contradict the accepted architectural tradeoff.",
+      "created_at": "2026-03-10T22:15:45+00:00",
+      "review_after": null,
+      "skipped_at_scan": 21
+    },
+    "review::.::holistic::design_coherence::explore_handler_domain_assembly::f8c32411": {
+      "issue_id": "review::.::holistic::design_coherence::explore_handler_domain_assembly::f8c32411",
+      "kind": "permanent",
+      "reason": null,
+      "note": "Domain assembly in HTTP handler is a real smell but the factory refactor crosses multiple classes under active API iteration. Deferred with TODO comment rather than risking destabilisation.",
+      "attestation": "I have actually reviewed the handleSemanticFieldExplore method and the scope of the refactor required, and I am not gaming the score \u2014 the risk of breaking active handler code outweighs the benefit of the structural fix at this point.",
+      "created_at": "2026-03-10T22:15:52+00:00",
+      "review_after": null,
+      "skipped_at_scan": 21
     }
   },
   "active_cluster": null,
@@ -2709,6 +2744,78 @@
       "created_at": "2026-03-10T21:32:35+00:00",
       "cluster": "misc-cleanup",
       "updated_at": "2026-03-10T21:32:35+00:00"
+    },
+    "review::.::holistic::abstraction_fitness::explorer_dead_owns_executor::bed576c2": {
+      "issue_id": "review::.::holistic::abstraction_fitness::explorer_dead_owns_executor::bed576c2",
+      "created_at": "2026-03-10T22:15:15+00:00",
+      "cluster": "dead-fields3",
+      "updated_at": "2026-03-10T22:15:15+00:00"
+    },
+    "review::.::holistic::abstraction_fitness::server_unused_stored_fields::a6e4d4ff": {
+      "issue_id": "review::.::holistic::abstraction_fitness::server_unused_stored_fields::a6e4d4ff",
+      "created_at": "2026-03-10T22:15:16+00:00",
+      "cluster": "dead-fields3",
+      "updated_at": "2026-03-10T22:15:16+00:00"
+    },
+    "review::.::holistic::api_surface_coherence::explore_options_dead_fields::c0abae54": {
+      "issue_id": "review::.::holistic::api_surface_coherence::explore_options_dead_fields::c0abae54",
+      "created_at": "2026-03-10T22:15:16+00:00",
+      "cluster": "dead-fields3",
+      "updated_at": "2026-03-10T22:15:16+00:00"
+    },
+    "review::.::holistic::design_coherence::dead_null_guard_grammar_config::81ae9603": {
+      "issue_id": "review::.::holistic::design_coherence::dead_null_guard_grammar_config::81ae9603",
+      "created_at": "2026-03-10T22:15:17+00:00",
+      "cluster": "dead-fields3",
+      "updated_at": "2026-03-10T22:15:17+00:00"
+    },
+    "review::.::holistic::design_coherence::redundant_core_collocate_iteration_multi_seed::5ea8de00": {
+      "issue_id": "review::.::holistic::design_coherence::redundant_core_collocate_iteration_multi_seed::5ea8de00",
+      "created_at": "2026-03-10T22:15:17+00:00",
+      "cluster": "dead-fields3",
+      "updated_at": "2026-03-10T22:15:17+00:00"
+    },
+    "review::.::holistic::design_coherence::side_effect_in_record_method::6fdf8076": {
+      "issue_id": "review::.::holistic::design_coherence::side_effect_in_record_method::6fdf8076",
+      "created_at": "2026-03-10T22:15:17+00:00",
+      "cluster": "dead-fields3",
+      "updated_at": "2026-03-10T22:15:17+00:00"
+    },
+    "review::.::holistic::design_coherence::unsafe_nested_map_cast_nouns_per::6272bc31": {
+      "issue_id": "review::.::holistic::design_coherence::unsafe_nested_map_cast_nouns_per::6272bc31",
+      "created_at": "2026-03-10T22:15:18+00:00",
+      "cluster": "dead-fields3",
+      "updated_at": "2026-03-10T22:15:18+00:00"
+    },
+    "review::.::holistic::api_surface_coherence::semantic_field_nouns_seeds_mismatch::802a3742": {
+      "issue_id": "review::.::holistic::api_surface_coherence::semantic_field_nouns_seeds_mismatch::802a3742",
+      "created_at": "2026-03-10T22:15:24+00:00",
+      "cluster": "api-polish3",
+      "updated_at": "2026-03-10T22:15:24+00:00"
+    },
+    "review::.::holistic::api_surface_coherence::concordance_raw_null_fallback_inconsistency::06f99a98": {
+      "issue_id": "review::.::holistic::api_surface_coherence::concordance_raw_null_fallback_inconsistency::06f99a98",
+      "created_at": "2026-03-10T22:15:25+00:00",
+      "cluster": "api-polish3",
+      "updated_at": "2026-03-10T22:15:25+00:00"
+    },
+    "review::.::holistic::api_surface_coherence::sketch_response_shape_divergence::9fbcd7f8": {
+      "issue_id": "review::.::holistic::api_surface_coherence::sketch_response_shape_divergence::9fbcd7f8",
+      "created_at": "2026-03-10T22:15:25+00:00",
+      "cluster": "api-polish3",
+      "updated_at": "2026-03-10T22:15:25+00:00"
+    },
+    "review::.::holistic::api_surface_coherence::explore_single_vs_multi_delegation_asymmetry::db78d2e0": {
+      "issue_id": "review::.::holistic::api_surface_coherence::explore_single_vs_multi_delegation_asymmetry::db78d2e0",
+      "created_at": "2026-03-10T22:15:26+00:00",
+      "cluster": "api-polish3",
+      "updated_at": "2026-03-10T22:15:26+00:00"
+    },
+    "review::.::holistic::convention_outlier::model_access_strategy_split::0316a3b5": {
+      "issue_id": "review::.::holistic::convention_outlier::model_access_strategy_split::0316a3b5",
+      "created_at": "2026-03-10T22:15:31+00:00",
+      "cluster": "model-unification",
+      "updated_at": "2026-03-10T22:15:31+00:00"
     }
   },
   "clusters": {
@@ -5539,6 +5646,152 @@
           ],
           "effort": "trivial",
           "done": true
+        }
+      ]
+    },
+    "dead-fields3": {
+      "name": "dead-fields3",
+      "description": "Dead-code sweep round 3: remove orphaned fields, dead branches, and side effects left by prior incremental refactoring in abstraction_fitness and design_coherence dimensions",
+      "issue_ids": [
+        "review::.::holistic::abstraction_fitness::explorer_dead_owns_executor::bed576c2",
+        "review::.::holistic::abstraction_fitness::server_unused_stored_fields::a6e4d4ff",
+        "review::.::holistic::api_surface_coherence::explore_options_dead_fields::c0abae54",
+        "review::.::holistic::design_coherence::dead_null_guard_grammar_config::81ae9603",
+        "review::.::holistic::design_coherence::redundant_core_collocate_iteration_multi_seed::5ea8de00",
+        "review::.::holistic::design_coherence::side_effect_in_record_method::6fdf8076",
+        "review::.::holistic::design_coherence::unsafe_nested_map_cast_nouns_per::6272bc31"
+      ],
+      "created_at": "2026-03-10T22:15:10+00:00",
+      "updated_at": "2026-03-10T22:17:41+00:00",
+      "auto": false,
+      "cluster_key": "",
+      "action": null,
+      "user_modified": true,
+      "action_steps": [
+        {
+          "title": "Remove ownsExecutor field and dead branch in SemanticFieldExplorer.close() (bed576c2)",
+          "detail": "SemanticFieldExplorer.java: delete ownsExecutor boolean field declaration and the if(ownsExecutor) guard in close()",
+          "issue_refs": [
+            "bed576c2"
+          ]
+        },
+        {
+          "title": "Remove executor and indexPath instance fields from WordSketchApiServer; use local vars in constructor (a6e4d4ff)",
+          "detail": "WordSketchApiServer.java: remove private QueryExecutor executor and private String indexPath instance fields; verify no other method in the file reads them",
+          "issue_refs": [
+            "a6e4d4ff"
+          ]
+        },
+        {
+          "title": "Remove headPos and collocatePos fields and setters from ExploreOptions (c0abae54)",
+          "detail": "ExploreOptions.java: remove headPos and collocatePos fields and their setters; remove the set calls in ExplorationHandlers",
+          "issue_refs": [
+            "c0abae54"
+          ]
+        },
+        {
+          "title": "Delete dead grammarConfig null guards from handler methods; constructor precondition is the enforcement point (81ae9603)",
+          "detail": "ExplorationHandlers.java: delete both dead if(grammarConfig == null) null-guard blocks; constructor throws so these are unreachable",
+          "issue_refs": [
+            "81ae9603"
+          ]
+        },
+        {
+          "title": "Eliminate second getCoreCollocates() iteration in multi-seed handler by deriving common_collocates from core_collocates (5ea8de00)",
+          "detail": "ExplorationHandlers.java multi-seed handler: remove first getCoreCollocates() loop building flat word list; derive common_collocates inside buildExploreResponseBody from the rich core_collocates already built",
+          "issue_refs": [
+            "5ea8de00"
+          ]
+        },
+        {
+          "title": "Move logger.warn from RelationConfig.posGroupFromConstraint into GrammarConfigLoader at load time (6fdf8076)",
+          "detail": "RelationConfig.java: remove logger.warn from posGroupFromConstraint; GrammarConfigLoader.java: add equivalent warning when parsing pattern strings into RelationConfig objects",
+          "issue_refs": [
+            "6fdf8076"
+          ]
+        },
+        {
+          "title": "Replace unchecked cast for nouns_per injection with a typed parameter on buildBaseExploreResponse (6272bc31)",
+          "detail": "ExplorationHandlers.java: add int nounsPerRelation param to buildBaseExploreResponse; remove the unchecked (Map) cast and the direct map.put injection in the single-seed caller",
+          "issue_refs": [
+            "6272bc31"
+          ]
+        }
+      ]
+    },
+    "api-polish3": {
+      "name": "api-polish3",
+      "description": "API surface consistency round 3: align response keys, null fallbacks, and response shapes across sibling endpoints in api_surface_coherence dimension",
+      "issue_ids": [
+        "review::.::holistic::api_surface_coherence::semantic_field_nouns_seeds_mismatch::802a3742",
+        "review::.::holistic::api_surface_coherence::concordance_raw_null_fallback_inconsistency::06f99a98",
+        "review::.::holistic::api_surface_coherence::sketch_response_shape_divergence::9fbcd7f8",
+        "review::.::holistic::api_surface_coherence::explore_single_vs_multi_delegation_asymmetry::db78d2e0"
+      ],
+      "created_at": "2026-03-10T22:15:24+00:00",
+      "updated_at": "2026-03-10T22:17:55+00:00",
+      "auto": false,
+      "cluster_key": "",
+      "action": null,
+      "user_modified": true,
+      "action_steps": [
+        {
+          "title": "Change response.put('nouns', ...) to response.put('seeds', ...) in multi-seed handler to match input parameter name (802a3742)",
+          "detail": "ExplorationHandlers.java multi-seed response builder: change response.put('nouns', ...) to response.put('seeds', ...) to match the input parameter name",
+          "issue_refs": [
+            "802a3742"
+          ]
+        },
+        {
+          "title": "Align handleConcordanceExamples raw field fallback to empty string matching bcql endpoint default (06f99a98)",
+          "detail": "ExplorationHandlers.java handleConcordanceExamples: change r.rawXml() fallback from sentence text to empty string '' to match bcql endpoint default",
+          "issue_refs": [
+            "06f99a98"
+          ]
+        },
+        {
+          "title": "Wrap single-relation sketch collocations in per-relation object shape to match full-sketch endpoint structure (9fbcd7f8)",
+          "detail": "SketchHandlers.java single-relation endpoint: wrap returned collocations list in Map.of('relation', relName, 'collocations', list) matching the per-relation object shape of the full-sketch response",
+          "issue_refs": [
+            "9fbcd7f8"
+          ]
+        },
+        {
+          "title": "Add RelationConfig-accepting overload to exploreByPattern mirroring multi-seed path; remove manual config assembly from single-seed handler (db78d2e0)",
+          "detail": "SemanticFieldExplorer.java: add exploreByPattern(RelationConfig, String, int) overload; ExplorationHandlers.java single-seed handler: replace manual config assembly with this new overload",
+          "issue_refs": [
+            "db78d2e0"
+          ]
+        }
+      ]
+    },
+    "model-unification": {
+      "name": "model-unification",
+      "description": "Converge all model value types to Java records to eliminate the three coexisting field-access strategies (public fields, private+getters, records) in the model package",
+      "issue_ids": [
+        "review::.::holistic::convention_outlier::model_access_strategy_split::0316a3b5"
+      ],
+      "created_at": "2026-03-10T22:15:30+00:00",
+      "updated_at": "2026-03-10T22:16:37+00:00",
+      "auto": false,
+      "cluster_key": "",
+      "action": null,
+      "user_modified": true,
+      "action_steps": [
+        {
+          "title": "Convert AdjectiveProfile to a Java record (remove public fields and manual constructor)"
+        },
+        {
+          "title": "Convert CoreCollocate to a Java record (remove private fields and getters)"
+        },
+        {
+          "title": "Convert Edge to a Java record (remove public fields)"
+        },
+        {
+          "title": "Convert DiscoveredNoun to a Java record (remove public fields)"
+        },
+        {
+          "title": "Update all callers to use record accessor methods; verify no null-assignment patterns broken"
         }
       ]
     }
@@ -34954,10 +35207,613 @@
         "diff_reopened": 0,
         "covered_subjective": []
       }
+    },
+    {
+      "timestamp": "2026-03-10T22:10:54+00:00",
+      "action": "done",
+      "issue_ids": [
+        "bcql_concordance_hardcoded_path"
+      ],
+      "cluster_name": null,
+      "actor": "user",
+      "note": "Fixed BlackLabBcqlConcordanceTest to use CONCEPT_SKETCH_TEST_INDEX env var -> conceptSketch.testIndex property -> fallback",
+      "detail": {}
+    },
+    {
+      "timestamp": "2026-03-10T22:10:55+00:00",
+      "action": "done",
+      "issue_ids": [
+        "api_handler_smoke_only"
+      ],
+      "cluster_name": null,
+      "actor": "user",
+      "note": "Added response body assertions to both happy-path tests: lemma/relations keys for sketch, seeds/discovered_nouns/core_collocates for multi-seed explore",
+      "detail": {}
+    },
+    {
+      "timestamp": "2026-03-10T22:11:08+00:00",
+      "action": "done",
+      "issue_ids": [
+        "bcql_concordance_hardcoded_path"
+      ],
+      "cluster_name": null,
+      "actor": "user",
+      "note": "Fixed BlackLabBcqlConcordanceTest path to use env var -> system property -> fallback",
+      "detail": {}
+    },
+    {
+      "timestamp": "2026-03-10T22:11:08+00:00",
+      "action": "done",
+      "issue_ids": [
+        "api_handler_smoke_only"
+      ],
+      "cluster_name": null,
+      "actor": "user",
+      "note": "Added JSON body assertions: lemma+relations for sketch, seeds+discovered_nouns+core_collocates for multi-seed",
+      "detail": {}
+    },
+    {
+      "timestamp": "2026-03-10T22:11:23+00:00",
+      "action": "review_import_sync",
+      "issue_ids": [],
+      "cluster_name": null,
+      "actor": "system",
+      "note": null,
+      "detail": {
+        "trigger": "review_import",
+        "new_ids": [
+          "review::.::holistic::abstraction_fitness::explorer_dead_owns_executor::bed576c2",
+          "review::.::holistic::abstraction_fitness::explorer_delegation_passthrough::47aea3e7",
+          "review::.::holistic::abstraction_fitness::server_unused_stored_fields::a6e4d4ff",
+          "review::.::holistic::api_surface_coherence::concordance_raw_null_fallback_inconsistency::06f99a98",
+          "review::.::holistic::api_surface_coherence::explore_options_dead_fields::c0abae54",
+          "review::.::holistic::api_surface_coherence::explore_single_vs_multi_delegation_asymmetry::db78d2e0",
+          "review::.::holistic::api_surface_coherence::semantic_field_nouns_seeds_mismatch::802a3742",
+          "review::.::holistic::api_surface_coherence::sketch_response_shape_divergence::9fbcd7f8",
+          "review::.::holistic::convention_outlier::model_access_strategy_split::0316a3b5",
+          "review::.::holistic::design_coherence::dead_null_guard_grammar_config::81ae9603",
+          "review::.::holistic::design_coherence::explore_handler_domain_assembly::f8c32411",
+          "review::.::holistic::design_coherence::redundant_core_collocate_iteration_multi_seed::5ea8de00",
+          "review::.::holistic::design_coherence::side_effect_in_record_method::6fdf8076",
+          "review::.::holistic::design_coherence::unsafe_nested_map_cast_nouns_per::6272bc31"
+        ],
+        "added_to_queue": [
+          "review::.::holistic::abstraction_fitness::explorer_dead_owns_executor::bed576c2",
+          "review::.::holistic::abstraction_fitness::explorer_delegation_passthrough::47aea3e7",
+          "review::.::holistic::abstraction_fitness::server_unused_stored_fields::a6e4d4ff",
+          "review::.::holistic::api_surface_coherence::concordance_raw_null_fallback_inconsistency::06f99a98",
+          "review::.::holistic::api_surface_coherence::explore_options_dead_fields::c0abae54",
+          "review::.::holistic::api_surface_coherence::explore_single_vs_multi_delegation_asymmetry::db78d2e0",
+          "review::.::holistic::api_surface_coherence::semantic_field_nouns_seeds_mismatch::802a3742",
+          "review::.::holistic::api_surface_coherence::sketch_response_shape_divergence::9fbcd7f8",
+          "review::.::holistic::convention_outlier::model_access_strategy_split::0316a3b5",
+          "review::.::holistic::design_coherence::dead_null_guard_grammar_config::81ae9603",
+          "review::.::holistic::design_coherence::explore_handler_domain_assembly::f8c32411",
+          "review::.::holistic::design_coherence::redundant_core_collocate_iteration_multi_seed::5ea8de00",
+          "review::.::holistic::design_coherence::side_effect_in_record_method::6fdf8076",
+          "review::.::holistic::design_coherence::unsafe_nested_map_cast_nouns_per::6272bc31"
+        ],
+        "diff_new": 14,
+        "diff_reopened": 0,
+        "covered_subjective": []
+      }
+    },
+    {
+      "timestamp": "2026-03-10T22:11:43+00:00",
+      "action": "triage_observe",
+      "issue_ids": [],
+      "cluster_name": null,
+      "actor": "user",
+      "note": null,
+      "detail": {
+        "issue_count": 14,
+        "cited_ids": [
+          "review::.::holistic::abstraction_fitness::explorer_dead_owns_executor::bed576c2",
+          "review::.::holistic::abstraction_fitness::explorer_delegation_passthrough::47aea3e7",
+          "review::.::holistic::abstraction_fitness::server_unused_stored_fields::a6e4d4ff",
+          "review::.::holistic::api_surface_coherence::concordance_raw_null_fallback_inconsistency::06f99a98",
+          "review::.::holistic::api_surface_coherence::explore_options_dead_fields::c0abae54",
+          "review::.::holistic::api_surface_coherence::semantic_field_nouns_seeds_mismatch::802a3742",
+          "review::.::holistic::api_surface_coherence::sketch_response_shape_divergence::9fbcd7f8",
+          "review::.::holistic::convention_outlier::model_access_strategy_split::0316a3b5",
+          "review::.::holistic::design_coherence::dead_null_guard_grammar_config::81ae9603",
+          "review::.::holistic::design_coherence::explore_handler_domain_assembly::f8c32411"
+        ],
+        "reuse": false
+      }
+    },
+    {
+      "timestamp": "2026-03-10T22:12:35+00:00",
+      "action": "triage_observe",
+      "issue_ids": [],
+      "cluster_name": null,
+      "actor": "user",
+      "note": null,
+      "detail": {
+        "issue_count": 14,
+        "cited_ids": [
+          "review::.::holistic::abstraction_fitness::explorer_dead_owns_executor::bed576c2",
+          "review::.::holistic::abstraction_fitness::explorer_delegation_passthrough::47aea3e7",
+          "review::.::holistic::abstraction_fitness::server_unused_stored_fields::a6e4d4ff",
+          "review::.::holistic::api_surface_coherence::concordance_raw_null_fallback_inconsistency::06f99a98",
+          "review::.::holistic::api_surface_coherence::explore_options_dead_fields::c0abae54",
+          "review::.::holistic::api_surface_coherence::explore_single_vs_multi_delegation_asymmetry::db78d2e0",
+          "review::.::holistic::api_surface_coherence::semantic_field_nouns_seeds_mismatch::802a3742",
+          "review::.::holistic::api_surface_coherence::sketch_response_shape_divergence::9fbcd7f8",
+          "review::.::holistic::convention_outlier::model_access_strategy_split::0316a3b5",
+          "review::.::holistic::design_coherence::dead_null_guard_grammar_config::81ae9603",
+          "review::.::holistic::design_coherence::explore_handler_domain_assembly::f8c32411",
+          "review::.::holistic::design_coherence::redundant_core_collocate_iteration_multi_seed::5ea8de00",
+          "review::.::holistic::design_coherence::side_effect_in_record_method::6fdf8076"
+        ],
+        "reuse": false
+      }
+    },
+    {
+      "timestamp": "2026-03-10T22:14:13+00:00",
+      "action": "triage_confirm_observe",
+      "issue_ids": [],
+      "cluster_name": null,
+      "actor": "user",
+      "note": null,
+      "detail": {
+        "attestation": "I have reviewed the 14 observe findings across abstraction_fitness, api_surface_coherence, convention_outlier, and design_coherence dimensions. The analysis correctly identifies orphaned fields from incomplete refactoring, API shape divergences, and model encapsulation inconsistencies. No contradictions exist between findings."
+      }
+    },
+    {
+      "timestamp": "2026-03-10T22:14:34+00:00",
+      "action": "triage_reflect",
+      "issue_ids": [],
+      "cluster_name": null,
+      "actor": "user",
+      "note": null,
+      "detail": {
+        "issue_count": 14,
+        "reuse": false,
+        "recurring_dims": [
+          "abstraction_fitness",
+          "api_surface_coherence",
+          "convention_outlier",
+          "design_coherence"
+        ]
+      }
+    },
+    {
+      "timestamp": "2026-03-10T22:14:48+00:00",
+      "action": "triage_confirm_reflect",
+      "issue_ids": [],
+      "cluster_name": null,
+      "actor": "user",
+      "note": null,
+      "detail": {
+        "attestation": "The reflect report identifies root causes for abstraction_fitness (incomplete refactoring leaves orphaned fields), api_surface_coherence (organic API growth causes key/shape divergence), design_coherence (handlers absorb domain logic), and convention_outlier (model package never converged). Blueprint: dead-fields3 cluster for quick removals, api-polish3 for API consistency, model-unification for record conversion, wontfix for 47aea3e7 and f8c32411."
+      }
+    },
+    {
+      "timestamp": "2026-03-10T22:15:10+00:00",
+      "action": "cluster_create",
+      "issue_ids": [],
+      "cluster_name": "dead-fields3",
+      "actor": "user",
+      "note": null,
+      "detail": {
+        "description": null,
+        "action": null
+      }
+    },
+    {
+      "timestamp": "2026-03-10T22:15:15+00:00",
+      "action": "cluster_add",
+      "issue_ids": [
+        "review::.::holistic::abstraction_fitness::explorer_dead_owns_executor::bed576c2"
+      ],
+      "cluster_name": "dead-fields3",
+      "actor": "user",
+      "note": null,
+      "detail": {}
+    },
+    {
+      "timestamp": "2026-03-10T22:15:16+00:00",
+      "action": "cluster_add",
+      "issue_ids": [
+        "review::.::holistic::abstraction_fitness::server_unused_stored_fields::a6e4d4ff"
+      ],
+      "cluster_name": "dead-fields3",
+      "actor": "user",
+      "note": null,
+      "detail": {}
+    },
+    {
+      "timestamp": "2026-03-10T22:15:16+00:00",
+      "action": "cluster_add",
+      "issue_ids": [
+        "review::.::holistic::api_surface_coherence::explore_options_dead_fields::c0abae54"
+      ],
+      "cluster_name": "dead-fields3",
+      "actor": "user",
+      "note": null,
+      "detail": {}
+    },
+    {
+      "timestamp": "2026-03-10T22:15:17+00:00",
+      "action": "cluster_add",
+      "issue_ids": [
+        "review::.::holistic::design_coherence::dead_null_guard_grammar_config::81ae9603"
+      ],
+      "cluster_name": "dead-fields3",
+      "actor": "user",
+      "note": null,
+      "detail": {}
+    },
+    {
+      "timestamp": "2026-03-10T22:15:17+00:00",
+      "action": "cluster_add",
+      "issue_ids": [
+        "review::.::holistic::design_coherence::redundant_core_collocate_iteration_multi_seed::5ea8de00"
+      ],
+      "cluster_name": "dead-fields3",
+      "actor": "user",
+      "note": null,
+      "detail": {}
+    },
+    {
+      "timestamp": "2026-03-10T22:15:17+00:00",
+      "action": "cluster_add",
+      "issue_ids": [
+        "review::.::holistic::design_coherence::side_effect_in_record_method::6fdf8076"
+      ],
+      "cluster_name": "dead-fields3",
+      "actor": "user",
+      "note": null,
+      "detail": {}
+    },
+    {
+      "timestamp": "2026-03-10T22:15:18+00:00",
+      "action": "cluster_add",
+      "issue_ids": [
+        "review::.::holistic::design_coherence::unsafe_nested_map_cast_nouns_per::6272bc31"
+      ],
+      "cluster_name": "dead-fields3",
+      "actor": "user",
+      "note": null,
+      "detail": {}
+    },
+    {
+      "timestamp": "2026-03-10T22:15:24+00:00",
+      "action": "cluster_create",
+      "issue_ids": [],
+      "cluster_name": "api-polish3",
+      "actor": "user",
+      "note": null,
+      "detail": {
+        "description": null,
+        "action": null
+      }
+    },
+    {
+      "timestamp": "2026-03-10T22:15:24+00:00",
+      "action": "cluster_add",
+      "issue_ids": [
+        "review::.::holistic::api_surface_coherence::semantic_field_nouns_seeds_mismatch::802a3742"
+      ],
+      "cluster_name": "api-polish3",
+      "actor": "user",
+      "note": null,
+      "detail": {}
+    },
+    {
+      "timestamp": "2026-03-10T22:15:25+00:00",
+      "action": "cluster_add",
+      "issue_ids": [
+        "review::.::holistic::api_surface_coherence::concordance_raw_null_fallback_inconsistency::06f99a98"
+      ],
+      "cluster_name": "api-polish3",
+      "actor": "user",
+      "note": null,
+      "detail": {}
+    },
+    {
+      "timestamp": "2026-03-10T22:15:25+00:00",
+      "action": "cluster_add",
+      "issue_ids": [
+        "review::.::holistic::api_surface_coherence::sketch_response_shape_divergence::9fbcd7f8"
+      ],
+      "cluster_name": "api-polish3",
+      "actor": "user",
+      "note": null,
+      "detail": {}
+    },
+    {
+      "timestamp": "2026-03-10T22:15:26+00:00",
+      "action": "cluster_add",
+      "issue_ids": [
+        "review::.::holistic::api_surface_coherence::explore_single_vs_multi_delegation_asymmetry::db78d2e0"
+      ],
+      "cluster_name": "api-polish3",
+      "actor": "user",
+      "note": null,
+      "detail": {}
+    },
+    {
+      "timestamp": "2026-03-10T22:15:30+00:00",
+      "action": "cluster_create",
+      "issue_ids": [],
+      "cluster_name": "model-unification",
+      "actor": "user",
+      "note": null,
+      "detail": {
+        "description": null,
+        "action": null
+      }
+    },
+    {
+      "timestamp": "2026-03-10T22:15:31+00:00",
+      "action": "cluster_add",
+      "issue_ids": [
+        "review::.::holistic::convention_outlier::model_access_strategy_split::0316a3b5"
+      ],
+      "cluster_name": "model-unification",
+      "actor": "user",
+      "note": null,
+      "detail": {}
+    },
+    {
+      "timestamp": "2026-03-10T22:15:45+00:00",
+      "action": "skip",
+      "issue_ids": [
+        "review::.::holistic::abstraction_fitness::explorer_delegation_passthrough::47aea3e7"
+      ],
+      "cluster_name": null,
+      "actor": "user",
+      "note": "Delegation passthrough methods are the natural consequence of the prior wontfix decision on CollocateProfileComparator being a mechanical split. Removing these one-liner delegations would invert that architectural decision.",
+      "detail": {
+        "kind": "permanent",
+        "reason": null
+      }
+    },
+    {
+      "timestamp": "2026-03-10T22:15:52+00:00",
+      "action": "skip",
+      "issue_ids": [
+        "review::.::holistic::design_coherence::explore_handler_domain_assembly::f8c32411"
+      ],
+      "cluster_name": null,
+      "actor": "user",
+      "note": "Domain assembly in HTTP handler is a real smell but the factory refactor crosses multiple classes under active API iteration. Deferred with TODO comment rather than risking destabilisation.",
+      "detail": {
+        "kind": "permanent",
+        "reason": null
+      }
+    },
+    {
+      "timestamp": "2026-03-10T22:16:23+00:00",
+      "action": "cluster_update",
+      "issue_ids": [],
+      "cluster_name": "dead-fields3",
+      "actor": "user",
+      "note": null,
+      "detail": {
+        "description": "Dead-code sweep round 3: remove orphaned fields, dead branches, and side effects left by prior incremental refactoring in abstraction_fitness and design_coherence dimensions"
+      }
+    },
+    {
+      "timestamp": "2026-03-10T22:16:30+00:00",
+      "action": "cluster_update",
+      "issue_ids": [],
+      "cluster_name": "api-polish3",
+      "actor": "user",
+      "note": null,
+      "detail": {
+        "description": "API surface consistency round 3: align response keys, null fallbacks, and response shapes across sibling endpoints in api_surface_coherence dimension"
+      }
+    },
+    {
+      "timestamp": "2026-03-10T22:16:37+00:00",
+      "action": "cluster_update",
+      "issue_ids": [],
+      "cluster_name": "model-unification",
+      "actor": "user",
+      "note": null,
+      "detail": {
+        "description": "Converge all model value types to Java records to eliminate the three coexisting field-access strategies (public fields, private+getters, records) in the model package"
+      }
+    },
+    {
+      "timestamp": "2026-03-10T22:16:48+00:00",
+      "action": "triage_organize",
+      "issue_ids": [],
+      "cluster_name": null,
+      "actor": "user",
+      "note": null,
+      "detail": {
+        "cluster_count": 8,
+        "reuse": false
+      }
+    },
+    {
+      "timestamp": "2026-03-10T22:16:54+00:00",
+      "action": "triage_confirm_organize",
+      "issue_ids": [],
+      "cluster_name": null,
+      "actor": "user",
+      "note": null,
+      "detail": {
+        "attestation": "The organize output matches the reflect blueprint: dead-fields3 covers abstraction_fitness and design_coherence dead-code issues, api-polish3 covers api_surface_coherence consistency fixes, model-unification covers the convention_outlier record conversion. All 12 actionable issues are clustered, 2 are wontfixed. Execution order is dead-fields3 \u2192 api-polish3 \u2192 model-unification.",
+        "coverage": "12/12"
+      }
+    },
+    {
+      "timestamp": "2026-03-10T22:17:38+00:00",
+      "action": "cluster_update",
+      "issue_ids": [],
+      "cluster_name": "dead-fields3",
+      "actor": "user",
+      "note": null,
+      "detail": {
+        "description": null
+      }
+    },
+    {
+      "timestamp": "2026-03-10T22:17:38+00:00",
+      "action": "cluster_update",
+      "issue_ids": [],
+      "cluster_name": "dead-fields3",
+      "actor": "user",
+      "note": null,
+      "detail": {
+        "description": null
+      }
+    },
+    {
+      "timestamp": "2026-03-10T22:17:39+00:00",
+      "action": "cluster_update",
+      "issue_ids": [],
+      "cluster_name": "dead-fields3",
+      "actor": "user",
+      "note": null,
+      "detail": {
+        "description": null
+      }
+    },
+    {
+      "timestamp": "2026-03-10T22:17:39+00:00",
+      "action": "cluster_update",
+      "issue_ids": [],
+      "cluster_name": "dead-fields3",
+      "actor": "user",
+      "note": null,
+      "detail": {
+        "description": null
+      }
+    },
+    {
+      "timestamp": "2026-03-10T22:17:40+00:00",
+      "action": "cluster_update",
+      "issue_ids": [],
+      "cluster_name": "dead-fields3",
+      "actor": "user",
+      "note": null,
+      "detail": {
+        "description": null
+      }
+    },
+    {
+      "timestamp": "2026-03-10T22:17:40+00:00",
+      "action": "cluster_update",
+      "issue_ids": [],
+      "cluster_name": "dead-fields3",
+      "actor": "user",
+      "note": null,
+      "detail": {
+        "description": null
+      }
+    },
+    {
+      "timestamp": "2026-03-10T22:17:41+00:00",
+      "action": "cluster_update",
+      "issue_ids": [],
+      "cluster_name": "dead-fields3",
+      "actor": "user",
+      "note": null,
+      "detail": {
+        "description": null
+      }
+    },
+    {
+      "timestamp": "2026-03-10T22:17:53+00:00",
+      "action": "cluster_update",
+      "issue_ids": [],
+      "cluster_name": "api-polish3",
+      "actor": "user",
+      "note": null,
+      "detail": {
+        "description": null
+      }
+    },
+    {
+      "timestamp": "2026-03-10T22:17:54+00:00",
+      "action": "cluster_update",
+      "issue_ids": [],
+      "cluster_name": "api-polish3",
+      "actor": "user",
+      "note": null,
+      "detail": {
+        "description": null
+      }
+    },
+    {
+      "timestamp": "2026-03-10T22:17:54+00:00",
+      "action": "cluster_update",
+      "issue_ids": [],
+      "cluster_name": "api-polish3",
+      "actor": "user",
+      "note": null,
+      "detail": {
+        "description": null
+      }
+    },
+    {
+      "timestamp": "2026-03-10T22:17:55+00:00",
+      "action": "cluster_update",
+      "issue_ids": [],
+      "cluster_name": "api-polish3",
+      "actor": "user",
+      "note": null,
+      "detail": {
+        "description": null
+      }
     }
   ],
   "epic_triage_meta": {
-    "triage_stages": {},
+    "triage_stages": {
+      "observe": {
+        "stage": "observe",
+        "report": "14 new issues across 4 dimensions. abstraction_fitness: ownsExecutor always false (bed576c2), delegation passthrough methods (47aea3e7), WordSketchApiServer unused stored fields (a6e4d4ff). api_surface_coherence: concordance raw null fallback inconsistency vs bcql (06f99a98), ExploreOptions dead headPos/collocatePos fields (c0abae54), single-seed assembles config manually while multi-seed passes RelationConfig (db78d2e0), nouns key in response vs seeds param (802a3742), full-sketch vs single-relation shape divergence (9fbcd7f8). convention_outlier: model package 3 field-access strategies (0316a3b5). design_coherence: dead null guards for grammarConfig (81ae9603), domain assembly in handler (f8c32411), getCoreCollocates iterated twice in multi-seed handler (5ea8de00), posGroupFromConstraint logger.warn in pure classification method (6fdf8076).",
+        "cited_ids": [
+          "review::.::holistic::abstraction_fitness::explorer_dead_owns_executor::bed576c2",
+          "review::.::holistic::abstraction_fitness::explorer_delegation_passthrough::47aea3e7",
+          "review::.::holistic::abstraction_fitness::server_unused_stored_fields::a6e4d4ff",
+          "review::.::holistic::api_surface_coherence::concordance_raw_null_fallback_inconsistency::06f99a98",
+          "review::.::holistic::api_surface_coherence::explore_options_dead_fields::c0abae54",
+          "review::.::holistic::api_surface_coherence::explore_single_vs_multi_delegation_asymmetry::db78d2e0",
+          "review::.::holistic::api_surface_coherence::semantic_field_nouns_seeds_mismatch::802a3742",
+          "review::.::holistic::api_surface_coherence::sketch_response_shape_divergence::9fbcd7f8",
+          "review::.::holistic::convention_outlier::model_access_strategy_split::0316a3b5",
+          "review::.::holistic::design_coherence::dead_null_guard_grammar_config::81ae9603",
+          "review::.::holistic::design_coherence::explore_handler_domain_assembly::f8c32411",
+          "review::.::holistic::design_coherence::redundant_core_collocate_iteration_multi_seed::5ea8de00",
+          "review::.::holistic::design_coherence::side_effect_in_record_method::6fdf8076"
+        ],
+        "timestamp": "2026-03-10T22:12:34+00:00",
+        "issue_count": 14,
+        "confirmed_at": "2026-03-10T22:14:13+00:00",
+        "confirmed_text": "I have reviewed the 14 observe findings across abstraction_fitness, api_surface_coherence, convention_outlier, and design_coherence dimensions. The analysis correctly identifies orphaned fields from incomplete refactoring, API shape divergences, and model encapsulation inconsistencies. No contradictions exist between findings."
+      },
+      "reflect": {
+        "stage": "reflect",
+        "report": "Comparing against 37 resolved issues reveals recurring loops in all four dimensions: abstraction_fitness (5 resolved, 3 still open), api_surface_coherence (6 resolved, 5 still open), convention_outlier (3 resolved, 1 still open), and design_coherence (3 resolved, 5 still open). The recurring abstraction_fitness loop is caused by incremental refactoring that leaves orphaned fields and dead branches rather than completing removal \u2014 ownsExecutor, WordSketchApiServer stored fields, and ExploreOptions headPos/collocatePos are all aftermath of prior fixes that stopped short. The recurring api_surface_coherence loop reflects organic API growth where response shape and key naming diverge between sibling endpoints. The design_coherence loop stems from HTTP handlers absorbing domain logic as features are added. No genuine contradictions exist: all issues point in the same cleanup direction. Two items warrant wontfix rather than full fixes: 47aea3e7 (delegation passthrough methods) is the natural consequence of the prior wontfix decision on CollocateProfileComparator \u2014 removing them would invert that architectural choice; f8c32411 (domain assembly in handler) is a real smell but the factory refactor is a multi-class change risking destabilisation under active API iteration, so a TODO comment is the right call now. The remaining 12 issues are clean, low-risk, and cluster into: quick dead-code sweeps (ownsExecutor bed576c2, unused server fields a6e4d4ff, dead ExploreOptions fields c0abae54, dead null guards 81ae9603, double iteration 5ea8de00, logger.warn side effect 6fdf8076) and API consistency fixes (nouns key 802a3742, raw fallback 06f99a98, sketch shape 9fbcd7f8, config assembly asymmetry db78d2e0). Model unification 0316a3b5 is a self-contained record conversion. Issue 6272bc31 (unchecked cast) fits naturally with the dead-code/design-coherence sweep. Priority: dead-code first to unblock cleaner API work, then API polish, then model unification.",
+        "cited_ids": [],
+        "timestamp": "2026-03-10T22:14:34+00:00",
+        "issue_count": 14,
+        "recurring_dims": [
+          "abstraction_fitness",
+          "api_surface_coherence",
+          "convention_outlier",
+          "design_coherence"
+        ],
+        "confirmed_at": "2026-03-10T22:14:48+00:00",
+        "confirmed_text": "The reflect report identifies root causes for abstraction_fitness (incomplete refactoring leaves orphaned fields), api_surface_coherence (organic API growth causes key/shape divergence), design_coherence (handlers absorb domain logic), and convention_outlier (model package never converged). Blueprint: dead-fields3 cluster for quick removals, api-polish3 for API consistency, model-unification for record conversion, wontfix for 47aea3e7 and f8c32411."
+      },
+      "organize": {
+        "stage": "organize",
+        "report": "Three clusters defined. dead-fields3 (priority 1, 7 items, T1/T2): mechanical dead-code removals across abstraction_fitness and design_coherence \u2014 ownsExecutor, WordSketchApiServer stored fields, ExploreOptions dead fields, dead grammarConfig null guards, double getCoreCollocates iteration, logger.warn in pure method, unchecked cast. All are 1-3 file changes with no behaviour change risk. api-polish3 (priority 2, 4 items, T2): api_surface_coherence fixes \u2014 nouns/seeds key rename, raw null fallback alignment, single-relation sketch shape normalization, single/multi-seed config assembly symmetry. model-unification (priority 3, 1 item, T3): convention_outlier resolution \u2014 convert 4 model classes to Java records to unify field-access strategy. Wontfixed: 47aea3e7 (delegation passthrough, consequence of prior wontfix on comparator split) and f8c32411 (domain assembly in handler, deferred with TODO). Ordering rationale: dead-code removal first reduces context noise for API fixes; model unification last as broadest change with most callers to update.",
+        "cited_ids": [],
+        "timestamp": "2026-03-10T22:16:48+00:00",
+        "issue_count": 8,
+        "confirmed_at": "2026-03-10T22:16:54+00:00",
+        "confirmed_text": "The organize output matches the reflect blueprint: dead-fields3 covers abstraction_fitness and design_coherence dead-code issues, api-polish3 covers api_surface_coherence consistency fixes, model-unification covers the convention_outlier record conversion. All 12 actionable issues are clustered, 2 are wontfixed. Execution order is dead-fields3 \u2192 api-polish3 \u2192 model-unification."
+      }
+    },
     "issue_snapshot_hash": "c162eb1be3dfe512",
     "triaged_ids": [
       "review::.::holistic::abstraction_fitness::exploration_handlers_dead_executor_field::3fff2a41",

@@ -53,11 +53,6 @@ class ExplorationHandlers {
 
         String relationId = resolveRelationAlias(params.getOrDefault("relation", "noun_adj_predicates").toLowerCase());
 
-        if (grammarConfig == null) {
-            HttpApiUtils.sendError(exchange, 500, "Grammar configuration not loaded");
-            return;
-        }
-
         var relationConfig = grammarConfig.getRelation(relationId);
         if (relationConfig.isEmpty()) {
             HttpApiUtils.sendError(exchange, 400, "Unknown relation: " + relationId);
@@ -85,11 +80,9 @@ class ExplorationHandlers {
         //       should be delegated to a factory/service rather than assembled in the HTTP handler.
         String bcqlPattern = relationConfig.get().getFullPattern(seed);
         String reverseCollocatePattern = relationConfig.get().collocateReversePattern();
-        int headPos = relationConfig.get().headPosition();
-        int collocatePos = relationConfig.get().collocatePosition();
 
         ExploreOptions opts = new ExploreOptions(
-            topCollocates, nounsPerCollocate, minLogDice, minShared, false, headPos, collocatePos);
+            topCollocates, nounsPerCollocate, minLogDice, minShared, false);
 
         ExplorationResult result;
         try {
@@ -139,11 +132,6 @@ class ExplorationHandlers {
 
         String relationId = resolveRelationAlias(params.getOrDefault("relation", "noun_adj_predicates").toLowerCase());
 
-        if (grammarConfig == null) {
-            HttpApiUtils.sendError(exchange, 500, "Grammar configuration not loaded");
-            return;
-        }
-
         var relationConfig = grammarConfig.getRelation(relationId);
         if (relationConfig.isEmpty()) {
             HttpApiUtils.sendError(exchange, 400, "Unknown relation: " + relationId);
@@ -173,13 +161,6 @@ class ExplorationHandlers {
         Map<String, Object> response = buildBaseExploreResponse(relationType, topCollocates, minShared, minLogDice);
         response.put("seeds", new ArrayList<>(seeds));
         response.put("seed_count", seeds.size());
-
-        List<String> commonCollocs = new ArrayList<>();
-        for (CoreCollocate ca : result.getCoreCollocates()) {
-            commonCollocs.add(ca.collocate);
-        }
-        response.put("common_collocates", commonCollocs);
-        response.put("common_collocates_count", commonCollocs.size());
 
         buildExploreResponseBody(response, result);
 
@@ -227,7 +208,7 @@ class ExplorationHandlers {
 
         Map<String, Object> response = new HashMap<>();
         response.put("status", "ok");
-        response.put("nouns", new ArrayList<>(result.getNouns()));
+        response.put("seeds", new ArrayList<>(result.getNouns()));
         response.put("min_logdice", minLogDice);
 
         List<Map<String, Object>> adjectives = new ArrayList<>();

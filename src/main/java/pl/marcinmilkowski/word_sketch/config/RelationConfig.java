@@ -163,14 +163,14 @@ public record RelationConfig(
         if (s.contains("xpos=\"rp") || s.contains("xpos=rp")
          || s.contains("xpos=\"to") || s.contains("xpos=to")) return PosGroup.OTHER;
         // legacy: tag= attribute support — use xpos= in new grammars
-        if (s.contains("tag=\"jj") || s.contains("tag=jj")) { logger.warn("Deprecated tag= attribute in grammar config; use xpos= instead"); return PosGroup.ADJ; }
-        if (s.contains("tag=\"vb") || s.contains("tag=vb")) { logger.warn("Deprecated tag= attribute in grammar config; use xpos= instead"); return PosGroup.VERB; }
+        if (s.contains("tag=\"jj") || s.contains("tag=jj")) return PosGroup.ADJ;
+        if (s.contains("tag=\"vb") || s.contains("tag=vb")) return PosGroup.VERB;
         if (s.contains("tag=\"nn") || s.contains("tag=nn")
-         || s.contains("tag=\"pos") || s.contains("tag=pos")) { logger.warn("Deprecated tag= attribute in grammar config; use xpos= instead"); return PosGroup.NOUN; }
-        if (s.contains("tag=\"rb") || s.contains("tag=rb")) { logger.warn("Deprecated tag= attribute in grammar config; use xpos= instead"); return PosGroup.ADV; }
-        if (s.contains("tag=\"in") || s.contains("tag=in")) { logger.warn("Deprecated tag= attribute in grammar config; use xpos= instead"); return PosGroup.OTHER; }
+         || s.contains("tag=\"pos") || s.contains("tag=pos")) return PosGroup.NOUN;
+        if (s.contains("tag=\"rb") || s.contains("tag=rb")) return PosGroup.ADV;
+        if (s.contains("tag=\"in") || s.contains("tag=in")) return PosGroup.OTHER;
         if (s.contains("tag=\"rp") || s.contains("tag=rp")
-         || s.contains("tag=\"to") || s.contains("tag=to")) { logger.warn("Deprecated tag= attribute in grammar config; use xpos= instead"); return PosGroup.OTHER; }
+         || s.contains("tag=\"to") || s.contains("tag=to")) return PosGroup.OTHER;
         return PosGroup.OTHER;
     }
 

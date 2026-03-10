@@ -293,7 +293,7 @@ class SketchHandlers {
         for (QueryResults.CollocateResult r : results) {
             Map<String, Object> exMap = new HashMap<>();
             exMap.put("sentence", r.getSentence());
-            exMap.put("raw", r.rawXml() != null ? r.rawXml() : r.sentence());
+            exMap.put("raw", r.rawXml() != null ? r.rawXml() : "");
             examplesList.add(exMap);
         }
         response.put("examples", examplesList);

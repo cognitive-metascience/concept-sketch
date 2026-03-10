@@ -73,7 +73,6 @@ public class SemanticFieldExplorer implements AutoCloseable {
     private static final Logger logger = LoggerFactory.getLogger(SemanticFieldExplorer.class);
 
     private final QueryExecutor executor;
-    private final boolean ownsExecutor;
     private final CollocateProfileComparator comparator;
 
     // Patterns for finding collocates by POS (using xpos field from CoNLL-U index)
@@ -83,7 +82,6 @@ public class SemanticFieldExplorer implements AutoCloseable {
     // Constructor for testing with mock executor
     public SemanticFieldExplorer(QueryExecutor executor) {
         this.executor = executor;
-        this.ownsExecutor = false;
         this.comparator = new CollocateProfileComparator(executor);
     }
 
@@ -327,13 +325,7 @@ public class SemanticFieldExplorer implements AutoCloseable {
 
     @Override
     public void close() throws IOException {
-        if (ownsExecutor && executor instanceof AutoCloseable ac) {
-            try {
-                ac.close();
-            } catch (Exception e) {
-                throw new IOException(e);
-            }
-        }
+        // executor lifecycle is managed by the caller
     }
 
 }

@@ -33,8 +33,6 @@ import java.util.Collections;
 public class WordSketchApiServer {
 
     private static final Logger logger = LoggerFactory.getLogger(WordSketchApiServer.class);
-    private final QueryExecutor executor;
-    private final String indexPath;
     private final int port;
     private final GrammarConfigLoader grammarConfig;
     private final SketchHandlers sketchHandlers;
@@ -42,8 +40,6 @@ public class WordSketchApiServer {
     private com.sun.net.httpserver.HttpServer server;
 
     public WordSketchApiServer(QueryExecutor executor, String indexPath, int port, GrammarConfigLoader grammarConfig) {
-        this.executor = executor;
-        this.indexPath = indexPath;
         this.port = port;
         this.grammarConfig = grammarConfig;
         if (grammarConfig == null) {
