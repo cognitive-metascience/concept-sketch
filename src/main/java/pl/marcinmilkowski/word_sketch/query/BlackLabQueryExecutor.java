@@ -369,6 +369,7 @@ public class BlackLabQueryExecutor implements QueryExecutor {
      * @param maxResults Maximum number of results to return
      * @return List of collocation results sorted by logDice descending
      */
+    @Override
     public List<QueryResults.WordSketchResult> executeDependencyPattern(
             String lemma, 
             String deprel,

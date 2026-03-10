@@ -76,6 +76,13 @@ class SemanticFieldExplorerTest {
                 String lemma, String deprel, double minLogDice, int maxResults) {
             throw new UnsupportedOperationException("findDependencyCollocations not supported in stub");
         }
+
+        @Override
+        public List<QueryResults.WordSketchResult> executeDependencyPattern(
+                String lemma, String deprel, String headPosConstraint,
+                double minLogDice, int maxResults) {
+            throw new UnsupportedOperationException("executeDependencyPattern not supported in stub");
+        }
     }
 
     /** Convenience factory for WordSketchResult. */

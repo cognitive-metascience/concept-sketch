@@ -105,6 +105,23 @@ public interface QueryExecutor extends Closeable {
                                                                    double minLogDice, int maxResults) throws IOException;
 
     /**
+     * Execute a dependency-pattern query for word sketches with an optional head POS constraint.
+     * This is the lower-level entry point used by the API layer; {@link #findDependencyCollocations}
+     * is the higher-level variant without the POS constraint parameter.
+     *
+     * @param lemma              The head lemma to search for
+     * @param deprel             The dependency relation label (e.g., "nsubj", "obj")
+     * @param headPosConstraint  Optional POS regex for the head token (may be null)
+     * @param minLogDice         Minimum logDice score threshold (0 for no minimum)
+     * @param maxResults         Maximum number of results to return
+     * @return Collocate results ranked by logDice descending
+     * @throws IOException if index access or parsing fails
+     */
+    List<QueryResults.WordSketchResult> executeDependencyPattern(
+            String lemma, String deprel, String headPosConstraint,
+            double minLogDice, int maxResults) throws IOException;
+
+    /**
      * Get the type of this executor for logging/debugging.
      *
      * @return Executor type name (e.g., "blacklab")
