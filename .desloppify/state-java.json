@@ -11,22 +11,22 @@
     "total": 408,
     "auto_resolved": 89,
     "false_positive": 0,
-    "fixed": 282,
-    "open": 22,
+    "fixed": 288,
+    "open": 16,
     "wontfix": 15,
     "by_tier": {
       "1": {
         "auto_resolved": 42,
         "false_positive": 0,
-        "fixed": 219,
-        "open": 12,
+        "fixed": 224,
+        "open": 7,
         "wontfix": 7
       },
       "2": {
         "auto_resolved": 26,
         "false_positive": 0,
-        "fixed": 61,
-        "open": 4,
+        "fixed": 62,
+        "open": 3,
         "wontfix": 6
       },
       "3": {
@@ -15015,16 +15015,22 @@
         "suggestion": "Regenerate the code-structure listing in CLAUDE.md from the actual source tree (e.g., `find src/main/java -name '*.java' | sort`). Remove the grammar/ entries, add the model/ package with all DTOs, correct the utils/PosGroup path, and list the two handler classes. Consider automating this section from a script to prevent future drift.",
         "reasoning": ""
       },
-      "status": "open",
-      "note": null,
+      "status": "fixed",
+      "note": "All minor-fixes cluster issues addressed: stale docs, orphaned Javadoc, wrong method refs",
       "first_seen": "2026-03-10T19:50:51+00:00",
       "last_seen": "2026-03-10T19:50:51+00:00",
-      "resolved_at": null,
+      "resolved_at": "2026-03-10T20:07:45+00:00",
       "reopen_count": 0,
       "lang": "java",
       "suppressed": false,
       "suppressed_at": null,
-      "suppression_pattern": null
+      "suppression_pattern": null,
+      "resolution_attestation": {
+        "kind": "manual",
+        "text": "I have actually All minor-fixes cluster issues addressed: stale docs, orphaned Javadoc, wrong method refs and I am not gaming the score.",
+        "attested_at": "2026-03-10T20:07:45+00:00",
+        "scan_verified": false
+      }
     },
     "review::.::holistic::high_level_elegance::deprecated_zombie_in_wrong_package::b663c02b": {
       "id": "review::.::holistic::high_level_elegance::deprecated_zombie_in_wrong_package::b663c02b",
@@ -15116,16 +15122,22 @@
         "suggestion": "Correct the README endpoint table to show 'POST /api/bcql' instead of 'GET /api/bcql'. Optionally consolidate the startup log entry with the README to prevent future drift.",
         "reasoning": ""
       },
-      "status": "open",
-      "note": null,
+      "status": "fixed",
+      "note": "All minor-fixes cluster issues addressed: stale docs, orphaned Javadoc, wrong method refs",
       "first_seen": "2026-03-10T19:50:51+00:00",
       "last_seen": "2026-03-10T19:50:51+00:00",
-      "resolved_at": null,
+      "resolved_at": "2026-03-10T20:07:41+00:00",
       "reopen_count": 0,
       "lang": "java",
       "suppressed": false,
       "suppressed_at": null,
-      "suppression_pattern": null
+      "suppression_pattern": null,
+      "resolution_attestation": {
+        "kind": "manual",
+        "text": "I have actually All minor-fixes cluster issues addressed: stale docs, orphaned Javadoc, wrong method refs and I am not gaming the score.",
+        "attested_at": "2026-03-10T20:07:41+00:00",
+        "scan_verified": false
+      }
     },
     "review::.::holistic::low_level_elegance::explore_handler_inline_map_construction::ecaf1354": {
       "id": "review::.::holistic::low_level_elegance::explore_handler_inline_map_construction::ecaf1354",
@@ -15211,16 +15223,22 @@
         "suggestion": "Move the escapeForRegex Javadoc comment to appear directly above the escapeForRegex method declaration, and move the splitCqlTokens Javadoc to appear directly above the splitCqlTokens declaration (line 48). After the fix: `/** escapeForRegex doc */ public static String escapeForRegex(...) { ... }  /** splitCqlTokens doc */ public static List<String> splitCqlTokens(...) { ... }`",
         "reasoning": ""
       },
-      "status": "open",
-      "note": null,
+      "status": "fixed",
+      "note": "All minor-fixes cluster issues addressed: stale docs, orphaned Javadoc, wrong method refs",
       "first_seen": "2026-03-10T19:50:51+00:00",
       "last_seen": "2026-03-10T19:50:51+00:00",
-      "resolved_at": null,
+      "resolved_at": "2026-03-10T20:07:46+00:00",
       "reopen_count": 0,
       "lang": "java",
       "suppressed": false,
       "suppressed_at": null,
-      "suppression_pattern": null
+      "suppression_pattern": null,
+      "resolution_attestation": {
+        "kind": "manual",
+        "text": "I have actually All minor-fixes cluster issues addressed: stale docs, orphaned Javadoc, wrong method refs and I am not gaming the score.",
+        "attested_at": "2026-03-10T20:07:46+00:00",
+        "scan_verified": false
+      }
     },
     "review::.::holistic::low_level_elegance::snippet_parser_thin_wrapper_proliferation::70d37729": {
       "id": "review::.::holistic::low_level_elegance::snippet_parser_thin_wrapper_proliferation::70d37729",
@@ -15373,16 +15391,22 @@
         "suggestion": "Either fix the implementation to match the doc (catch all exceptions, log.warn, return 0L) or fix the doc to match the implementation (remove the 'Logs and returns 0' claim and say 'throws IOException on unexpected failures'). Given that all callers already handle IOException, fixing the Javadoc is the lower-risk option: remove the misleading sentence and keep 'throws IOException if index access fails'.",
         "reasoning": ""
       },
-      "status": "open",
-      "note": null,
+      "status": "fixed",
+      "note": "All minor-fixes cluster issues addressed: stale docs, orphaned Javadoc, wrong method refs",
       "first_seen": "2026-03-10T19:50:51+00:00",
       "last_seen": "2026-03-10T19:50:51+00:00",
-      "resolved_at": null,
+      "resolved_at": "2026-03-10T20:07:39+00:00",
       "reopen_count": 0,
       "lang": "java",
       "suppressed": false,
       "suppressed_at": null,
-      "suppression_pattern": null
+      "suppression_pattern": null,
+      "resolution_attestation": {
+        "kind": "manual",
+        "text": "I have actually All minor-fixes cluster issues addressed: stale docs, orphaned Javadoc, wrong method refs and I am not gaming the score.",
+        "attested_at": "2026-03-10T20:07:39+00:00",
+        "scan_verified": false
+      }
     },
     "review::.::holistic::contract_coherence::api_server_stale_endpoint_javadoc::4392878c": {
       "id": "review::.::holistic::contract_coherence::api_server_stale_endpoint_javadoc::4392878c",
@@ -15404,16 +15428,22 @@
         "suggestion": "Update the class-level Javadoc to list all registered endpoints, matching the format already used: add entries for /api/relations/dep, /api/semantic-field/explore, /api/semantic-field/explore-multi, /api/semantic-field, /api/semantic-field/examples, /api/concordance/examples, /api/visual/radial (GET), and /api/bcql (POST).",
         "reasoning": ""
       },
-      "status": "open",
-      "note": null,
+      "status": "fixed",
+      "note": "All minor-fixes cluster issues addressed: stale docs, orphaned Javadoc, wrong method refs",
       "first_seen": "2026-03-10T19:50:51+00:00",
       "last_seen": "2026-03-10T19:50:51+00:00",
-      "resolved_at": null,
+      "resolved_at": "2026-03-10T20:07:38+00:00",
       "reopen_count": 0,
       "lang": "java",
       "suppressed": false,
       "suppressed_at": null,
-      "suppression_pattern": null
+      "suppression_pattern": null,
+      "resolution_attestation": {
+        "kind": "manual",
+        "text": "I have actually All minor-fixes cluster issues addressed: stale docs, orphaned Javadoc, wrong method refs and I am not gaming the score.",
+        "attested_at": "2026-03-10T20:07:38+00:00",
+        "scan_verified": false
+      }
     },
     "review::.::holistic::contract_coherence::deprecated_facade_wrong_migration_target::1151ea59": {
       "id": "review::.::holistic::contract_coherence::deprecated_facade_wrong_migration_target::1151ea59",
@@ -15468,16 +15498,22 @@
         "suggestion": "Move the splitCqlTokens Javadoc block (lines 22-35) to immediately above the splitCqlTokens method (line 48), after the escapeForRegex method and its own Javadoc.",
         "reasoning": ""
       },
-      "status": "open",
-      "note": null,
+      "status": "fixed",
+      "note": "All minor-fixes cluster issues addressed: stale docs, orphaned Javadoc, wrong method refs",
       "first_seen": "2026-03-10T19:50:51+00:00",
       "last_seen": "2026-03-10T19:50:51+00:00",
-      "resolved_at": null,
+      "resolved_at": "2026-03-10T20:07:48+00:00",
       "reopen_count": 0,
       "lang": "java",
       "suppressed": false,
       "suppressed_at": null,
-      "suppression_pattern": null
+      "suppression_pattern": null,
+      "resolution_attestation": {
+        "kind": "manual",
+        "text": "I have actually All minor-fixes cluster issues addressed: stale docs, orphaned Javadoc, wrong method refs and I am not gaming the score.",
+        "attested_at": "2026-03-10T20:07:48+00:00",
+        "scan_verified": false
+      }
     }
   },
   "scan_coverage": {
@@ -15579,7 +15615,10 @@
     "contract_coherence": {
       "score": 63.8,
       "source": "holistic",
-      "assessed_at": "2026-03-10T19:50:51+00:00"
+      "assessed_at": "2026-03-10T19:50:51+00:00",
+      "needs_review_refresh": true,
+      "refresh_reason": "review_issue_fixed",
+      "stale_since": "2026-03-10T20:07:48+00:00"
     },
     "logic_clarity": {
       "score": 46.4,
@@ -15604,7 +15643,10 @@
     "high_level_elegance": {
       "score": 36.7,
       "source": "holistic",
-      "assessed_at": "2026-03-10T19:50:51+00:00"
+      "assessed_at": "2026-03-10T19:50:51+00:00",
+      "needs_review_refresh": true,
+      "refresh_reason": "review_issue_fixed",
+      "stale_since": "2026-03-10T20:07:45+00:00"
     },
     "test_strategy": {
       "score": 12.3,
@@ -15655,7 +15697,10 @@
     "low_level_elegance": {
       "score": 48.1,
       "source": "holistic",
-      "assessed_at": "2026-03-10T19:50:51+00:00"
+      "assessed_at": "2026-03-10T19:50:51+00:00",
+      "needs_review_refresh": true,
+      "refresh_reason": "review_issue_fixed",
+      "stale_since": "2026-03-10T20:07:46+00:00"
     },
     "mid_level_elegance": {
       "score": 53.8,
@@ -17690,13 +17735,13 @@
       "strict": 63.8,
       "verified_strict_score": 63.8,
       "checks": 10,
-      "failing": 4,
+      "failing": 1,
       "tier": 4,
       "detectors": {
         "subjective_assessment": {
           "potential": 10,
           "pass_rate": 0.638,
-          "failing": 4,
+          "failing": 1,
           "weighted_failures": 3.62,
           "assessment_score": 63.8,
           "placeholder": false,
@@ -17789,13 +17834,13 @@
       "strict": 36.7,
       "verified_strict_score": 36.7,
       "checks": 10,
-      "failing": 4,
+      "failing": 2,
       "tier": 4,
       "detectors": {
         "subjective_assessment": {
           "potential": 10,
           "pass_rate": 0.367,
-          "failing": 4,
+          "failing": 2,
           "weighted_failures": 6.33,
           "assessment_score": 36.7,
           "placeholder": false,
@@ -17831,13 +17876,13 @@
       "strict": 48.1,
       "verified_strict_score": 48.1,
       "checks": 10,
-      "failing": 4,
+      "failing": 3,
       "tier": 4,
       "detectors": {
         "subjective_assessment": {
           "potential": 10,
           "pass_rate": 0.481,
-          "failing": 4,
+          "failing": 3,
           "weighted_failures": 5.19,
           "assessment_score": 48.1,
           "placeholder": false,
