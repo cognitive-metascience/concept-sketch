@@ -2,8 +2,6 @@ package pl.marcinmilkowski.word_sketch.tagging;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import pl.marcinmilkowski.word_sketch.utils.PosGroup;
-
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -18,10 +16,12 @@ import java.util.regex.Pattern;
 /**
  * Simple rule-based POS tagger fallback.
  *
- * Used when UDPipe is not available.
- * Provides basic English POS tagging using lookup tables and rules.
+ * <p>Used when UDPipe is not available. Provides basic English POS tagging using
+ * lookup tables and morphological rules (Penn Treebank tagset).
+ *
+ * <p>Obtain an instance via {@link #create()} and use it through the {@link PosTagger} interface.
  */
-public class SimpleTagger {
+public class SimpleTagger implements PosTagger {
 
     private static final Logger logger = LoggerFactory.getLogger(SimpleTagger.class);
 
@@ -297,45 +297,4 @@ public class SimpleTagger {
         return "Penn Treebank (simplified)";
     }
 
-    /** A single token with its POS tag, lemma, and position. */
-    public static class TaggedToken {
-        private final String word;
-        private final String lemma;
-        private final String tag;
-        private final int position;
-
-        public TaggedToken(String word, String lemma, String tag, int position) {
-            this.word = word;
-            this.lemma = lemma;
-            this.tag = tag;
-            this.position = position;
-        }
-
-        public String getWord() { return word; }
-        public String getLemma() { return lemma; }
-        public String getTag() { return tag; }
-        public int getPosition() { return position; }
-
-        public String getPosGroup() {
-            if (tag == null) return PosGroup.OTHER.getValue();
-            char firstChar = tag.charAt(0);
-            switch (firstChar) {
-                case 'N': return PosGroup.NOUN.getValue();
-                case 'V': return PosGroup.VERB.getValue();
-                case 'J': return PosGroup.ADJ.getValue();
-                case 'R': return PosGroup.ADV.getValue();
-                case 'D': return "det";
-                case 'P': return "pron";
-                case 'I': return "prep";
-                case 'C': return "conj";
-                case 'U': return "punct";
-                default: return PosGroup.OTHER.getValue();
-            }
-        }
-
-        @Override
-        public String toString() {
-            return word + "\t" + tag + "\t" + lemma;
-        }
-    }
 }
