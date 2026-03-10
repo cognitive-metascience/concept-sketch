@@ -96,8 +96,7 @@ src/main/java/pl/marcinmilkowski/word_sketch/
 │   ├── WordSketchApiServer.java        # REST API server (14 endpoints)
 │   ├── HttpApiUtils.java               # HTTP utility: sendJsonResponse, sendError, parseQueryParams, requireParam
 │   ├── ExplorationHandlers.java        # Handlers for semantic field exploration endpoints
-│   ├── SketchHandlers.java             # Handlers for sketch, concordance, BCQL, radial endpoints
-│   └── PatternSubstitution.java        # @Deprecated — use utils.PatternSubstitution
+│   └── SketchHandlers.java             # Handlers for sketch, concordance, BCQL, radial endpoints
 ├── config/
 │   ├── GrammarConfigLoader.java        # Grammar config loading from JSON
 │   ├── PosGroup.java                   # POS group constants (NOUN, VERB, ADJ, ADV, OTHER)
@@ -106,7 +105,8 @@ src/main/java/pl/marcinmilkowski/word_sketch/
 │   └── SemanticFieldExplorer.java      # Single-seed and multi-seed semantic field exploration
 ├── indexer/
 │   └── blacklab/
-│       └── BlackLabConllUIndexer.java  # CoNLL-U corpus indexer for BlackLab
+│       ├── BlackLabConllUIndexer.java  # CoNLL-U corpus indexer for BlackLab
+│       └── ConlluConverter.java        # Converts CoNLL-U to WPL chunk format
 ├── model/
 │   ├── AdjectiveProfile.java           # Adjective collocate profile for SEF comparison
 │   ├── ComparisonResult.java           # Result DTO for compareCollocateProfiles()
