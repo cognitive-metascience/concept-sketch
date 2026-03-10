@@ -2,28 +2,19 @@
   "command": "next",
   "items": [
     {
-      "id": "review::.::holistic::abstraction_fitness::escape_regex_no_shared_home::1c87d574",
-      "kind": "issue",
+      "id": "triage::observe",
+      "kind": "workflow_stage",
       "confidence": "high",
-      "detector": "review",
+      "detector": "triage",
       "file": ".",
-      "summary": "escapeForRegex utility duplicated in two packages with no shared abstraction",
+      "summary": "Triage: Analyse issues & spot contradictions",
       "detail": {
-        "holistic": true,
-        "dimension": "abstraction_fitness",
-        "related_files": [
-          "src/main/java/pl/marcinmilkowski/word_sketch/api/PatternSubstitution.java",
-          "src/main/java/pl/marcinmilkowski/word_sketch/config/GrammarConfigLoader.java"
-        ],
-        "evidence": [
-          "PatternSubstitution.escapeForRegex: public static method escaping backslash and double-quote",
-          "GrammarConfigLoader.RelationConfig.escapeForRegex: private static method with identical body"
-        ],
-        "suggestion": "Add escapeForRegex as a package-accessible static method in CqlUtils (which already provides the shared CQL parsing primitive), and remove both duplicates.",
-        "reasoning": ""
+        "total_review_issues": 72,
+        "stage": "observe",
+        "stage_label": "Analyse issues & spot contradictions"
       },
-      "status": "open",
-      "primary_command": "desloppify plan resolve \"review::.::holistic::abstraction_fitness::escape_regex_no_shared_home::1c87d574\" --note \"<what you did>\" --confirm",
+      "status": null,
+      "primary_command": "desloppify plan triage --stage observe",
       "queue_position": 1
     }
   ],
@@ -405,7 +396,7 @@
         "item_count": 9
       }
     ],
-    "total_ordered": 74,
+    "total_ordered": 80,
     "total_skipped": 60,
     "plan_overrides_narrative": true
   },
@@ -880,7 +871,7 @@
   ],
   "warnings": [
     "72 new review issue(s) not yet triaged. Run `desloppify plan triage` to incorporate.",
-    "TRIAGE RECOMMENDED \u2014 review issues changed since last triage. Run: desloppify plan triage"
+    "TRIAGE PENDING \u2014 queued and will activate after objective work is complete."
   ],
   "config": {
     "target_strict_score": 95,
