@@ -352,7 +352,7 @@ public class SimpleTagger {
         if (PAST_TENSE.matcher(word).matches()) return "VBD";
         if (PRESENT_PARTICIPLE.matcher(word).matches()) return "VBG";
         if (THIRD_PERSON.matcher(word).matches()) return "VBZ";
-        if (word.equals("am")) return "VBD";
+        if (word.equals("am")) return "VBP";
         return "VB";
     }
 

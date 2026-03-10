@@ -22,6 +22,7 @@ public class BlackLabSnippetParser {
 
     /**
      * Extract lemma from matched text (XML format).
+     * Finds all lemma="xxx" patterns and returns the last one (the collocate).
      */
     static String extractLemmaFromMatch(String matchText) {
         if (matchText == null || matchText.isEmpty()) {
@@ -38,6 +39,7 @@ public class BlackLabSnippetParser {
 
     /**
      * Extract POS tag from matched text (XML format).
+     * Tries xpos first, falls back to upos.
      */
     static String extractPosFromMatch(String matchText) {
         if (matchText == null || matchText.isEmpty()) {
@@ -102,9 +104,6 @@ public class BlackLabSnippetParser {
         return m.find() ? xml.substring(0, m.start()) : xml;
     }
 
-    /**
-     * Extract plain text from XML snippet by stripping tags.
-     */
     static String extractPlainTextFromXml(String xmlSnippet) {
         if (xmlSnippet == null || xmlSnippet.isEmpty()) {
             return "";
@@ -157,10 +156,6 @@ public class BlackLabSnippetParser {
         return tokens[position - 1].toLowerCase();
     }
 
-    /**
-     * Extract the headword lemma from a BCQL pattern.
-     * Looks for patterns like lemma="word" or lemma='word'
-     */
     static String extractHeadword(String bcqlPattern) {
         java.util.regex.Matcher m = LEMMA_ATTR_ANY.matcher(bcqlPattern);
         if (m.find()) {

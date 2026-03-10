@@ -508,23 +508,32 @@ public class WordSketchApiServer {
         String relationType = relationConfig.get().relationType().name();
         String relationName = relationConfig.get().name();
 
-        int topCollocates = Integer.parseInt(params.getOrDefault("top", "15"));
-        int nounsPerCollocate = Integer.parseInt(params.getOrDefault("nouns_per", "30"));
-        int minShared = Integer.parseInt(params.getOrDefault("min_shared", "2"));
-        double minLogDice = Double.parseDouble(params.getOrDefault("min_logdice", "3.0"));
+        int topCollocates;
+        int nounsPerCollocate;
+        int minShared;
+        double minLogDice;
+        try {
+            topCollocates = Integer.parseInt(params.getOrDefault("top", "15"));
+            nounsPerCollocate = Integer.parseInt(params.getOrDefault("nouns_per", "30"));
+            minShared = Integer.parseInt(params.getOrDefault("min_shared", "2"));
+            minLogDice = Double.parseDouble(params.getOrDefault("min_logdice", "3.0"));
+        } catch (NumberFormatException e) {
+            HttpApiUtils.sendError(exchange, 400, "Invalid numeric parameter: " + e.getMessage());
+            return;
+        }
 
-        SemanticFieldExplorer explorer = new SemanticFieldExplorer(this.executor);
-        
         String bcqlPattern = relationConfig.get().getFullPattern(seed);
         String simplePattern = relationConfig.get().collocatePosGroup() == PosGroup.ADJ ? 
             "[xpos=\"JJ.*\"]" : "[xpos=\"NN.*|VB.*\"]";
         int headPos = relationConfig.get().headPosition();
         int collocatePos = relationConfig.get().collocatePosition();
-        
-        ExplorationResult result = explorer.exploreByPattern(
-            seed, topCollocates, nounsPerCollocate, minShared, minLogDice,
-            bcqlPattern, simplePattern, relationName, headPos, collocatePos);
-        explorer.close();
+
+        ExplorationResult result;
+        try (SemanticFieldExplorer explorer = new SemanticFieldExplorer(this.executor)) {
+            result = explorer.exploreByPattern(
+                seed, topCollocates, nounsPerCollocate, minShared, minLogDice,
+                bcqlPattern, simplePattern, relationName, headPos, collocatePos);
+        }
 
         Map<String, Object> response = new HashMap<>();
         response.put("status", "ok");
@@ -602,13 +611,10 @@ public class WordSketchApiServer {
      * GET /api/semantic-field/explore-multi?seeds=theory,model,hypothesis&relation=adj_predicate&top=15&min_shared=2
      */
     private void handleSemanticFieldExploreMulti(com.sun.net.httpserver.HttpExchange exchange) throws IOException {
-        logger.info("handleSemanticFieldExploreMulti called");
         String query = exchange.getRequestURI().getQuery();
-        logger.info("Query string: {}", query);
         Map<String, String> params = HttpApiUtils.parseQueryParams(query);
 
         String seedsStr = params.getOrDefault("seeds", "");
-        logger.info("Seeds parameter: {}", seedsStr);
         if (seedsStr.isEmpty()) {
             HttpApiUtils.sendError(exchange, 400, "Missing required parameter: seeds (comma-separated)");
             return;
@@ -644,11 +650,18 @@ public class WordSketchApiServer {
         String relationType = relationConfig.get().relationType().name();
         String relationName = relationConfig.get().name();
 
-        int topCollocates = Integer.parseInt(params.getOrDefault("top", "15"));
-        int minShared = Integer.parseInt(params.getOrDefault("min_shared", "2"));
-        double minLogDice = Double.parseDouble(params.getOrDefault("min_logdice", "2.0"));
+        int topCollocates;
+        int minShared;
+        double minLogDice;
+        try {
+            topCollocates = Integer.parseInt(params.getOrDefault("top", "15"));
+            minShared = Integer.parseInt(params.getOrDefault("min_shared", "2"));
+            minLogDice = Double.parseDouble(params.getOrDefault("min_logdice", "2.0"));
+        } catch (NumberFormatException e) {
+            HttpApiUtils.sendError(exchange, 400, "Invalid numeric parameter: " + e.getMessage());
+            return;
+        }
 
-        String bcqlPattern = relationConfig.get().pattern();
         String simplePattern = relationConfig.get().collocatePosGroup() == PosGroup.ADJ ? 
             "[xpos=\"JJ.*\"]" : "[xpos=\"NN.*|VB.*\"]";
         int headPos = relationConfig.get().headPosition();
@@ -658,6 +671,7 @@ public class WordSketchApiServer {
         Set<String> commonCollocates = null;
 
         for (String seed : seeds) {
+            String bcqlPattern = relationConfig.get().getFullPattern(seed);
             List<QueryResults.WordSketchResult> collocates;
             collocates = executor.executeSurfacePattern(
                 seed, bcqlPattern, headPos, collocatePos, minLogDice, topCollocates);
@@ -745,9 +759,10 @@ public class WordSketchApiServer {
         double minLogDice = Double.parseDouble(params.getOrDefault("min_logdice", "3.0"));
         int maxPerNoun = Integer.parseInt(params.getOrDefault("max_per_noun", "50"));
 
-        SemanticFieldExplorer explorer = new SemanticFieldExplorer(this.executor);
-        ComparisonResult result = explorer.compare(nouns, minLogDice, maxPerNoun);
-        explorer.close();
+        ComparisonResult result;
+        try (SemanticFieldExplorer explorer = new SemanticFieldExplorer(this.executor)) {
+            result = explorer.compare(nouns, minLogDice, maxPerNoun);
+        }
 
         Map<String, Object> response = new HashMap<>();
         response.put("status", "ok");
@@ -823,9 +838,10 @@ public class WordSketchApiServer {
 
         int maxExamples = Integer.parseInt(params.getOrDefault("max", "10"));
 
-        SemanticFieldExplorer explorer = new SemanticFieldExplorer(this.executor);
-        List<String> examples = explorer.fetchExamples(adjective, noun, maxExamples);
-        explorer.close();
+        List<String> examples;
+        try (SemanticFieldExplorer explorer = new SemanticFieldExplorer(this.executor)) {
+            examples = explorer.fetchExamples(adjective, noun, maxExamples);
+        }
 
         Map<String, Object> response = new HashMap<>();
         response.put("status", "ok");
@@ -973,7 +989,6 @@ public class WordSketchApiServer {
             JSONObject obj = JSON.parseObject(body);
             String bcqlQuery = obj.getString("query");
             int limit = obj.getIntValue("limit");
-            boolean raw = obj.getBooleanValue("raw");  // Add raw output option
             if (limit <= 0) limit = 20;
 
             logger.debug("BCQL query: {}", bcqlQuery);

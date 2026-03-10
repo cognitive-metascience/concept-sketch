@@ -70,13 +70,13 @@ public class GrammarConfigLoader {
         // Validate version
         String parsedVersion = root.getString("version");
         if (parsedVersion == null || parsedVersion.isBlank()) {
-            throw new IllegalArgumentException("Missing 'version' field in grammar config");
+            throw new IOException("Config error: Missing 'version' field in grammar config");
         }
         this.version = parsedVersion;
 
         // VALIDATION: Reject 'copulas' key - must be embedded in CQL patterns
         if (root.containsKey("copulas")) {
-            throw new IllegalArgumentException("Grammar config must NOT contain 'copulas' key. " +
+            throw new IOException("Config error: Grammar config must NOT contain 'copulas' key. " +
                 "Copulas must be embedded in CQL patterns using [lemma=\"be|appear|seem|...\"]. " +
                 "See noun_adj_predicates for example.");
         }
@@ -84,7 +84,7 @@ public class GrammarConfigLoader {
         // Load relations
         JSONArray relationsArray = root.getJSONArray("relations");
         if (relationsArray == null || relationsArray.isEmpty()) {
-            throw new IllegalArgumentException("Missing or empty 'relations' array in grammar config");
+            throw new IOException("Config error: Missing or empty 'relations' array in grammar config");
         }
         List<RelationConfig> loadedRelations = new ArrayList<>();
         Map<String, RelationConfig> loadedRelationsById = new HashMap<>();
@@ -92,12 +92,12 @@ public class GrammarConfigLoader {
         for (int i = 0; i < relationsArray.size(); i++) {
             JSONObject relObj = relationsArray.getJSONObject(i);
             if (relObj == null) {
-                throw new IllegalArgumentException("Invalid relation at index " + i);
+                throw new IOException("Config error: Invalid relation at index " + i);
             }
 
             String id = relObj.getString("id");
             if (id == null || id.isBlank()) {
-                throw new IllegalArgumentException("Missing 'id' field for relation at index " + i);
+                throw new IOException("Config error: Missing 'id' field for relation at index " + i);
             }
 
             // Support BCQL format with {head} placeholder
@@ -114,7 +114,7 @@ public class GrammarConfigLoader {
 
             // VALIDATION: Require pattern - throw exception if missing
             if (pattern == null || pattern.isBlank()) {
-                throw new IllegalArgumentException("Relation '" + id + "' has no pattern - every relation must have a BCQL pattern");
+                throw new IOException("Config error: Relation '" + id + "' has no pattern - every relation must have a BCQL pattern");
             }
 
             // VALIDATION: Skip token count validation for:
@@ -128,7 +128,7 @@ public class GrammarConfigLoader {
             if (!hasPlaceholder && !isDual) {
                 int tokenCount = countPatternTokens(pattern);
                 if (headPosition < 1 || headPosition > tokenCount || collocatePosition < 1 || collocatePosition > tokenCount) {
-                    throw new IllegalArgumentException("Relation '" + id + "': positions (" + headPosition + "," + collocatePosition
+                    throw new IOException("Config error: Relation '" + id + "': positions (" + headPosition + "," + collocatePosition
                         + ") must be between 1 and " + tokenCount + " (pattern has " + tokenCount + " positions: " + pattern + ")");
                 }
             }
@@ -145,11 +145,11 @@ public class GrammarConfigLoader {
                 dual,
                 relObj.getIntValue("default_slop", 10),
                 parseRelationType(relObj.getString("relation_type")),
-                relObj.getBoolean("exploration_enabled")
+                relObj.getBooleanValue("exploration_enabled", false)
             );
 
             if (loadedRelationsById.containsKey(id)) {
-                throw new IllegalArgumentException("Duplicate relation id: " + id);
+                throw new IOException("Config error: Duplicate relation id: " + id);
             }
 
             loadedRelations.add(config);
@@ -314,7 +314,7 @@ public class GrammarConfigLoader {
         boolean dual,
         int defaultSlop,
         RelationType relationType,
-        Boolean explorationEnabled
+        boolean explorationEnabled
     ) {
         public JSONObject toJson() {
             JSONObject obj = new JSONObject();
@@ -327,7 +327,7 @@ public class GrammarConfigLoader {
             obj.put("dual", dual);
             obj.put("default_slop", defaultSlop);
             if (relationType != null) obj.put("relation_type", relationType.name());
-            if (explorationEnabled != null) obj.put("exploration_enabled", explorationEnabled);
+            obj.put("exploration_enabled", explorationEnabled);
             return obj;
         }
 
@@ -429,8 +429,8 @@ public class GrammarConfigLoader {
          */
         private static String mergeLemmaConstraint(String existingConstraint, String headword) {
             // Parse existing constraint to extract xpos/pos tags
-            String xposPattern = extractXposPattern(existingConstraint);
-            String posPattern = extractPosPattern(existingConstraint);
+            String xposPattern = extractConstraintAttribute(existingConstraint, "xpos");
+            String posPattern = extractConstraintAttribute(existingConstraint, "tag");
 
             // Build new constraint with lemma
             StringBuilder sb = new StringBuilder();
@@ -445,22 +445,6 @@ public class GrammarConfigLoader {
 
             sb.append("]");
             return sb.toString();
-        }
-
-        /**
-         * Extract xpos constraint from an existing constraint string.
-         * E.g., "[xpos=\"NN.*\"]" returns "xpos=\"NN.*\""
-         */
-        private static String extractXposPattern(String constraint) {
-            return extractConstraintAttribute(constraint, "xpos");
-        }
-
-        /**
-         * Extract pos constraint from an existing constraint string.
-         * E.g., "[tag=\"NN\"]" returns "tag=\"NN\""
-         */
-        private static String extractPosPattern(String constraint) {
-            return extractConstraintAttribute(constraint, "tag");
         }
 
         private static String extractConstraintAttribute(String constraint, String attrName) {

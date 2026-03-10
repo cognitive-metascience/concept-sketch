@@ -24,10 +24,6 @@ public class LogDiceCalculator {
         double numerator = 2.0 * collocateFreq;
         double denominator = headwordFreq + collocateTotal;
 
-        if (denominator <= 0) {
-            return 0.0;
-        }
-
         double dice = numerator / denominator;
 
         // Handle edge case where dice is 0 or negative
@@ -40,9 +36,6 @@ public class LogDiceCalculator {
         return Math.max(0.0, logDice);
     }
 
-    /**
-     * Compute logDice score from frequency counts.
-     */
     public static double compute(long collocateFreq, long headwordFreq, long collocateTotal) {
         return compute((double) collocateFreq, (double) headwordFreq, (double) collocateTotal);
     }

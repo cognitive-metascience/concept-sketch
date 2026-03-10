@@ -312,6 +312,12 @@ public class BlackLabQueryExecutor implements QueryExecutor {
         }
     }
 
+    /**
+     * Returns total token frequency for the given lemma in the index.
+     * @return frequency count, or 0 if the lemma is not found or if the lookup fails.
+     *         Note: a 0 return from a failed lookup will silently corrupt logDice scores
+     *         for the calling context. Failures are logged at WARN level.
+     */
     @Override
     public long getTotalFrequency(String lemma) throws IOException {
         try {
@@ -452,6 +458,7 @@ public class BlackLabQueryExecutor implements QueryExecutor {
      * Uses BCQL to find collocates matching the pattern.
      * Properly handles labeled capture groups (1: for head, 2: for collocate).
      */
+    @Override
     public List<QueryResults.WordSketchResult> executeSurfacePattern(
             String lemma, String bcqlPattern,
             int headPosition, int collocatePosition,

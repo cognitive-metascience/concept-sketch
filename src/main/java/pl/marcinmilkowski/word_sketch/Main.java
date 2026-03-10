@@ -223,7 +223,9 @@ public class Main {
             stream.sorted(java.util.Comparator.reverseOrder())
                   .map(Path::toFile)
                   .forEach(java.io.File::delete);
-        } catch (IOException ignored) {}
+        } catch (IOException e) {
+            logger.warn("Failed to delete temp directory {}: {}", dir, e.getMessage());
+        }
     }
 
     private static void handleBlackLabQueryCommand(String[] args) throws IOException {
