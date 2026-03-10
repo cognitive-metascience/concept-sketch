@@ -42,46 +42,11 @@ public class WordSketchApiServer {
     private final GrammarConfigLoader grammarConfig;
     private com.sun.net.httpserver.HttpServer server;
 
-    public WordSketchApiServer(Builder builder) {
-        this.executor = builder.executor;
-        this.indexPath = builder.indexPath;
-        this.port = builder.port;
-        this.grammarConfig = builder.grammarConfig;
-    }
-
-    public static Builder builder() {
-        return new Builder();
-    }
-
-    public static class Builder {
-        private QueryExecutor executor;
-        private String indexPath;
-        private int port = 8080;
-        private GrammarConfigLoader grammarConfig;
-
-        public Builder withExecutor(QueryExecutor executor) {
-            this.executor = executor;
-            return this;
-        }
-
-        public Builder withIndexPath(String indexPath) {
-            this.indexPath = indexPath;
-            return this;
-        }
-
-        public Builder withPort(int port) {
-            this.port = port;
-            return this;
-        }
-
-        public Builder withGrammarConfig(GrammarConfigLoader grammarConfig) {
-            this.grammarConfig = grammarConfig;
-            return this;
-        }
-
-        public WordSketchApiServer build() {
-            return new WordSketchApiServer(this);
-        }
+    public WordSketchApiServer(QueryExecutor executor, String indexPath, int port, GrammarConfigLoader grammarConfig) {
+        this.executor = executor;
+        this.indexPath = indexPath;
+        this.port = port;
+        this.grammarConfig = grammarConfig;
     }
 
     public void start() {

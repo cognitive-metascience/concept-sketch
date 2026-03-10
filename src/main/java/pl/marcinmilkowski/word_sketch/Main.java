@@ -327,12 +327,7 @@ public class Main {
             System.out.println("No grammar config found, using defaults.");
         }
 
-        WordSketchApiServer server = WordSketchApiServer.builder()
-            .withExecutor(executor)
-            .withIndexPath(indexPath)
-            .withPort(port)
-            .withGrammarConfig(grammarConfig)
-            .build();
+        WordSketchApiServer server = new WordSketchApiServer(executor, indexPath, port, grammarConfig);
 
         server.start();
 
