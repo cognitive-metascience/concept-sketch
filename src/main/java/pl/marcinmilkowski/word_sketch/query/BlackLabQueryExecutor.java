@@ -408,13 +408,15 @@ public class BlackLabQueryExecutor implements QueryExecutor {
             HitGroups groups = searchHits.groupWithStoredHits(groupBy, Results.NO_LIMIT).execute();
 
             for (HitGroup group : groups) {
-                String dependentLemma = extractDependentLemmaFromGroup(group);
+                String identity = group.identity().toString();
+                if (identity == null || identity.isEmpty()) continue;
+                String dependentLemma = BlackLabSnippetParser.extractCollocateLemma(identity);
                 if (dependentLemma != null && !dependentLemma.isEmpty()) {
-                    freqMap.merge(dependentLemma.toLowerCase(), group.size(), Long::sum);
-                    // Store POS if available
-                    String pos = extractPosFromGroup(group);
+                    String key = dependentLemma.toLowerCase();
+                    freqMap.merge(key, group.size(), Long::sum);
+                    String pos = BlackLabSnippetParser.extractPosFromMatch(identity);
                     if (pos != null) {
-                        lemmaPosMap.put(dependentLemma.toLowerCase(), pos);
+                        lemmaPosMap.put(key, pos);
                     }
                 }
             }
@@ -424,28 +426,6 @@ public class BlackLabQueryExecutor implements QueryExecutor {
         } catch (InvalidQuery e) {
             throw new IOException("BCQL parse error: " + e.getMessage(), e);
         }
-    }
-
-    /**
-     * Extract the dependent lemma from a dependency query hit group.
-     * The dependent is matched by the underscore in the BCQL pattern.
-     */
-    private String extractDependentLemmaFromGroup(HitGroup group) {
-        String identity = group.identity().toString();
-        if (identity == null || identity.isEmpty()) {
-            return null;
-        }
-        // Delegate to the shared snippet parser
-        String lemma = BlackLabSnippetParser.extractCollocateLemma(identity);
-        return lemma != null ? lemma.toLowerCase() : null;
-    }
-
-    /**
-     * Extract POS tag from a hit group using the shared snippet parser.
-     */
-    private String extractPosFromGroup(HitGroup group) {
-        String identity = group.identity().toString();
-        return BlackLabSnippetParser.extractPosFromMatch(identity);
     }
 
     /**
