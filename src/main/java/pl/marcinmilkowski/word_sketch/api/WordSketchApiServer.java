@@ -8,6 +8,7 @@ import org.slf4j.LoggerFactory;
 import pl.marcinmilkowski.word_sketch.config.GrammarConfigLoader;
 import pl.marcinmilkowski.word_sketch.query.QueryExecutor;
 import pl.marcinmilkowski.word_sketch.query.QueryResults;
+import pl.marcinmilkowski.word_sketch.query.PosGroup;
 import pl.marcinmilkowski.word_sketch.query.SemanticFieldExplorer;
 import pl.marcinmilkowski.word_sketch.query.SemanticFieldExplorer.ComparisonResult;
 import pl.marcinmilkowski.word_sketch.query.SemanticFieldExplorer.AdjectiveProfile;
@@ -295,7 +296,7 @@ public class WordSketchApiServer {
                             patterns.put(rel.id(), patternData);
                         }
                     } catch (Exception e) {
-                        logger.debug("Relation {} failed for lemma {}", rel.id(), lemma, e);
+                        logger.warn("Relation {} failed for lemma {}", rel.id(), lemma, e);
                     }
                 }
             }
@@ -394,7 +395,7 @@ public class WordSketchApiServer {
                             relations.put(rel.id(), relData);
                         }
                     } catch (Exception e) {
-                        logger.debug("Dependency relation {} failed for lemma {}", rel.id(), lemma, e);
+                        logger.warn("Dependency relation {} failed for lemma {}", rel.id(), lemma, e);
                     }
                 }
             }
