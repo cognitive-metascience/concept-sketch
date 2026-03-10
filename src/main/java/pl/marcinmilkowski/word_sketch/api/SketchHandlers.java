@@ -234,23 +234,27 @@ class SketchHandlers {
     }
 
     private void handleRelationQueryInternal(HttpExchange exchange, String lemma, String relationId, RelationType relationType) throws IOException {
-        List<QueryResults.WordSketchResult> results = new ArrayList<>();
+        if (grammarConfig == null) {
+            HttpApiUtils.sendError(exchange, 500, "Grammar configuration not loaded");
+            return;
+        }
+        var rel = grammarConfig.getRelation(relationId).orElse(null);
+        if (rel == null || rel.relationType() != relationType) {
+            HttpApiUtils.sendError(exchange, 400, "Unknown relation: " + relationId);
+            return;
+        }
 
-        if (grammarConfig != null) {
-            var rel = grammarConfig.getRelation(relationId).orElse(null);
-            if (rel != null && rel.relationType() == relationType) {
-                try {
-                    String fullPattern = rel.getFullPattern(lemma);
-                    results = executor.executeSurfacePattern(
-                        lemma, fullPattern,
-                        rel.headPosition(), rel.collocatePosition(),
-                        0.0, 50);
-                } catch (IOException e) {
-                    logger.error("Query failed", e);
-                    HttpApiUtils.sendError(exchange, 500, "Query failed: " + e.getMessage());
-                    return;
-                }
-            }
+        List<QueryResults.WordSketchResult> results;
+        try {
+            String fullPattern = rel.getFullPattern(lemma);
+            results = executor.executeSurfacePattern(
+                lemma, fullPattern,
+                rel.headPosition(), rel.collocatePosition(),
+                0.0, 50);
+        } catch (IOException e) {
+            logger.error("Query failed", e);
+            HttpApiUtils.sendError(exchange, 500, "Query failed: " + e.getMessage());
+            return;
         }
 
         List<Map<String, Object>> collocations = new ArrayList<>();
@@ -283,10 +287,17 @@ class SketchHandlers {
         String word1 = params.get("word1");
         String word2 = params.get("word2");
         String relation = params.getOrDefault("relation", "noun_adj_predicates");
-        int limit = Integer.parseInt(params.getOrDefault("limit", "10"));
 
         if (word1 == null || word1.isEmpty() || word2 == null || word2.isEmpty()) {
             HttpApiUtils.sendError(exchange, 400, "Missing required parameters: word1 and word2");
+            return;
+        }
+
+        int limit;
+        try {
+            limit = Integer.parseInt(params.getOrDefault("limit", "10"));
+        } catch (NumberFormatException e) {
+            HttpApiUtils.sendError(exchange, 400, "Invalid numeric parameter: limit");
             return;
         }
 
@@ -402,6 +413,10 @@ class SketchHandlers {
             String body = new String(exchange.getRequestBody().readAllBytes(), StandardCharsets.UTF_8);
             JSONObject obj = JSON.parseObject(body);
             String bcqlQuery = obj.getString("query");
+            if (bcqlQuery == null || bcqlQuery.isBlank()) {
+                HttpApiUtils.sendError(exchange, 400, "Missing required parameter: query");
+                return;
+            }
             int limit = obj.getIntValue("limit");
             if (limit <= 0) limit = 20;
 
