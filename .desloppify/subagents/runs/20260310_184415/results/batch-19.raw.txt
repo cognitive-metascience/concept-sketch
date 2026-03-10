@@ -1,0 +1,115 @@
+{
+  "batch": "api_surface_coherence",
+  "batch_index": 19,
+  "assessments": {"api_surface_coherence": 55.0},
+  "dimension_notes": {
+    "api_surface_coherence": {
+      "evidence": [
+        "QueryExecutor interface: all 6 methods declare 'throws IOException' — consistent error contract at the Java API level.",
+        "ExploreOptions record bundles 7 parameters (topCollocates, nounsPerCollocate, minLogDice, minShared, includeExamples, headPos, collocatePos) — good use of parameter object to avoid wide method signatures.",
+        "executeSurfacePattern(lemma, bcqlPattern, headPosition, collocatePosition, minLogDice, maxResults) — 6 parameters, exceeding the 5-param threshold; headPosition and collocatePosition could be bundled.",
+        "HTTP response JSON mixes camelCase and snake_case field names in the same objects: 'logDice' (camelCase) alongside 'seed_collocates_count', 'relation_type', 'avg_logdice', 'shared_by_count' (snake_case) — visible to all API consumers.",
+        "URL shape inconsistency: word sketch uses path parameters (/api/sketch/{lemma}/{relation}) while semantic field uses query parameters (/api/semantic-field/explore?seed=...&relation=...). The 'subject' of the query is encoded differently in sibling feature areas.",
+        "handleConcordanceExamples uses 'word1', 'word2' query params; semantic-field/examples uses 'adjective', 'noun'; semantic-field/explore uses 'seed'. Three different naming strategies for identifying the query subject across related endpoints.",
+        "All successful responses include 'status': 'ok' — consistent success envelope.",
+        "All error responses use the sendError() utility producing {'error': 'message'} JSON — consistent error shape.",
+        "handleBcqlQueryPost response uses 'hits' (count key) while handleConcordanceExamples uses 'count' — sibling concordance endpoints use different keys for the same concept.",
+        "The WordSketchApiServer public API is minimal and clean: only start() and stop() are public — good encapsulation.",
+        "Relation aliases are resolved via resolveRelationAlias() in ExplorationHandlers but the same alias map is not exposed or reused in SketchHandlers — siloed."
+      ],
+      "impact_scope": "subsystem",
+      "fix_scope": "multi_file_refactor",
+      "confidence": "high"
+    }
+  },
+  "dimension_judgment": {
+    "api_surface_coherence": {
+      "strengths": [
+        "QueryExecutor interface has consistent method signatures with uniform IOException contracts and clear Javadoc distinguishing each method's purpose.",
+        "All HTTP error responses use the same shape ({\"error\": message}) via a shared utility.",
+        "ExploreOptions record successfully prevents parameter-list explosion in the exploration pipeline."
+      ],
+      "issue_character": "The HTTP response JSON is the primary coherence problem: camelCase and snake_case field names coexist in the same response bodies across all endpoints, and sibling endpoints that perform concordance-style queries use different parameter names and count keys for the same concepts.",
+      "score_rationale": "The Java API layer (QueryExecutor interface, handler constructors) is reasonably coherent. The HTTP API surface — which is the outward contract for all clients — has two systematic inconsistencies: mixed JSON key casing and divergent parameter naming for the query subject across related endpoints. These are not isolated oversights; they affect multiple endpoints and response fields, making the API harder to consume programmatically. The score sits below average because the API shape issues are structural and client-visible, even though the Java internals are fairly clean."
+    }
+  },
+  "issues": [
+    {
+      "dimension": "api_surface_coherence",
+      "identifier": "asc_json_case_mixing",
+      "summary": "HTTP response bodies mix camelCase and snake_case JSON field names within the same response object",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/api/ExplorationHandlers.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/api/SketchHandlers.java"
+      ],
+      "evidence": [
+        "Explore response: 'logDice' (camelCase) alongside 'seed_collocates_count', 'relation_type', 'avg_logdice', 'shared_by_count' — mixed in the same JSON object",
+        "BCQL response in handleBcqlQueryPost: 'matchStart', 'matchEnd', 'collocateLemma' (camelCase) in the same object as 'hits', 'limit', 'results' (lowercase)",
+        "Sketch collocation objects: 'logDice' (camelCase) but relation objects use 'relation_type', 'collocate_pos_group' (snake_case)"
+      ],
+      "suggestion": "Standardise on snake_case for all HTTP JSON responses (matching the dominant convention); rename logDice → log_dice, matchStart → match_start, matchEnd → match_end, collocateLemma → collocate_lemma throughout all handler response builders.",
+      "confidence": "high",
+      "impact_scope": "subsystem",
+      "fix_scope": "multi_file_refactor",
+      "root_cause_cluster": "json_naming_drift"
+    },
+    {
+      "dimension": "api_surface_coherence",
+      "identifier": "asc_concordance_key_drift",
+      "summary": "Sibling concordance endpoints use different keys for result count: 'count' vs 'hits'",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/api/SketchHandlers.java"
+      ],
+      "evidence": [
+        "handleConcordanceExamples: response.put(\"count\", results.size())",
+        "handleBcqlQueryPost: response.put(\"hits\", results.size()) — same concept, different key in sibling concordance handler"
+      ],
+      "suggestion": "Standardise to one key ('count' or 'hits') for result set size across all concordance endpoints.",
+      "confidence": "high",
+      "impact_scope": "local",
+      "fix_scope": "single_edit"
+    },
+    {
+      "dimension": "api_surface_coherence",
+      "identifier": "asc_query_subject_naming",
+      "summary": "Related endpoints use different parameter names for the query subject: 'seed', 'seeds', 'nouns', 'word1'/'word2'",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/api/ExplorationHandlers.java"
+      ],
+      "evidence": [
+        "handleSemanticFieldExplore: ?seed=theory (single noun as query subject)",
+        "handleSemanticFieldExploreMulti: ?seeds=theory,model (plural noun list)",
+        "handleSemanticField: ?nouns=theory,model (same concept, different param name from explore-multi)",
+        "handleConcordanceExamples: ?word1=theory&word2=good (noun pair, different naming scheme entirely)"
+      ],
+      "suggestion": "Consolidate: use 'seed' for single-word inputs and 'seeds' for comma-separated lists consistently; document the parameter contract in API docs or OpenAPI spec.",
+      "confidence": "medium",
+      "impact_scope": "module",
+      "fix_scope": "multi_file_refactor"
+    },
+    {
+      "dimension": "api_surface_coherence",
+      "identifier": "asc_executesurfacepattern_arity",
+      "summary": "executeSurfacePattern has 6 parameters, exceeding clean API boundary threshold",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/query/QueryExecutor.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/query/BlackLabQueryExecutor.java"
+      ],
+      "evidence": [
+        "List<WordSketchResult> executeSurfacePattern(String lemma, String bcqlPattern, int headPosition, int collocatePosition, double minLogDice, int maxResults) — 6 parameters"
+      ],
+      "suggestion": "Bundle headPosition, collocatePosition, minLogDice, and maxResults into a SurfacePatternOptions record (similar to ExploreOptions), reducing the method to 3 parameters.",
+      "confidence": "medium",
+      "impact_scope": "module",
+      "fix_scope": "multi_file_refactor"
+    }
+  ],
+  "retrospective": {
+    "root_causes": [
+      "JSON response shapes were built ad-hoc per handler rather than from a shared response-builder convention, resulting in camelCase leakage from Java field names into otherwise snake_case responses.",
+      "Endpoint parameters were named independently as features were added without a shared parameter naming guide."
+    ],
+    "likely_symptoms": ["asc_concordance_key_drift — low-impact symptom of the broader ad-hoc naming pattern"],
+    "possible_false_positives": []
+  }
+}

@@ -1,0 +1,96 @@
+{
+  "batch": "cross_module_architecture",
+  "batch_index": 1,
+  "assessments": {"cross_module_architecture": 63.0},
+  "dimension_notes": {
+    "cross_module_architecture": {
+      "evidence": [
+        "api -> query -> utils dependency direction is respected; no upward imports detected in production code",
+        "ExplorationHandlers.java imports 6 inner classes directly from SemanticFieldExplorer (ComparisonResult, AdjectiveProfile, ExplorationResult, DiscoveredNoun, CoreCollocate, ExploreOptions), with a TODO comment acknowledging this as a known boundary violation",
+        "PatternSubstitution (api package) and GrammarConfigLoader.RelationConfig (config package) each contain an identical private static escapeForRegex() method — cross-package utility duplication indicating a missing shared boundary",
+        "SemanticFieldExplorer has a string-path constructor that directly instantiates BlackLabQueryExecutor, bypassing the QueryExecutor interface; the constructor comment warns against this (see issue 297b2b52) but the code path persists",
+        "QueryExecutor interface has a single concrete implementation (BlackLabQueryExecutor); this is appropriate for testability but the blast radius of interface changes is codebase-wide",
+        "Main.java directly instantiates BlackLabQueryExecutor in handleBlackLabQueryCommand without the interface, adding a second entry point that bypasses the abstraction",
+        "SemanticFieldExplorer result DTOs (ExplorationResult, DiscoveredNoun, CoreCollocate, ComparisonResult, AdjectiveProfile, Edge) are inner classes of a query-layer class, forcing any consumer in the api layer to import from query internals"
+      ],
+      "impact_scope": "subsystem",
+      "fix_scope": "multi_file_refactor",
+      "confidence": "high"
+    }
+  },
+  "dimension_judgment": {
+    "cross_module_architecture": {
+      "strengths": [
+        "Three-tier layer stack (api / query / utils) has consistent, correctly-directed dependencies",
+        "QueryExecutor interface provides a stable separation between the HTTP layer and the BlackLab implementation",
+        "CqlUtils was properly extracted as a shared primitive to serve both PatternSubstitution and GrammarConfigLoader without duplication at the parsing level",
+        "Indexer subsystem is cleanly isolated under indexer/blacklab with no upward coupling into api"
+      ],
+      "issue_character": "The dominant issue is that SemanticFieldExplorer conflates query orchestration with data model ownership, forcing the api layer to import inner result classes directly from the query package and making future model evolution a multi-file change.",
+      "score_rationale": "The codebase sits above the average anchor on architecture: the layer topology is sound, directions are correct, and the QueryExecutor interface provides a real seam. The score is limited to the low 60s because the inner-class DTO pattern in SemanticFieldExplorer creates a sustained boundary violation that is acknowledged but not resolved, and a utility method (escapeForRegex) is independently duplicated across two separate packages without a shared home."
+    }
+  },
+  "issues": [
+    {
+      "dimension": "cross_module_architecture",
+      "identifier": "sef_inner_class_boundary",
+      "summary": "api layer directly imports 6 inner result classes from SemanticFieldExplorer in the query package",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/api/ExplorationHandlers.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/query/SemanticFieldExplorer.java"
+      ],
+      "evidence": [
+        "ExplorationHandlers.java lines import pl.marcinmilkowski.word_sketch.query.SemanticFieldExplorer.ComparisonResult, AdjectiveProfile, ExplorationResult, DiscoveredNoun, CoreCollocate, ExploreOptions",
+        "Comment in file: 'TODO(42e2a9a1): These imports bind the API layer to SEF's inner result classes. Once SEF inner classes are moved to a dedicated model/ package, update these imports.'"
+      ],
+      "suggestion": "Extract the result DTOs (ExplorationResult, DiscoveredNoun, CoreCollocate, ComparisonResult, AdjectiveProfile, ExploreOptions, Edge) into a new pl.marcinmilkowski.word_sketch.model package. Both api and query layers then import from model, removing the downward cross-layer reference.",
+      "confidence": "high",
+      "impact_scope": "subsystem",
+      "fix_scope": "multi_file_refactor",
+      "root_cause_cluster": "misplaced_result_model"
+    },
+    {
+      "dimension": "cross_module_architecture",
+      "identifier": "escape_regex_duplication",
+      "summary": "escapeForRegex() duplicated independently in api/PatternSubstitution and config/GrammarConfigLoader.RelationConfig",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/api/PatternSubstitution.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/config/GrammarConfigLoader.java"
+      ],
+      "evidence": [
+        "PatternSubstitution.escapeForRegex: public static String escapeForRegex(String s) { ... s.replace('\\\\','\\\\\\\\').replace('\"','\\\\\"') }",
+        "GrammarConfigLoader.RelationConfig.escapeForRegex: private static String escapeForRegex(String s) { ... identical body }"
+      ],
+      "suggestion": "Move escapeForRegex (and consider extractXposFromConstraint) into CqlUtils as a package-accessible utility, removing the duplication.",
+      "confidence": "high",
+      "impact_scope": "module",
+      "fix_scope": "multi_file_refactor"
+    },
+    {
+      "dimension": "cross_module_architecture",
+      "identifier": "sef_concrete_constructor",
+      "summary": "SemanticFieldExplorer has a public string-path constructor that directly instantiates BlackLabQueryExecutor, bypassing the QueryExecutor interface",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/query/SemanticFieldExplorer.java"
+      ],
+      "evidence": [
+        "Constructor: public SemanticFieldExplorer(String indexPath) throws IOException { this.executor = new BlackLabQueryExecutor(indexPath); ... }",
+        "Javadoc warns: 'Prefer SemanticFieldExplorer(QueryExecutor) (dependency injection) for testability and to avoid double-open of the same index (see issue 297b2b52)'"
+      ],
+      "suggestion": "Deprecate or remove the string-path constructor; callers in Main should construct a BlackLabQueryExecutor and pass it via the DI constructor.",
+      "confidence": "high",
+      "impact_scope": "module",
+      "fix_scope": "single_edit"
+    }
+  ],
+  "retrospective": {
+    "root_causes": [
+      "SemanticFieldExplorer grew organically to host both orchestration logic and result model classes without a deliberate model/ package boundary",
+      "CQL string escaping was solved independently in two packages because the natural home (CqlUtils) was created after the fact"
+    ],
+    "likely_symptoms": [
+      "sef_inner_class_boundary — the TODO comments confirm awareness; this is a tracked debt item"
+    ],
+    "possible_false_positives": []
+  }
+}

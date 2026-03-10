@@ -64,7 +64,6 @@ public class PatternSubstitution {
     }
 
     public static String escapeForRegex(String s) {
-        if (s == null) return "";
-        return s.replace("\\", "\\\\").replace("\"", "\\\"");
+        return CqlUtils.escapeForRegex(s);
     }
 }

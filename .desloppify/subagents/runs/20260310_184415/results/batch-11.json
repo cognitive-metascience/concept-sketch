@@ -1,0 +1,141 @@
+{
+  "batch": "design_coherence",
+  "batch_index": 11,
+  "assessments": {"design_coherence": 57.0},
+  "dimension_notes": {
+    "design_coherence": {
+      "evidence": [
+        "GrammarConfigLoader.java (552 lines) hosts both config-parsing AND the RelationConfig record with ~180 lines of substitution logic: substituteHeadword, mergeLemmaConstraint, extractConstraintAttribute, escapeForRegex, collocatePosGroup, getDeprel — responsibilities that belong in the query/pattern layer",
+        "RelationConfig.substituteHeadword re-implements CQL bracket-walking from scratch (its own while-loop scanning for '[' and ']'), duplicating the logic already in CqlUtils.splitCqlTokens",
+        "SemanticFieldExplorer.compare() is ~130 lines doing three distinct things: building adjective profiles (phase 1), computing 6 metrics per adjective including variance (phase 2), and sorting/debug-logging results (phase 3) — these are separate concerns fused into one method",
+        "ExplorationHandlers.handleSemanticFieldExplore (lines 51–176) and handleSemanticField (lines 309–394) both contain inline response-map building: seedCollocs, nouns, coreCollocs, edges — none of these shapes are in a shared formatter or the model DTOs, making them structurally identical but scattered",
+        "SketchHandlers has three near-identical collocations-list-building loops in handleFullSketch, handleFullDependencySketch, and handleRelationQueryInternal, each constructing the same Map<String, Object> shape with lemma/frequency/logDice/pos keys",
+        "BlackLabQueryExecutor has executeDependencyPattern (line 372) and findDependencyCollocations (line 143) that share the BCQL dependency pattern construction (\"%s\" -%s-> _) and the buildAndRankCollocates call; the distinction between them is the headPosConstraint parameter only",
+        "Model package was correctly extracted (ExplorationResult, DiscoveredNoun, CoreCollocate, etc. now in pl.marcinmilkowski.word_sketch.model) — a positive architectural move that reduces SEF's responsibilities"
+      ],
+      "impact_scope": "subsystem",
+      "fix_scope": "multi_file_refactor",
+      "confidence": "high"
+    }
+  },
+  "dimension_judgment": {
+    "design_coherence": {
+      "strengths": [
+        "Model package extraction is complete: ExplorationResult, DiscoveredNoun, CoreCollocate, AdjectiveProfile, Edge, ExploreOptions are cleanly separated in pl.marcinmilkowski.word_sketch.model",
+        "buildAndRankCollocates is a well-extracted private helper shared by multiple surface/dependency query paths",
+        "collectHits/scoreHits decomposition of executeBcqlQuery gives each phase a single clear responsibility",
+        "Handler-layer split into SketchHandlers and ExplorationHandlers appropriately partitions the API by concern",
+        "CqlUtils.splitCqlTokens exists as a shared primitive for CQL bracket-walking, even if it is not used everywhere it should be"
+      ],
+      "issue_character": "The dominant issue is mixed-abstraction-level methods: config objects carrying query-substitution logic, and large handler methods that inline JSON-response construction instead of delegating to formatters or the model layer.",
+      "score_rationale": "The codebase scores in the low-50s range on a global anchor. The architectural skeleton (handler split, model package extraction) is sound, but GrammarConfigLoader.RelationConfig accumulates substitution responsibilities that belong in PatternSubstitution or CqlUtils, SemanticFieldExplorer.compare() fuses three distinct phases, and repeated inline response-map construction in handlers creates structural duplication. These are real maintainability liabilities rather than style issues, pulling the score below 60."
+    }
+  },
+  "issues": [
+    {
+      "dimension": "design_coherence",
+      "identifier": "grammar_config_substitution_leak",
+      "summary": "GrammarConfigLoader.RelationConfig embeds ~180 lines of BCQL substitution logic that belongs in the pattern layer",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/config/GrammarConfigLoader.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/api/PatternSubstitution.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/utils/CqlUtils.java"
+      ],
+      "evidence": [
+        "RelationConfig record (lines ~300–552 of GrammarConfigLoader) contains substituteHeadword(), mergeLemmaConstraint(), extractConstraintAttribute(), escapeForRegex(), collocatePosGroup(), posGroupFromConstraint(), extractLabelContent(), getDeprel() — all query-pattern concerns inside a config record",
+        "PatternSubstitution.java already exists in the api package as the designated location for collocate substitution; getFullPattern() should call it rather than duplicating the logic",
+        "substituteHeadword has its own hand-rolled CQL bracket-walker (while loop with prefix detection) that is structurally equivalent to CqlUtils.splitCqlTokens but not using it"
+      ],
+      "suggestion": "Move substituteHeadword and mergeLemmaConstraint into PatternSubstitution (or a HeadwordSubstitution helper). Move collocatePosGroup and posGroupFromConstraint into PosGroup enum or CqlUtils. RelationConfig should only hold parsed config fields and delegate to those utilities.",
+      "confidence": "high",
+      "impact_scope": "module",
+      "fix_scope": "multi_file_refactor",
+      "root_cause_cluster": "mixed_config_and_query_logic"
+    },
+    {
+      "dimension": "design_coherence",
+      "identifier": "cql_bracket_walk_duplication",
+      "summary": "substituteHeadword in RelationConfig re-implements CQL bracket-walking that CqlUtils.splitCqlTokens already provides",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/config/GrammarConfigLoader.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/utils/CqlUtils.java"
+      ],
+      "evidence": [
+        "GrammarConfigLoader.RelationConfig.substituteHeadword (lines ~350–410) contains its own while-loop that scans for '[', ']', '\"' and handles numbered prefix like '1:' and '2:'",
+        "CqlUtils.splitCqlTokens was created specifically as a 'shared primitive' (per its Javadoc) for this bracket-walking; it is imported by PatternSubstitution but not by GrammarConfigLoader",
+        "The positions list in substituteHeadword and the tokens list in CqlUtils.splitCqlTokens serve identical purposes"
+      ],
+      "suggestion": "Replace the hand-rolled bracket-walker in substituteHeadword with a call to CqlUtils.splitCqlTokens, then process the resulting list. Extend CqlUtils.splitCqlTokens to also return label prefixes if needed, rather than duplicating the scanner.",
+      "confidence": "high",
+      "impact_scope": "module",
+      "fix_scope": "single_edit",
+      "root_cause_cluster": "mixed_config_and_query_logic"
+    },
+    {
+      "dimension": "design_coherence",
+      "identifier": "sef_compare_method_too_wide",
+      "summary": "SemanticFieldExplorer.compare() fuses profile building, metric computation, sorting, and debug logging into a ~130-line method",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/query/SemanticFieldExplorer.java"
+      ],
+      "evidence": [
+        "Phase 1 (lines ~300–325): per-noun adjective lookup filling adjectiveProfiles map",
+        "Phase 2 (lines ~329–380): for each adjective computes presentIn, avgScore, maxScore, minScore, variance, commonalityScore, distinctivenessScore — 6 separate metrics",
+        "Phase 3 (lines ~382–402): sort by commonality, two separate debug-log blocks (shared, distinctive), then return",
+        "Contrast with executeBcqlQuery which correctly decomposes into collectHits() and scoreHits() private methods"
+      ],
+      "suggestion": "Extract private helpers: buildRawAdjectiveProfiles(nouns, minLogDice, maxPerNoun) returning Map<String, Map<String, Double>>, and buildAdjectiveProfileList(rawProfiles, nounList) returning List<AdjectiveProfile>. This mirrors the phase separation already done in executeBcqlQuery.",
+      "confidence": "high",
+      "impact_scope": "local",
+      "fix_scope": "single_edit"
+    },
+    {
+      "dimension": "design_coherence",
+      "identifier": "handler_inline_response_building",
+      "summary": "Handler methods build identical Map<String, Object> collocations-list shapes inline rather than through a shared formatter",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/api/SketchHandlers.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/api/ExplorationHandlers.java"
+      ],
+      "evidence": [
+        "SketchHandlers.handleFullSketch, handleFullDependencySketch, and handleRelationQueryInternal each contain a nearly identical loop: for (WordSketchResult result : results) { Map<String, Object> word = new HashMap<>(); word.put(\"lemma\", ...); word.put(\"frequency\", ...); word.put(\"logDice\", ...); word.put(\"pos\", ...); }",
+        "ExplorationHandlers.handleSemanticFieldExplore builds seedCollocs, nouns, coreCollocs, and edges as separate inline Map constructions — none reused across handleSemanticField which builds a similar edge list",
+        "The model classes (WordSketchResult, ExplorationResult, AdjectiveProfile) already exist and could expose toResponseMap() or be serialized directly; the manual map-building is unnecessary indirection"
+      ],
+      "suggestion": "Add toResponseMap() to WordSketchResult (or serialize directly with a JSON library). Create a shared private formatCollocations(List<WordSketchResult>) in SketchHandlers. Consider serializing model objects directly via fastjson2's JSON.toJSONString rather than building intermediate maps.",
+      "confidence": "high",
+      "impact_scope": "module",
+      "fix_scope": "multi_file_refactor",
+      "root_cause_cluster": "no_response_dto_layer"
+    },
+    {
+      "dimension": "design_coherence",
+      "identifier": "executedependencypattern_vs_finddependencycollocations_overlap",
+      "summary": "BlackLabQueryExecutor has two near-identical dependency query methods that could be unified",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/query/BlackLabQueryExecutor.java"
+      ],
+      "evidence": [
+        "findDependencyCollocations (line 143): constructs bcql = String.format(\"\\\"%s\\\" -%s-> _\", ...), parses pattern, gets headwordFreq, iterates groups with HitPropertyHitText, calls buildAndRankCollocates",
+        "executeDependencyPattern (line 372): same construction with optional headPosConstraint variant, same parse/group/buildAndRank flow, additionally extracts POS via extractPosFromGroup",
+        "The only structural difference is the optional headPosConstraint; findDependencyCollocations could be replaced by executeDependencyPattern(lemma, deprel, null, minLogDice, maxResults)"
+      ],
+      "suggestion": "Deprecate findDependencyCollocations and route its callers through executeDependencyPattern with null headPosConstraint, or add findDependencyCollocations as a one-line delegate: return executeDependencyPattern(lemma, deprel, null, minLogDice, maxResults).",
+      "confidence": "medium",
+      "impact_scope": "local",
+      "fix_scope": "single_edit"
+    }
+  ],
+  "retrospective": {
+    "root_causes": [
+      "Config-level classes (GrammarConfigLoader.RelationConfig) grew to include runtime substitution logic that should have been in the query/pattern layer from the start",
+      "Response building was never abstracted into a formatter layer; every handler builds Maps inline",
+      "CqlUtils was created as a shared utility after GrammarConfigLoader already had its own bracket-walking, so the duplication was not resolved retroactively"
+    ],
+    "likely_symptoms": [
+      "grammar_config_substitution_leak and cql_bracket_walk_duplication are likely symptoms of a single root: config class taking on query responsibilities",
+      "handler_inline_response_building is a symptom of no response-serialization layer"
+    ],
+    "possible_false_positives": []
+  }
+}

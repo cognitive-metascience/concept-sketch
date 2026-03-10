@@ -93,6 +93,9 @@ public class WordSketchApiServer {
                 } catch (IOException e) {
                     logger.error("Semantic field error", e);
                     HttpApiUtils.sendError(exchange, 500, "Semantic field comparison failed: " + e.getMessage());
+                } catch (Exception e) {
+                    logger.error("Semantic field unexpected error", e);
+                    HttpApiUtils.sendError(exchange, 500, "Unexpected error: " + e.getMessage());
                 }
             });
 
@@ -102,6 +105,9 @@ public class WordSketchApiServer {
                 } catch (IOException e) {
                     logger.error("Semantic field examples error", e);
                     HttpApiUtils.sendError(exchange, 500, "Failed to fetch examples: " + e.getMessage());
+                } catch (Exception e) {
+                    logger.error("Semantic field examples unexpected error", e);
+                    HttpApiUtils.sendError(exchange, 500, "Unexpected error: " + e.getMessage());
                 }
             });
 
@@ -111,6 +117,9 @@ public class WordSketchApiServer {
                 } catch (IOException e) {
                     logger.error("Concordance examples error", e);
                     HttpApiUtils.sendError(exchange, 500, "Failed to fetch concordance examples: " + e.getMessage());
+                } catch (Exception e) {
+                    logger.error("Concordance examples unexpected error", e);
+                    HttpApiUtils.sendError(exchange, 500, "Unexpected error: " + e.getMessage());
                 }
             });
 

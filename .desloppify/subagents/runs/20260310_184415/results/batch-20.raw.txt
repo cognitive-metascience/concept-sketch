@@ -1,0 +1,78 @@
+{
+  "batch": "authorization_consistency",
+  "batch_index": 20,
+  "assessments": {"authorization_consistency": 78.0},
+  "dimension_notes": {
+    "authorization_consistency": {
+      "evidence": [
+        "WordSketchApiServer binds to InetAddress.getLoopbackAddress() — all endpoints are restricted to localhost by network configuration; this is the sole access control mechanism.",
+        "No authentication middleware, session tokens, API keys, or permission checks exist anywhere in the codebase — consistently absent across all 10+ endpoints.",
+        "CORS header 'Access-Control-Allow-Origin: *' is set in every response (sendJsonResponse, sendError, sendBinaryResponse, sendOptionsResponse) — the wildcard CORS policy is consistently applied but contradicts the loopback security boundary for browser-based callers.",
+        "No sibling-endpoint inconsistency: there are no endpoints where some require auth and siblings do not — the policy is uniform (none).",
+        "No magic permission literals or role strings — no access control vocabulary exists at all.",
+        "The /health endpoint is a standard unauthenticated status check — intentional.",
+        "POST endpoints (/api/bcql, /api/visual/radial) handle OPTIONS preflight identically to how GET endpoints handle it via CORS headers — consistent method handling.",
+        "No audit logging, no user identity tracking, no admin-bypass patterns — the system has no user model at all.",
+        "No documentation or comment explicitly stating 'this service is intentionally unauthenticated and localhost-only' — the loopback binding is a code choice without prose rationale."
+      ],
+      "impact_scope": "codebase",
+      "fix_scope": "single_edit",
+      "confidence": "high"
+    }
+  },
+  "dimension_judgment": {
+    "authorization_consistency": {
+      "strengths": [
+        "The access control policy (localhost-only via loopback binding) is applied uniformly — no endpoint bypasses it.",
+        "CORS headers are consistently applied across all response paths through shared utilities, preventing accidental header omission.",
+        "No permission literals or role strings exist in any form — there is no partial or inconsistent permission model to audit."
+      ],
+      "issue_character": "The codebase is a local research tool with a single, uniformly applied security posture (loopback binding, no auth), but the wildcard CORS header undermines the network boundary for browser clients, and the security design choice is undocumented.",
+      "score_rationale": "From an authorization_consistency perspective, this codebase scores well because the policy is uniform — there are no sibling endpoints with mismatched auth, no magic permission strings, and no partial middleware. The score is not higher because the wildcard CORS header creates an inconsistency between the intended security boundary (loopback only) and what browsers are actually permitted to do (any origin can make cross-origin requests to the API if it resolves), and because the design intent is not documented anywhere. A fully consistent codebase at this level would either restrict CORS to localhost origins or document the tradeoff."
+    }
+  },
+  "issues": [
+    {
+      "dimension": "authorization_consistency",
+      "identifier": "ac_wildcard_cors",
+      "summary": "Access-Control-Allow-Origin: * contradicts the loopback-only security boundary for browser-based callers",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/api/HttpApiUtils.java"
+      ],
+      "evidence": [
+        "sendJsonResponse: exchange.getResponseHeaders().set(\"Access-Control-Allow-Origin\", \"*\");",
+        "sendError: exchange.getResponseHeaders().set(\"Access-Control-Allow-Origin\", \"*\");",
+        "sendBinaryResponse: exchange.getResponseHeaders().set(\"Access-Control-Allow-Origin\", \"*\");",
+        "Server binds to InetAddress.getLoopbackAddress() in WordSketchApiServer.start() — the network boundary is localhost, but CORS permits any browser origin to call the API"
+      ],
+      "suggestion": "Replace the wildcard with 'Access-Control-Allow-Origin: http://localhost:3000' (or the specific webapp origin) if the intent is to serve only the bundled webapp; or document the wildcard as intentional if broad browser access is acceptable for a local development tool.",
+      "confidence": "high",
+      "impact_scope": "codebase",
+      "fix_scope": "single_edit"
+    },
+    {
+      "dimension": "authorization_consistency",
+      "identifier": "ac_undocumented_policy",
+      "summary": "The 'intentionally unauthenticated, localhost-only' security posture is not documented anywhere in the code",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/api/WordSketchApiServer.java"
+      ],
+      "evidence": [
+        "InetAddress.getLoopbackAddress() in start() is the only signal that the tool is localhost-only — no comment, no README section, no JavaDoc on the class explains this is by design",
+        "A developer adding a --bind 0.0.0.0 flag would unknowingly expose an unauthenticated API to the network"
+      ],
+      "suggestion": "Add a Javadoc comment to WordSketchApiServer noting 'This server is intentionally unauthenticated and binds to loopback only. Do not expose to a public network without adding authentication.' Also add a note to README.md.",
+      "confidence": "medium",
+      "impact_scope": "codebase",
+      "fix_scope": "single_edit"
+    }
+  ],
+  "retrospective": {
+    "root_causes": [
+      "This is a local NLP research tool with no user model; auth was never in scope. The wildcard CORS is a convenience default for web UI development that was never tightened.",
+      "The loopback binding provides the real security boundary, but this intent was never made explicit in code or documentation."
+    ],
+    "likely_symptoms": [],
+    "possible_false_positives": ["Any finding framing 'no auth' as an inconsistency — the absence of auth is uniform, not inconsistent"]
+  }
+}

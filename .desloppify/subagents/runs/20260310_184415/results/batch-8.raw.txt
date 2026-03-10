@@ -1,0 +1,117 @@
+{
+  "batch": "incomplete_migration",
+  "batch_index": 8,
+  "assessments": {"incomplete_migration": 72.0},
+  "dimension_notes": {
+    "incomplete_migration": {
+      "evidence": [
+        "SemanticFieldExplorer provides two constructors: SemanticFieldExplorer(String indexPath) which creates an owned BlackLabQueryExecutor, and SemanticFieldExplorer(QueryExecutor executor) which accepts injection. The indexPath constructor is marked 'Convenience constructor — prefer SemanticFieldExplorer(QueryExecutor) for testability and to avoid double-open of the same index (see issue 297b2b52).' The old pattern is retained and callable despite the preferred pattern being available.",
+        "BlackLabQueryExecutor exposes executeDependencyPattern(lemma, deprel, headPosConstraint, minLogDice, maxResults) as a public method absent from the QueryExecutor interface, while the interface only declares findDependencyCollocations(lemma, deprel, minLogDice, maxResults). This suggests executeDependencyPattern was added after the interface was stabilized and was never propagated up.",
+        "BlackLabSnippetParser contains extractCollocateFromXmlByPosition, then introduces extractLemmaAt as 'the canonical method for positional lemma extraction' that directly delegates to extractCollocateFromXmlByPosition — the old method name is kept alongside the new canonical one with no @deprecated marker.",
+        "extractCollocateFromMatchText in BlackLabSnippetParser (extracts from space-separated plain text at a position) appears unreferenced in production code — a dead utility that may have been superseded by the XML-based extractors.",
+        "handleSemanticFieldExploreMulti in ExplorationHandlers calls executor.executeSurfacePattern directly in a loop rather than delegating to semanticFieldExplorer, suggesting multi-seed support was added after SemanticFieldExplorer existed but not fully integrated into it.",
+        "No @Deprecated annotations appear anywhere in the codebase. No 'DEPRECATED', 'remove after', or 'legacy' TODO/FIXME comments found.",
+        "No mixed-language (JS/TS) or old-vs-new framework patterns; the project is a single Java codebase with a consistent library stack (BlackLab, SLF4J, fastjson2, JUnit 5).",
+        "GrammarConfigLoader explicitly validates against stale config keys: 'VALIDATION: Reject copulas key - must be embedded in CQL patterns' — active enforcement of migration away from an old config structure.",
+        "findCollocations in BlackLabQueryExecutor has a three-branch pattern format detection (contains '%s', starts with '[', else fallback with logger.warn) that suggests gradual migration from old pattern formats; the fallback branch emits a warning identifying it as a grammar config bug."
+      ],
+      "impact_scope": "module",
+      "fix_scope": "single_edit",
+      "confidence": "medium"
+    }
+  },
+  "dimension_judgment": {
+    "incomplete_migration": {
+      "strengths": [
+        "GrammarConfigLoader actively rejects the old 'copulas' top-level config key with a hard IOException, enforcing migration to the embedded-CQL pattern approach.",
+        "No @deprecated-but-active symbols, no 'remove after X' TODO comments, and no mixed-language files — the codebase has a clean single-stack foundation.",
+        "QueryExecutor interface is well-documented with explicit Javadoc distinguishing findCollocations from executeSurfacePattern and executeBcqlQuery, preventing accidental conflation of old vs new query pathways."
+      ],
+      "issue_character": "The migration issues are all at the interface-vs-implementation seam: a convenience constructor retained alongside the preferred DI constructor, a method added to the concrete class but not the interface, and aliased method names in a parser utility where the old name was not retired when the canonical name was introduced.",
+      "score_rationale": "This codebase shows no classic migration anti-patterns (deprecated symbols still called, feature-flag shims, old+new API frameworks coexisting). The observed issues are structural holdovers: a parallel convenience constructor explicitly discouraged in comments, a method not propagated to the interface, and a parser utility with both an old positional method and its canonical alias. These are real but mild; the codebase does not exhibit systematic abandonment of migration work. Score sits in the lower-good range — better than a codebase with active parallel API generations, but the dual-constructor risk (double-open) and dead extractCollocateFromMatchText utility lower confidence in completeness."
+    }
+  },
+  "issues": [
+    {
+      "dimension": "incomplete_migration",
+      "identifier": "sef-dual-constructor-old-retained",
+      "summary": "SemanticFieldExplorer retains a deprecated-by-comment indexPath constructor that risks double-opening the index",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/query/SemanticFieldExplorer.java"
+      ],
+      "evidence": [
+        "Constructor comment: 'Convenience constructor that creates an owned BlackLabQueryExecutor internally. Prefer SemanticFieldExplorer(QueryExecutor) (dependency injection) for testability and to avoid double-open of the same index (see issue 297b2b52).'",
+        "If any caller uses SemanticFieldExplorer(indexPath) while the server also holds a BlackLabQueryExecutor over the same path, the index is opened twice, which may cause resource contention or memory duplication."
+      ],
+      "suggestion": "Mark SemanticFieldExplorer(String indexPath) with @Deprecated and a Javadoc @deprecated tag pointing to the QueryExecutor constructor. Audit all callers and migrate them to the DI constructor. Once no callers remain, remove it. This eliminates the double-open risk and the ambiguity about which constructor to use.",
+      "confidence": "high",
+      "impact_scope": "module",
+      "fix_scope": "single_edit",
+      "root_cause_cluster": "constructor_migration"
+    },
+    {
+      "dimension": "incomplete_migration",
+      "identifier": "dep-pattern-method-not-on-interface",
+      "summary": "executeDependencyPattern is public on BlackLabQueryExecutor but not declared on QueryExecutor interface",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/query/BlackLabQueryExecutor.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/query/QueryExecutor.java"
+      ],
+      "evidence": [
+        "QueryExecutor.java declares findDependencyCollocations(lemma, deprel, minLogDice, maxResults) but not executeDependencyPattern(lemma, deprel, headPosConstraint, minLogDice, maxResults).",
+        "BlackLabQueryExecutor.executeDependencyPattern is public, suggesting it was intended for callers but was never lifted to the interface."
+      ],
+      "suggestion": "Either add executeDependencyPattern to QueryExecutor with an Optional<String> headPosConstraint parameter and a default implementation that delegates to findDependencyCollocations, or merge the functionality by adding an overload of findDependencyCollocations that accepts the constraint. The interface should be the complete API contract.",
+      "confidence": "medium",
+      "impact_scope": "module",
+      "fix_scope": "single_edit",
+      "root_cause_cluster": "interface_incomplete"
+    },
+    {
+      "dimension": "incomplete_migration",
+      "identifier": "snippet-parser-old-method-not-retired",
+      "summary": "BlackLabSnippetParser.extractCollocateFromXmlByPosition kept alongside its canonical replacement extractLemmaAt without deprecation",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/query/BlackLabSnippetParser.java"
+      ],
+      "evidence": [
+        "extractLemmaAt Javadoc: 'Extract lemma at a specific 1-based token position from XML snippet. This is the canonical method for positional lemma extraction.'",
+        "extractLemmaAt body: 'return extractCollocateFromXmlByPosition(xml, position);' — a 1-line alias.",
+        "Both methods are package-visible; callers could use either without guidance."
+      ],
+      "suggestion": "Add @deprecated to extractCollocateFromXmlByPosition pointing to extractLemmaAt as the canonical replacement. If no test or production code calls extractCollocateFromXmlByPosition directly (verify with grep), make it private or remove it.",
+      "confidence": "medium",
+      "impact_scope": "local",
+      "fix_scope": "single_edit",
+      "root_cause_cluster": "interface_incomplete"
+    },
+    {
+      "dimension": "incomplete_migration",
+      "identifier": "extract-match-text-dead-utility",
+      "summary": "BlackLabSnippetParser.extractCollocateFromMatchText appears unreferenced in production code",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/query/BlackLabSnippetParser.java"
+      ],
+      "evidence": [
+        "extractCollocateFromMatchText(String matchText, int position) extracts a token from a space-separated plain text match by position — a utility that may have been superseded by the XML-based extractors.",
+        "No calls to this method found in production source files (api, config, query, utils packages); only BlackLabSnippetParserTest references it in tests."
+      ],
+      "suggestion": "If extractCollocateFromMatchText has no production callers, remove it from the production class and its corresponding test. If it is kept for completeness, add a Javadoc note explaining when plain-text extraction is needed vs XML extraction.",
+      "confidence": "medium",
+      "impact_scope": "local",
+      "fix_scope": "single_edit"
+    }
+  ],
+  "retrospective": {
+    "root_causes": [
+      "The interface (QueryExecutor) was defined before some concrete capabilities were added, and the concrete class was extended without updating the interface — a common incremental growth pattern.",
+      "Convenience constructors and old method names were retained without deprecation markers, making it unclear whether the old paths are intentional or forgotten."
+    ],
+    "likely_symptoms": [
+      "extract-match-text-dead-utility is symptom-level — a dead code remnant rather than an architectural issue."
+    ],
+    "possible_false_positives": [
+      "findCollocations three-branch format detection looks like a migration artifact but is actually a runtime guard with documented intent (warns on grammar config bugs) — not a migration shim."
+    ]
+  }
+}

@@ -1,0 +1,152 @@
+{
+  "batch": "naming_quality",
+  "batch_index": 15,
+  "assessments": {"naming_quality": 67.0},
+  "dimension_notes": {
+    "naming_quality": {
+      "evidence": [
+        "Domain vocabulary is accurate and consistent: logDice, collocateLemma, headword, deprel, xpos, bcql, headPosition, collocatePosition — all match corpus linguistics and BCQL conventions, making the code readable to domain practitioners",
+        "BlackLabQueryExecutor has both findCollocations and executeSurfacePattern that both retrieve surface-level collocates; the distinction between 'find' and 'execute' is not communicated by the names, creating ambiguity about when to use which",
+        "Similarly executeDependencyPattern and findDependencyCollocations both execute dependency-based queries with near-identical behavior — the inconsistent verb prefix (find vs execute) suggests different levels of abstraction but they are at the same level",
+        "ExplorationHandlers has handleSemanticFieldExplore (single seed) and handleSemanticFieldExploreMulti (multi-seed) — 'Multi' is appended as a suffix rather than the discriminating concept being expressed first; handleMultiSeedExploration would be more readable",
+        "SemanticFieldExplorer.compare() does not communicate that it is comparing collocate profiles across nouns — 'compare' is a generic verb; compareCollocateProfiles or compareNounProfiles would express the specific comparison",
+        "simplePattern local variable in ExplorationHandlers.handleSemanticFieldExplore — 'simple' is relative and says nothing about the variable's role; it is a fallback/reverse-lookup pattern, so reverseCollocatePattern or fallbackPattern would communicate intent",
+        "BlackLabSnippetParser.extractLemmaFromMatch and extractCollocateLemma perform the same operation (find last lemma in XML); the names suggest different roles (head vs collocate) but both extract the last lemma — a naming mismatch between intent and implementation",
+        "ExploreOptions record fields topCollocates, nounsPerCollocate, minLogDice, minShared, includeExamples, headPos, collocatePos — the mix of full words (topCollocates) and abbreviations (headPos, collocatePos) is slightly inconsistent but the abbreviations are well-known in context"
+      ],
+      "impact_scope": "module",
+      "fix_scope": "multi_file_refactor",
+      "confidence": "high"
+    }
+  },
+  "dimension_judgment": {
+    "naming_quality": {
+      "strengths": [
+        "Domain vocabulary (logDice, collocateLemma, deprel, xpos, bcql, headword) is accurate and used consistently across all layers, matching corpus linguistics conventions",
+        "Class names are precise and specific: BlackLabQueryExecutor, SemanticFieldExplorer, BlackLabSnippetParser, GrammarConfigLoader — each name is descriptive of its exact role",
+        "ExploreOptions record bundles what were previously spread parameters into a clearly named configuration object",
+        "Model package class names (DiscoveredNoun, CoreCollocate, AdjectiveProfile, ExplorationResult) clearly convey their roles in the exploration algorithm"
+      ],
+      "issue_character": "The naming issues cluster around method-level naming: inconsistent verb prefixes (find vs execute) for similar operations, multi-part compound method names where ordering buries the discriminating concept (SemanticFieldExploreMulti instead of MultiSeedExploration), and a generic method name (compare) that does not communicate its specific comparison subject.",
+      "score_rationale": "Domain vocabulary and class/type names are genuinely good — a developer familiar with corpus linguistics can read the code's intent clearly. The deductions come from the find/execute inconsistency in BlackLabQueryExecutor (which creates ambiguity about which method to call), the append-suffix naming in ExplorationHandlers (handleSemanticFieldExploreMulti), and extractLemmaFromMatch/extractCollocateLemma naming both methods identically in behavior while implying different roles. These bring the score to mid-60s on the global anchor — notably above average but with real naming liabilities in the query and handler layers."
+    }
+  },
+  "issues": [
+    {
+      "dimension": "naming_quality",
+      "identifier": "find_vs_execute_inconsistency",
+      "summary": "BlackLabQueryExecutor uses 'find' and 'execute' prefixes inconsistently for surface and dependency query methods at the same abstraction level",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/query/BlackLabQueryExecutor.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/query/QueryExecutor.java"
+      ],
+      "evidence": [
+        "findCollocations (interface) and executeSurfacePattern (interface) — both retrieve surface-pattern collocates but with different parameter signatures; 'find' vs 'execute' implies different abstraction levels but the methods are peers",
+        "findDependencyCollocations and executeDependencyPattern — same pattern: both query dependency relations, both return List<WordSketchResult>",
+        "In QueryExecutor interface, the Javadoc for executeSurfacePattern says 'Execute a surface pattern query' while findCollocations says 'Find collocations' — 'execute' connotes lower-level machinery, 'find' connotes higher-level intent, but semantically they are equivalent",
+        "callers in SemanticFieldExplorer use both: executor.executeSurfacePattern(...) for pattern-based lookup and executor.findCollocations(...) for reverse lookup — the naming does not help the caller choose"
+      ],
+      "suggestion": "Standardize on 'find' prefix for all collocate-retrieval operations in the QueryExecutor interface: findCollocates(String lemma, String cqlPattern, ...) for surface patterns, findDependencyCollocates(String lemma, String deprel, ...) for dependency patterns. Reserve 'execute' for raw query execution methods that return concordance results (executeBcqlQuery, executeQuery already follow this pattern correctly).",
+      "confidence": "high",
+      "impact_scope": "module",
+      "fix_scope": "multi_file_refactor"
+    },
+    {
+      "dimension": "naming_quality",
+      "identifier": "handle_semantic_field_explore_multi_naming",
+      "summary": "handleSemanticFieldExploreMulti buries 'Multi' at the end; the multi-seed concept should lead the name",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/api/ExplorationHandlers.java"
+      ],
+      "evidence": [
+        "ExplorationHandlers methods: handleSemanticFieldExplore (single-seed) and handleSemanticFieldExploreMulti (multi-seed)",
+        "The discriminating concept (single vs. multi-seed) is the last word in a compound method name, requiring readers to read to the end before understanding which variant this is",
+        "The endpoint path is /api/semantic-field/explore-multi, which makes 'explore-multi' the unit — the Java method name inverts this to 'explore' + 'Multi' suffix"
+      ],
+      "suggestion": "Rename to handleMultiSeedExploration (with its single-seed counterpart becoming handleSingleSeedExploration, or just handleSemanticFieldExploration). This puts the distinguishing concept first, matching how readers scan method names.",
+      "confidence": "medium",
+      "impact_scope": "local",
+      "fix_scope": "single_edit"
+    },
+    {
+      "dimension": "naming_quality",
+      "identifier": "compare_method_generic_name",
+      "summary": "SemanticFieldExplorer.compare() does not communicate that it compares adjective/collocate profiles across seed nouns",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/query/SemanticFieldExplorer.java"
+      ],
+      "evidence": [
+        "Method signature: public ComparisonResult compare(Set<String> seedNouns, double minLogDice, int maxPerNoun)",
+        "'compare' is a generic verb that appears in Comparable.compareTo, Object.equals, and countless utility methods — it gives no information about what is being compared",
+        "The method compares adjective/collocate profiles across a set of seed nouns, a specific operation that could be named compareCollocateProfiles, compareNounCollocations, or profileNounCollocates"
+      ],
+      "suggestion": "Rename to compareCollocateProfiles(Set<String> nouns, ...) or profileNounCollocations(Set<String> nouns, ...). The ExplorationHandlers caller at handleSemanticField also calls it result = semanticFieldExplorer.compare(...) — renaming would make the handler intent clearer too.",
+      "confidence": "high",
+      "impact_scope": "local",
+      "fix_scope": "multi_file_refactor"
+    },
+    {
+      "dimension": "naming_quality",
+      "identifier": "simple_pattern_variable_name",
+      "summary": "'simplePattern' variable in ExplorationHandlers does not describe its role as a fallback pattern for reverse collocate lookup",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/api/ExplorationHandlers.java"
+      ],
+      "evidence": [
+        "String simplePattern = relationConfig.get().collocatePosGroup() == PosGroup.ADJ ? \"[xpos=\\\"JJ.*\\\"]\": \"[xpos=\\\"NN.*|VB.*\\\"]\"",
+        "This pattern is then passed to SemanticFieldExplorer.exploreByPattern as its simplePattern parameter, which is used as a fallback when the BCQL pattern returns no results",
+        "'simple' is a relative adjective — simple compared to what? The variable's role is 'bare POS-only pattern used as reverse lookup fallback'"
+      ],
+      "suggestion": "Rename to reverseCollocatePattern or fallbackPosPattern to communicate that it is a POS-only pattern used for reverse lookup when the full BCQL pattern yields no results.",
+      "confidence": "medium",
+      "impact_scope": "local",
+      "fix_scope": "single_edit"
+    },
+    {
+      "dimension": "naming_quality",
+      "identifier": "extract_lemma_naming_mismatch",
+      "summary": "extractLemmaFromMatch and extractCollocateLemma in BlackLabSnippetParser have names implying different roles but implement the same operation",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/query/BlackLabSnippetParser.java"
+      ],
+      "evidence": [
+        "extractLemmaFromMatch Javadoc: 'Finds all lemma=\"xxx\" patterns and returns the last one (the collocate)' — the Javadoc itself says it returns 'the collocate', making it equivalent to extractCollocateLemma",
+        "extractCollocateLemma Javadoc: 'finds the last lemma attribute, which corresponds to the collocate in most patterns'",
+        "Both do: Matcher m = LEMMA_ATTR.matcher(matchText); String lastLemma = null; while (m.find()) { lastLemma = m.group(1); } return lastLemma;",
+        "The name 'extractLemmaFromMatch' sounds like it could return the head lemma, but it actually returns the last (collocate) lemma — the name is misleading"
+      ],
+      "suggestion": "Remove extractLemmaFromMatch and consolidate callers onto extractCollocateLemma. If the head lemma extraction is needed, add extractHeadLemma that explicitly returns the FIRST match rather than the last. The existing extractHeadLemma() method (lines ~208–214) already exists as a one-liner delegating to extractLemmaAt — use that consistently.",
+      "confidence": "high",
+      "impact_scope": "local",
+      "fix_scope": "multi_file_refactor"
+    },
+    {
+      "dimension": "naming_quality",
+      "identifier": "relation_name_logging_only_parameter",
+      "summary": "exploreByPattern takes a 'relationName' parameter used only for debug logging, obscuring that it has no effect on behavior",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/query/SemanticFieldExplorer.java"
+      ],
+      "evidence": [
+        "Method signature: public ExplorationResult exploreByPattern(String seed, String relationName, String bcqlPattern, String simplePattern, ExploreOptions opts)",
+        "relationName is used only in: logger.debug('Relation: {}', relationName) and logger.debug('Step 3: Scoring nouns by shared {}...', relationName) — purely for human-readable log messages",
+        "The parameter appears in the method signature alongside bcqlPattern and opts which do affect computation, creating the impression that relationName also influences results"
+      ],
+      "suggestion": "Either remove the relationName parameter and use a fixed log label or derive the name from bcqlPattern, or rename it to relationLabel or relationNameForLogging to signal that it is a display-only label with no behavioral effect.",
+      "confidence": "medium",
+      "impact_scope": "local",
+      "fix_scope": "single_edit"
+    }
+  ],
+  "retrospective": {
+    "root_causes": [
+      "The QueryExecutor interface grew over time with both 'find' and 'execute' prefixed methods as new query types were added, without a naming audit to unify the convention",
+      "ExplorationHandlers methods grew by extension (adding 'Multi' suffix) rather than by redesign, which is a sign of the 'growing-by-accretion' pattern common in handler layers"
+    ],
+    "likely_symptoms": [
+      "find_vs_execute_inconsistency affects every caller that uses the QueryExecutor interface and may cause confusion about which method to use",
+      "extract_lemma_naming_mismatch is a naming symptom of the deeper duplicate-method issue identified in logic_clarity"
+    ],
+    "possible_false_positives": []
+  }
+}

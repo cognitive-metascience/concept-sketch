@@ -351,7 +351,7 @@ public class Main {
             try {
                 executor.close();
             } catch (IOException e) {
-                // Ignore
+                System.err.println("Warning: failed to close index during shutdown: " + e.getMessage());
             }
         }));
 

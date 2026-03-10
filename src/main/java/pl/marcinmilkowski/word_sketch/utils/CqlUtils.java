@@ -33,6 +33,18 @@ public final class CqlUtils {
      * @param pattern a CQL pattern, or {@code null} / blank
      * @return ordered list of {@code [constraint]} substrings; empty if none found
      */
+    /**
+     * Escapes a string for embedding as a literal value inside a CQL regex attribute,
+     * e.g. {@code [lemma="<value>"]}. Escapes backslashes and double-quotes.
+     *
+     * @param s the raw string; {@code null} returns {@code ""}
+     * @return the escaped string
+     */
+    public static String escapeForRegex(String s) {
+        if (s == null) return "";
+        return s.replace("\\", "\\\\").replace("\"", "\\\"");
+    }
+
     public static List<String> splitCqlTokens(String pattern) {
         List<String> tokens = new ArrayList<>();
         if (pattern == null || pattern.isBlank()) {

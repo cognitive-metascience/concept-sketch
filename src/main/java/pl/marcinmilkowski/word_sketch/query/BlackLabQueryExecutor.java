@@ -122,7 +122,7 @@ public class BlackLabQueryExecutor implements QueryExecutor {
                     int lastSpace = trimmed.lastIndexOf(' ');
                     collocateLemma = lastSpace >= 0 ? trimmed.substring(lastSpace + 1) : trimmed;
                 }
-                if (collocateLemma == null || collocateLemma.isEmpty()) {
+                if (collocateLemma.isEmpty()) {
                     continue;
                 }
 

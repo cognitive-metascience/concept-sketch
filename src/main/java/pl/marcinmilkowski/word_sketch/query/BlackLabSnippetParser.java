@@ -226,17 +226,6 @@ public class BlackLabSnippetParser {
     }
 
     /**
-     * Extract the head (labeled {@code 1:}) lemma from a BCQL match snippet.
-     * Assumes the first lemma attribute in the match corresponds to the head token.
-     *
-     * @param matchXml The match XML (parts[1] from a concordance)
-     * @return The head lemma in lowercase, or {@code null}
-     */
-    static String extractHeadLemma(String matchXml) {
-        return extractLemmaAt(matchXml, 1);
-    }
-
-    /**
      * Extract the collocate (labeled {@code 2:}) lemma from a BCQL match snippet.
      * Finds the last lemma attribute, which corresponds to the collocate in most patterns.
      * For precise positional extraction, use {@link #extractLemmaAt(String, int)}.

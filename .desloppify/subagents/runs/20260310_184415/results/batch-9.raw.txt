@@ -1,0 +1,87 @@
+{
+  "batch": "package_organization",
+  "batch_index": 9,
+  "assessments": {"package_organization": 64.0},
+  "dimension_notes": {
+    "package_organization": {
+      "evidence": [
+        "Production package inventory: root (1 file: Main.java), api (5 files), config (2 files), indexer.blacklab (1 file), query (5 files), tagging (1 file), utils (4 files), viz (1 file) — 20 production files total. Project is small; flat structure is generally appropriate at this scale.",
+        "SemanticFieldExplorer (query package) hosts 7 inner result classes (ExplorationResult, DiscoveredNoun, CoreCollocate, ComparisonResult, AdjectiveProfile, ExploreOptions, Edge). All are imported by ExplorationHandlers in the api package — cross-package inner-class coupling from api→query.",
+        "SemanticFieldExplorer class Javadoc explicitly notes: 'These should be extracted to a dedicated model/ package in a future refactor (see issue 28bc8918 / a430f585)' — coupling is self-acknowledged.",
+        "PatternSubstitution is placed in api package. It imports pl.marcinmilkowski.word_sketch.utils.CqlUtils and provides pure CQL string manipulation (extractXposFromConstraint, escapeForRegex, substituteCollocate). It has no HTTP imports and no dependency on HttpExchange. Affinity is with utils, not api.",
+        "BlackLabSnippetParser is in query package and provides both XML parsing utilities (extractLemmaFromMatch, extractPosFromMatch) and structural pattern analysis (findLabelPosition) — mixed concerns but all directly supporting the BlackLab query pipeline, so the placement is defensible.",
+        "tagging package contains only SimpleTagger.java — a single-file package. The tagger is not referenced by any production code in api or query (based on absence in seed files and source listing). May be a thin wrapper placeholder.",
+        "viz package contains only RadialPlot.java — a single-file package. RadialPlot is referenced by SketchHandlers.handleVisualRadial so it is actively used, but the placement in a separate viz package for a single file has low navigational value in a 20-file project.",
+        "indexer.blacklab package contains only BlackLabConllUIndexer.java — a single-file nested package. Given that indexing is a primary command in Main.java, this placement is clear and appropriate.",
+        "utils package contains CqlUtils, LogDiceCalculator, LongIntHashMap, PosGroup — four cohesive low-level utilities. PosGroup (an enum) could be in config since GrammarConfigLoader uses it, but the utils placement is not harmful.",
+        "No root-level stragglers beyond Main.java, which is the correct entry point placement."
+      ],
+      "impact_scope": "module",
+      "fix_scope": "multi_file_refactor",
+      "confidence": "medium"
+    }
+  },
+  "dimension_judgment": {
+    "package_organization": {
+      "strengths": [
+        "Package names (api, config, query, utils, indexer.blacklab) map clearly to contained responsibilities; no ambiguous folder naming.",
+        "No root-level straggler files — Main.java is the appropriate single root entry point.",
+        "utils package is internally cohesive: four low-level primitives (CqlUtils, LogDiceCalculator, LongIntHashMap, PosGroup) with no circular dependencies.",
+        "indexer.blacklab as a distinct sub-package isolates indexing from querying, which is the right boundary for two different corpus-lifecycle phases."
+      ],
+      "issue_character": "The primary issue is a missing model/ layer: seven result DTOs live as inner classes inside SemanticFieldExplorer (query package) and are imported by the api package, creating a coupling that the code itself acknowledges needs fixing. A secondary issue is PatternSubstitution's placement in api despite having no HTTP dependency and belonging functionally in utils.",
+      "score_rationale": "At 20 production files the project is small enough that most flat-package decisions are defensible. However, the SemanticFieldExplorer inner-class situation is a concrete structural deficiency: the api package imports query-layer inner types, creating a coupling direction that runs against the api→query layering. This is acknowledged in the code but unresolved. PatternSubstitution's misplacement in api is a secondary misfit. Single-file packages (tagging, viz) are low-value at this scale but not harmful. The score reflects a codebase with clear package intent but one unresolved boundary violation that affects navigability and coupling."
+    }
+  },
+  "issues": [
+    {
+      "dimension": "package_organization",
+      "identifier": "missing-model-package-sef-dtors",
+      "summary": "Seven SemanticFieldExplorer inner result classes should move to a dedicated model/ package to resolve api→query inner-class coupling",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/query/SemanticFieldExplorer.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/api/ExplorationHandlers.java"
+      ],
+      "evidence": [
+        "ExplorationHandlers imports: ComparisonResult, AdjectiveProfile, ExplorationResult, DiscoveredNoun, CoreCollocate, ExploreOptions, Edge — all from SemanticFieldExplorer's inner class namespace.",
+        "SemanticFieldExplorer Javadoc: 'These should be extracted to a dedicated model/ package in a future refactor (see issue 28bc8918 / a430f585).'",
+        "The api package should depend on a model/DTO layer and the query package separately; importing inner classes from a query class conflates the two."
+      ],
+      "suggestion": "Staged reorg plan: (1) Create pl.marcinmilkowski.word_sketch.model package. (2) Move ExplorationResult, DiscoveredNoun, CoreCollocate, ComparisonResult, AdjectiveProfile, ExploreOptions, Edge to model/ as top-level classes. (3) Update imports in SemanticFieldExplorer and ExplorationHandlers. (4) Verify with: mvn compile (no errors) and mvn test (no regressions). Move order: ExploreOptions first (no dependencies on other DTOs), then the result types, then Edge last (referenced by multiple result types).",
+      "confidence": "high",
+      "impact_scope": "subsystem",
+      "fix_scope": "multi_file_refactor",
+      "root_cause_cluster": "missing_model_layer"
+    },
+    {
+      "dimension": "package_organization",
+      "identifier": "pattern-substitution-misplaced-in-api",
+      "summary": "PatternSubstitution belongs in utils, not api — it has no HTTP dependency and provides pure CQL string manipulation",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/api/PatternSubstitution.java"
+      ],
+      "evidence": [
+        "PatternSubstitution imports: java.util.List, pl.marcinmilkowski.word_sketch.utils.CqlUtils — no HTTP, no HttpExchange, no api-layer type.",
+        "Methods substituteCollocate, extractXposFromConstraint, escapeForRegex are pure string operations on CQL patterns — the same concern as CqlUtils.",
+        "Its only non-utils caller is SketchHandlers.handleConcordanceExamples in the api package, but its content is CQL utility, not HTTP handling."
+      ],
+      "suggestion": "Staged reorg: (1) Move PatternSubstitution.java from api/ to utils/. (2) Update the single import in SketchHandlers from api.PatternSubstitution to utils.PatternSubstitution. (3) Verify with: mvn compile && mvn test. No functional changes required — just a package move and import update.",
+      "confidence": "high",
+      "impact_scope": "local",
+      "fix_scope": "single_edit"
+    }
+  ],
+  "retrospective": {
+    "root_causes": [
+      "No model/DTO package was established early; result types accumulated inside the first class that needed them (SemanticFieldExplorer) and were not extracted when the api layer began consuming them.",
+      "PatternSubstitution was likely created as part of handler work and placed in api by proximity, without checking that it had no HTTP dependencies."
+    ],
+    "likely_symptoms": [
+      "The coupling in ExplorationHandlers (sef-inner-class-leak in batch-6) is a symptom of the missing model package identified here."
+    ],
+    "possible_false_positives": [
+      "Single-file packages (tagging, viz) — flagged as thin but appropriate at this project scale; not reporting as issues.",
+      "PosGroup in utils — has slightly higher affinity to config but the utils placement is not a meaningful misfit."
+    ]
+  }
+}

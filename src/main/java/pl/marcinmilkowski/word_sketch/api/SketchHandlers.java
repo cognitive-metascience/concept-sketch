@@ -448,6 +448,9 @@ class SketchHandlers {
             response.put("results", resultsList);
 
             HttpApiUtils.sendJsonResponse(exchange, response);
+        } catch (IOException e) {
+            logger.error("BCQL query I/O error", e);
+            HttpApiUtils.sendError(exchange, 500, "BCQL query failed: " + e.getMessage());
         } catch (Exception e) {
             logger.error("BCQL query error", e);
             HttpApiUtils.sendError(exchange, 400, "BCQL query error: " + e.getMessage());
