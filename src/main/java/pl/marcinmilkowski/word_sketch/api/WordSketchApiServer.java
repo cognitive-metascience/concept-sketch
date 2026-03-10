@@ -4,7 +4,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import pl.marcinmilkowski.word_sketch.config.GrammarConfigLoader;
 import pl.marcinmilkowski.word_sketch.query.QueryExecutor;
-import pl.marcinmilkowski.word_sketch.query.SemanticFieldExplorer;
+import pl.marcinmilkowski.word_sketch.exploration.SemanticFieldExplorer;
 
 import java.io.IOException;
 import java.net.InetAddress;
@@ -90,11 +90,11 @@ public class WordSketchApiServer {
             registerGetHandler(server, "/api/concordance/examples",
                 wrapHandler(sketchHandlers::handleConcordanceExamples, "Concordance examples"));
 
-            server.createContext("/api/visual/radial",
+            registerPostHandler(server, "/api/visual/radial",
                 wrapHandler(sketchHandlers::handleVisualRadial, "Radial plot"));
 
             // POST with JSON body to avoid URL encoding issues
-            server.createContext("/api/bcql",
+            registerPostHandler(server, "/api/bcql",
                 wrapHandler(sketchHandlers::handleBcqlQueryPost, "BCQL query"));
 
             server.setExecutor(null);
@@ -133,6 +133,23 @@ public class WordSketchApiServer {
                 return;
             }
             if (!HttpApiUtils.requireMethod(exchange, "GET")) return;
+            handler.handle(exchange);
+        });
+    }
+
+    /**
+     * Registers a POST endpoint that automatically handles CORS preflight (OPTIONS) and
+     * rejects any non-POST requests with 405 Method Not Allowed.
+     * Mirrors {@link #registerGetHandler} for POST routes.
+     */
+    private void registerPostHandler(com.sun.net.httpserver.HttpServer httpServer, String path,
+                                     com.sun.net.httpserver.HttpHandler handler) {
+        httpServer.createContext(path, exchange -> {
+            if ("OPTIONS".equalsIgnoreCase(exchange.getRequestMethod())) {
+                HttpApiUtils.sendOptionsResponse(exchange, "POST");
+                return;
+            }
+            if (!HttpApiUtils.requireMethod(exchange, "POST")) return;
             handler.handle(exchange);
         });
     }

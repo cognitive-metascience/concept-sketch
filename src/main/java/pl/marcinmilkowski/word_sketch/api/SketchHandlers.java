@@ -9,7 +9,7 @@ import org.slf4j.LoggerFactory;
 import pl.marcinmilkowski.word_sketch.config.GrammarConfigLoader;
 import pl.marcinmilkowski.word_sketch.config.RelationType;
 import pl.marcinmilkowski.word_sketch.query.QueryExecutor;
-import pl.marcinmilkowski.word_sketch.query.QueryResults;
+import pl.marcinmilkowski.word_sketch.model.QueryResults;
 import pl.marcinmilkowski.word_sketch.utils.PatternSubstitution;
 import pl.marcinmilkowski.word_sketch.viz.RadialPlot;
 
@@ -311,15 +311,6 @@ class SketchHandlers {
      * Returns: image/svg+xml
      */
     void handleVisualRadial(HttpExchange exchange) throws IOException {
-        String method = exchange.getRequestMethod();
-        if ("OPTIONS".equalsIgnoreCase(method)) {
-            HttpApiUtils.sendOptionsResponse(exchange, "POST");
-            return;
-        }
-        if (!HttpApiUtils.requireMethod(exchange, "POST")) {
-            return;
-        }
-
         try {
             String body = new String(exchange.getRequestBody().readAllBytes(), StandardCharsets.UTF_8);
             logger.debug("Radial: body = {}", body);
@@ -357,15 +348,6 @@ class SketchHandlers {
      * POST /api/bcql with body: {"query": "[lemma=\"test\"]", "limit": 20}
      */
     void handleBcqlQueryPost(HttpExchange exchange) throws IOException {
-        String method = exchange.getRequestMethod();
-        if ("OPTIONS".equalsIgnoreCase(method)) {
-            HttpApiUtils.sendOptionsResponse(exchange, "POST");
-            return;
-        }
-        if (!HttpApiUtils.requireMethod(exchange, "POST")) {
-            return;
-        }
-
         try {
             String body = new String(exchange.getRequestBody().readAllBytes(), StandardCharsets.UTF_8);
             JSONObject obj = JSON.parseObject(body);

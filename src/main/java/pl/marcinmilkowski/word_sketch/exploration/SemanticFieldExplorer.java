@@ -1,4 +1,4 @@
-package pl.marcinmilkowski.word_sketch.query;
+package pl.marcinmilkowski.word_sketch.exploration;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -9,6 +9,9 @@ import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import pl.marcinmilkowski.word_sketch.config.GrammarConfigLoader;
+import pl.marcinmilkowski.word_sketch.model.QueryResults;
+import pl.marcinmilkowski.word_sketch.query.BlackLabQueryExecutor;
+import pl.marcinmilkowski.word_sketch.query.QueryExecutor;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -173,8 +176,10 @@ public class SemanticFieldExplorer implements AutoCloseable {
 
         // Build map: collocate -> logDice with seed
         Map<String, Double> seedCollocScores = new LinkedHashMap<>();
+        Map<String, Long> seedCollocFrequencies = new LinkedHashMap<>();
         for (QueryResults.WordSketchResult r : seedRelations) {
             seedCollocScores.put(r.getLemma().toLowerCase(), r.getLogDice());
+            seedCollocFrequencies.put(r.getLemma().toLowerCase(), r.getFrequency());
         }
 
         // Step 2: For each collocate, find nouns it collocates with
