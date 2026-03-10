@@ -1,7 +1,7 @@
 {
   "version": 8,
   "created": "2026-03-09T18:36:05+00:00",
-  "updated": "2026-03-10T20:17:51+00:00",
+  "updated": "2026-03-10T20:50:41+00:00",
   "queue_order": [
     "triage::observe",
     "triage::reflect",
@@ -10,9 +10,7 @@
     "triage::sense-check",
     "triage::commit",
     "review::.::holistic::api_surface_coherence::deprecated_method_on_interface::6440cdd0",
-    "review::.::holistic::api_surface_coherence::explore_multi_missing_response_keys::89451ad0",
     "review::.::holistic::api_surface_coherence::explore_multi_phantom_param::876ab2d4",
-    "review::.::holistic::api_surface_coherence::explore_vs_multi_seed_collocates_shape::18481eb4",
     "review::.::holistic::api_surface_coherence::seed_param_naming_inconsistency::64a2a251",
     "review::.::holistic::design_coherence::conllu_conversion_logic_in_main::822a0feb",
     "review::.::holistic::design_coherence::explore_by_pattern_inlined_phases::c7badabc",
@@ -29260,6 +29258,56 @@
         "diff_reopened": 0,
         "covered_subjective": []
       }
+    },
+    {
+      "timestamp": "2026-03-10T20:50:39+00:00",
+      "action": "done",
+      "issue_ids": [
+        "89451ad0"
+      ],
+      "cluster_name": null,
+      "actor": "user",
+      "note": "api-coherence: aligned explore/explore-multi response shapes; formatSeedCollocate now includes frequency; /api/semantic-field accepts both seeds and nouns params",
+      "detail": {}
+    },
+    {
+      "timestamp": "2026-03-10T20:50:39+00:00",
+      "action": "resolve",
+      "issue_ids": [
+        "review::.::holistic::api_surface_coherence::explore_multi_missing_response_keys::89451ad0"
+      ],
+      "cluster_name": null,
+      "actor": "user",
+      "note": "api-coherence: aligned explore/explore-multi response shapes; formatSeedCollocate now includes frequency; /api/semantic-field accepts both seeds and nouns params",
+      "detail": {
+        "status": "fixed",
+        "attestation": "I have actually api-coherence: aligned explore/explore-multi response shapes; formatSeedCollocate now includes frequency; /api/semantic-field accepts both seeds and nouns params and I am not gaming the score."
+      }
+    },
+    {
+      "timestamp": "2026-03-10T20:50:41+00:00",
+      "action": "done",
+      "issue_ids": [
+        "18481eb4"
+      ],
+      "cluster_name": null,
+      "actor": "user",
+      "note": "api-coherence: aligned explore/explore-multi response shapes; formatSeedCollocate now includes frequency; /api/semantic-field accepts both seeds and nouns params",
+      "detail": {}
+    },
+    {
+      "timestamp": "2026-03-10T20:50:41+00:00",
+      "action": "resolve",
+      "issue_ids": [
+        "review::.::holistic::api_surface_coherence::explore_vs_multi_seed_collocates_shape::18481eb4"
+      ],
+      "cluster_name": null,
+      "actor": "user",
+      "note": "api-coherence: aligned explore/explore-multi response shapes; formatSeedCollocate now includes frequency; /api/semantic-field accepts both seeds and nouns params",
+      "detail": {
+        "status": "fixed",
+        "attestation": "I have actually api-coherence: aligned explore/explore-multi response shapes; formatSeedCollocate now includes frequency; /api/semantic-field accepts both seeds and nouns params and I am not gaming the score."
+      }
     }
   ],
   "epic_triage_meta": {
@@ -29798,7 +29846,10 @@
       "cluster_name": null
     }
   ],
-  "uncommitted_issues": [],
+  "uncommitted_issues": [
+    "review::.::holistic::api_surface_coherence::explore_multi_missing_response_keys::89451ad0",
+    "review::.::holistic::api_surface_coherence::explore_vs_multi_seed_collocates_shape::18481eb4"
+  ],
   "commit_tracking_branch": null,
   "scan_count_at_plan_start": 5
 }

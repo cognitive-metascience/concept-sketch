@@ -11,15 +11,15 @@
     "total": 431,
     "auto_resolved": 93,
     "false_positive": 0,
-    "fixed": 297,
-    "open": 28,
+    "fixed": 299,
+    "open": 26,
     "wontfix": 13,
     "by_tier": {
       "1": {
         "auto_resolved": 42,
         "false_positive": 0,
-        "fixed": 231,
-        "open": 16,
+        "fixed": 233,
+        "open": 14,
         "wontfix": 7
       },
       "2": {
@@ -16248,16 +16248,22 @@
         "suggestion": "Align the shapes: either always include frequency in formatSeedCollocate (add 0 for single-seed where frequency is not naturally available), or introduce distinct response keys (e.g. per_seed_collocates for multi-seed) to avoid the collision.",
         "reasoning": ""
       },
-      "status": "open",
-      "note": null,
+      "status": "fixed",
+      "note": "api-coherence: aligned explore/explore-multi response shapes; formatSeedCollocate now includes frequency; /api/semantic-field accepts both seeds and nouns params",
       "first_seen": "2026-03-10T20:17:33+00:00",
       "last_seen": "2026-03-10T20:17:33+00:00",
-      "resolved_at": null,
+      "resolved_at": "2026-03-10T20:50:41+00:00",
       "reopen_count": 0,
       "lang": "java",
       "suppressed": false,
       "suppressed_at": null,
-      "suppression_pattern": null
+      "suppression_pattern": null,
+      "resolution_attestation": {
+        "kind": "manual",
+        "text": "I have actually api-coherence: aligned explore/explore-multi response shapes; formatSeedCollocate now includes frequency; /api/semantic-field accepts both seeds and nouns params and I am not gaming the score.",
+        "attested_at": "2026-03-10T20:50:41+00:00",
+        "scan_verified": false
+      }
     },
     "review::.::holistic::api_surface_coherence::explore_multi_missing_response_keys::89451ad0": {
       "id": "review::.::holistic::api_surface_coherence::explore_multi_missing_response_keys::89451ad0",
@@ -16281,16 +16287,22 @@
         "suggestion": "Document the structural difference explicitly in both endpoint Javadoc. If these are intended to return compatible shapes, implement noun discovery and core-collocate extraction for the multi-seed path, or rename explore-multi to an endpoint path that signals it is a distinct operation (e.g. /api/semantic-field/compare).",
         "reasoning": ""
       },
-      "status": "open",
-      "note": null,
+      "status": "fixed",
+      "note": "api-coherence: aligned explore/explore-multi response shapes; formatSeedCollocate now includes frequency; /api/semantic-field accepts both seeds and nouns params",
       "first_seen": "2026-03-10T20:17:33+00:00",
       "last_seen": "2026-03-10T20:17:33+00:00",
-      "resolved_at": null,
+      "resolved_at": "2026-03-10T20:50:39+00:00",
       "reopen_count": 0,
       "lang": "java",
       "suppressed": false,
       "suppressed_at": null,
-      "suppression_pattern": null
+      "suppression_pattern": null,
+      "resolution_attestation": {
+        "kind": "manual",
+        "text": "I have actually api-coherence: aligned explore/explore-multi response shapes; formatSeedCollocate now includes frequency; /api/semantic-field accepts both seeds and nouns params and I am not gaming the score.",
+        "attested_at": "2026-03-10T20:50:39+00:00",
+        "scan_verified": false
+      }
     },
     "review::.::holistic::api_surface_coherence::seed_param_naming_inconsistency::64a2a251": {
       "id": "review::.::holistic::api_surface_coherence::seed_param_naming_inconsistency::64a2a251",
@@ -16476,7 +16488,10 @@
     "api_surface_coherence": {
       "score": 35.0,
       "source": "holistic",
-      "assessed_at": "2026-03-10T20:17:33+00:00"
+      "assessed_at": "2026-03-10T20:17:33+00:00",
+      "needs_review_refresh": true,
+      "refresh_reason": "review_issue_fixed",
+      "stale_since": "2026-03-10T20:50:41+00:00"
     },
     "authorization_consistency": {
       "score": 67.5,
@@ -19111,13 +19126,13 @@
       "strict": 35.0,
       "verified_strict_score": 35.0,
       "checks": 10,
-      "failing": 5,
+      "failing": 3,
       "tier": 4,
       "detectors": {
         "subjective_assessment": {
           "potential": 10,
           "pass_rate": 0.35,
-          "failing": 5,
+          "failing": 3,
           "weighted_failures": 6.5,
           "assessment_score": 35.0,
           "placeholder": false,

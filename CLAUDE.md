@@ -100,7 +100,10 @@ src/main/java/pl/marcinmilkowski/word_sketch/
 │   └── PatternSubstitution.java        # @Deprecated — use utils.PatternSubstitution
 ├── config/
 │   ├── GrammarConfigLoader.java        # Grammar config loading from JSON
+│   ├── PosGroup.java                   # POS group constants (NOUN, VERB, ADJ, ADV, OTHER)
 │   └── RelationType.java               # Enum: SURFACE | DEP
+├── exploration/
+│   └── SemanticFieldExplorer.java      # Single-seed and multi-seed semantic field exploration
 ├── indexer/
 │   └── blacklab/
 │       └── BlackLabConllUIndexer.java  # CoNLL-U corpus indexer for BlackLab
@@ -111,13 +114,12 @@ src/main/java/pl/marcinmilkowski/word_sketch/
 │   ├── DiscoveredNoun.java             # Noun discovered via shared adjectives
 │   ├── Edge.java                       # Graph edge for D3.js visualization
 │   ├── ExploreOptions.java             # Options for semantic field exploration
-│   └── ExplorationResult.java          # Top-level result DTO for SEF exploration
+│   ├── ExplorationResult.java          # Top-level result DTO for SEF exploration
+│   └── QueryResults.java               # Result DTOs: WordSketchResult, ConcordanceResult
 ├── query/
 │   ├── QueryExecutor.java              # Query executor interface
 │   ├── BlackLabQueryExecutor.java      # BlackLab-backed query executor
-│   ├── BlackLabSnippetParser.java      # Parses BlackLab XML snippets
-│   ├── SemanticFieldExplorer.java      # Single-seed and multi-seed semantic field exploration
-│   └── QueryResults.java               # Result DTOs: WordSketchResult, ConcordanceResult
+│   └── BlackLabSnippetParser.java      # Parses BlackLab XML snippets
 ├── tagging/
 │   ├── PosTagger.java                  # POS tagger interface
 │   ├── SimpleTagger.java               # Rule-based POS tagger (implements PosTagger)
@@ -126,8 +128,7 @@ src/main/java/pl/marcinmilkowski/word_sketch/
 │   ├── CqlUtils.java                   # CQL parsing: splitCqlTokens, escapeForRegex
 │   ├── LogDiceCalculator.java          # logDice scoring
 │   ├── LongIntHashMap.java             # Compact long→int hash map
-│   ├── PatternSubstitution.java        # CQL pattern head/collocate substitution
-│   └── PosGroup.java                   # POS group constants (NOUN, VERB, ADJ, ADV, OTHER)
+│   └── PatternSubstitution.java        # CQL pattern head/collocate substitution
 └── viz/
     └── RadialPlot.java                 # Radial plot data builder
 ```

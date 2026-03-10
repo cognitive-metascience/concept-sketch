@@ -6,7 +6,7 @@ import com.alibaba.fastjson2.JSONArray;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import pl.marcinmilkowski.word_sketch.utils.CqlUtils;
-import pl.marcinmilkowski.word_sketch.utils.PosGroup;
+import pl.marcinmilkowski.word_sketch.config.PosGroup;
 
 import java.io.IOException;
 import java.io.Reader;

@@ -1,6 +1,6 @@
 package pl.marcinmilkowski.word_sketch.tagging;
 
-import pl.marcinmilkowski.word_sketch.utils.PosGroup;
+import pl.marcinmilkowski.word_sketch.config.PosGroup;
 
 /**
  * A single token with its POS tag, lemma, and position in a sentence.
