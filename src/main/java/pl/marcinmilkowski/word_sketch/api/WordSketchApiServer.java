@@ -15,7 +15,8 @@ import pl.marcinmilkowski.word_sketch.query.SemanticFieldExplorer.ComparisonResu
 import pl.marcinmilkowski.word_sketch.query.SemanticFieldExplorer.AdjectiveProfile;
 import pl.marcinmilkowski.word_sketch.query.SemanticFieldExplorer.ExplorationResult;
 import pl.marcinmilkowski.word_sketch.query.SemanticFieldExplorer.DiscoveredNoun;
-import pl.marcinmilkowski.word_sketch.query.SemanticFieldExplorer.CoreAdjective;
+import pl.marcinmilkowski.word_sketch.query.SemanticFieldExplorer.CoreCollocate;
+import pl.marcinmilkowski.word_sketch.query.SemanticFieldExplorer.ExploreOptions;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
@@ -49,6 +50,7 @@ public class WordSketchApiServer {
     private final String indexPath;
     private final int port;
     private final GrammarConfigLoader grammarConfig;
+    private final SemanticFieldExplorer semanticFieldExplorer;
     private com.sun.net.httpserver.HttpServer server;
 
     public WordSketchApiServer(QueryExecutor executor, String indexPath, int port, GrammarConfigLoader grammarConfig) {
@@ -56,6 +58,7 @@ public class WordSketchApiServer {
         this.indexPath = indexPath;
         this.port = port;
         this.grammarConfig = grammarConfig;
+        this.semanticFieldExplorer = new SemanticFieldExplorer(this.executor);
     }
 
     public void start() {
@@ -340,41 +343,7 @@ public class WordSketchApiServer {
     }
 
     private void handleRelationQuery(com.sun.net.httpserver.HttpExchange exchange, String lemma, String relation) throws IOException {
-        List<QueryResults.WordSketchResult> results = new ArrayList<>();
-
-        if (grammarConfig != null) {
-            var rel = grammarConfig.getRelation(relation).orElse(null);
-            if (rel != null && rel.relationType() == RelationType.SURFACE) {
-                try {
-                    String fullPattern = rel.getFullPattern(lemma);
-                    results = executor.executeSurfacePattern(
-                        lemma, fullPattern,
-                        rel.headPosition(), rel.collocatePosition(),
-                        0.0, 50);
-                } catch (IOException e) {
-                    logger.error("Query failed", e);
-                    HttpApiUtils.sendError(exchange, 500, "Query failed: " + e.getMessage());
-                    return;
-                }
-            }
-        }
-
-        List<Map<String, Object>> collocations = new ArrayList<>();
-        for (QueryResults.WordSketchResult result : results) {
-            Map<String, Object> word = new HashMap<>();
-            word.put("lemma", result.getLemma());
-            word.put("frequency", result.getFrequency());
-            word.put("logDice", result.getLogDice());
-            word.put("pos", result.getPos());
-            collocations.add(word);
-        }
-
-        Map<String, Object> response = new HashMap<>();
-        response.put("lemma", lemma);
-        response.put("relation", relation);
-        response.put("collocations", collocations);
-
-        HttpApiUtils.sendJsonResponse(exchange, response);
+        handleRelationQueryInternal(exchange, lemma, relation, RelationType.SURFACE);
     }
 
     /**
@@ -441,11 +410,15 @@ public class WordSketchApiServer {
      * DEP relations use surface patterns with [deprel="..."] constraints.
      */
     private void handleDependencyRelationQuery(com.sun.net.httpserver.HttpExchange exchange, String lemma, String relationId) throws IOException {
+        handleRelationQueryInternal(exchange, lemma, relationId, RelationType.DEP);
+    }
+
+    private void handleRelationQueryInternal(com.sun.net.httpserver.HttpExchange exchange, String lemma, String relationId, RelationType relationType) throws IOException {
         List<QueryResults.WordSketchResult> results = new ArrayList<>();
 
         if (grammarConfig != null) {
             var rel = grammarConfig.getRelation(relationId).orElse(null);
-            if (rel != null && rel.relationType() == RelationType.DEP) {
+            if (rel != null && rel.relationType() == relationType) {
                 try {
                     String fullPattern = rel.getFullPattern(lemma);
                     results = executor.executeSurfacePattern(
@@ -453,8 +426,8 @@ public class WordSketchApiServer {
                         rel.headPosition(), rel.collocatePosition(),
                         0.0, 50);
                 } catch (IOException e) {
-                    logger.error("Dependency query failed", e);
-                    HttpApiUtils.sendError(exchange, 500, "Dependency query failed: " + e.getMessage());
+                    logger.error("Query failed", e);
+                    HttpApiUtils.sendError(exchange, 500, "Query failed: " + e.getMessage());
                     return;
                 }
             }
@@ -528,12 +501,10 @@ public class WordSketchApiServer {
         int headPos = relationConfig.get().headPosition();
         int collocatePos = relationConfig.get().collocatePosition();
 
-        ExplorationResult result;
-        try (SemanticFieldExplorer explorer = new SemanticFieldExplorer(this.executor)) {
-            result = explorer.exploreByPattern(
-                seed, topCollocates, nounsPerCollocate, minShared, minLogDice,
-                bcqlPattern, simplePattern, relationName, headPos, collocatePos);
-        }
+        ExploreOptions opts = new ExploreOptions(
+            topCollocates, nounsPerCollocate, minLogDice, minShared, false, headPos, collocatePos, null);
+        ExplorationResult result = semanticFieldExplorer.exploreByPattern(
+            seed, relationName, bcqlPattern, simplePattern, opts);
 
         Map<String, Object> response = new HashMap<>();
         response.put("status", "ok");
@@ -549,8 +520,8 @@ public class WordSketchApiServer {
         response.put("parameters", paramsUsed);
 
         List<Map<String, Object>> seedCollocs = new ArrayList<>();
-        if (result.seedAdjectives != null) {
-            for (Map.Entry<String, Double> colloc : result.seedAdjectives.entrySet()) {
+        if (result.seedCollocates != null) {
+            for (Map.Entry<String, Double> colloc : result.seedCollocates.entrySet()) {
                 Map<String, Object> collocMap = new HashMap<>();
                 collocMap.put("word", colloc.getKey());
                 collocMap.put("logDice", Math.round(colloc.getValue() * 100.0) / 100.0);
@@ -568,7 +539,7 @@ public class WordSketchApiServer {
                 nounMap.put("shared_count", dn.sharedCount);
                 nounMap.put("similarity_score", Math.round(dn.similarityScore * 100.0) / 100.0);
                 nounMap.put("avg_logdice", Math.round(dn.avgLogDice * 100.0) / 100.0);
-                nounMap.put("shared_collocates", dn.getSharedAdjectiveList());
+                nounMap.put("shared_collocates", dn.getSharedCollocateList());
                 nouns.add(nounMap);
             }
         }
@@ -576,10 +547,10 @@ public class WordSketchApiServer {
         response.put("discovered_nouns_count", nouns.size());
 
         List<Map<String, Object>> coreCollocs = new ArrayList<>();
-        if (result.coreAdjectives != null) {
-            for (CoreAdjective ca : result.coreAdjectives) {
+        if (result.coreCollocates != null) {
+            for (CoreCollocate ca : result.coreCollocates) {
                 Map<String, Object> collocMap = new HashMap<>();
-                collocMap.put("word", ca.adjective);
+                collocMap.put("word", ca.collocate);
                 collocMap.put("shared_by_count", ca.sharedByCount);
                 collocMap.put("total_nouns", ca.totalNouns);
                 collocMap.put("coverage", Math.round(ca.getCoverage() * 100.0) / 100.0);
@@ -656,7 +627,7 @@ public class WordSketchApiServer {
         try {
             topCollocates = Integer.parseInt(params.getOrDefault("top", "15"));
             minShared = Integer.parseInt(params.getOrDefault("min_shared", "2"));
-            minLogDice = Double.parseDouble(params.getOrDefault("min_logdice", "2.0"));
+            minLogDice = Double.parseDouble(params.getOrDefault("min_logdice", "3.0"));
         } catch (NumberFormatException e) {
             HttpApiUtils.sendError(exchange, 400, "Invalid numeric parameter: " + e.getMessage());
             return;
@@ -760,9 +731,7 @@ public class WordSketchApiServer {
         int maxPerNoun = Integer.parseInt(params.getOrDefault("max_per_noun", "50"));
 
         ComparisonResult result;
-        try (SemanticFieldExplorer explorer = new SemanticFieldExplorer(this.executor)) {
-            result = explorer.compare(nouns, minLogDice, maxPerNoun);
-        }
+        result = semanticFieldExplorer.compare(nouns, minLogDice, maxPerNoun);
 
         Map<String, Object> response = new HashMap<>();
         response.put("status", "ok");
@@ -839,9 +808,7 @@ public class WordSketchApiServer {
         int maxExamples = Integer.parseInt(params.getOrDefault("max", "10"));
 
         List<String> examples;
-        try (SemanticFieldExplorer explorer = new SemanticFieldExplorer(this.executor)) {
-            examples = explorer.fetchExamples(adjective, noun, maxExamples);
-        }
+        examples = semanticFieldExplorer.fetchExamples(adjective, noun, maxExamples);
 
         Map<String, Object> response = new HashMap<>();
         response.put("status", "ok");
@@ -864,9 +831,6 @@ public class WordSketchApiServer {
 
         String word1 = params.get("word1");
         String word2 = params.get("word2");
-        // URL decode (browsers encode & as &amp; in HTML)
-        if (word1 != null) word1 = word1.replace("&amp;", "&");
-        if (word2 != null) word2 = word2.replace("&amp;", "&");
         String relation = params.getOrDefault("relation", "noun_adj_predicates");
         int limit = Integer.parseInt(params.getOrDefault("limit", "10"));
 

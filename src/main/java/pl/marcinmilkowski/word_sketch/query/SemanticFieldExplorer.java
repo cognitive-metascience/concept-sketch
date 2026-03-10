@@ -66,6 +66,20 @@ public class SemanticFieldExplorer implements AutoCloseable {
     private static final String ADJECTIVE_PATTERN = "[xpos=\"JJ.*\"]";
     private static final String NOUN_PATTERN = "[xpos=\"NN.*\"]";
 
+    /**
+     * Options for {@link #exploreByPattern}, bundling the tuning parameters and
+     * positional hints that were previously spread across 10 method arguments.
+     */
+    public record ExploreOptions(
+            int topCollocates,
+            int nounsPerCollocate,
+            double minLogDice,
+            int minShared,
+            boolean includeExamples,
+            int headPos,
+            int collocatePos,
+            QueryExecutor executor) {}
+
     public SemanticFieldExplorer(String indexPath) throws IOException {
         this.indexPath = indexPath;
         this.executor = new BlackLabQueryExecutor(indexPath);
@@ -85,29 +99,26 @@ public class SemanticFieldExplorer implements AutoCloseable {
      * Explore semantic field using a BCQL pattern from grammar config.
      * This is the preferred method as it uses the actual patterns from relations.json.
      *
-     * @param seed The seed noun to explore from
-     * @param topPredicates Max predicates to use for expansion
-     * @param nounsPerPredicate Max nouns to fetch per predicate
-     * @param minShared Min predicates a noun must share with seed
-     * @param minLogDice Min logDice threshold
-     * @param bcqlPattern BCQL pattern with headword placeholder (e.g., "[lemma=\"%s\"] []{0,5} [xpos=\"JJ.*\"]")
+     * @param seed          The seed noun to explore from
+     * @param relationName  Human-readable relation name for logging
+     * @param bcqlPattern   BCQL pattern with headword placeholder
      * @param simplePattern Simple pattern for reverse lookup (e.g., "[xpos=\"JJ.*\"]")
-     * @param relationName Human-readable relation name for logging
-     * @param headPos 1-based position of head in pattern (from grammar config)
-     * @param collocatePos 1-based position of collocate in pattern (from grammar config)
+     * @param opts          Tuning parameters and positional hints
      * @return ExplorationResult with discovered semantic class
      */
     public ExplorationResult exploreByPattern(
             String seed,
-            int topPredicates,
-            int nounsPerPredicate,
-            int minShared,
-            double minLogDice,
+            String relationName,
             String bcqlPattern,
             String simplePattern,
-            String relationName,
-            int headPos,
-            int collocatePos) throws IOException {
+            ExploreOptions opts) throws IOException {
+
+        int topPredicates = opts.topCollocates();
+        int nounsPerPredicate = opts.nounsPerCollocate();
+        double minLogDice = opts.minLogDice();
+        int minShared = opts.minShared();
+        int headPos = opts.headPos();
+        int collocatePos = opts.collocatePos();
 
         if (seed == null || seed.isEmpty()) {
             return ExplorationResult.empty(seed);
@@ -211,13 +222,13 @@ public class SemanticFieldExplorer implements AutoCloseable {
         Map<String, Double> collocTotalScore = new LinkedHashMap<>();
 
         for (DiscoveredNoun dn : discoveredNouns) {
-            for (Map.Entry<String, Double> colloc : dn.sharedAdjectives.entrySet()) {
+            for (Map.Entry<String, Double> colloc : dn.sharedCollocates.entrySet()) {
                 collocFrequency.merge(colloc.getKey(), 1, Integer::sum);
                 collocTotalScore.merge(colloc.getKey(), colloc.getValue(), Double::sum);
             }
         }
 
-        List<CoreAdjective> coreCollocates = new ArrayList<>();
+        List<CoreCollocate> coreCollocates = new ArrayList<>();
         int minNounsForCore = Math.max(2, discoveredNouns.size() / 3);
 
         for (String colloc : seedCollocScores.keySet()) {
@@ -226,7 +237,7 @@ public class SemanticFieldExplorer implements AutoCloseable {
             double seedScore = seedCollocScores.get(colloc);
 
             if (freq >= minNounsForCore || freq >= 2) {
-                coreCollocates.add(new CoreAdjective(
+                coreCollocates.add(new CoreCollocate(
                     colloc, freq, discoveredNouns.size(),
                     seedScore, totalScore / Math.max(1, freq)
                 ));
@@ -243,11 +254,11 @@ public class SemanticFieldExplorer implements AutoCloseable {
         logger.info("\nSemantic class (nouns similar to '{}'):", seed);
         discoveredNouns.stream().limit(15).forEach(n ->
             logger.info("  {} (shared={}, score={}) <- {}", n.noun, n.sharedCount,
-                String.format("%.1f", n.similarityScore), String.join(", ", n.sharedAdjectives.keySet())));
+                String.format("%.1f", n.similarityScore), String.join(", ", n.sharedCollocates.keySet())));
 
         logger.info("\nCore {} (define the class):", relationName);
         coreCollocates.stream().limit(10).forEach(a ->
-            logger.info("  {} (in {}/{} nouns, avgLogDice={})", a.adjective, a.sharedByCount,
+            logger.info("  {} (in {}/{} nouns, avgLogDice={})", a.collocate, a.sharedByCount,
                 a.totalNouns, String.format("%.1f", a.avgLogDice)));
 
         logger.info("------------------------------------------------------------");
@@ -568,16 +579,16 @@ public class SemanticFieldExplorer implements AutoCloseable {
      */
     public static class ExplorationResult {
         public final String seed;
-        public final Map<String, Double> seedAdjectives;  // adjective -> logDice with seed
+        public final Map<String, Double> seedCollocates;  // collocate -> logDice with seed
         public final List<DiscoveredNoun> discoveredNouns;
-        public final List<CoreAdjective> coreAdjectives;
+        public final List<CoreCollocate> coreCollocates;
 
-        public ExplorationResult(String seed, Map<String, Double> seedAdjectives,
-                List<DiscoveredNoun> discoveredNouns, List<CoreAdjective> coreAdjectives) {
+        public ExplorationResult(String seed, Map<String, Double> seedCollocates,
+                List<DiscoveredNoun> discoveredNouns, List<CoreCollocate> coreCollocates) {
             this.seed = seed;
-            this.seedAdjectives = seedAdjectives;
+            this.seedCollocates = seedCollocates;
             this.discoveredNouns = discoveredNouns;
-            this.coreAdjectives = coreAdjectives;
+            this.coreCollocates = coreCollocates;
         }
 
         public static ExplorationResult empty(String seed) {
@@ -593,7 +604,7 @@ public class SemanticFieldExplorer implements AutoCloseable {
             return discoveredNouns.stream().limit(n).collect(Collectors.toList());
         }
 
-        /** Get nouns sharing at least minShared adjectives with seed */
+        /** Get nouns sharing at least minShared collocates with seed */
         public List<DiscoveredNoun> getNounsWithMinShared(int minShared) {
             return discoveredNouns.stream()
                 .filter(n -> n.sharedCount >= minShared)
@@ -604,15 +615,15 @@ public class SemanticFieldExplorer implements AutoCloseable {
         public List<Edge> getEdges() {
             List<Edge> edges = new ArrayList<>();
 
-            // Edges from seed to its adjectives
-            for (Map.Entry<String, Double> adj : seedAdjectives.entrySet()) {
-                edges.add(new Edge(seed, adj.getKey(), adj.getValue(), "seed_adj"));
+            // Edges from seed to its collocates
+            for (Map.Entry<String, Double> colloc : seedCollocates.entrySet()) {
+                edges.add(new Edge(seed, colloc.getKey(), colloc.getValue(), "seed_adj"));
             }
 
-            // Edges from discovered nouns to shared adjectives
+            // Edges from discovered nouns to shared collocates
             for (DiscoveredNoun noun : discoveredNouns) {
-                for (Map.Entry<String, Double> adj : noun.sharedAdjectives.entrySet()) {
-                    edges.add(new Edge(noun.noun, adj.getKey(), adj.getValue(), "discovered_adj"));
+                for (Map.Entry<String, Double> colloc : noun.sharedCollocates.entrySet()) {
+                    edges.add(new Edge(noun.noun, colloc.getKey(), colloc.getValue(), "discovered_adj"));
                 }
             }
 
@@ -621,34 +632,34 @@ public class SemanticFieldExplorer implements AutoCloseable {
 
         @Override
         public String toString() {
-            return String.format("ExplorationResult(seed='%s', adjectives=%d, discovered=%d, core=%d)",
-                seed, seedAdjectives.size(), discoveredNouns.size(), coreAdjectives.size());
+            return String.format("ExplorationResult(seed='%s', collocates=%d, discovered=%d, core=%d)",
+                seed, seedCollocates.size(), discoveredNouns.size(), coreCollocates.size());
         }
     }
 
     /**
-     * A noun discovered during exploration - shares adjectives with the seed.
+     * A noun discovered during exploration - shares collocates with the seed.
      */
     public static class DiscoveredNoun {
         public final String noun;
-        public final Map<String, Double> sharedAdjectives;  // adjective -> logDice
-        public final int sharedCount;                        // Number of shared adjectives
+        public final Map<String, Double> sharedCollocates;  // collocate -> logDice
+        public final int sharedCount;                        // Number of shared collocates
         public final double cumulativeScore;                 // Sum of logDice scores
         public final double avgLogDice;                      // Average logDice
         public final double similarityScore;                 // Ranking score (sharedCount × avgLogDice)
 
-        public DiscoveredNoun(String noun, Map<String, Double> sharedAdjectives,
+        public DiscoveredNoun(String noun, Map<String, Double> sharedCollocates,
                 int sharedCount, double cumulativeScore, double avgLogDice, double similarityScore) {
             this.noun = noun;
-            this.sharedAdjectives = sharedAdjectives;
+            this.sharedCollocates = sharedCollocates;
             this.sharedCount = sharedCount;
             this.cumulativeScore = cumulativeScore;
             this.avgLogDice = avgLogDice;
             this.similarityScore = similarityScore;
         }
 
-        public List<String> getSharedAdjectiveList() {
-            return new ArrayList<>(sharedAdjectives.keySet());
+        public List<String> getSharedCollocateList() {
+            return new ArrayList<>(sharedCollocates.keySet());
         }
 
         @Override
@@ -658,25 +669,25 @@ public class SemanticFieldExplorer implements AutoCloseable {
     }
 
     /**
-     * An adjective that defines the semantic class (shared by multiple discovered nouns).
+     * A collocate that defines the semantic class (shared by multiple discovered nouns).
      */
-    public static class CoreAdjective {
-        public final String adjective;
-        public final int sharedByCount;    // How many discovered nouns share this adjective
+    public static class CoreCollocate {
+        public final String collocate;
+        public final int sharedByCount;    // How many discovered nouns share this collocate
         public final int totalNouns;       // Total discovered nouns
         public final double seedLogDice;   // LogDice with the seed word
         public final double avgLogDice;    // Average logDice across discovered nouns
 
-        public CoreAdjective(String adjective, int sharedByCount, int totalNouns,
+        public CoreCollocate(String collocate, int sharedByCount, int totalNouns,
                 double seedLogDice, double avgLogDice) {
-            this.adjective = adjective;
+            this.collocate = collocate;
             this.sharedByCount = sharedByCount;
             this.totalNouns = totalNouns;
             this.seedLogDice = seedLogDice;
             this.avgLogDice = avgLogDice;
         }
 
-        /** Coverage ratio: how many of the discovered nouns share this adjective */
+        /** Coverage ratio: how many of the discovered nouns share this collocate */
         public double getCoverage() {
             return totalNouns > 0 ? (double) sharedByCount / totalNouns : 0.0;
         }
@@ -684,7 +695,7 @@ public class SemanticFieldExplorer implements AutoCloseable {
         @Override
         public String toString() {
             return String.format("%s (in %d/%d nouns, avgLogDice=%.1f)",
-                adjective, sharedByCount, totalNouns, avgLogDice);
+                collocate, sharedByCount, totalNouns, avgLogDice);
         }
     }
 }

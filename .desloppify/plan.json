@@ -1,7 +1,7 @@
 {
   "version": 8,
   "created": "2026-03-09T18:36:05+00:00",
-  "updated": "2026-03-10T17:15:28+00:00",
+  "updated": "2026-03-10T17:15:40+00:00",
   "queue_order": [
     "review::.::holistic::abstraction_fitness::queryexecutor_default_methods_one_impl::e2ee35a0",
     "review::.::holistic::abstraction_fitness::semantic_explorer_instantiated_inline_per_request::160c69e5",
@@ -13820,6 +13820,22 @@
       "actor": "user",
       "note": null,
       "detail": {}
+    },
+    {
+      "timestamp": "2026-03-10T17:15:40+00:00",
+      "action": "commit_record",
+      "issue_ids": [
+        "review::.::holistic::contract_coherence::getCorpusSize_always_returns_zero::0e1a2550",
+        "review::.::holistic::convention_outlier::conv_unimplemented_corpussize::19f1f331",
+        "review::.::holistic::naming_quality::getCorpusSize_misleads_about_stub_behaviour::df7c88da"
+      ],
+      "cluster_name": null,
+      "actor": "user",
+      "note": "stubs-cleanup: removed dead getCorpusSize stub",
+      "detail": {
+        "sha": "a76756a344d1",
+        "branch": "desloppify/code-health"
+      }
     }
   ],
   "epic_triage_meta": {
@@ -14240,13 +14256,21 @@
       "recorded_at": "2026-03-10T17:13:35+00:00",
       "note": "Fixed bugs-first (multi-seed pattern bug, am VBP, parseInt guards, PatternSubstitutionTest), quick-wins (10 trivial fixes), error-handling (try-with-resources, logging, unified exceptions)",
       "cluster_name": null
+    },
+    {
+      "sha": "a76756a344d1",
+      "branch": "desloppify/code-health",
+      "issue_ids": [
+        "review::.::holistic::contract_coherence::getCorpusSize_always_returns_zero::0e1a2550",
+        "review::.::holistic::convention_outlier::conv_unimplemented_corpussize::19f1f331",
+        "review::.::holistic::naming_quality::getCorpusSize_misleads_about_stub_behaviour::df7c88da"
+      ],
+      "recorded_at": "2026-03-10T17:15:40+00:00",
+      "note": "stubs-cleanup: removed dead getCorpusSize stub",
+      "cluster_name": null
     }
   ],
-  "uncommitted_issues": [
-    "review::.::holistic::contract_coherence::getCorpusSize_always_returns_zero::0e1a2550",
-    "review::.::holistic::convention_outlier::conv_unimplemented_corpussize::19f1f331",
-    "review::.::holistic::naming_quality::getCorpusSize_misleads_about_stub_behaviour::df7c88da"
-  ],
+  "uncommitted_issues": [],
   "commit_tracking_branch": null,
   "scan_count_at_plan_start": 5
 }
