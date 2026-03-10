@@ -165,7 +165,7 @@ public class SemanticFieldExplorer implements AutoCloseable {
         }
 
         if (seedRelations.isEmpty()) {
-            logger.info("  Still no results. Seed may be too rare.");
+            logger.debug("  Still no results. Seed may be too rare.");
             return ExplorationResult.empty(seed);
         }
 
@@ -302,24 +302,24 @@ public class SemanticFieldExplorer implements AutoCloseable {
         List<String> nounList = new ArrayList<>(seedNouns);
         int nounCount = nounList.size();
 
-        logger.info("\n=== SEMANTIC FIELD COMPARISON ===");
-        logger.info("Nouns: {}", seedNouns);
-        logger.info("Min logDice: {}", minLogDice);
-        logger.info("------------------------------------------------------------");
+        logger.debug("\n=== SEMANTIC FIELD COMPARISON ===");
+        logger.debug("Nouns: {}", seedNouns);
+        logger.debug("Min logDice: {}", minLogDice);
+        logger.debug("------------------------------------------------------------");
 
         // Phase 1: Build adjective profiles for each noun
         // adjective -> {noun -> logDice}
         Map<String, Map<String, Double>> adjectiveProfiles = new LinkedHashMap<>();
 
         for (String noun : nounList) {
-            logger.info("\nProfiling: {}", noun);
+            logger.debug("\nProfiling: {}", noun);
 
             List<QueryResults.WordSketchResult> adjectives = executor.findCollocations(
                 noun, ADJECTIVE_PATTERN, minLogDice, maxPerNoun);
 
-            logger.info("  Found {} adjectives", adjectives.size());
+            logger.debug("  Found {} adjectives", adjectives.size());
             if (!adjectives.isEmpty()) {
-                logger.info("  Top 5: {}", adjectives.subList(0, Math.min(5, adjectives.size())));
+                logger.debug("  Top 5: {}", adjectives.subList(0, Math.min(5, adjectives.size())));
             }
 
             for (QueryResults.WordSketchResult r : adjectives) {
@@ -331,7 +331,7 @@ public class SemanticFieldExplorer implements AutoCloseable {
         }
 
         // Phase 2: Build comparison profiles with graded scores
-        logger.info("\n--- Building Comparison Profiles ---");
+        logger.debug("\n--- Building Comparison Profiles ---");
 
         List<AdjectiveProfile> profiles = new ArrayList<>();
 
@@ -378,18 +378,18 @@ public class SemanticFieldExplorer implements AutoCloseable {
         // Sort by commonality score (most shared first)
         profiles.sort((a, b) -> Double.compare(b.commonalityScore, a.commonalityScore));
 
-        logger.info("Total unique adjectives: {}", profiles.size());
+        logger.debug("Total unique adjectives: {}", profiles.size());
 
         // Show top shared
-        logger.info("\nTop SHARED (high commonality):");
+        logger.debug("\nTop SHARED (high commonality):");
         profiles.stream()
             .filter(p -> p.presentInCount >= 2)
             .limit(10)
-            .forEach(p -> logger.info("  {} (in {}/{} nouns, avg={})", p.adjective,
+            .forEach(p -> logger.debug("  {} (in {}/{} nouns, avg={})", p.adjective,
                 p.presentInCount, p.totalNouns, String.format("%.2f", p.avgLogDice)));
 
         // Show top distinctive
-        logger.info("\nTop DISTINCTIVE (specific to 1 noun):");
+        logger.debug("\nTop DISTINCTIVE (specific to 1 noun):");
         profiles.stream()
             .filter(p -> p.presentInCount == 1)
             .sorted((a, b) -> Double.compare(b.maxLogDice, a.maxLogDice))
@@ -399,10 +399,10 @@ public class SemanticFieldExplorer implements AutoCloseable {
                     .filter(e -> e.getValue() > 0)
                     .map(Map.Entry::getKey)
                     .findFirst().orElse("?");
-                logger.info("  {} -> {} ({})", p.adjective, specificNoun, String.format("%.2f", p.maxLogDice));
+                logger.debug("  {} -> {} ({})", p.adjective, specificNoun, String.format("%.2f", p.maxLogDice));
             });
 
-        logger.info("------------------------------------------------------------");
+        logger.debug("------------------------------------------------------------");
 
         return new ComparisonResult(nounList, profiles);
     }

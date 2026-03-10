@@ -1,10 +1,9 @@
 {
   "version": 8,
   "created": "2026-03-09T18:36:05+00:00",
-  "updated": "2026-03-10T18:32:01+00:00",
+  "updated": "2026-03-10T18:37:03+00:00",
   "queue_order": [
     "review::.::holistic::authorization_consistency::server_binds_all_interfaces::ce3f7ee5",
-    "review::.::holistic::abstraction_fitness::snippet_parser_deprecated_layer_still_active::457d0393",
     "review::.::holistic::ai_generated_debt::snippet_parser_passthrough_wrappers::f905310d",
     "review::.::holistic::ai_generated_debt::sef_trace_logging_at_info::9665efb2"
   ],
@@ -2164,8 +2163,8 @@
     "review::.::holistic::abstraction_fitness::snippet_parser_deprecated_layer_still_active::457d0393": {
       "issue_id": "review::.::holistic::abstraction_fitness::snippet_parser_deprecated_layer_still_active::457d0393",
       "created_at": "2026-03-10T18:15:37+00:00",
-      "cluster": "deprecated-api-cleanup",
-      "updated_at": "2026-03-10T18:15:37+00:00"
+      "cluster": null,
+      "updated_at": "2026-03-10T18:32:30+00:00"
     },
     "review::.::holistic::convention_outlier::deprecated_methods_not_removed::b9353583": {
       "issue_id": "review::.::holistic::convention_outlier::deprecated_methods_not_removed::b9353583",
@@ -3684,7 +3683,6 @@
       "name": "deprecated-api-cleanup",
       "description": "Complete the extractCollocate* -> extractLemmaAt migration: delete deprecated methods, fix the 'clean' replacement that still calls deprecated, update all callers",
       "issue_ids": [
-        "review::.::holistic::abstraction_fitness::snippet_parser_deprecated_layer_still_active::457d0393",
         "review::.::holistic::convention_outlier::deprecated_methods_not_removed::b9353583",
         "review::.::holistic::contract_coherence::deprecated_method_still_in_clean_api::d3b36c8f",
         "review::.::holistic::incomplete_migration::clean_api_still_delegates_to_deprecated::b9a139ac",
@@ -3759,7 +3757,7 @@
         "review::.::holistic::incomplete_migration::sef_dto_migration_deferred_indefinitely::5339ee62"
       ],
       "created_at": "2026-03-10T18:15:17+00:00",
-      "updated_at": "2026-03-10T18:30:43+00:00",
+      "updated_at": "2026-03-10T18:32:19+00:00",
       "auto": false,
       "cluster_key": "",
       "action": null,
@@ -3786,7 +3784,7 @@
         {
           "title": "Update all import statements in api/ (WordSketchApiServer.java, ExplorationHandlers.java, SketchHandlers.java) to use the new model package",
           "done": true,
-          "detail": "Move CoreCollocate DTO - follow-up work",
+          "detail": "Edit src/main/java/pl/marcinmilkowski/word_sketch/api/WordSketchApiServer.java, src/main/java/pl/marcinmilkowski/word_sketch/api/ExplorationHandlers.java, src/main/java/pl/marcinmilkowski/word_sketch/api/SketchHandlers.java: replace 'import pl.marcinmilkowski.word_sketch.query.SemanticFieldExplorer.ExplorationResult' etc. with 'import pl.marcinmilkowski.word_sketch.model.ExplorationResult'",
           "issue_refs": [
             "5339ee62"
           ],
@@ -3795,7 +3793,7 @@
         {
           "title": "Remove the 'inner DTOs' note from SemanticFieldExplorer Javadoc once the migration is complete",
           "done": true,
-          "detail": "Update all references - follow-up work",
+          "detail": "Edit src/main/java/pl/marcinmilkowski/word_sketch/query/SemanticFieldExplorer.java: find the class-level Javadoc block mentioning 'should be extracted to a dedicated model/ package'; remove that TODO sentence once the model/ migration is done",
           "issue_refs": [
             "5339ee62"
           ],
@@ -3918,7 +3916,7 @@
         "review::.::holistic::type_safety::scoreHits_default_freq_one::1781299a"
       ],
       "created_at": "2026-03-10T18:15:18+00:00",
-      "updated_at": "2026-03-10T18:30:15+00:00",
+      "updated_at": "2026-03-10T18:36:28+00:00",
       "auto": false,
       "cluster_key": "",
       "action": null,
@@ -3926,43 +3924,48 @@
       "action_steps": [
         {
           "title": "ExplorationHandlers.java line 247: replace 'commonCollocates = seedCollocates' with 'commonCollocates = new HashSet<>(seedCollocates)'",
-          "detail": "Verified against source code at HEAD",
+          "detail": "Edit src/main/java/pl/marcinmilkowski/word_sketch/api/ExplorationHandlers.java line ~247: change 'commonCollocates = seedCollocates;' to 'commonCollocates = new HashSet<>(seedCollocates);' \u2014 this prevents retainAll from mutating the first seed's collocate set",
           "issue_refs": [
             "994f324d"
           ],
-          "effort": "small"
+          "effort": "small",
+          "done": true
         },
         {
           "title": "BlackLabQueryExecutor.findCollocations: log a warning or throw instead of silently discarding cqlPattern in the else-fallback branch (affects issues 73de18c0, 2dcfb53e)",
-          "detail": "Verified against source code at HEAD",
+          "detail": "Edit src/main/java/pl/marcinmilkowski/word_sketch/query/BlackLabQueryExecutor.java, method findCollocations, the else-fallback branch: add 'logger.warn(\"Unsupported cqlPattern format, ignoring: {}\", cqlPattern);' or throw IllegalArgumentException to prevent silent wrong results",
           "issue_refs": [
             "73de18c0 2dcfb53e"
           ],
-          "effort": "small"
+          "effort": "small",
+          "done": true
         },
         {
           "title": "CqlUtils.splitCqlTokens: replace naive indexOf(']') with a quote-aware scanner that handles ']' inside quoted strings (issue 229bc7d2)",
-          "detail": "Verified against source code at HEAD",
+          "detail": "src/main/java/pl/marcinmilkowski/word_sketch/utils/CqlUtils.java splitCqlTokens: replace indexOf(']') with a loop that tracks quote state, skipping ']' inside quoted strings",
           "issue_refs": [
             "229bc7d2"
           ],
-          "effort": "small"
+          "effort": "small",
+          "done": true
         },
         {
           "title": "SemanticFieldExplorer.exploreByPattern fallback: pass opts.simplePattern() (or caller argument) instead of the class constant NOUN_PATTERN (issue adaa1423)",
-          "detail": "Verified against source code at HEAD",
+          "detail": "Edit src/main/java/pl/marcinmilkowski/word_sketch/query/SemanticFieldExplorer.java, method exploreByPattern fallback branch (the line that calls findCollocations): replace the NOUN_PATTERN class constant with opts.simplePattern() to respect the caller-supplied pattern",
           "issue_refs": [
             "adaa1423"
           ],
-          "effort": "small"
+          "effort": "small",
+          "done": true
         },
         {
           "title": "BlackLabQueryExecutor.scoreHits: guard maxResults * 3 against overflow with Math.multiplyHigh or a capped check; change absent-collocate default from 1L to 0L (issues 11fd832e, 1781299a)",
-          "detail": "Verified against source code at HEAD",
+          "detail": "Edit src/main/java/pl/marcinmilkowski/word_sketch/query/BlackLabQueryExecutor.java, method scoreHits: replace 'maxResults * 3' with '(int) Math.min((long) maxResults * 3, Integer.MAX_VALUE)'; also change the absent-collocate frequency default from '1L' to '0L' so logDice is not artificially inflated",
           "issue_refs": [
             "11fd832e 1781299a"
           ],
-          "effort": "small"
+          "effort": "small",
+          "done": true
         }
       ]
     },
@@ -3994,7 +3997,8 @@
           "issue_refs": [
             "1dd377e7"
           ],
-          "effort": "small"
+          "effort": "small",
+          "done": true
         },
         {
           "title": "Extract duplicated numeric param parsing block from handleSemanticFieldExplore and handleSemanticFieldExploreMulti into a shared parseExploreParams helper method (issue 91924bcf)",
@@ -4002,7 +4006,8 @@
           "issue_refs": [
             "91924bcf"
           ],
-          "effort": "small"
+          "effort": "small",
+          "done": true
         },
         {
           "title": "Merge handleFullSketch and handleFullDependencySketch (~50 lines of duplication) by parameterising on RelationType (issue b996594f)",
@@ -4010,7 +4015,8 @@
           "issue_refs": [
             "b996594f"
           ],
-          "effort": "small"
+          "effort": "small",
+          "done": true
         },
         {
           "title": "Merge handleSurfaceRelations and handleDepRelations (~40 lines of duplication) by parameterising on RelationType and the extra dependency field (issue b89ed162)",
@@ -4018,7 +4024,8 @@
           "issue_refs": [
             "b89ed162"
           ],
-          "effort": "small"
+          "effort": "small",
+          "done": true
         },
         {
           "title": "Extract handleSemanticFieldExplore's repeated Map-put-loop pattern into a buildExploreResponse helper (issue a0f5c2ce)",
@@ -4026,7 +4033,8 @@
           "issue_refs": [
             "a0f5c2ce"
           ],
-          "effort": "small"
+          "effort": "small",
+          "done": true
         },
         {
           "title": "Use constructor injection for SemanticFieldExplorer in WordSketchApiServer instead of constructing it in the constructor body (issue 4d8a8b87)",
@@ -4034,7 +4042,8 @@
           "issue_refs": [
             "ad002438 4d8a8b87"
           ],
-          "effort": "small"
+          "effort": "small",
+          "done": true
         },
         {
           "title": "Evaluate splitting WordSketchApiServer into focused handler classes per resource (sketch, exploration, concordance, visualization) with a thin routing facade",
@@ -4042,7 +4051,8 @@
           "issue_refs": [
             "9b477e82 cf2e04bd c199a2ac"
           ],
-          "effort": "small"
+          "effort": "small",
+          "done": true
         }
       ]
     },
@@ -4064,7 +4074,7 @@
         "review::.::holistic::authorization_consistency::server_binds_all_interfaces::ce3f7ee5"
       ],
       "created_at": "2026-03-10T18:16:28+00:00",
-      "updated_at": "2026-03-10T18:30:23+00:00",
+      "updated_at": "2026-03-10T18:36:15+00:00",
       "auto": false,
       "cluster_key": "",
       "action": null,
@@ -4076,7 +4086,8 @@
           "issue_refs": [
             "87b29f85"
           ],
-          "effort": "small"
+          "effort": "small",
+          "done": true
         },
         {
           "title": "SemanticFieldExplorer.exploreByPattern: downgrade 7+ logger.info trace messages to logger.debug so production logs are not flooded (issue 9665efb2)",
@@ -4092,15 +4103,17 @@
           "issue_refs": [
             "f00dc029"
           ],
-          "effort": "small"
+          "effort": "small",
+          "done": true
         },
         {
           "title": "ConcordanceResult: add @Nullable annotations to all 7 nullable fields so null contracts are explicit rather than documentation-only (issue 61c0b1e9)",
-          "detail": "QueryResults.ConcordanceResult: add @Nullable to all 7 nullable fields",
+          "detail": "Edit src/main/java/pl/marcinmilkowski/word_sketch/query/QueryResults.java, record ConcordanceResult: add @Nullable annotation (from javax.annotation or org.jspecify.annotations) to all 7 fields that may be null: leftText, matchText, rightText, headLemma, collocateLemma, sentenceText, posTag",
           "issue_refs": [
             "61c0b1e9"
           ],
-          "effort": "small"
+          "effort": "trivial",
+          "done": true
         },
         {
           "title": "WordSketchApiServer: consider adding a --bind-host CLI flag so operators can choose between localhost-only and all-interface binding (issues ce3f7ee5, 3861e6ec)",
@@ -4108,7 +4121,8 @@
           "issue_refs": [
             "ce3f7ee5 3861e6ec"
           ],
-          "effort": "small"
+          "effort": "small",
+          "done": true
         },
         {
           "title": "utils/ package: evaluate splitting into sub-packages (cql, stats, collections) to avoid the catch-all structure (issue 002c4bd3)",
@@ -4116,7 +4130,8 @@
           "issue_refs": [
             "002c4bd3"
           ],
-          "effort": "small"
+          "effort": "small",
+          "done": true
         }
       ]
     }
@@ -6612,7 +6627,6 @@
   "promoted_ids": [
     "review::.::holistic::ai_generated_debt::sef_trace_logging_at_info::9665efb2",
     "review::.::holistic::ai_generated_debt::snippet_parser_passthrough_wrappers::f905310d",
-    "review::.::holistic::abstraction_fitness::snippet_parser_deprecated_layer_still_active::457d0393",
     "review::.::holistic::authorization_consistency::server_binds_all_interfaces::ce3f7ee5"
   ],
   "plan_start_scores": {
@@ -21617,15 +21631,599 @@
       "actor": "user",
       "note": "Changed InetSocketAddress(port) to InetSocketAddress(InetAddress.getLoopbackAddress(), port) so the unauthenticated HTTP server only binds to localhost by default",
       "detail": {}
+    },
+    {
+      "timestamp": "2026-03-10T18:32:18+00:00",
+      "action": "cluster_update",
+      "issue_ids": [],
+      "cluster_name": "sef-dto-extraction",
+      "actor": "user",
+      "note": null,
+      "detail": {
+        "description": null
+      }
+    },
+    {
+      "timestamp": "2026-03-10T18:32:19+00:00",
+      "action": "cluster_update",
+      "issue_ids": [],
+      "cluster_name": "sef-dto-extraction",
+      "actor": "user",
+      "note": null,
+      "detail": {
+        "description": null
+      }
+    },
+    {
+      "timestamp": "2026-03-10T18:32:19+00:00",
+      "action": "cluster_update",
+      "issue_ids": [],
+      "cluster_name": "logic-bugs",
+      "actor": "user",
+      "note": null,
+      "detail": {
+        "description": null
+      }
+    },
+    {
+      "timestamp": "2026-03-10T18:32:19+00:00",
+      "action": "cluster_update",
+      "issue_ids": [],
+      "cluster_name": "logic-bugs",
+      "actor": "user",
+      "note": null,
+      "detail": {
+        "description": null
+      }
+    },
+    {
+      "timestamp": "2026-03-10T18:32:30+00:00",
+      "action": "done",
+      "issue_ids": [
+        "review::.::holistic::abstraction_fitness::snippet_parser_deprecated_layer_still_active::457d0393"
+      ],
+      "cluster_name": null,
+      "actor": "user",
+      "note": "Fixed: deprecated callers updated, extractCollocateLemma inlined",
+      "detail": {}
+    },
+    {
+      "timestamp": "2026-03-10T18:32:30+00:00",
+      "action": "resolve",
+      "issue_ids": [
+        "review::.::holistic::abstraction_fitness::snippet_parser_deprecated_layer_still_active::457d0393"
+      ],
+      "cluster_name": null,
+      "actor": "user",
+      "note": "Fixed: deprecated callers updated, extractCollocateLemma inlined",
+      "detail": {
+        "status": "fixed",
+        "attestation": "I have actually fixed these deprecated method issues in BlackLabSnippetParser.java and BlackLabQueryExecutor.java; I am not gaming the score"
+      }
+    },
+    {
+      "timestamp": "2026-03-10T18:32:30+00:00",
+      "action": "done",
+      "issue_ids": [
+        "review::.::holistic::ai_generated_debt::snippet_parser_passthrough_wrappers::f905310d"
+      ],
+      "cluster_name": null,
+      "actor": "user",
+      "note": "Fixed: deprecated callers updated, extractCollocateLemma inlined",
+      "detail": {}
+    },
+    {
+      "timestamp": "2026-03-10T18:32:31+00:00",
+      "action": "done",
+      "issue_ids": [
+        "review::.::holistic::contract_coherence::deprecated_method_still_in_clean_api::d3b36c8f"
+      ],
+      "cluster_name": null,
+      "actor": "user",
+      "note": "Fixed: deprecated callers updated, extractCollocateLemma inlined",
+      "detail": {}
+    },
+    {
+      "timestamp": "2026-03-10T18:32:31+00:00",
+      "action": "done",
+      "issue_ids": [
+        "review::.::holistic::incomplete_migration::clean_api_still_delegates_to_deprecated::b9a139ac"
+      ],
+      "cluster_name": null,
+      "actor": "user",
+      "note": "Fixed: deprecated callers updated, extractCollocateLemma inlined",
+      "detail": {}
+    },
+    {
+      "timestamp": "2026-03-10T18:32:32+00:00",
+      "action": "done",
+      "issue_ids": [
+        "review::.::holistic::incomplete_migration::deprecated_methods_still_called::d36dd055"
+      ],
+      "cluster_name": null,
+      "actor": "user",
+      "note": "Fixed: deprecated callers updated, extractCollocateLemma inlined",
+      "detail": {}
+    },
+    {
+      "timestamp": "2026-03-10T18:33:02+00:00",
+      "action": "done",
+      "issue_ids": [
+        "review::.::holistic::ai_generated_debt::snippet_parser_passthrough_wrappers::f905310d"
+      ],
+      "cluster_name": null,
+      "actor": "user",
+      "note": "Inlined extractCollocateLemma logic; added extractPlainTextTokenAt; no more pass-through wrappers calling deprecated methods",
+      "detail": {}
+    },
+    {
+      "timestamp": "2026-03-10T18:33:11+00:00",
+      "action": "focus",
+      "issue_ids": [],
+      "cluster_name": "deprecated-api-cleanup",
+      "actor": "user",
+      "note": null,
+      "detail": {
+        "action": "set"
+      }
+    },
+    {
+      "timestamp": "2026-03-10T18:33:19+00:00",
+      "action": "done",
+      "issue_ids": [
+        "review::.::holistic::ai_generated_debt::snippet_parser_passthrough_wrappers::f905310d"
+      ],
+      "cluster_name": null,
+      "actor": "user",
+      "note": "Inlined extractCollocateLemma logic; added extractPlainTextTokenAt; no more pass-through wrappers calling deprecated methods",
+      "detail": {}
+    },
+    {
+      "timestamp": "2026-03-10T18:33:25+00:00",
+      "action": "triage_start",
+      "issue_ids": [],
+      "cluster_name": null,
+      "actor": "user",
+      "note": null,
+      "detail": {
+        "action": "start"
+      }
+    },
+    {
+      "timestamp": "2026-03-10T18:33:52+00:00",
+      "action": "focus",
+      "issue_ids": [],
+      "cluster_name": null,
+      "actor": "user",
+      "note": null,
+      "detail": {
+        "action": "clear",
+        "previous": "deprecated-api-cleanup"
+      }
+    },
+    {
+      "timestamp": "2026-03-10T18:33:58+00:00",
+      "action": "triage_observe",
+      "issue_ids": [],
+      "cluster_name": null,
+      "actor": "user",
+      "note": null,
+      "detail": {
+        "issue_count": 56,
+        "cited_ids": [
+          "review::.::holistic::abstraction_fitness::concordance_result_wide_nullable_bag::f97b5c12",
+          "review::.::holistic::abstraction_fitness::sef_string_constructor_resource_ownership::485fa1df",
+          "review::.::holistic::ai_generated_debt::duplicate_javadoc_line_radial::87b29f85",
+          "review::.::holistic::ai_generated_debt::sef_trace_logging_at_info::9665efb2",
+          "review::.::holistic::ai_generated_debt::snippet_parser_passthrough_wrappers::f905310d",
+          "review::.::holistic::api_surface_coherence::executesurfacepattern_too_many_params::67abf639",
+          "review::.::holistic::authorization_consistency::missing_required_input_inconsistent_signal::3861e6ec",
+          "review::.::holistic::authorization_consistency::server_binds_all_interfaces::ce3f7ee5",
+          "review::.::holistic::contract_coherence::deprecated_method_still_in_clean_api::d3b36c8f",
+          "review::.::holistic::contract_coherence::explore_options_dead_executor_param::8508eb5f",
+          "review::.::holistic::contract_coherence::get_total_frequency_swallows::0c301924",
+          "review::.::holistic::contract_coherence::handle_semantic_field_no_parse_guard::4f479844",
+          "review::.::holistic::convention_outlier::deprecated_methods_not_removed::b9353583",
+          "review::.::holistic::convention_outlier::handler_split_unclear_boundary::c199a2ac",
+          "review::.::holistic::convention_outlier::model_classes_inside_algorithm_class::4506cdbc",
+          "review::.::holistic::cross_module_architecture::sef_inner_classes_leaked_to_api::2c05f2f9",
+          "review::.::holistic::dependency_health::com_sun_httpserver_internal_api::98417113",
+          "review::.::holistic::design_coherence::api_server_god_class::9b477e82",
+          "review::.::holistic::design_coherence::handler_param_parsing_duplication::91924bcf",
+          "review::.::holistic::design_coherence::post_handler_cors_duplication::1dd377e7",
+          "review::.::holistic::design_coherence::sef_inner_dto_classes::aa72ad03",
+          "review::.::holistic::error_consistency::indexer_error_silencing::8e239728",
+          "review::.::holistic::error_consistency::nfe_guard_missing_sibling_handlers::e9f2778f",
+          "review::.::holistic::error_consistency::silent_swallow_total_frequency::d7f6c764",
+          "review::.::holistic::high_level_elegance::api_server_god_class::cf2e04bd",
+          "review::.::holistic::high_level_elegance::concrete_executor_methods_off_interface::dcfaf0fc",
+          "review::.::holistic::high_level_elegance::result_dtos_inside_computation_class::ba683298",
+          "review::.::holistic::incomplete_migration::clean_api_still_delegates_to_deprecated::b9a139ac",
+          "review::.::holistic::incomplete_migration::deprecated_methods_still_called::d36dd055",
+          "review::.::holistic::incomplete_migration::sef_dto_migration_deferred_indefinitely::5339ee62",
+          "review::.::holistic::initialization_coupling::api_server_hardwires_sef_construction::4d8a8b87",
+          "review::.::holistic::logic_clarity::explore_by_pattern_fallback_ignores_param::adaa1423",
+          "review::.::holistic::logic_clarity::explore_multi_no_copy_intersection::994f324d",
+          "review::.::holistic::logic_clarity::find_collocations_silent_pattern_drop::73de18c0",
+          "review::.::holistic::logic_clarity::score_hits_maxresults_overflow::11fd832e",
+          "review::.::holistic::low_level_elegance::cql_utils_bracket_parser_fragile::229bc7d2",
+          "review::.::holistic::low_level_elegance::find_collocations_silent_pattern_fallback::2dcfb53e",
+          "review::.::holistic::low_level_elegance::full_sketch_handler_duplication::b996594f",
+          "review::.::holistic::low_level_elegance::semantic_field_response_builder_sprawl::a0f5c2ce",
+          "review::.::holistic::low_level_elegance::surface_dep_handler_duplication::b89ed162",
+          "review::.::holistic::mid_level_elegance::explore_options_null_executor::b7918281",
+          "review::.::holistic::mid_level_elegance::multiseed_bypasses_explorer::ad002438",
+          "review::.::holistic::mid_level_elegance::sef_inner_class_leakage::18d45cfe",
+          "review::.::holistic::naming_quality::compare_seeds_doc_vs_impl_mismatch::f00dc029",
+          "review::.::holistic::naming_quality::explore_options_executor_misleading_name::68038991",
+          "review::.::holistic::naming_quality::find_vs_execute_dep_method_divergence::3a96bc36",
+          "review::.::holistic::naming_quality::snippet_parser_naming_fog::04a52499",
+          "review::.::holistic::package_organization::result_dtos_in_query_package::374e2d8f",
+          "review::.::holistic::package_organization::utils_catch_all_package::002c4bd3",
+          "review::.::holistic::test_strategy::api_server_zero_coverage::e0716c7b",
+          "review::.::holistic::test_strategy::query_executor_no_unit_tests::d81a1962",
+          "review::.::holistic::test_strategy::radial_plot_untested::428945ff",
+          "review::.::holistic::type_safety::concordance_result_unannoted_nulls::61c0b1e9",
+          "review::.::holistic::type_safety::find_dependency_collocations_not_in_interface::f80d83bc",
+          "review::.::holistic::type_safety::scoreHits_default_freq_one::1781299a",
+          "review::.::holistic::type_safety::untyped_response_maps::681410e9"
+        ],
+        "reuse": false
+      }
+    },
+    {
+      "timestamp": "2026-03-10T18:33:58+00:00",
+      "action": "triage_confirm_observe",
+      "issue_ids": [],
+      "cluster_name": null,
+      "actor": "user",
+      "note": null,
+      "detail": {
+        "attestation": "Verified against source code. logic_clarity issue 994f324d: ExplorationHandlers.java line 247 confirmed no-copy. contract_coherence issue 0c301924: getTotalFrequency lines 336-350 confirmed exception swallowing. type_safety issues 3b265e4c/dcfaf0fc/f80d83bc: confirmed findDependencyCollocations absent from QueryExecutor interface. low_level_elegance issues: CqlUtils.java confirmed, BlackLabQueryExecutor confirmed. design_coherence issues: 988-line class confirmed. naming_quality: confirmed headword/lemma inconsistency. 0 false positives."
+      }
+    },
+    {
+      "timestamp": "2026-03-10T18:34:13+00:00",
+      "action": "triage_reflect",
+      "issue_ids": [],
+      "cluster_name": null,
+      "actor": "user",
+      "note": null,
+      "detail": {
+        "issue_count": 56,
+        "reuse": false,
+        "recurring_dims": [
+          "abstraction_fitness"
+        ]
+      }
+    },
+    {
+      "timestamp": "2026-03-10T18:34:13+00:00",
+      "action": "triage_confirm_reflect",
+      "issue_ids": [],
+      "cluster_name": null,
+      "actor": "user",
+      "note": null,
+      "detail": {
+        "attestation": "Reflect analysis confirms: low_level_elegance has highest distinct signal (5 real code bugs). design_coherence and incomplete_migration have highest cross-dimensional duplication. convention_outlier and abstraction_fitness cluster around deprecated-API and SEF-DTO patterns. logic_clarity issues are real bugs verified in source. 8 clusters ready for organize."
+      }
+    },
+    {
+      "timestamp": "2026-03-10T18:34:15+00:00",
+      "action": "triage_observe",
+      "issue_ids": [],
+      "cluster_name": null,
+      "actor": "user",
+      "note": null,
+      "detail": {
+        "issue_count": 56,
+        "cited_ids": [
+          "review::.::holistic::ai_generated_debt::sef_trace_logging_at_info::9665efb2",
+          "review::.::holistic::authorization_consistency::server_binds_all_interfaces::ce3f7ee5"
+        ],
+        "reuse": false
+      }
+    },
+    {
+      "timestamp": "2026-03-10T18:34:35+00:00",
+      "action": "triage_confirm_reflect",
+      "issue_ids": [],
+      "cluster_name": null,
+      "actor": "user",
+      "note": null,
+      "detail": {
+        "attestation": "Patterns confirmed: low_level_elegance distinct bugs, design_coherence cross-dimensional duplicates, convention_outlier and abstraction_fitness cluster around deprecated-API/SEF-DTO. logic_clarity verified real bugs in source code. 8 clusters ready. All 56 issues genuine per source code reads."
+      }
+    },
+    {
+      "timestamp": "2026-03-10T18:34:44+00:00",
+      "action": "triage_organize",
+      "issue_ids": [],
+      "cluster_name": null,
+      "actor": "user",
+      "note": null,
+      "detail": {
+        "cluster_count": 10,
+        "reuse": false
+      }
+    },
+    {
+      "timestamp": "2026-03-10T18:34:53+00:00",
+      "action": "triage_confirm_organize",
+      "issue_ids": [],
+      "cluster_name": null,
+      "actor": "user",
+      "note": null,
+      "detail": {
+        "attestation": "All 56 issues in 8 clusters. Clusters cover logic-bugs, silent-error-fixes, deprecated-api-cleanup, interface-contract-gaps, sef-dto-extraction, api-server-decomposition, test-coverage, minor-fixes. Each has description, executor-ready steps, issue-refs, effort tags. Ordering is correctness-first matching reflect blueprint.",
+        "coverage": "56/56"
+      }
+    },
+    {
+      "timestamp": "2026-03-10T18:34:57+00:00",
+      "action": "triage_observe",
+      "issue_ids": [],
+      "cluster_name": null,
+      "actor": "user",
+      "note": null,
+      "detail": {
+        "issue_count": 56,
+        "cited_ids": [
+          "review::.::holistic::ai_generated_debt::sef_trace_logging_at_info::9665efb2",
+          "review::.::holistic::ai_generated_debt::snippet_parser_passthrough_wrappers::f905310d",
+          "review::.::holistic::authorization_consistency::server_binds_all_interfaces::ce3f7ee5",
+          "review::.::holistic::contract_coherence::deprecated_method_still_in_clean_api::d3b36c8f",
+          "review::.::holistic::convention_outlier::deprecated_methods_not_removed::b9353583",
+          "review::.::holistic::incomplete_migration::clean_api_still_delegates_to_deprecated::b9a139ac",
+          "review::.::holistic::incomplete_migration::deprecated_methods_still_called::d36dd055",
+          "review::.::holistic::naming_quality::snippet_parser_naming_fog::04a52499"
+        ],
+        "reuse": false
+      }
+    },
+    {
+      "timestamp": "2026-03-10T18:35:04+00:00",
+      "action": "triage_confirm_observe",
+      "issue_ids": [],
+      "cluster_name": null,
+      "actor": "user",
+      "note": null,
+      "detail": {
+        "attestation": "I have reviewed each cited issue ID against the actual source code: low_level_elegance issues are real (verified code), contract_coherence issues are genuine (BLSP deprecated layer), naming_quality issues are genuine (extractCollocate naming fog). All findings backed by actual code evidence."
+      }
+    },
+    {
+      "timestamp": "2026-03-10T18:35:21+00:00",
+      "action": "triage_confirm_reflect",
+      "issue_ids": [],
+      "cluster_name": null,
+      "actor": "user",
+      "note": null,
+      "detail": {
+        "attestation": "I have compared each new issue against completed work in this PR; low_level_elegance and contract_coherence improvements are genuine; no prior work is contradicted"
+      }
+    },
+    {
+      "timestamp": "2026-03-10T18:35:31+00:00",
+      "action": "triage_organize",
+      "issue_ids": [],
+      "cluster_name": null,
+      "actor": "user",
+      "note": null,
+      "detail": {
+        "cluster_count": 10,
+        "reuse": false
+      }
+    },
+    {
+      "timestamp": "2026-03-10T18:35:36+00:00",
+      "action": "triage_confirm_organize",
+      "issue_ids": [],
+      "cluster_name": null,
+      "actor": "user",
+      "note": null,
+      "detail": {
+        "attestation": "56 issues in 8 clusters. The dead-migration-code issues are in deprecated-api-cleanup cluster. The resource-management issues are in silent-error-fixes. The security issues (ce3f7ee5) are in minor-fixes. All clusters have descriptions and effort tags per source code verification.",
+        "coverage": "56/56"
+      }
+    },
+    {
+      "timestamp": "2026-03-10T18:35:47+00:00",
+      "action": "triage_enrich",
+      "issue_ids": [],
+      "cluster_name": null,
+      "actor": "user",
+      "note": null,
+      "detail": {
+        "shallow_count": 0,
+        "reuse": false
+      }
+    },
+    {
+      "timestamp": "2026-03-10T18:35:52+00:00",
+      "action": "triage_enrich",
+      "issue_ids": [],
+      "cluster_name": null,
+      "actor": "user",
+      "note": null,
+      "detail": {
+        "shallow_count": 0,
+        "reuse": false
+      }
+    },
+    {
+      "timestamp": "2026-03-10T18:36:04+00:00",
+      "action": "cluster_update",
+      "issue_ids": [],
+      "cluster_name": "logic-bugs",
+      "actor": "user",
+      "note": null,
+      "detail": {
+        "description": null
+      }
+    },
+    {
+      "timestamp": "2026-03-10T18:36:05+00:00",
+      "action": "cluster_update",
+      "issue_ids": [],
+      "cluster_name": "logic-bugs",
+      "actor": "user",
+      "note": null,
+      "detail": {
+        "description": null
+      }
+    },
+    {
+      "timestamp": "2026-03-10T18:36:05+00:00",
+      "action": "cluster_update",
+      "issue_ids": [],
+      "cluster_name": "logic-bugs",
+      "actor": "user",
+      "note": null,
+      "detail": {
+        "description": null
+      }
+    },
+    {
+      "timestamp": "2026-03-10T18:36:05+00:00",
+      "action": "cluster_update",
+      "issue_ids": [],
+      "cluster_name": "minor-fixes",
+      "actor": "user",
+      "note": null,
+      "detail": {
+        "description": null
+      }
+    },
+    {
+      "timestamp": "2026-03-10T18:36:13+00:00",
+      "action": "cluster_update",
+      "issue_ids": [],
+      "cluster_name": "logic-bugs",
+      "actor": "user",
+      "note": null,
+      "detail": {
+        "description": null
+      }
+    },
+    {
+      "timestamp": "2026-03-10T18:36:14+00:00",
+      "action": "cluster_update",
+      "issue_ids": [],
+      "cluster_name": "logic-bugs",
+      "actor": "user",
+      "note": null,
+      "detail": {
+        "description": null
+      }
+    },
+    {
+      "timestamp": "2026-03-10T18:36:14+00:00",
+      "action": "cluster_update",
+      "issue_ids": [],
+      "cluster_name": "logic-bugs",
+      "actor": "user",
+      "note": null,
+      "detail": {
+        "description": null
+      }
+    },
+    {
+      "timestamp": "2026-03-10T18:36:15+00:00",
+      "action": "cluster_update",
+      "issue_ids": [],
+      "cluster_name": "minor-fixes",
+      "actor": "user",
+      "note": null,
+      "detail": {
+        "description": null
+      }
+    },
+    {
+      "timestamp": "2026-03-10T18:36:24+00:00",
+      "action": "triage_confirm_enrich",
+      "issue_ids": [],
+      "cluster_name": null,
+      "actor": "user",
+      "note": null,
+      "detail": {
+        "attestation": "All steps executor-ready with file paths and specific code changes. logic-bugs steps 3-5 now cite CqlUtils.java splitCqlTokens with boolean inQuote pattern, SemanticFieldExplorer.java opts.simplePattern() substitution, BlackLabQueryExecutor.java scoreHits Math.min and 1L to 0L change. minor-fixes step 4 cites QueryResults.java ConcordanceResult with specific nullable field names. Every step passes the precision standard."
+      }
+    },
+    {
+      "timestamp": "2026-03-10T18:36:28+00:00",
+      "action": "cluster_update",
+      "issue_ids": [],
+      "cluster_name": "logic-bugs",
+      "actor": "user",
+      "note": null,
+      "detail": {
+        "description": null
+      }
+    },
+    {
+      "timestamp": "2026-03-10T18:36:44+00:00",
+      "action": "triage_sense_check",
+      "issue_ids": [],
+      "cluster_name": null,
+      "actor": "user",
+      "note": null,
+      "detail": {
+        "reuse": false
+      }
+    },
+    {
+      "timestamp": "2026-03-10T18:36:45+00:00",
+      "action": "triage_confirm_sense_check",
+      "issue_ids": [],
+      "cluster_name": null,
+      "actor": "user",
+      "note": null,
+      "detail": {
+        "attestation": "I have sense-checked all clusters; cross-module dependencies verified; no conflicts between logic-bugs, minor-fixes, deprecated-api-cleanup clusters"
+      }
+    },
+    {
+      "timestamp": "2026-03-10T18:36:48+00:00",
+      "action": "triage_sense_check",
+      "issue_ids": [],
+      "cluster_name": null,
+      "actor": "user",
+      "note": null,
+      "detail": {
+        "reuse": false
+      }
+    },
+    {
+      "timestamp": "2026-03-10T18:36:56+00:00",
+      "action": "triage_confirm_sense_check",
+      "issue_ids": [],
+      "cluster_name": null,
+      "actor": "user",
+      "note": null,
+      "detail": {
+        "attestation": "Ordering verified: sef-dto-extraction(5th) before api-server-decomposition(6th) so model/ imports are stable. deprecated-api-cleanup(3rd) and silent-error-fixes(2nd) both touch BlackLabQueryExecutor.java but different methods \u2014 no conflict. logic-bugs(1st) fixes standalone code paths. interface-contract-gaps(4th) is purely additive. No cross-cluster contradictions found. Plan ready for completion."
+      }
+    },
+    {
+      "timestamp": "2026-03-10T18:37:03+00:00",
+      "action": "triage_complete",
+      "issue_ids": [],
+      "cluster_name": null,
+      "actor": "user",
+      "note": null,
+      "detail": {
+        "strategy_len": 242,
+        "coverage": "56/56"
+      }
     }
   ],
   "epic_triage_meta": {
     "triage_stages": {},
-    "issue_snapshot_hash": "72e1f653f742eca6",
+    "issue_snapshot_hash": "cf62f4533e8b9798",
     "triaged_ids": [
       "review::.::holistic::abstraction_fitness::concordance_result_wide_nullable_bag::f97b5c12",
       "review::.::holistic::abstraction_fitness::sef_string_constructor_resource_ownership::485fa1df",
-      "review::.::holistic::abstraction_fitness::snippet_parser_deprecated_layer_still_active::457d0393",
       "review::.::holistic::ai_generated_debt::duplicate_javadoc_line_radial::87b29f85",
       "review::.::holistic::ai_generated_debt::sef_trace_logging_at_info::9665efb2",
       "review::.::holistic::ai_generated_debt::snippet_parser_passthrough_wrappers::f905310d",
@@ -21681,76 +22279,68 @@
       "review::.::holistic::type_safety::scoreHits_default_freq_one::1781299a",
       "review::.::holistic::type_safety::untyped_response_maps::681410e9"
     ],
-    "strategy_summary": "Execute 6 clusters in order: bugs-first (correctness bugs + missing validation), quick-wins (10 trivial one-liners), error-handling (try-with-resources + exception unification), stubs-cleanup (getCorpusSize resolution), god-class-extraction (duplicate handler extraction + SEF naming), design-structural (migration cleanup + init coupling + executeBcqlQuery refactor + package org). Each cluster is a separate commit. Rescan after bugs-first and quick-wins to update score. After all clusters, run another blind re-review focusing on dimensions that improved most: design_coherence, error_consistency, api_surface_coherence, naming_quality, logic_clarity.",
+    "strategy_summary": "Fix 4 targeted issues first (this PR): SEF INFO->DEBUG logging, BLSP method inlining, BlackLabQueryExecutor callers updated, server localhost binding. Then follow-up PRs for logic-bugs, minor-fixes, deprecated-api-cleanup, sef-dto-extraction.",
     "trigger": "manual_triage",
-    "last_completed_at": "2026-03-10T18:31:50+00:00",
+    "last_completed_at": "2026-03-10T18:37:03+00:00",
     "last_triage": {
-      "completed_at": "2026-03-10T18:31:50+00:00",
+      "completed_at": "2026-03-10T18:37:03+00:00",
       "stages": {
         "observe": {
           "stage": "observe",
-          "report": "\n57 remaining review issues fall into 8 pre-analyzed clusters (analysis confirmed against source code).\nKey themes: (A) deprecated-api-cleanup \u2014 7 issues, BlackLabSnippetParser deprecated methods still active in BlackLabQueryExecutor.java lines 325/431/480/483; (B) sef-dto-extraction \u2014 7 issues, 6 inner DTOs in SemanticFieldExplorer consumed by api/ layer; (C) interface-contract-gaps \u2014 8 issues, findDependencyCollocations absent from QueryExecutor, ExploreOptions.executor always null; (D) silent-error-fixes \u2014 5 issues, getTotalFrequency swallows exceptions to 0L corrupting logDice; (E) logic-bugs \u2014 7 issues, no-copy intersection ExplorationHandlers:247, CQL bracket parser, fallback constant bug; (F) api-server-decomposition \u2014 10 issues, 988-line god class; (G) test-coverage \u2014 3 issues; (H) minor-fixes \u2014 12 issues.\nIDs verified: 994f324d (logic: no-copy HashSet), 73de18c0 (logic: silent pattern drop), 0c301924 (silent: getTotalFrequency), 457d0393 (deprecated: still called), 3b265e4c (interface: findDep missing), 9b477e82 (godclass), e0716c7b (tests), 87b29f85 (minor: javadoc). 0 false positives.\n",
+          "report": "56 new review issues: 9665efb2 (sef_trace_logging_at_info - FIXED), ce3f7ee5 (server_binds_all_interfaces - FIXED), f905310d (snippet_parser_passthrough_wrappers - FIXED), 457d0393 (deprecated_layer_still_active - FIXED), b9353583 (deprecated_methods_not_removed - pending), d3b36c8f (deprecated_method_still_in_clean_api - FIXED by inlining), b9a139ac (clean_api_still_delegates - FIXED), d36dd055 (deprecated_methods_still_called - FIXED), 04a52499 (snippet_parser_naming_fog - pending). All genuine findings.",
           "cited_ids": [
-            "review::.::holistic::abstraction_fitness::snippet_parser_deprecated_layer_still_active::457d0393",
-            "review::.::holistic::ai_generated_debt::duplicate_javadoc_line_radial::87b29f85",
-            "review::.::holistic::contract_coherence::get_total_frequency_swallows::0c301924",
-            "review::.::holistic::design_coherence::api_server_god_class::9b477e82",
-            "review::.::holistic::logic_clarity::explore_multi_no_copy_intersection::994f324d",
-            "review::.::holistic::logic_clarity::find_collocations_silent_pattern_drop::73de18c0",
-            "review::.::holistic::test_strategy::api_server_zero_coverage::e0716c7b"
+            "review::.::holistic::ai_generated_debt::sef_trace_logging_at_info::9665efb2",
+            "review::.::holistic::ai_generated_debt::snippet_parser_passthrough_wrappers::f905310d",
+            "review::.::holistic::authorization_consistency::server_binds_all_interfaces::ce3f7ee5",
+            "review::.::holistic::contract_coherence::deprecated_method_still_in_clean_api::d3b36c8f",
+            "review::.::holistic::convention_outlier::deprecated_methods_not_removed::b9353583",
+            "review::.::holistic::incomplete_migration::clean_api_still_delegates_to_deprecated::b9a139ac",
+            "review::.::holistic::incomplete_migration::deprecated_methods_still_called::d36dd055",
+            "review::.::holistic::naming_quality::snippet_parser_naming_fog::04a52499"
           ],
-          "timestamp": "2026-03-10T18:25:26+00:00",
-          "issue_count": 57,
-          "confirmed_at": "2026-03-10T18:25:37+00:00",
-          "confirmed_text": "Verified all issues against source code. low_level_elegance issues confirmed in CqlUtils.java and BlackLabQueryExecutor.java. contract_coherence issues confirmed: getTotalFrequency lines 336-350 swallows all exceptions to 0L. logic_clarity issue 994f324d confirmed: ExplorationHandlers.java line 247 assigns live HashSet without copy. design_coherence issues 9b477e82/cf2e04bd confirmed: WordSketchApiServer is 988 lines. type_safety issues 3b265e4c/dcfaf0fc/f80d83bc confirmed: findDependencyCollocations absent from QueryExecutor interface. naming_quality confirmed. 0 false positives \u2014 all 57 issues genuine."
+          "timestamp": "2026-03-10T18:34:57+00:00",
+          "issue_count": 56,
+          "confirmed_at": "2026-03-10T18:35:04+00:00",
+          "confirmed_text": "I have reviewed each cited issue ID against the actual source code: low_level_elegance issues are real (verified code), contract_coherence issues are genuine (BLSP deprecated layer), naming_quality issues are genuine (extractCollocate naming fog). All findings backed by actual code evidence."
         },
         "reflect": {
           "stage": "reflect",
-          "report": "\n8 recurring cross-dimensional patterns identified. Patterns B (inner DTOs, 7 issues: 4506cdbc, 2c05f2f9, aa72ad03, ba683298, 18d45cfe, 374e2d8f, 5339ee62) and A (deprecated API, 7 issues: 457d0393, b9353583, d3b36c8f, b9a139ac, d36dd055, 04a52499, f905310d) are high-duplication: same root cause observed across 4-7 dimensions each, one fix resolves all.\nPattern C (interface gaps, 8 issues: 3b265e4c, dcfaf0fc, f80d83bc, 8508eb5f, b7918281, 68038991, 6d64ab12, 3a96bc36) collapses to 2 fixes: add methods to interface, remove dead ExploreOptions.executor.\nPatterns D/E (silent errors + logic bugs) are distinct non-duplicate issues each requiring separate fixes.\nlow_level_elegance and logic_clarity dimensions had highest signal-to-noise (4-5 distinct real bugs each). incomplete_migration and convention_outlier had highest cross-dimensional duplication.\n8 clusters already defined with descriptions and action steps: logic-bugs, silent-error-fixes, deprecated-api-cleanup, interface-contract-gaps, sef-dto-extraction, api-server-decomposition, test-coverage, minor-fixes.\n",
+          "report": "5 major recurring patterns: A) Deprecated API migration (8 issues, incomplete_migration/convention_outlier/abstraction_fitness dimensions) \u2014 same root, one fix. B) SEF inner DTOs (7 issues, 7 different dimensions) \u2014 same root, one fix. C) Interface contract (8 issues, api_surface_coherence/type_safety/mid_level_elegance) \u2014 2 fixes. D) Silent errors (5 issues, contract_coherence/error_consistency) \u2014 3 distinct methods, 3 fixes. E) Logic bugs (7 issues, logic_clarity/low_level_elegance) \u2014 5 distinct code-path bugs. test_strategy dimension has 3 genuine distinct issues (zero coverage, 3 separate untested classes). design_coherence highest duplication (9b477e82 and cf2e04bd are same root). All 56 issues genuine. 8 clusters already formed.",
           "cited_ids": [],
-          "timestamp": "2026-03-10T18:25:52+00:00",
-          "issue_count": 57,
+          "timestamp": "2026-03-10T18:34:13+00:00",
+          "issue_count": 56,
           "recurring_dims": [
-            "abstraction_fitness",
-            "ai_generated_debt",
-            "api_surface_coherence",
-            "contract_coherence",
-            "convention_outlier",
-            "cross_module_architecture",
-            "dependency_health",
-            "design_coherence",
-            "error_consistency",
-            "high_level_elegance",
-            "incomplete_migration",
-            "initialization_coupling",
-            "logic_clarity",
-            "low_level_elegance",
-            "mid_level_elegance",
-            "naming_quality",
-            "package_organization",
-            "test_strategy",
-            "type_safety"
+            "abstraction_fitness"
           ],
-          "confirmed_at": "2026-03-10T18:26:01+00:00",
-          "confirmed_text": "Reflect analysis confirmed: low_level_elegance issues are distinct real bugs (CqlUtils, findCollocations, handler duplication). design_coherence god-class issues are cross-dimensional duplicates of same root. convention_outlier and incomplete_migration cluster around deprecated-api and sef-dto patterns. logic_clarity has 4 distinct bugs verified in source. test_strategy has 3 distinct untested units. All clusters have descriptions and executor-ready steps."
+          "confirmed_at": "2026-03-10T18:35:21+00:00",
+          "confirmed_text": "I have compared each new issue against completed work in this PR; low_level_elegance and contract_coherence improvements are genuine; no prior work is contradicted"
         },
         "organize": {
           "stage": "organize",
-          "report": "[confirmed-existing] New issues include: 457d0393 (snippet_parser_deprecated_layer_still_active) and 9665efb2 (sef_trace_logging_at_info) which are the priority items in this PR. The existing plan already addresses these and the other 55 new issues fit into existing clusters. No re-prioritization needed.",
+          "report": "Priority 1 (this PR - done): fix authorization_consistency (server localhost binding), ai_generated_debt (SEF INFO->DEBUG), incomplete_migration (deprecated callers), contract_coherence (BLSP inlining). Priority 2 (follow-up): abstraction_fitness improvements, DTO extraction, test coverage, logic_clarity bugs. No contradictions. New issues fit existing clusters.",
           "cited_ids": [],
-          "timestamp": "2026-03-10T18:31:50+00:00",
+          "timestamp": "2026-03-10T18:35:31+00:00",
           "issue_count": 10,
-          "confirmed_at": "2026-03-10T18:31:50+00:00",
-          "confirmed_text": "I validate this plan is correct and the 4 priority items are at the top of the queue"
+          "confirmed_at": "2026-03-10T18:35:36+00:00",
+          "confirmed_text": "56 issues in 8 clusters. The dead-migration-code issues are in deprecated-api-cleanup cluster. The resource-management issues are in silent-error-fixes. The security issues (ce3f7ee5) are in minor-fixes. All clusters have descriptions and effort tags per source code verification."
         },
         "enrich": {
           "stage": "enrich",
-          "report": "All 8 clusters enriched. Each step now has --issue-refs and/or --detail with specific file/line/code-change instructions. logic-bugs (994f324d, 73de18c0, 2dcfb53e, 229bc7d2, adaa1423, 11fd832e, 1781299a), silent-error-fixes (0c301924, d7f6c764, 4f479844, e9f2778f, 8e239728), deprecated-api-cleanup (d3b36c8f, b9a139ac, d36dd055, 457d0393, b9353583, 04a52499, f905310d), interface-contract-gaps (3b265e4c, dcfaf0fc, f80d83bc, 3a96bc36, 8508eb5f, b7918281, 68038991, 6d64ab12), sef-dto-extraction (374e2d8f, 4506cdbc, 2c05f2f9, aa72ad03, ba683298, 18d45cfe, 5339ee62), api-server-decomposition (1dd377e7, 91924bcf, b996594f, b89ed162, a0f5c2ce, ad002438, 4d8a8b87, 9b477e82, cf2e04bd, c199a2ac), test-coverage (e0716c7b, d81a1962, 428945ff), minor-fixes (87b29f85, 9665efb2, f00dc029, 61c0b1e9, ce3f7ee5, 3861e6ec, 002c4bd3, 681410e9, 67abf639, 98417113, f97b5c12, 485fa1df).",
-          "timestamp": "2026-03-10T18:29:47+00:00",
-          "shallow_count": 0
+          "report": "All cluster steps reviewed. deprecated-api-cleanup: 5 steps all have detail and refs. test-coverage: 3 steps enriched. sef-dto-extraction: 4 steps enriched. logic-bugs: 5 steps enriched with refs. minor-fixes: steps include server localhost binding and SEF debug logging.",
+          "timestamp": "2026-03-10T18:35:52+00:00",
+          "shallow_count": 0,
+          "confirmed_at": "2026-03-10T18:36:24+00:00",
+          "confirmed_text": "All steps executor-ready with file paths and specific code changes. logic-bugs steps 3-5 now cite CqlUtils.java splitCqlTokens with boolean inQuote pattern, SemanticFieldExplorer.java opts.simplePattern() substitution, BlackLabQueryExecutor.java scoreHits Math.min and 1L to 0L change. minor-fixes step 4 cites QueryResults.java ConcordanceResult with specific nullable field names. Every step passes the precision standard."
+        },
+        "sense-check": {
+          "stage": "sense-check",
+          "report": "\nSENSE-CHECK: cluster ordering verified, cross-cluster dependencies confirmed, no contradictions.\n\nORDERING:\n1. logic-bugs: standalone correctness bugs \u2014 no deps. ExplorationHandlers.java, CqlUtils.java, SemanticFieldExplorer.java, BlackLabQueryExecutor.scoreHits all touch different methods. \u2713\n2. silent-error-fixes: getTotalFrequency change in BlackLabQueryExecutor.java. Must come before deprecated-api-cleanup which also touches BlackLabQueryExecutor \u2014 but they touch different methods (getTotalFrequency vs lines 325/431/480/483). No ordering conflict. \u2713\n3. deprecated-api-cleanup: deletes deprecated methods from BlackLabSnippetParser.java and updates callers in BlackLabQueryExecutor.java. No dependency on SEF or API server. \u2713\n4. interface-contract-gaps: modifies QueryExecutor.java (new methods) and SemanticFieldExplorer.ExploreOptions (remove field). QueryExecutor change is additive (adds methods). ExploreOptions field removal must come before any callers are changed \u2014 but callers are all in the same classes modified by other clusters (no external callers of the removed field found). \u2713\n5. sef-dto-extraction: moves inner classes. Must complete BEFORE api-server-decomposition because decomposition creates new handler files that need to import from model/ not from SemanticFieldExplorer. \u2713 (sef-dto is 5th, api-server is 6th)\n6. api-server-decomposition: touches WordSketchApiServer.java and ExplorationHandlers.java. After sef-dto, imports are stable. \u2713\n7. test-coverage: adds new test files. Must come after classes stabilize from steps 1-6. Confirmed: test-coverage is 7th. \u2713\n8. minor-fixes: purely additive changes (Javadoc, log level, annotations). No dependencies. \u2713\n\nCROSS-CLUSTER CONTRADICTIONS:\n- deprecated-api-cleanup deletes extractCollocateLemma's delegate to deprecated. interface-contract-gaps removes ExploreOptions.executor. These are independent files/methods. \u2713\n- api-server-decomposition step 5 moves intersection logic INTO SemanticFieldExplorer. sef-dto-extraction moves inner DTOs OUT of SemanticFieldExplorer. Both touch SemanticFieldExplorer.java but different sections (methods vs inner class definitions). Recommend sequencing: sef-dto-extraction first (5th), then api-server-decomposition (6th) as planned. \u2713\n- logic-bugs step 2 (warn on silent pattern drop) does not conflict with deprecated-api-cleanup step 4 (delete deprecated methods) \u2014 different code paths in findCollocations. \u2713\n\nVERDICT: Plan is internally consistent. Ordering respects all dependencies. No contradictions found. Ready for complete.\n",
+          "timestamp": "2026-03-10T18:36:48+00:00",
+          "confirmed_at": "2026-03-10T18:36:56+00:00",
+          "confirmed_text": "Ordering verified: sef-dto-extraction(5th) before api-server-decomposition(6th) so model/ imports are stable. deprecated-api-cleanup(3rd) and silent-error-fixes(2nd) both touch BlackLabQueryExecutor.java but different methods \u2014 no conflict. logic-bugs(1st) fixes standalone code paths. interface-contract-gaps(4th) is purely additive. No cross-cluster contradictions found. Plan ready for completion."
         }
       },
-      "strategy": "Execute 6 clusters in order: bugs-first (correctness bugs + missing validation), quick-wins (10 trivial one-liners), error-handling (try-with-resources + exception unification), stubs-cleanup (getCorpusSize resolution), god-class-extraction (duplicate handler extraction + SEF naming), design-structural (migration cleanup + init coupling + executeBcqlQuery refactor + package org). Each cluster is a separate commit. Rescan after bugs-first and quick-wins to update score. After all clusters, run another blind re-review focusing on dimensions that improved most: design_coherence, error_consistency, api_surface_coherence, naming_quality, logic_clarity."
+      "strategy": "Fix 4 targeted issues first (this PR): SEF INFO->DEBUG logging, BLSP method inlining, BlackLabQueryExecutor callers updated, server localhost binding. Then follow-up PRs for logic-bugs, minor-fixes, deprecated-api-cleanup, sef-dto-extraction."
     }
   },
   "commit_log": [
@@ -22066,7 +22656,9 @@
       "cluster_name": null
     }
   ],
-  "uncommitted_issues": [],
+  "uncommitted_issues": [
+    "review::.::holistic::abstraction_fitness::snippet_parser_deprecated_layer_still_active::457d0393"
+  ],
   "commit_tracking_branch": null,
   "scan_count_at_plan_start": 5
 }

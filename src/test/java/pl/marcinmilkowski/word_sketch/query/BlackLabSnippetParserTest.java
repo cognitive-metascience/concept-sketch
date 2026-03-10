@@ -281,28 +281,28 @@ class BlackLabSnippetParserTest {
         assertEquals(-1, BlackLabSnippetParser.findLabelPosition(null, 1));
     }
 
-    // ── extractTokenFromSnippet ───────────────────────────────────────────────
+    // ── extractLemmaAt (positional) ──────────────────────────────────────────
 
     @Test
-    @DisplayName("extractTokenFromSnippet: extracts token at exact position")
-    void extractTokenFromSnippet_exactPosition() {
+    @DisplayName("extractLemmaAt: extracts token at exact position")
+    void extractLemmaAt_exactPosition() {
         String xml = "<w lemma=\"the\"/> <w lemma=\"quick\"/> <w lemma=\"fox\"/>";
-        assertEquals("the", BlackLabSnippetParser.extractTokenFromSnippet(xml, 1));
-        assertEquals("quick", BlackLabSnippetParser.extractTokenFromSnippet(xml, 2));
-        assertEquals("fox", BlackLabSnippetParser.extractTokenFromSnippet(xml, 3));
+        assertEquals("the", BlackLabSnippetParser.extractLemmaAt(xml, 1));
+        assertEquals("quick", BlackLabSnippetParser.extractLemmaAt(xml, 2));
+        assertEquals("fox", BlackLabSnippetParser.extractLemmaAt(xml, 3));
     }
 
     @Test
-    @DisplayName("extractTokenFromSnippet: position beyond count returns last token")
-    void extractTokenFromSnippet_beyondCountReturnsLast() {
+    @DisplayName("extractLemmaAt: position beyond count returns null")
+    void extractLemmaAt_beyondCountReturnsNull() {
         String xml = "<w lemma=\"cat\"/> <w lemma=\"dog\"/>";
-        assertEquals("dog", BlackLabSnippetParser.extractTokenFromSnippet(xml, 10));
+        assertNull(BlackLabSnippetParser.extractLemmaAt(xml, 10));
     }
 
     @Test
-    @DisplayName("extractTokenFromSnippet: null input returns null")
-    void extractTokenFromSnippet_nullReturnsNull() {
-        assertNull(BlackLabSnippetParser.extractTokenFromSnippet(null, 1));
+    @DisplayName("extractLemmaAt: null input returns null")
+    void extractLemmaAt_nullReturnsNull() {
+        assertNull(BlackLabSnippetParser.extractLemmaAt(null, 1));
     }
 
     // ── trimToSentence integration ────────────────────────────────────────────

@@ -2,82 +2,90 @@
   "command": "next",
   "items": [
     {
-      "id": "deprecated-api-cleanup",
+      "id": "minor-fixes",
       "kind": "cluster",
       "action_type": "refactor",
-      "summary": "Complete the extractCollocate* -> extractLemmaAt migration: delete deprecated methods, fix the 'clean' replacement that still calls deprecated, update all callers",
+      "summary": "Small cosmetic, naming, and API-surface fixes: duplicate Javadoc, log levels, Javadoc accuracy, nullable annotations, server binding",
       "member_count": 2,
       "members": [
         {
-          "id": "review::.::holistic::abstraction_fitness::snippet_parser_deprecated_layer_still_active::457d0393",
+          "id": "review::.::holistic::authorization_consistency::server_binds_all_interfaces::ce3f7ee5",
           "kind": "issue",
           "confidence": "high",
           "detector": "review",
           "file": ".",
-          "summary": "BlackLabSnippetParser has 4 deprecated wrapper methods that are still called by production code, creating a live double-indirection layer",
+          "summary": "The HTTP server binds to all network interfaces (0.0.0.0) rather than localhost, making the unauthenticated API reachable from other hosts on the network",
           "status": "open",
-          "primary_command": "desloppify plan resolve \"review::.::holistic::abstraction_fitness::snippet_parser_deprecated_layer_still_active::457d0393\" --note \"<what you did>\" --confirm"
+          "primary_command": "desloppify plan resolve \"review::.::holistic::authorization_consistency::server_binds_all_interfaces::ce3f7ee5\" --note \"<what you did>\" --confirm"
         },
         {
-          "id": "review::.::holistic::ai_generated_debt::snippet_parser_passthrough_wrappers::f905310d",
+          "id": "review::.::holistic::ai_generated_debt::sef_trace_logging_at_info::9665efb2",
           "kind": "issue",
           "confidence": "high",
           "detector": "review",
           "file": ".",
-          "summary": "extractLemmaAt/extractHeadLemma/extractCollocateLemma are pass-through aliases with no added logic over the deprecated originals",
+          "summary": "SemanticFieldExplorer.exploreByPattern emits 7+ INFO-level trace messages that belong at DEBUG",
           "status": "open",
-          "primary_command": "desloppify plan resolve \"review::.::holistic::ai_generated_debt::snippet_parser_passthrough_wrappers::f905310d\" --note \"<what you did>\" --confirm"
+          "primary_command": "desloppify plan resolve \"review::.::holistic::ai_generated_debt::sef_trace_logging_at_info::9665efb2\" --note \"<what you did>\" --confirm"
         }
       ],
-      "cluster_name": "deprecated-api-cleanup",
+      "cluster_name": "minor-fixes",
       "cluster_auto": false,
       "detector": "review",
-      "primary_command": "desloppify next --cluster deprecated-api-cleanup --count 10",
+      "primary_command": "desloppify next --cluster minor-fixes --count 10",
       "action_steps": [
         {
-          "title": "BlackLabSnippetParser: make extractCollocateLemma(String) call extractLemmaAt(matchXml, N) (last lemma position) instead of the @Deprecated extractCollocateFromSnippet",
-          "done": true,
-          "detail": "BlackLabSnippetParser.extractCollocateLemma (~line 319): change body from 'return extractCollocateFromSnippet(matchXml)' to 'return extractLemmaAt(matchXml, lastPosition)'",
+          "title": "WordSketchApiServer.handleVisualRadial: remove the duplicate 'Render radial plot.' opening line from the Javadoc (issue 87b29f85)",
+          "detail": "WordSketchApiServer.handleVisualRadial Javadoc: delete duplicate 'Render radial plot.' opening line",
           "issue_refs": [
-            "d3b36c8f b9a139ac"
+            "87b29f85"
+          ],
+          "effort": "small",
+          "done": true
+        },
+        {
+          "title": "SemanticFieldExplorer.exploreByPattern: downgrade 7+ logger.info trace messages to logger.debug so production logs are not flooded (issue 9665efb2)",
+          "detail": "SemanticFieldExplorer.exploreByPattern: change 7+ logger.info(...) trace calls to logger.debug(...)",
+          "issue_refs": [
+            "9665efb2"
           ],
           "effort": "small"
         },
         {
-          "title": "BlackLabQueryExecutor lines 325, 431: replace extractCollocateFromSnippet calls with extractHeadLemma / extractCollocateLemma",
-          "done": true,
-          "detail": "BlackLabQueryExecutor lines 325, 431: replace extractCollocateFromSnippet(matchXml) with extractHeadLemma(matchXml) or extractCollocateLemma(matchXml)",
+          "title": "SemanticFieldExplorer class Javadoc: change 'compareSeeds' to 'compare' to match the actual method name (issue f00dc029)",
+          "detail": "SemanticFieldExplorer class Javadoc: replace 'see compareSeeds' with 'see compare' to match actual method name",
           "issue_refs": [
-            "d36dd055 457d0393"
+            "f00dc029"
           ],
-          "effort": "small"
+          "effort": "small",
+          "done": true
         },
         {
-          "title": "BlackLabQueryExecutor lines 480, 483: replace extractCollocateFromMatch / extractCollocateFromPlainText calls with extractLemmaAt(identity, collocateLabelPos)",
-          "done": true,
-          "detail": "BlackLabQueryExecutor lines 480, 483: replace extractCollocateFromMatch(identity, labelPos) and extractCollocateFromPlainText(identity, labelPos) with extractLemmaAt(identity, labelPos)",
+          "title": "ConcordanceResult: add @Nullable annotations to all 7 nullable fields so null contracts are explicit rather than documentation-only (issue 61c0b1e9)",
+          "detail": "Edit src/main/java/pl/marcinmilkowski/word_sketch/query/QueryResults.java, record ConcordanceResult: add @Nullable annotation (from javax.annotation or org.jspecify.annotations) to all 7 fields that may be null: leftText, matchText, rightText, headLemma, collocateLemma, sentenceText, posTag",
           "issue_refs": [
-            "457d0393"
+            "61c0b1e9"
           ],
-          "effort": "small"
+          "effort": "trivial",
+          "done": true
         },
         {
-          "title": "BlackLabSnippetParser: delete @Deprecated methods extractCollocateFromSnippet, extractCollocateFromMatch, extractCollocateFromPlainText, extractTokenFromSnippet once no callers remain; also remove pass-through extractLemmaAt aliases that add no logic",
-          "done": true,
-          "detail": "BlackLabSnippetParser: delete @Deprecated methods extractCollocateFromSnippet, extractCollocateFromMatch, extractCollocateFromPlainText, extractTokenFromSnippet; also remove no-logic pass-through aliases",
+          "title": "WordSketchApiServer: consider adding a --bind-host CLI flag so operators can choose between localhost-only and all-interface binding (issues ce3f7ee5, 3861e6ec)",
+          "detail": "WordSketchApiServer: add --bind-host CLI arg (default 0.0.0.0 for backward compat) to allow localhost-only binding",
           "issue_refs": [
-            "b9353583 04a52499 f905310d"
+            "ce3f7ee5 3861e6ec"
           ],
-          "effort": "small"
+          "effort": "small",
+          "done": true
         },
         {
-          "title": "Run full test suite after each deletion to confirm no hidden callers",
-          "done": true,
-          "detail": "Run 'mvn test' after each deletion to confirm no hidden callers remain in tests or production code",
+          "title": "utils/ package: evaluate splitting into sub-packages (cql, stats, collections) to avoid the catch-all structure (issue 002c4bd3)",
+          "detail": "utils/ package: split into utils/cql, utils/stats, utils/collections sub-packages",
           "issue_refs": [
-            "b9353583"
+            "002c4bd3"
           ],
-          "effort": "small"
+          "effort": "small",
+          "done": true
         }
       ]
     }
@@ -87,7 +95,7 @@
   },
   "narrative": {
     "phase": "stagnation",
-    "headline": "Score plateaued at 72.3 for 5 scans. Test strategy (40.0%) is where the breakthrough is. 6 wontfix items may also be worth revisiting. (57 review issues \u2014 run `desloppify show review --status open`)",
+    "headline": "Score plateaued at 72.3 for 5 scans. Test strategy (40.0%) is where the breakthrough is. 6 wontfix items may also be worth revisiting. (56 review issues \u2014 run `desloppify show review --status open`)",
     "dimensions": {
       "lowest_dimensions": [
         {
@@ -157,8 +165,8 @@
       {
         "type": "refactor",
         "detector": "review",
-        "count": 57,
-        "description": "57 review issues need investigation \u2014 run `desloppify show review --status open` to see them",
+        "count": 56,
+        "description": "56 review issues need investigation \u2014 run `desloppify show review --status open` to see them",
         "command": "desloppify show review --status open",
         "impact": 0.0,
         "dimension": "Unknown",
@@ -180,7 +188,7 @@
     "strategy": {
       "fixer_leverage": {
         "auto_fixable_count": 0,
-        "total_count": 178,
+        "total_count": 175,
         "coverage": 0.0,
         "impact_ratio": 0.0,
         "recommendation": "none"
@@ -215,7 +223,7 @@
         }
       },
       "can_parallelize": false,
-      "hint": "Try a different dimension to break the plateau. Review: 57 issue(s) \u2014 `desloppify show review --status open`."
+      "hint": "Try a different dimension to break the plateau. Review: 56 issue(s) \u2014 `desloppify show review --status open`."
     },
     "tools": {
       "fixers": [],
@@ -248,7 +256,7 @@
       "command": "desloppify show structural --status open",
       "description": "2 structural issues \u2014 review large files \u2014 split only when responsibilities are clearly separable"
     },
-    "why_now": "Try a different dimension to break the plateau. Review: 57 issue(s) \u2014 `desloppify show review --status open`.",
+    "why_now": "Try a different dimension to break the plateau. Review: 56 issue(s) \u2014 `desloppify show review --status open`.",
     "verification_step": {
       "command": "desloppify scan",
       "reason": "revalidate after changes"
@@ -270,7 +278,7 @@
     "reminders": [
       {
         "type": "review_issues_pending",
-        "message": "57 review issue(s) need investigation. Run `desloppify show review --status open` to see the work queue.",
+        "message": "56 review issue(s) need investigation. Run `desloppify show review --status open` to see the work queue.",
         "command": "desloppify show review --status open",
         "priority": 1,
         "severity": "high"
@@ -433,7 +441,7 @@
       {
         "name": "deprecated-api-cleanup",
         "description": "Complete the extractCollocate* -> extractLemmaAt migration: delete deprecated methods, fix the 'clean' replacement that still calls deprecated, update all callers",
-        "item_count": 7
+        "item_count": 6
       },
       {
         "name": "sef-dto-extraction",
@@ -466,7 +474,7 @@
         "item_count": 12
       }
     ],
-    "total_ordered": 4,
+    "total_ordered": 3,
     "total_skipped": 63,
     "plan_overrides_narrative": true
   },
@@ -514,7 +522,7 @@
       "score": 59.0,
       "strict": 59.0,
       "checks": 10,
-      "failing": 3,
+      "failing": 2,
       "tier": 4,
       "subjective": true,
       "placeholder": false,
@@ -753,7 +761,7 @@
       "score": 59.0,
       "strict": 59.0,
       "checks": 10,
-      "failing": 3,
+      "failing": 2,
       "tier": 4,
       "subjective": true,
       "placeholder": false,

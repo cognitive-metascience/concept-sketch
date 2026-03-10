@@ -165,22 +165,6 @@ public class BlackLabSnippetParser {
     }
 
     /**
-     * Extract the collocate lemma from a concordance snippet (XML format).
-     * Finds the last lemma attribute in the snippet.
-     *
-     * @deprecated Use {@link #extractHeadLemma(String)} or {@link #extractCollocateLemma(String)} for clarity.
-     */
-    @Deprecated
-    static String extractCollocateFromSnippet(String snippet) {
-        java.util.regex.Matcher m = LEMMA_ATTR.matcher(snippet);
-        String lastLemma = null;
-        while (m.find()) {
-            lastLemma = m.group(1);
-        }
-        return lastLemma;
-    }
-
-    /**
      * Extract a word by position from plain whitespace-separated text.
      *
      * @param text      whitespace-separated token string
@@ -191,46 +175,6 @@ public class BlackLabSnippetParser {
         if (text == null || text.isEmpty() || position < 1) return null;
         String[] words = text.trim().split("\\s+");
         if (position > words.length) return null;
-        return words[position - 1];
-    }
-
-    /**
-     * Extract the collocate lemma from matched text using the labeled position.
-     * @param matchOnly The matched text (parts[1] from concordance)
-     * @param labelPos The 1-based position of the label (e.g., 3 for "2:" in pattern with 3 tokens)
-     * @deprecated Prefer {@link #extractLemmaAt(String, int)} which has a clearer name.
-     */
-    @Deprecated
-    static String extractCollocateFromMatch(String matchOnly, int labelPos) {
-        if (matchOnly == null || matchOnly.isEmpty() || labelPos < 1) {
-            return null;
-        }
-        java.util.regex.Matcher m = LEMMA_ATTR.matcher(matchOnly);
-        int count = 0;
-        while (m.find()) {
-            count++;
-            if (count == labelPos) {
-                return m.group(1);
-            }
-        }
-        return null;
-    }
-
-    /**
-     * Extract the collocate from plain text (whitespace-separated words).
-     * @param text The matched text (e.g., "theory is irrelevant")
-     * @param position The 1-based position of the word to extract
-     * @deprecated Prefer {@link #extractLemmaAt(String, int)} or positional XML extraction.
-     */
-    @Deprecated
-    static String extractCollocateFromPlainText(String text, int position) {
-        if (text == null || text.isEmpty() || position < 1) {
-            return null;
-        }
-        String[] words = text.trim().split("\\s+");
-        if (position > words.length) {
-            return null;
-        }
         return words[position - 1];
     }
 
@@ -265,36 +209,6 @@ public class BlackLabSnippetParser {
             }
         }
         return -1;
-    }
-
-    /**
-     * Extract a specific token from a concordance snippet.
-     * Snippet format is like: "...[word1]...[word2]..." where words have lemma attributes.
-     * @deprecated Prefer {@link #extractLemmaAt(String, int)} which has clearer semantics.
-     */
-    @Deprecated
-    static String extractTokenFromSnippet(String snippet, int position) {
-        if (snippet == null || snippet.isEmpty()) {
-            return null;
-        }
-        java.util.regex.Matcher m = LEMMA_ATTR.matcher(snippet);
-        int count = 0;
-        while (m.find()) {
-            count++;
-            if (count == position) {
-                return m.group(1);
-            }
-        }
-        // If position is beyond the count, return the last one
-        if (count > 0 && position > count) {
-            m.reset();
-            String last = null;
-            while (m.find()) {
-                last = m.group(1);
-            }
-            return last;
-        }
-        return null;
     }
 
     // ==================== Consolidated clean API ====================

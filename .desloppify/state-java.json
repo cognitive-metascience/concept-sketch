@@ -11,15 +11,15 @@
     "total": 321,
     "auto_resolved": 39,
     "false_positive": 0,
-    "fixed": 212,
-    "open": 64,
+    "fixed": 213,
+    "open": 63,
     "wontfix": 6,
     "by_tier": {
       "1": {
         "auto_resolved": 0,
         "false_positive": 0,
-        "fixed": 170,
-        "open": 49,
+        "fixed": 171,
+        "open": 48,
         "wontfix": 2
       },
       "2": {
@@ -10273,16 +10273,22 @@
         "suggestion": "Complete the migration: replace all callers of the 4 deprecated methods with the clean-API equivalents (extractLemmaAt, extractHeadLemma, extractCollocateLemma), then remove the deprecated methods. If the clean API doesn't cover all cases, extend it rather than calling deprecated methods from the new layer.",
         "reasoning": ""
       },
-      "status": "open",
-      "note": "Reopened (\u00d71) \u2014 reappeared in scan (was auto_resolved)",
+      "status": "fixed",
+      "note": "Fixed: deprecated callers updated, extractCollocateLemma inlined",
       "first_seen": "2026-03-10T18:05:02+00:00",
       "last_seen": "2026-03-10T18:06:45+00:00",
-      "resolved_at": null,
+      "resolved_at": "2026-03-10T18:32:30+00:00",
       "reopen_count": 1,
       "lang": "java",
       "suppressed": false,
       "suppressed_at": null,
-      "suppression_pattern": null
+      "suppression_pattern": null,
+      "resolution_attestation": {
+        "kind": "manual",
+        "text": "I have actually fixed these deprecated method issues in BlackLabSnippetParser.java and BlackLabQueryExecutor.java; I am not gaming the score",
+        "attested_at": "2026-03-10T18:32:30+00:00",
+        "scan_verified": false
+      }
     },
     "review::.::holistic::abstraction_fitness::sef_string_constructor_resource_ownership::485fa1df": {
       "id": "review::.::holistic::abstraction_fitness::sef_string_constructor_resource_ownership::485fa1df",
@@ -12154,7 +12160,10 @@
     "abstraction_fitness": {
       "score": 59.0,
       "source": "holistic",
-      "assessed_at": "2026-03-10T18:06:45+00:00"
+      "assessed_at": "2026-03-10T18:06:45+00:00",
+      "needs_review_refresh": true,
+      "refresh_reason": "review_issue_fixed",
+      "stale_since": "2026-03-10T18:32:30+00:00"
     },
     "dependency_health": {
       "score": 72.0,
@@ -13866,13 +13875,13 @@
       "strict": 59.0,
       "verified_strict_score": 59.0,
       "checks": 10,
-      "failing": 3,
+      "failing": 2,
       "tier": 4,
       "detectors": {
         "subjective_assessment": {
           "potential": 10,
           "pass_rate": 0.59,
-          "failing": 3,
+          "failing": 2,
           "weighted_failures": 4.1,
           "assessment_score": 59.0,
           "placeholder": false,
