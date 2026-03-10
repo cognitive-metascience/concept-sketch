@@ -1,5 +1,7 @@
 package pl.marcinmilkowski.word_sketch.api;
 
+import com.alibaba.fastjson2.JSON;
+import com.alibaba.fastjson2.JSONObject;
 import com.sun.net.httpserver.Headers;
 import com.sun.net.httpserver.HttpContext;
 import com.sun.net.httpserver.HttpExchange;
@@ -142,6 +144,10 @@ class HandlersTest {
         MockExchange ex = new MockExchange("http://localhost/api/sketch/house");
         handlers.handleSketchRequest(ex);
         assertEquals(200, ex.statusCode);
+        JSONObject body = JSON.parseObject(ex.getResponseBodyAsString());
+        assertEquals("house", body.getString("lemma"));
+        assertTrue(body.containsKey("relations"), "Response must contain 'relations' key");
+        assertNotNull(body.getJSONArray("relations"));
     }
 
     @Test
@@ -153,5 +159,9 @@ class HandlersTest {
                 "http://localhost/api/semantic-field/explore-multi?seeds=theory,model&relation=noun_adj_predicates");
         handlers.handleSemanticFieldExploreMulti(ex);
         assertEquals(200, ex.statusCode);
+        JSONObject body = JSON.parseObject(ex.getResponseBodyAsString());
+        assertTrue(body.containsKey("seeds"), "Response must contain 'seeds' key");
+        assertTrue(body.containsKey("discovered_nouns"), "Response must contain 'discovered_nouns' key");
+        assertTrue(body.containsKey("core_collocates"), "Response must contain 'core_collocates' key");
     }
 }

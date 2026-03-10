@@ -1,8 +1,14 @@
 {
   "version": 8,
   "created": "2026-03-09T18:36:05+00:00",
-  "updated": "2026-03-10T22:00:01+00:00",
-  "queue_order": [],
+  "updated": "2026-03-10T22:06:31+00:00",
+  "queue_order": [
+    "review::.::holistic::test_strategy::api_handler_smoke_only::0654ef4e",
+    "review::.::holistic::test_strategy::bcql_concordance_hardcoded_path::498feea7",
+    "review::.::holistic::test_strategy::indexer_zero_coverage::4329ef90",
+    "workflow::score-checkpoint",
+    "workflow::create-plan"
+  ],
   "deferred": [],
   "skipped": {
     "stale_exclude::corpora_philscifpsyg_index::corpora_philscifpsyg_index": {
@@ -2563,8 +2569,8 @@
     "review::.::holistic::design_coherence::duplicate_explore_response_assembly::82a5c1b4": {
       "issue_id": "review::.::holistic::design_coherence::duplicate_explore_response_assembly::82a5c1b4",
       "created_at": "2026-03-10T21:32:19+00:00",
-      "cluster": "elegance-cleanup",
-      "updated_at": "2026-03-10T21:32:19+00:00"
+      "cluster": null,
+      "updated_at": "2026-03-10T22:05:53+00:00"
     },
     "review::.::holistic::design_coherence::domain_logic_in_http_handler::d0305322": {
       "issue_id": "review::.::holistic::design_coherence::domain_logic_in_http_handler::d0305322",
@@ -5275,7 +5281,6 @@
       "issue_ids": [
         "review::.::holistic::low_level_elegance::explore_handler_duplication::60e97a1f",
         "review::.::holistic::mid_level_elegance::explore_response_assembly_duplicated::89556323",
-        "review::.::holistic::design_coherence::duplicate_explore_response_assembly::82a5c1b4",
         "review::.::holistic::design_coherence::domain_logic_in_http_handler::d0305322",
         "review::.::holistic::mid_level_elegance::exploration_result_null_contract_distrust::8124e03e",
         "review::.::holistic::error_consistency::silent_relation_swallow::0e104d8b",
@@ -34798,6 +34803,157 @@
         "sha": "e1a3c5fa9f74",
         "branch": "desloppify/code-health"
       }
+    },
+    {
+      "timestamp": "2026-03-10T22:05:53+00:00",
+      "action": "done",
+      "issue_ids": [
+        "duplicate_explore_response_assembly"
+      ],
+      "cluster_name": null,
+      "actor": "user",
+      "note": "Extracted buildExploreResponseBody() private method, both handlers call it",
+      "detail": {}
+    },
+    {
+      "timestamp": "2026-03-10T22:05:53+00:00",
+      "action": "resolve",
+      "issue_ids": [
+        "review::.::holistic::design_coherence::duplicate_explore_response_assembly::82a5c1b4"
+      ],
+      "cluster_name": null,
+      "actor": "user",
+      "note": "Extracted buildExploreResponseBody() private method, both handlers call it",
+      "detail": {
+        "status": "fixed",
+        "attestation": "I have actually made the described code fix and I am not gaming the score by resolving without fixing."
+      }
+    },
+    {
+      "timestamp": "2026-03-10T22:05:53+00:00",
+      "action": "done",
+      "issue_ids": [
+        "bare_methods_no_try_catch"
+      ],
+      "cluster_name": null,
+      "actor": "user",
+      "note": "Wrapped exploreByPattern, compareCollocateProfiles, fetchExamples in try-catch (IOException\u2192500, IAE\u2192400)",
+      "detail": {}
+    },
+    {
+      "timestamp": "2026-03-10T22:05:54+00:00",
+      "action": "done",
+      "issue_ids": [
+        "silent_relation_failure"
+      ],
+      "cluster_name": null,
+      "actor": "user",
+      "note": "Added logger.warn with rel.id(), lemma, e.getMessage() in SketchHandlers catch blocks",
+      "detail": {}
+    },
+    {
+      "timestamp": "2026-03-10T22:05:55+00:00",
+      "action": "done",
+      "issue_ids": [
+        "duplicate_explore_shared_body"
+      ],
+      "cluster_name": null,
+      "actor": "user",
+      "note": "Extracted shared response builder, both explore handlers now share 80%+ via buildExploreResponseBody()",
+      "detail": {}
+    },
+    {
+      "timestamp": "2026-03-10T22:05:55+00:00",
+      "action": "done",
+      "issue_ids": [
+        "seeds_empty_bypass"
+      ],
+      "cluster_name": null,
+      "actor": "user",
+      "note": "Added isBlank() guard after requireParam('seeds') \u2192 400 error",
+      "detail": {}
+    },
+    {
+      "timestamp": "2026-03-10T22:05:56+00:00",
+      "action": "done",
+      "issue_ids": [
+        "exploration_result_null_guards"
+      ],
+      "cluster_name": null,
+      "actor": "user",
+      "note": "Removed !=(null) guards on ExplorationResult fields guaranteed non-null by constructor",
+      "detail": {}
+    },
+    {
+      "timestamp": "2026-03-10T22:05:56+00:00",
+      "action": "done",
+      "issue_ids": [
+        "pos_regex_in_handler"
+      ],
+      "cluster_name": null,
+      "actor": "user",
+      "note": "Added collocateReversePattern() to RelationConfig; handler calls config method instead of inline PosGroup switch",
+      "detail": {}
+    },
+    {
+      "timestamp": "2026-03-10T22:05:57+00:00",
+      "action": "done",
+      "issue_ids": [
+        "domain_assembly_in_handler"
+      ],
+      "cluster_name": null,
+      "actor": "user",
+      "note": "Added TODO comment explaining what should move to factory/service layer",
+      "detail": {}
+    },
+    {
+      "timestamp": "2026-03-10T22:05:57+00:00",
+      "action": "done",
+      "issue_ids": [
+        "duplicate_explore_translation"
+      ],
+      "cluster_name": null,
+      "actor": "user",
+      "note": "ExplorationResult\u2192JSON translation centralized in buildExploreResponseBody()",
+      "detail": {}
+    },
+    {
+      "timestamp": "2026-03-10T22:05:59+00:00",
+      "action": "commit_record",
+      "issue_ids": [
+        "review::.::holistic::design_coherence::duplicate_explore_response_assembly::82a5c1b4"
+      ],
+      "cluster_name": null,
+      "actor": "user",
+      "note": "elegance-cleanup: extract shared explore response builder, add error handling, fix empty seeds guard, remove redundant null checks",
+      "detail": {
+        "sha": "ee9a2df72a12",
+        "branch": "desloppify/code-health"
+      }
+    },
+    {
+      "timestamp": "2026-03-10T22:06:31+00:00",
+      "action": "review_import_sync",
+      "issue_ids": [],
+      "cluster_name": null,
+      "actor": "system",
+      "note": null,
+      "detail": {
+        "trigger": "review_import",
+        "new_ids": [
+          "review::.::holistic::test_strategy::api_handler_smoke_only::0654ef4e",
+          "review::.::holistic::test_strategy::bcql_concordance_hardcoded_path::498feea7",
+          "review::.::holistic::test_strategy::indexer_zero_coverage::4329ef90"
+        ],
+        "added_to_queue": [
+          "review::.::holistic::test_strategy::api_handler_smoke_only::0654ef4e",
+          "review::.::holistic::test_strategy::bcql_concordance_hardcoded_path::498feea7",
+          "review::.::holistic::test_strategy::indexer_zero_coverage::4329ef90"
+        ],
+        "diff_new": 3,
+        "diff_reopened": 0,
+        "covered_subjective": []
+      }
     }
   ],
   "epic_triage_meta": {
@@ -34902,7 +35058,8 @@
         }
       },
       "strategy": "6 clusters ready for parallel-then-serial execution:\n\n1. dead-fields2 (trivial, 2 dead fields): Run first \u2014 standalone, no deps\n2. api-polish2 (small, 7 API surface fixes): Run after dead-fields2 \u2014 SketchHandlers + ExplorationHandlers + QueryExecutor interface  \n3. model-consistency2 (small, ExplorationResult encapsulation): Can overlap with api-polish2 \u2014 different files\n4. elegance-cleanup (medium, handler consolidation): After api-polish2 and model-consistency2 complete \u2014 uses both\n5. misc-cleanup (mixed, doc + deprecated deletions): Parallel with elegance-cleanup \u2014 different files\n6. test-additions (medium, new tests): Run last \u2014 needs stable APIs from previous clusters\n\nTarget: completing all 6 clusters should push abstraction_fitness, api_surface_coherence, and low/mid_level_elegance scores up significantly, moving strict score from 70.4 toward 80+."
-    }
+    },
+    "triage_recommended": true
   },
   "commit_log": [
     {
@@ -35478,6 +35635,16 @@
       ],
       "recorded_at": "2026-03-10T22:00:01+00:00",
       "note": "test-additions: delete placeholder suites, fix hardcoded paths, add CollocateProfileComparator tests, happy-path handler tests, documented BlackLabQueryExecutor tests",
+      "cluster_name": null
+    },
+    {
+      "sha": "ee9a2df72a12",
+      "branch": "desloppify/code-health",
+      "issue_ids": [
+        "review::.::holistic::design_coherence::duplicate_explore_response_assembly::82a5c1b4"
+      ],
+      "recorded_at": "2026-03-10T22:05:59+00:00",
+      "note": "elegance-cleanup: extract shared explore response builder, add error handling, fix empty seeds guard, remove redundant null checks",
       "cluster_name": null
     }
   ],

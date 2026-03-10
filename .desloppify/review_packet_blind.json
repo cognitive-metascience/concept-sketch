@@ -3,21 +3,84 @@
   "mode": "holistic",
   "language": "java",
   "dimensions": [
-    "test_strategy"
+    "convention_outlier",
+    "design_coherence",
+    "abstraction_fitness",
+    "api_surface_coherence"
   ],
   "dimension_prompts": {
-    "test_strategy": {
-      "description": "Untested critical paths, coupling, snapshot overuse, fragility patterns",
+    "convention_outlier": {
+      "description": "Naming convention drift, inconsistent file organization, style islands",
       "look_for": [
-        "Critical paths with zero test coverage (high-importer files, core business logic)",
-        "Test-production coupling: tests that break when implementation details change",
-        "Snapshot test overuse: >50% of tests are snapshot-based",
-        "Missing integration tests: unit tests exist but no cross-module verification",
-        "Test fragility: tests that depend on timing, ordering, or external state"
+        "Naming convention drift: snake_case functions in a camelCase codebase or vice versa",
+        "Inconsistent file organization: some dirs use index files, others don't",
+        "Mixed export patterns across sibling modules (named vs default, class vs function)",
+        "Style islands: one directory uses a completely different pattern than the rest",
+        "Sibling modules following different behavioral protocols (e.g. most call a shared function, one doesn't)",
+        "Inconsistent plugin organization: sibling plugins structured differently",
+        "Large __init__.py re-export surfaces that obscure internal module structure",
+        "Mixed type strategies for domain objects (TypedDict for some, dataclass for others, NamedTuple for yet others) without documented rationale \u2014 see type_strategy_census evidence"
       ],
       "skip": [
-        "Low-value files intentionally untested (types, constants, index files)",
-        "Generated code that shouldn't have custom tests"
+        "Intentional variation for different module types (config vs logic)",
+        "Third-party code or generated files following their own conventions"
+      ]
+    },
+    "design_coherence": {
+      "description": "Are structural design decisions sound \u2014 functions focused, abstractions earned, patterns consistent?",
+      "look_for": [
+        "Functions doing too many things \u2014 multiple distinct responsibilities in one body",
+        "Parameter lists that should be config/context objects \u2014 many related params passed together",
+        "Files accumulating issues across many dimensions \u2014 likely mixing unrelated concerns",
+        "Deep nesting that could be flattened with early returns or extraction",
+        "Repeated structural patterns that should be data-driven"
+      ],
+      "skip": [
+        "Functions that are long but have a single coherent responsibility",
+        "Parameter lists where grouping would obscure meaning",
+        "Files that are large because their domain is genuinely complex, not because they mix concerns",
+        "Nesting that is inherent to the problem (e.g., recursive tree processing)"
+      ],
+      "meta": {
+        "display_name": "Design coherence",
+        "weight": 10.0,
+        "reset_on_scan": true
+      }
+    },
+    "abstraction_fitness": {
+      "description": "Abstractions that pay for themselves with real leverage",
+      "look_for": [
+        "Pass-through wrappers or interfaces that add no behavior, policy, or translation",
+        "Cross-cutting wrapper chains where call depth increases without added value",
+        "Interface/protocol families where most declared contracts have only one implementation",
+        "Systemic util/helper dumping grounds that create low cohesion across modules",
+        "Leaky abstractions: callers consistently bypass intended interfaces",
+        "Wide options/context bag APIs that hide true domain boundaries",
+        "Generic/type-parameter machinery used in only one concrete way",
+        "Delegation-heavy classes where most methods forward to an inner object (high delegation ratio)",
+        "Facade/re-export modules that define no logic of their own",
+        "Getter functions whose body is solely return x.get(key) \u2014 the underlying type should be an object with properties instead of dict access"
+      ],
+      "skip": [
+        "Dependency-injection or framework abstractions required for wiring/testability",
+        "Adapters that intentionally isolate external API volatility",
+        "Cases where abstraction clearly reduces duplication across multiple callers",
+        "Thin wrappers that consistently enforce policy (auth/logging/metrics/caching)",
+        "If the core issue is dependency direction or cycles, use cross_module_architecture"
+      ]
+    },
+    "api_surface_coherence": {
+      "description": "Inconsistent API shapes, mixed sync/async, overloaded interfaces",
+      "look_for": [
+        "Inconsistent API shapes: similar functions with different parameter ordering or naming",
+        "Mixed sync/async in the same module's public API",
+        "Overloaded interfaces: one function doing too many things based on argument types",
+        "Missing error contracts: no documentation or types indicating what can fail",
+        "Public functions with >5 parameters (API boundary may be wrong)"
+      ],
+      "skip": [
+        "Internal/private APIs where flexibility is acceptable",
+        "Framework-imposed patterns (React hooks must follow rules of hooks)"
       ]
     }
   },
@@ -43,7 +106,7 @@
           "try_catch": 4
         },
         "api/": {
-          "try_catch": 15,
+          "try_catch": 18,
           "returns_null": 3,
           "throws": 2
         },
@@ -121,7 +184,7 @@
         {
           "file": "src/main/java/pl/marcinmilkowski/word_sketch/api/ExplorationHandlers.java",
           "max_chain_depth": 4,
-          "chain_count": 24
+          "chain_count": 22
         },
         {
           "file": "src/main/java/pl/marcinmilkowski/word_sketch/exploration/CollocateProfileComparator.java",
@@ -208,7 +271,7 @@
         {
           "file": "src/main/java/pl/marcinmilkowski/word_sketch/api/ExplorationHandlers.java",
           "wide_functions": 0,
-          "config_bag_mentions": 25
+          "config_bag_mentions": 24
         }
       ],
       "one_impl_interfaces": [
@@ -247,7 +310,7 @@
             "SketchHandlers.java",
             "WordSketchApiServer.java"
           ],
-          "total_loc": 1150,
+          "total_loc": 1145,
           "avg_fan_in": 0.0,
           "avg_fan_out": 0.0,
           "zones": {
@@ -262,7 +325,7 @@
             "RelationConfig.java",
             "RelationType.java"
           ],
-          "total_loc": 555,
+          "total_loc": 567,
           "avg_fan_in": 0.0,
           "avg_fan_out": 0.0,
           "zones": {
@@ -361,7 +424,7 @@
     },
     "codebase_stats": {
       "total_files": 32,
-      "total_loc": 5030
+      "total_loc": 5037
     },
     "authorization": {},
     "ai_debt_signals": {
@@ -406,7 +469,7 @@
           "guard_density": 3.0
         }
       },
-      "codebase_avg_comment_ratio": 0.201
+      "codebase_avg_comment_ratio": 0.202
     },
     "migration_signals": {},
     "scan_evidence": {
@@ -468,7 +531,7 @@
     },
     "codebase_stats": {
       "total_files": 49,
-      "total_loc": 7032,
+      "total_loc": 7039,
       "avg_file_loc": 143
     },
     "sibling_conventions": {},
@@ -514,7 +577,7 @@
           "guard_density": 3.0
         }
       },
-      "codebase_avg_comment_ratio": 0.157
+      "codebase_avg_comment_ratio": 0.158
     },
     "error_strategies": {
       "src/main/java/pl/marcinmilkowski/word_sketch/Main.java": "try_catch",
@@ -560,40 +623,127 @@
   },
   "investigation_batches": [
     {
-      "name": "test_strategy",
+      "name": "abstraction_fitness",
       "dimensions": [
-        "test_strategy"
+        "abstraction_fitness"
       ],
       "files_to_read": [
-        "src/main/java/pl/marcinmilkowski/word_sketch/utils/LongIntHashMap.java",
-        "src/main/java/pl/marcinmilkowski/word_sketch/model/AdjectiveProfile.java",
-        "src/main/java/pl/marcinmilkowski/word_sketch/model/ComparisonResult.java",
-        "src/main/java/pl/marcinmilkowski/word_sketch/model/CoreCollocate.java",
-        "src/main/java/pl/marcinmilkowski/word_sketch/api/ExplorationHandlers.java",
-        "src/main/java/pl/marcinmilkowski/word_sketch/api/HttpApiUtils.java",
-        "src/main/java/pl/marcinmilkowski/word_sketch/api/SketchHandlers.java",
-        "src/main/java/pl/marcinmilkowski/word_sketch/config/GrammarConfigLoader.java",
-        "src/main/java/pl/marcinmilkowski/word_sketch/config/PosGroup.java",
-        "src/main/java/pl/marcinmilkowski/word_sketch/config/RelationConfig.java",
         "src/main/java/pl/marcinmilkowski/word_sketch/query/BlackLabQueryExecutor.java",
         "src/main/java/pl/marcinmilkowski/word_sketch/Main.java",
         "src/main/java/pl/marcinmilkowski/word_sketch/api/WordSketchApiServer.java",
         "src/main/java/pl/marcinmilkowski/word_sketch/query/BlackLabSnippetParser.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/api/ExplorationHandlers.java",
         "src/main/java/pl/marcinmilkowski/word_sketch/exploration/CollocateProfileComparator.java",
         "src/main/java/pl/marcinmilkowski/word_sketch/exploration/SemanticFieldExplorer.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/api/SketchHandlers.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/config/GrammarConfigLoader.java",
         "src/main/java/pl/marcinmilkowski/word_sketch/indexer/blacklab/BlackLabConllUIndexer.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/api/HttpApiUtils.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/config/RelationConfig.java",
         "src/main/java/pl/marcinmilkowski/word_sketch/indexer/blacklab/ConlluConverter.java",
         "src/main/java/pl/marcinmilkowski/word_sketch/tagging/TaggedToken.java",
         "src/main/java/pl/marcinmilkowski/word_sketch/query/QueryExecutor.java",
         "src/main/java/pl/marcinmilkowski/word_sketch/utils/CqlUtils.java",
         "src/main/java/pl/marcinmilkowski/word_sketch/tagging/SimpleTagger.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/model/ComparisonResult.java",
         "src/main/java/pl/marcinmilkowski/word_sketch/viz/RadialPlot.java",
         "src/main/java/pl/marcinmilkowski/word_sketch/model/ExplorationResult.java",
-        "src/main/java/pl/marcinmilkowski/word_sketch/tagging/PosTagger.java",
-        "src/main/java/pl/marcinmilkowski/word_sketch/utils/LogDiceCalculator.java",
-        "src/main/java/pl/marcinmilkowski/word_sketch/utils/PatternSubstitution.java"
+        "src/main/java/pl/marcinmilkowski/word_sketch/tagging/PosTagger.java"
       ],
-      "why": "no direct batch mapping for test_strategy; using representative files",
+      "why": "seed files for abstraction_fitness review",
+      "concern_signals": []
+    },
+    {
+      "name": "convention_outlier",
+      "dimensions": [
+        "convention_outlier"
+      ],
+      "files_to_read": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/query/BlackLabQueryExecutor.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/Main.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/api/WordSketchApiServer.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/query/BlackLabSnippetParser.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/api/ExplorationHandlers.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/exploration/CollocateProfileComparator.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/exploration/SemanticFieldExplorer.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/api/SketchHandlers.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/config/GrammarConfigLoader.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/indexer/blacklab/BlackLabConllUIndexer.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/api/HttpApiUtils.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/config/RelationConfig.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/indexer/blacklab/ConlluConverter.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/tagging/TaggedToken.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/query/QueryExecutor.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/utils/CqlUtils.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/tagging/SimpleTagger.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/model/ComparisonResult.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/viz/RadialPlot.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/model/ExplorationResult.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/tagging/PosTagger.java"
+      ],
+      "why": "no direct batch mapping for convention_outlier; using representative files",
+      "concern_signals": []
+    },
+    {
+      "name": "design_coherence",
+      "dimensions": [
+        "design_coherence"
+      ],
+      "files_to_read": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/query/BlackLabQueryExecutor.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/Main.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/api/WordSketchApiServer.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/query/BlackLabSnippetParser.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/api/ExplorationHandlers.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/exploration/CollocateProfileComparator.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/exploration/SemanticFieldExplorer.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/api/SketchHandlers.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/config/GrammarConfigLoader.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/indexer/blacklab/BlackLabConllUIndexer.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/api/HttpApiUtils.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/config/RelationConfig.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/indexer/blacklab/ConlluConverter.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/tagging/TaggedToken.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/query/QueryExecutor.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/utils/CqlUtils.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/tagging/SimpleTagger.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/model/ComparisonResult.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/viz/RadialPlot.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/model/ExplorationResult.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/tagging/PosTagger.java"
+      ],
+      "why": "no direct batch mapping for design_coherence; using representative files",
+      "concern_signals": []
+    },
+    {
+      "name": "api_surface_coherence",
+      "dimensions": [
+        "api_surface_coherence"
+      ],
+      "files_to_read": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/query/BlackLabQueryExecutor.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/Main.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/api/WordSketchApiServer.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/query/BlackLabSnippetParser.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/api/ExplorationHandlers.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/exploration/CollocateProfileComparator.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/exploration/SemanticFieldExplorer.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/api/SketchHandlers.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/config/GrammarConfigLoader.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/indexer/blacklab/BlackLabConllUIndexer.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/api/HttpApiUtils.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/config/RelationConfig.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/indexer/blacklab/ConlluConverter.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/tagging/TaggedToken.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/query/QueryExecutor.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/utils/CqlUtils.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/tagging/SimpleTagger.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/model/ComparisonResult.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/viz/RadialPlot.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/model/ExplorationResult.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/tagging/PosTagger.java"
+      ],
+      "why": "no direct batch mapping for api_surface_coherence; using representative files",
       "concern_signals": []
     }
   ],

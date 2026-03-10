@@ -1,32 +1,32 @@
 {
   "version": 1,
   "created": "2026-03-09T18:35:28+00:00",
-  "last_scan": "2026-03-10T21:27:52+00:00",
-  "scan_count": 19,
-  "overall_score": 70.4,
+  "last_scan": "2026-03-10T22:06:31+00:00",
+  "scan_count": 20,
+  "overall_score": 70.6,
   "objective_score": 99.4,
-  "strict_score": 70.4,
+  "strict_score": 70.6,
   "verified_strict_score": 99.4,
   "stats": {
-    "total": 469,
-    "auto_resolved": 94,
+    "total": 472,
+    "auto_resolved": 108,
     "false_positive": 0,
-    "fixed": 339,
-    "open": 21,
+    "fixed": 340,
+    "open": 9,
     "wontfix": 15,
     "by_tier": {
       "1": {
-        "auto_resolved": 42,
+        "auto_resolved": 54,
         "false_positive": 0,
-        "fixed": 266,
-        "open": 13,
+        "fixed": 267,
+        "open": 3,
         "wontfix": 8
       },
       "2": {
-        "auto_resolved": 26,
+        "auto_resolved": 28,
         "false_positive": 0,
         "fixed": 71,
-        "open": 3,
+        "open": 1,
         "wontfix": 7
       },
       "3": {
@@ -16578,11 +16578,11 @@
         "suggestion": "Pick a single canonical parameter name for /api/semantic-field ('nouns' is semantically correct for comparison mode) and document it. If backward compatibility with 'seeds' must be kept, add an explicit comment and document the alias in CLAUDE.md. Alternatively, consolidate the alias into HttpApiUtils.requireParam with a documented fallback variant.",
         "reasoning": ""
       },
-      "status": "open",
-      "note": null,
+      "status": "auto_resolved",
+      "note": "not reported in latest holistic re-import",
       "first_seen": "2026-03-10T21:27:52+00:00",
       "last_seen": "2026-03-10T21:27:52+00:00",
-      "resolved_at": null,
+      "resolved_at": "2026-03-10T22:06:31+00:00",
       "reopen_count": 0,
       "lang": "java",
       "suppressed": false,
@@ -16829,11 +16829,11 @@
         "suggestion": "Remove headPosition and collocatePosition from the interface signature (they are not used) and derive collocate position internally in the implementation. If future implementations genuinely need positional hints, add them back with a concrete use case.",
         "reasoning": ""
       },
-      "status": "open",
-      "note": null,
+      "status": "auto_resolved",
+      "note": "not reported in latest holistic re-import",
       "first_seen": "2026-03-10T21:27:52+00:00",
       "last_seen": "2026-03-10T21:27:52+00:00",
-      "resolved_at": null,
+      "resolved_at": "2026-03-10T22:06:31+00:00",
       "reopen_count": 0,
       "lang": "java",
       "suppressed": false,
@@ -16861,11 +16861,11 @@
         "suggestion": "Extract a private buildExploreResponse(ExplorationResult, Map<String,Object>) helper that populates the four shared list sections; call it from both handlers after they set their seed-specific keys. The validator+param-parse block can also be unified into parseExploreParams already present, reducing each handler to ~20 lines of seed-specific logic.",
         "reasoning": ""
       },
-      "status": "open",
-      "note": null,
+      "status": "auto_resolved",
+      "note": "not reported in latest holistic re-import",
       "first_seen": "2026-03-10T21:27:52+00:00",
       "last_seen": "2026-03-10T21:27:52+00:00",
-      "resolved_at": null,
+      "resolved_at": "2026-03-10T22:06:31+00:00",
       "reopen_count": 0,
       "lang": "java",
       "suppressed": false,
@@ -16969,11 +16969,11 @@
         "suggestion": "After the ternary, add: 'if (nounsParam == null || nounsParam.isBlank()) { HttpApiUtils.sendError(exchange, 400, \"Missing required parameter: nouns or seeds\"); return; }' to enforce the same non-empty contract regardless of which alias was used.",
         "reasoning": ""
       },
-      "status": "open",
-      "note": null,
+      "status": "auto_resolved",
+      "note": "not reported in latest holistic re-import",
       "first_seen": "2026-03-10T21:27:52+00:00",
       "last_seen": "2026-03-10T21:27:52+00:00",
-      "resolved_at": null,
+      "resolved_at": "2026-03-10T22:06:31+00:00",
       "reopen_count": 0,
       "lang": "java",
       "suppressed": false,
@@ -17040,11 +17040,11 @@
         "suggestion": "Add a toResponseMap() or a dedicated ExplorationResultSerializer class that translates ExplorationResult into its canonical Map<String,Object> representation. Both handlers call that single translation; the multi-seed handler can layer its 'common_collocates' (strings) field on top of the shared base rather than re-iterating coreCollocates.",
         "reasoning": ""
       },
-      "status": "open",
-      "note": null,
+      "status": "auto_resolved",
+      "note": "not reported in latest holistic re-import",
       "first_seen": "2026-03-10T21:27:52+00:00",
       "last_seen": "2026-03-10T21:27:52+00:00",
-      "resolved_at": null,
+      "resolved_at": "2026-03-10T22:06:31+00:00",
       "reopen_count": 0,
       "lang": "java",
       "suppressed": false,
@@ -17073,11 +17073,11 @@
         "suggestion": "Make ExplorationResult's fields explicitly non-null by contract (add @NonNull annotations or enforce in the constructor with Objects.requireNonNull). Remove the null guards in the handlers. If a null-safe path is ever needed, let ExplorationResult.empty() be the canonical representation and rely on it.",
         "reasoning": ""
       },
-      "status": "open",
-      "note": null,
+      "status": "auto_resolved",
+      "note": "not reported in latest holistic re-import",
       "first_seen": "2026-03-10T21:27:52+00:00",
       "last_seen": "2026-03-10T21:27:52+00:00",
-      "resolved_at": null,
+      "resolved_at": "2026-03-10T22:06:31+00:00",
       "reopen_count": 0,
       "lang": "java",
       "suppressed": false,
@@ -17107,11 +17107,11 @@
         "suggestion": "Add a reverseCollocatePattern() method to RelationConfig (or PosGroup) that returns the appropriate CQL constraint string for the collocate's POS group. The handler simply calls relationConfig.get().reverseCollocatePattern() and passes it through.",
         "reasoning": ""
       },
-      "status": "open",
-      "note": null,
+      "status": "auto_resolved",
+      "note": "not reported in latest holistic re-import",
       "first_seen": "2026-03-10T21:27:52+00:00",
       "last_seen": "2026-03-10T21:27:52+00:00",
-      "resolved_at": null,
+      "resolved_at": "2026-03-10T22:06:31+00:00",
       "reopen_count": 0,
       "lang": "java",
       "suppressed": false,
@@ -17628,16 +17628,22 @@
         "suggestion": "Extract a private method buildExploreResponseBody(Map<String,Object> response, ExplorationResult result) that populates seedCollocs, coreCollocs, discoveredNouns, and edges into the response map. Both handlers call buildBaseExploreResponse then buildExploreResponseBody, differing only in the seed/seeds keys they add before that call.",
         "reasoning": ""
       },
-      "status": "open",
-      "note": null,
+      "status": "fixed",
+      "note": "Extracted buildExploreResponseBody() private method, both handlers call it",
       "first_seen": "2026-03-10T21:27:52+00:00",
       "last_seen": "2026-03-10T21:27:52+00:00",
-      "resolved_at": null,
+      "resolved_at": "2026-03-10T22:05:53+00:00",
       "reopen_count": 0,
       "lang": "java",
       "suppressed": false,
       "suppressed_at": null,
-      "suppression_pattern": null
+      "suppression_pattern": null,
+      "resolution_attestation": {
+        "kind": "manual",
+        "text": "I have actually made the described code fix and I am not gaming the score by resolving without fixing.",
+        "attested_at": "2026-03-10T22:05:53+00:00",
+        "scan_verified": false
+      }
     },
     "review::.::holistic::design_coherence::domain_logic_in_http_handler::d0305322": {
       "id": "review::.::holistic::design_coherence::domain_logic_in_http_handler::d0305322",
@@ -17661,11 +17667,11 @@
         "suggestion": "Add an overload SemanticFieldExplorer.exploreByRelation(String seed, RelationConfig rel, ExploreOptions opts) that internally calls getFullPattern, derives the reverse pattern from collocatePosGroup, and delegates to exploreByPattern. The handler then only needs to parse params, build ExploreOptions, and call the service \u2014 mirroring the simpler pattern already used by handleSemanticFieldExploreMulti.",
         "reasoning": ""
       },
-      "status": "open",
-      "note": null,
+      "status": "auto_resolved",
+      "note": "not reported in latest holistic re-import",
       "first_seen": "2026-03-10T21:27:52+00:00",
       "last_seen": "2026-03-10T21:27:52+00:00",
-      "resolved_at": null,
+      "resolved_at": "2026-03-10T22:06:31+00:00",
       "reopen_count": 0,
       "lang": "java",
       "suppressed": false,
@@ -17691,11 +17697,11 @@
         "suggestion": "Add a `warnings` list to the response map and populate it when a relation fails (e.g. `warnings.add(\"Relation '\" + rel.id() + \"' unavailable: \" + e.getMessage())`). Return this list in the JSON response so callers can distinguish a complete result from a partial one.",
         "reasoning": ""
       },
-      "status": "open",
-      "note": null,
+      "status": "auto_resolved",
+      "note": "not reported in latest holistic re-import",
       "first_seen": "2026-03-10T21:27:52+00:00",
       "last_seen": "2026-03-10T21:27:52+00:00",
-      "resolved_at": null,
+      "resolved_at": "2026-03-10T22:06:31+00:00",
       "reopen_count": 0,
       "lang": "java",
       "suppressed": false,
@@ -17723,11 +17729,11 @@
         "suggestion": "Apply the same try-catch pattern used in handleSemanticFieldExploreMulti to handleSemanticFieldExplore, handleSemanticField, and handleSemanticFieldExamples, providing consistent domain-specific 500 error messages (e.g. 'Semantic field exploration failed: ...', 'Profile comparison failed: ...', 'Example fetch failed: ...').",
         "reasoning": ""
       },
-      "status": "open",
-      "note": null,
+      "status": "auto_resolved",
+      "note": "not reported in latest holistic re-import",
       "first_seen": "2026-03-10T21:27:52+00:00",
       "last_seen": "2026-03-10T21:27:52+00:00",
-      "resolved_at": null,
+      "resolved_at": "2026-03-10T22:06:31+00:00",
       "reopen_count": 0,
       "lang": "java",
       "suppressed": false,
@@ -17798,11 +17804,11 @@
         "suggestion": "Either populate these suites with at least minimal tests using a small synthetic test corpus, or delete the placeholder files until tests are ready \u2014 empty disabled classes obscure the true test coverage picture without providing value.",
         "reasoning": ""
       },
-      "status": "open",
-      "note": null,
+      "status": "auto_resolved",
+      "note": "not reported in latest holistic re-import",
       "first_seen": "2026-03-10T21:27:52+00:00",
       "last_seen": "2026-03-10T21:27:52+00:00",
-      "resolved_at": null,
+      "resolved_at": "2026-03-10T22:06:31+00:00",
       "reopen_count": 0,
       "lang": "java",
       "suppressed": false,
@@ -17832,11 +17838,11 @@
         "suggestion": "Replace the hardcoded path with System.getProperty(\"test.index.path\", \"\") and skip when blank; document the system property in the project README or test README so CI can optionally provide a real index, and mark such tests with a custom @RequiresIndex tag to make the skip intentional and visible.",
         "reasoning": ""
       },
-      "status": "open",
-      "note": null,
+      "status": "auto_resolved",
+      "note": "not reported in latest holistic re-import",
       "first_seen": "2026-03-10T21:27:52+00:00",
       "last_seen": "2026-03-10T21:27:52+00:00",
-      "resolved_at": null,
+      "resolved_at": "2026-03-10T22:06:31+00:00",
       "reopen_count": 0,
       "lang": "java",
       "suppressed": false,
@@ -17866,11 +17872,11 @@
         "suggestion": "Extend HandlersTest with happy-path cases by injecting a StubExecutor (similar to the one in SemanticFieldExplorerTest) and verifying that a well-formed request produces HTTP 200 with correctly structured JSON. This requires no real index.",
         "reasoning": ""
       },
-      "status": "open",
-      "note": null,
+      "status": "auto_resolved",
+      "note": "not reported in latest holistic re-import",
       "first_seen": "2026-03-10T21:27:52+00:00",
       "last_seen": "2026-03-10T21:27:52+00:00",
-      "resolved_at": null,
+      "resolved_at": "2026-03-10T22:06:31+00:00",
       "reopen_count": 0,
       "lang": "java",
       "suppressed": false,
@@ -17897,10 +17903,107 @@
         "suggestion": "Add unit tests for CollocateProfileComparator that construct small lists of AdjectiveProfile objects and assert correct ordering under various combinations of sharedness, frequency, and logDice score.",
         "reasoning": ""
       },
-      "status": "open",
-      "note": null,
+      "status": "auto_resolved",
+      "note": "not reported in latest holistic re-import",
       "first_seen": "2026-03-10T21:27:52+00:00",
       "last_seen": "2026-03-10T21:27:52+00:00",
+      "resolved_at": "2026-03-10T22:06:31+00:00",
+      "reopen_count": 0,
+      "lang": "java",
+      "suppressed": false,
+      "suppressed_at": null,
+      "suppression_pattern": null
+    },
+    "review::.::holistic::test_strategy::indexer_zero_coverage::4329ef90": {
+      "id": "review::.::holistic::test_strategy::indexer_zero_coverage::4329ef90",
+      "detector": "review",
+      "file": ".",
+      "tier": 1,
+      "confidence": "high",
+      "summary": "BlackLabConllUIndexer and ConlluConverter have no tests; the entire indexing pipeline is unverifiable without running a full index build",
+      "detail": {
+        "holistic": true,
+        "dimension": "test_strategy",
+        "related_files": [
+          "src/main/java/pl/marcinmilkowski/word_sketch/indexer/blacklab/BlackLabConllUIndexer.java",
+          "src/main/java/pl/marcinmilkowski/word_sketch/indexer/blacklab/ConlluConverter.java"
+        ],
+        "evidence": [
+          "No test file exists for BlackLabConllUIndexer (128 lines) or ConlluConverter (85 lines)",
+          "ConlluConverter parses CoNLL-U token lines and maps them to index fields \u2014 a pure function with no external dependencies, making it trivially testable without a live BlackLab instance",
+          "grep -rn 'ConlluConverter\\|BlackLabConllUIndexer' src/test/ returns no results"
+        ],
+        "suggestion": "Add ConlluConverterTest with representative CoNLL-U sentence strings covering: normal token, multi-word token (range IDs), enhanced dependency rows, and malformed lines. ConlluConverter is a pure parsing class with no index dependency \u2014 tests require no external resources.",
+        "reasoning": ""
+      },
+      "status": "open",
+      "note": null,
+      "first_seen": "2026-03-10T22:06:31+00:00",
+      "last_seen": "2026-03-10T22:06:31+00:00",
+      "resolved_at": null,
+      "reopen_count": 0,
+      "lang": "java",
+      "suppressed": false,
+      "suppressed_at": null,
+      "suppression_pattern": null
+    },
+    "review::.::holistic::test_strategy::bcql_concordance_hardcoded_path::498feea7": {
+      "id": "review::.::holistic::test_strategy::bcql_concordance_hardcoded_path::498feea7",
+      "detector": "review",
+      "file": ".",
+      "tier": 1,
+      "confidence": "high",
+      "summary": "BlackLabBcqlConcordanceTest uses a hardcoded Windows path that can never be true on CI, making its @EnabledIf guard permanently false outside one developer machine",
+      "detail": {
+        "holistic": true,
+        "dimension": "test_strategy",
+        "related_files": [
+          "src/test/java/pl/marcinmilkowski/word_sketch/query/BlackLabBcqlConcordanceTest.java"
+        ],
+        "evidence": [
+          "Line 20: private static final String INDEX_PATH = \"D:\\\\corpora_philsci\\\\bi\";",
+          "The @EnabledIf(\"indexExists\") guard on lines 23 and 47 evaluates this hardcoded field, not an env var",
+          "The companion tests BlackLabDummyTest and DependencySketchTest were already fixed to use System.getenv(\"CONCEPT_SKETCH_TEST_INDEX\") with the hardcoded path only as a last-resort fallback"
+        ],
+        "suggestion": "Replace the static final field with the same env-var pattern already used in DependencySketchTest: String INDEX_PATH = System.getenv(\"CONCEPT_SKETCH_TEST_INDEX\") != null ? System.getenv(\"CONCEPT_SKETCH_TEST_INDEX\") : System.getProperty(\"conceptSketch.testIndex\", \"D:\\\\corpora_philsci\\\\bi\"); and update the indexExists() method accordingly.",
+        "reasoning": ""
+      },
+      "status": "open",
+      "note": null,
+      "first_seen": "2026-03-10T22:06:31+00:00",
+      "last_seen": "2026-03-10T22:06:31+00:00",
+      "resolved_at": null,
+      "reopen_count": 0,
+      "lang": "java",
+      "suppressed": false,
+      "suppressed_at": null,
+      "suppression_pattern": null
+    },
+    "review::.::holistic::test_strategy::api_handler_smoke_only::0654ef4e": {
+      "id": "review::.::holistic::test_strategy::api_handler_smoke_only::0654ef4e",
+      "detector": "review",
+      "file": ".",
+      "tier": 1,
+      "confidence": "high",
+      "summary": "Happy-path API handler tests assert only HTTP 200 status; no assertions on response body JSON shape or content",
+      "detail": {
+        "holistic": true,
+        "dimension": "test_strategy",
+        "related_files": [
+          "src/test/java/pl/marcinmilkowski/word_sketch/api/HandlersTest.java"
+        ],
+        "evidence": [
+          "handleSketchRequest_validLemma_returns200: only asserts assertEquals(200, ex.statusCode)",
+          "handleSemanticFieldExplore_validSeeds_returns200: only asserts assertEquals(200, ex.statusCode)",
+          "The stub executor returns empty lists, so response body is a valid but empty JSON object \u2014 no test verifies the field names, array keys, or structure the web UI depends on"
+        ],
+        "suggestion": "Extend happy-path tests to parse ex.getResponseBodyAsString() as JSON (e.g. via Fastjson or org.json) and assert the presence of expected top-level keys ('lemma', 'relations' for sketch; 'seeds', 'nouns', 'edges' for explore-multi). This catches regressions in response shape without requiring a live index.",
+        "reasoning": ""
+      },
+      "status": "open",
+      "note": null,
+      "first_seen": "2026-03-10T22:06:31+00:00",
+      "last_seen": "2026-03-10T22:06:31+00:00",
       "resolved_at": null,
       "reopen_count": 0,
       "lang": "java",
@@ -18036,9 +18139,9 @@
       "assessed_at": "2026-03-10T21:27:52+00:00"
     },
     "test_strategy": {
-      "score": 14.0,
+      "score": 48.8,
       "source": "holistic",
-      "assessed_at": "2026-03-10T21:27:52+00:00"
+      "assessed_at": "2026-03-10T22:06:31+00:00"
     },
     "convention_outlier": {
       "score": 59.9,
@@ -20494,6 +20597,143 @@
           "strict": 43.6
         }
       }
+    },
+    {
+      "timestamp": "2026-03-10T22:06:31+00:00",
+      "lang": "java",
+      "strict_score": 70.6,
+      "verified_strict_score": 99.4,
+      "objective_score": 99.4,
+      "overall_score": 70.6,
+      "open": 23,
+      "diff_new": 3,
+      "diff_resolved": 0,
+      "ignored": 0,
+      "raw_issues": 3,
+      "suppressed_pct": 0.0,
+      "ignore_patterns": 0,
+      "subjective_integrity": {
+        "status": "disabled",
+        "matched_count": 0,
+        "reset_count": 0,
+        "target_score": null
+      },
+      "score_confidence": {
+        "status": "reduced",
+        "confidence": 0.0,
+        "detector_count": 1,
+        "dimension_count": 0
+      },
+      "dimension_scores": {
+        "Code quality": {
+          "score": 100.0,
+          "strict": 100.0
+        },
+        "Security": {
+          "score": 97.7,
+          "strict": 97.7
+        },
+        "File health": {
+          "score": 100.0,
+          "strict": 100.0
+        },
+        "Duplication": {
+          "score": 100.0,
+          "strict": 100.0
+        },
+        "Naming quality": {
+          "score": 45.1,
+          "strict": 45.1
+        },
+        "Logic clarity": {
+          "score": 46.4,
+          "strict": 46.4
+        },
+        "Type safety": {
+          "score": 49.3,
+          "strict": 49.3
+        },
+        "Contracts": {
+          "score": 63.8,
+          "strict": 63.8
+        },
+        "Error consistency": {
+          "score": 59.3,
+          "strict": 59.3
+        },
+        "Abstraction fit": {
+          "score": 40.9,
+          "strict": 40.9
+        },
+        "AI generated debt": {
+          "score": 56.1,
+          "strict": 56.1
+        },
+        "High elegance": {
+          "score": 54.9,
+          "strict": 54.9
+        },
+        "Mid elegance": {
+          "score": 41.0,
+          "strict": 41.0
+        },
+        "Low elegance": {
+          "score": 49.0,
+          "strict": 49.0
+        },
+        "Cross-module arch": {
+          "score": 48.0,
+          "strict": 48.0
+        },
+        "Init coupling": {
+          "score": 64.9,
+          "strict": 64.9
+        },
+        "Convention drift": {
+          "score": 59.9,
+          "strict": 59.9
+        },
+        "Dep health": {
+          "score": 73.6,
+          "strict": 73.6
+        },
+        "Test strategy": {
+          "score": 48.8,
+          "strict": 48.8
+        },
+        "API coherence": {
+          "score": 28.0,
+          "strict": 28.0
+        },
+        "Auth consistency": {
+          "score": 67.5,
+          "strict": 67.5
+        },
+        "Stale migration": {
+          "score": 58.9,
+          "strict": 58.9
+        },
+        "Structure nav": {
+          "score": 55.1,
+          "strict": 55.1
+        },
+        "Design coherence": {
+          "score": 59.6,
+          "strict": 59.6
+        },
+        "Definition Directness": {
+          "score": 56.7,
+          "strict": 56.7
+        },
+        "Delegation Density": {
+          "score": 67.1,
+          "strict": 67.1
+        },
+        "Type Discipline": {
+          "score": 43.6,
+          "strict": 43.6
+        }
+      }
     }
   ],
   "lang_capabilities": {
@@ -20683,13 +20923,13 @@
       "strict": 59.3,
       "verified_strict_score": 59.3,
       "checks": 10,
-      "failing": 2,
+      "failing": 0,
       "tier": 4,
       "detectors": {
         "subjective_assessment": {
           "potential": 10,
           "pass_rate": 0.593,
-          "failing": 2,
+          "failing": 0,
           "weighted_failures": 4.07,
           "assessment_score": 59.3,
           "placeholder": false,
@@ -20704,13 +20944,13 @@
       "strict": 40.9,
       "verified_strict_score": 40.9,
       "checks": 10,
-      "failing": 1,
+      "failing": 0,
       "tier": 4,
       "detectors": {
         "subjective_assessment": {
           "potential": 10,
           "pass_rate": 0.409,
-          "failing": 1,
+          "failing": 0,
           "weighted_failures": 5.91,
           "assessment_score": 40.9,
           "placeholder": false,
@@ -20761,13 +21001,13 @@
       "strict": 54.9,
       "verified_strict_score": 54.9,
       "checks": 10,
-      "failing": 1,
+      "failing": 0,
       "tier": 4,
       "detectors": {
         "subjective_assessment": {
           "potential": 10,
           "pass_rate": 0.549,
-          "failing": 1,
+          "failing": 0,
           "weighted_failures": 4.51,
           "assessment_score": 54.9,
           "placeholder": false,
@@ -20782,13 +21022,13 @@
       "strict": 41.0,
       "verified_strict_score": 41.0,
       "checks": 10,
-      "failing": 3,
+      "failing": 0,
       "tier": 4,
       "detectors": {
         "subjective_assessment": {
           "potential": 10,
           "pass_rate": 0.41,
-          "failing": 3,
+          "failing": 0,
           "weighted_failures": 5.9,
           "assessment_score": 41.0,
           "placeholder": false,
@@ -20803,13 +21043,13 @@
       "strict": 49.0,
       "verified_strict_score": 49.0,
       "checks": 10,
-      "failing": 2,
+      "failing": 0,
       "tier": 4,
       "detectors": {
         "subjective_assessment": {
           "potential": 10,
           "pass_rate": 0.49,
-          "failing": 2,
+          "failing": 0,
           "weighted_failures": 5.1,
           "assessment_score": 49.0,
           "placeholder": false,
@@ -20904,19 +21144,19 @@
       }
     },
     "Test strategy": {
-      "score": 14.0,
-      "strict": 14.0,
-      "verified_strict_score": 14.0,
+      "score": 48.8,
+      "strict": 48.8,
+      "verified_strict_score": 48.8,
       "checks": 10,
-      "failing": 4,
+      "failing": 3,
       "tier": 4,
       "detectors": {
         "subjective_assessment": {
           "potential": 10,
-          "pass_rate": 0.14,
-          "failing": 4,
-          "weighted_failures": 8.6,
-          "assessment_score": 14.0,
+          "pass_rate": 0.488,
+          "failing": 3,
+          "weighted_failures": 5.12,
+          "assessment_score": 48.8,
           "placeholder": false,
           "dimension_key": "test_strategy",
           "configured_weight": 1.0,
@@ -21013,13 +21253,13 @@
       "strict": 59.6,
       "verified_strict_score": 59.6,
       "checks": 10,
-      "failing": 2,
+      "failing": 0,
       "tier": 4,
       "detectors": {
         "subjective_assessment": {
           "potential": 10,
           "pass_rate": 0.596,
-          "failing": 2,
+          "failing": 0,
           "weighted_failures": 4.04,
           "assessment_score": 59.6,
           "placeholder": false,
@@ -21104,9 +21344,9 @@
   "review_cache": {
     "files": {},
     "holistic": {
-      "reviewed_at": "2026-03-10T21:27:52+00:00",
+      "reviewed_at": "2026-03-10T22:06:31+00:00",
       "file_count_at_review": 51,
-      "issue_count": 37
+      "issue_count": 3
     }
   },
   "assessment_import_audit": [
@@ -21253,6 +21493,18 @@
       "provisional_count": 0,
       "attest": "",
       "import_file": ".desloppify/subagents/runs/20260310_212114/holistic_issues_merged.json"
+    },
+    {
+      "timestamp": "2026-03-10T22:06:31+00:00",
+      "mode": "trusted_internal",
+      "trusted": true,
+      "reason": "trusted import-run replay from 20260310_220150",
+      "override_used": false,
+      "attested_external": false,
+      "provisional": false,
+      "provisional_count": 0,
+      "attest": "",
+      "import_file": "/mnt/d/git/word-sketch-lucene/.desloppify/subagents/runs/20260310_220150/holistic_issues_merged.json"
     }
   ]
 }

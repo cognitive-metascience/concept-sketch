@@ -1,0 +1,115 @@
+{
+  "batch": "abstraction_fitness",
+  "batch_index": 1,
+  "assessments": {
+    "abstraction_fitness": 80.0
+  },
+  "dimension_notes": {
+    "abstraction_fitness": {
+      "evidence": [
+        "SemanticFieldExplorer.compareCollocateProfiles (line ~280) and exploreMultiSeed (line ~300) are pure one-line pass-throughs to CollocateProfileComparator — no added behaviour, policy, or translation at either delegation site",
+        "SemanticFieldExplorer stores ownsExecutor=false in the only constructor (line 86); the conditional in close() (line 330) can never be true — dead abstraction for a lifecycle pattern that was never instantiated",
+        "WordSketchApiServer stores executor and indexPath as instance fields (lines 35-37, 45-46) but neither is read after the constructor delegates them — stored fields that serve no runtime purpose",
+        "QueryExecutor and PosTagger each have exactly one implementation (BlackLabQueryExecutor, SimpleTagger); PosTagger is defensible (docstring explicitly names a future UDPipe-backed impl); QueryExecutor serves as a genuine adapter seam isolating BlackLab API volatility",
+        "RelationConfig record carries behaviour methods (getFullPattern, collocateReversePattern, collocatePosGroup, getDeprel) — data and related logic co-located cleanly, no leakage into handlers",
+        "CqlUtils contains exactly two utilities (escapeForRegex, splitCqlTokens) used by both GrammarConfigLoader and PatternSubstitution — focused, not a dumping ground",
+        "buildExploreResponseBody() in ExplorationHandlers eliminates response-assembly duplication across single-seed and multi-seed handlers — abstraction that earns its keep",
+        "Phase decomposition in SemanticFieldExplorer (fetchSeedCollocates, buildNounProfiles, scoreNouns, identifyCoreCollocates) reduces the main method to readable orchestration without creating new public surface"
+      ],
+      "impact_scope": "module",
+      "fix_scope": "multi_file_refactor",
+      "confidence": "high",
+      "sub_axes": {
+        "abstraction_leverage": 85.0,
+        "indirection_cost": 72.0,
+        "interface_honesty": 82.0,
+        "delegation_density": 78.0,
+        "definition_directness": 84.0,
+        "type_discipline": 88.0
+      }
+    }
+  },
+  "dimension_judgment": {
+    "abstraction_fitness": {
+      "strengths": [
+        "RelationConfig record bundles pattern-parsing behaviour (getFullPattern, collocateReversePattern, collocatePosGroup) with its data, preventing callers from leaking POS regex logic into HTTP handlers",
+        "buildExploreResponseBody() and buildBaseExploreResponse() in ExplorationHandlers are genuine deduplication extractions called from two sibling handlers",
+        "CqlUtils is a tight, focused utility class with exactly two responsibilities used across two callers — not a god module",
+        "Phase decomposition of SemanticFieldExplorer.exploreByPattern into four private helpers improves readability without inflating the public API surface",
+        "HttpApiUtils collects uniform HTTP response concerns (CORS headers, JSON serialization, error format) in one place with no logic leakage to callers"
+      ],
+      "issue_character": "The issues are concentrated in a single class (SemanticFieldExplorer): two methods are pure delegation pass-throughs to CollocateProfileComparator with no added value, and one dead boolean field (ownsExecutor) betrays an abstraction that was designed but never instantiated. These are isolated symptoms of a refactor that stopped slightly short of completion rather than a systemic indirection problem.",
+      "score_rationale": "The codebase scores solidly in the 80 range: most abstractions clearly earn their keep (RelationConfig, CqlUtils, phase decomposition, response builders) and the overall architecture avoids pass-through wrapper chains. The score is pulled down by two pure delegation methods in SemanticFieldExplorer that add a call hop callers must trace through without benefit, plus dead lifecycle machinery (ownsExecutor) and unused stored fields in WordSketchApiServer — enough recurring friction to land at 80 rather than 88-90, but not pervasive enough to fall to 70."
+    }
+  },
+  "issues": [
+    {
+      "dimension": "abstraction_fitness",
+      "identifier": "explorer_delegation_passthrough",
+      "summary": "SemanticFieldExplorer.compareCollocateProfiles and exploreMultiSeed are pure one-liner delegations to CollocateProfileComparator with no added value",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/exploration/SemanticFieldExplorer.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/exploration/CollocateProfileComparator.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/api/ExplorationHandlers.java"
+      ],
+      "evidence": [
+        "SemanticFieldExplorer.compareCollocateProfiles body: `return comparator.compareCollocateProfiles(seedNouns, minLogDice, maxPerNoun);` — identical signature, zero logic added",
+        "SemanticFieldExplorer.exploreMultiSeed body: `return comparator.exploreMultiSeed(seeds, relationConfig, minLogDice, topCollocates, minShared);` — identical signature, zero logic added",
+        "ExplorationHandlers holds a SemanticFieldExplorer and calls both methods; it could depend on CollocateProfileComparator directly for these two operations, removing the empty intermediary hop"
+      ],
+      "suggestion": "Either let ExplorationHandlers depend directly on CollocateProfileComparator for compareCollocateProfiles/exploreMultiSeed (eliminating the pass-through), or merge CollocateProfileComparator back into SemanticFieldExplorer as private methods since the public surface adds no value. If SemanticFieldExplorer must remain the single dependency of ExplorationHandlers, add a brief doc comment explaining why the delegation is intentional (e.g. lifecycle or future policy hook).",
+      "confidence": "high",
+      "impact_scope": "module",
+      "fix_scope": "multi_file_refactor",
+      "root_cause_cluster": "incomplete_extraction"
+    },
+    {
+      "dimension": "abstraction_fitness",
+      "identifier": "explorer_dead_owns_executor",
+      "summary": "SemanticFieldExplorer.ownsExecutor is always false — the lifecycle abstraction it guards can never activate",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/exploration/SemanticFieldExplorer.java"
+      ],
+      "evidence": [
+        "Only one constructor exists (line 84): `this.ownsExecutor = false;` — no code path ever sets it to true",
+        "close() (line 330) contains `if (ownsExecutor && executor instanceof AutoCloseable ac)` — this branch is unreachable dead code",
+        "The field and the conditional suggest an ownership-transfer constructor was planned but never implemented"
+      ],
+      "suggestion": "Remove the ownsExecutor field and the dead branch in close(). If executor lifecycle ownership is needed in future, re-introduce it as a second constructor parameter or factory method at that time rather than carrying a permanently-false flag.",
+      "confidence": "high",
+      "impact_scope": "local",
+      "fix_scope": "single_edit",
+      "root_cause_cluster": "incomplete_extraction"
+    },
+    {
+      "dimension": "abstraction_fitness",
+      "identifier": "server_unused_stored_fields",
+      "summary": "WordSketchApiServer stores executor and indexPath as instance fields but neither is read after constructor delegation",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/api/WordSketchApiServer.java"
+      ],
+      "evidence": [
+        "Fields declared at lines 35-37: `private final QueryExecutor executor` and `private final String indexPath`",
+        "Both are assigned in the constructor (lines 45-46) and then only passed into SketchHandlers/SemanticFieldExplorer — never referenced again in any method",
+        "A developer scanning the class would assume these fields are used for something, then spend time searching for their usage"
+      ],
+      "suggestion": "Remove both fields. Use local variables in the constructor when passing executor and indexPath to SketchHandlers and SemanticFieldExplorer, since no post-construction access occurs.",
+      "confidence": "high",
+      "impact_scope": "local",
+      "fix_scope": "single_edit",
+      "root_cause_cluster": "incomplete_extraction"
+    }
+  ],
+  "retrospective": {
+    "root_causes": [
+      "A refactor that extracted CollocateProfileComparator from SemanticFieldExplorer stopped short of removing the pass-through wrapper methods, leaving SemanticFieldExplorer as a partial facade over CollocateProfileComparator for two operations",
+      "Lifecycle ownership machinery (ownsExecutor) and diagnostic fields (indexPath in WordSketchApiServer) were scaffolded for anticipated future use but not cleaned up when the anticipated use did not materialise"
+    ],
+    "likely_symptoms": [
+      "explorer_delegation_passthrough",
+      "explorer_dead_owns_executor",
+      "server_unused_stored_fields"
+    ],
+    "possible_false_positives": []
+  }
+}
