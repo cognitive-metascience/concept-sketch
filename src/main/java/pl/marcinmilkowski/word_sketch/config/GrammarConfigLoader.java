@@ -305,7 +305,7 @@ public class GrammarConfigLoader {
     public JSONObject toJson() {
         JSONObject root = new JSONObject();
         root.put("version", version);
-        root.put("config_path", configPath.toString());
+        root.put("config_path", configPath != null ? configPath.toString() : null);
         JSONArray relationsArray = new JSONArray();
         for (RelationConfig rel : relations) {
             relationsArray.add(rel.toJson());

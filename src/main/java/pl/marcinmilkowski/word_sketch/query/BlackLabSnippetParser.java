@@ -9,32 +9,25 @@ import org.slf4j.LoggerFactory;
 public class BlackLabSnippetParser {
     private static final Logger logger = LoggerFactory.getLogger(BlackLabSnippetParser.class);
 
-    static final java.util.regex.Pattern LEMMA_ATTR      = java.util.regex.Pattern.compile("lemma=\"([^\"]+)\"");
-    static final java.util.regex.Pattern LEMMA_ATTR_ANY  = java.util.regex.Pattern.compile("lemma=[\"']([^\"']+)[\"']", java.util.regex.Pattern.CASE_INSENSITIVE);
-    static final java.util.regex.Pattern XPOS_ATTR       = java.util.regex.Pattern.compile("xpos=\"([^\"]+)\"");
-    static final java.util.regex.Pattern UPOS_ATTR       = java.util.regex.Pattern.compile("upos=\"([^\"]+)\"");
-    static final java.util.regex.Pattern SENT_BOUND_LEFT  = java.util.regex.Pattern.compile("[.!?]\\s+(?=[A-Z]|$)");
-    static final java.util.regex.Pattern SENT_BOUND_RIGHT = java.util.regex.Pattern.compile("[.!?](?=\\s+[A-Z]|\\s*$)");
-    static final java.util.regex.Pattern XML_SENT_OPEN   = java.util.regex.Pattern.compile("<s(?:\\s[^>]*)?>", java.util.regex.Pattern.CASE_INSENSITIVE);
-    static final java.util.regex.Pattern XML_SENT_CLOSE  = java.util.regex.Pattern.compile("</s>", java.util.regex.Pattern.CASE_INSENSITIVE);
+    private static final java.util.regex.Pattern LEMMA_ATTR      = java.util.regex.Pattern.compile("lemma=\"([^\"]+)\"");
+    private static final java.util.regex.Pattern LEMMA_ATTR_ANY  = java.util.regex.Pattern.compile("lemma=[\"']([^\"']+)[\"']", java.util.regex.Pattern.CASE_INSENSITIVE);
+    private static final java.util.regex.Pattern XPOS_ATTR       = java.util.regex.Pattern.compile("xpos=\"([^\"]+)\"");
+    private static final java.util.regex.Pattern UPOS_ATTR       = java.util.regex.Pattern.compile("upos=\"([^\"]+)\"");
+    private static final java.util.regex.Pattern SENT_BOUND_LEFT  = java.util.regex.Pattern.compile("[.!?]\\s+(?=[A-Z]|$)");
+    private static final java.util.regex.Pattern SENT_BOUND_RIGHT = java.util.regex.Pattern.compile("[.!?](?=\\s+[A-Z]|\\s*$)");
+    private static final java.util.regex.Pattern XML_SENT_OPEN   = java.util.regex.Pattern.compile("<s(?:\\s[^>]*)?>", java.util.regex.Pattern.CASE_INSENSITIVE);
+    private static final java.util.regex.Pattern XML_SENT_CLOSE  = java.util.regex.Pattern.compile("</s>", java.util.regex.Pattern.CASE_INSENSITIVE);
 
     private BlackLabSnippetParser() {}
 
     /**
      * Extract lemma from matched text (XML format).
-     * Finds all lemma="xxx" patterns and returns the last one (the collocate).
+     * Finds the last {@code lemma="xxx"} attribute and returns it lowercased.
+     * Used for grouping identity text from HitPropertyHitText results.
      */
     static String extractLemmaFromMatch(String matchText) {
-        if (matchText == null || matchText.isEmpty()) {
-            return null;
-        }
-        // Find all lemma="xxx" patterns and get the last one (the collocate)
-        java.util.regex.Matcher m = LEMMA_ATTR.matcher(matchText);
-        String lastLemma = null;
-        while (m.find()) {
-            lastLemma = m.group(1);
-        }
-        return lastLemma != null ? lastLemma.toLowerCase() : null;
+        String lemma = extractLastLemma(matchText);
+        return lemma != null ? lemma.toLowerCase() : null;
     }
 
     /**
@@ -231,15 +224,20 @@ public class BlackLabSnippetParser {
      * For precise positional extraction, use {@link #extractLemmaAt(String, int)}.
      *
      * @param matchXml The match XML (parts[1] from a concordance)
-     * @return The collocate lemma, or {@code null}
+     * @return The collocate lemma (original case), or {@code null}
      */
     static String extractCollocateLemma(String matchXml) {
-        if (matchXml == null || matchXml.isEmpty()) return null;
-        java.util.regex.Matcher m = LEMMA_ATTR.matcher(matchXml);
-        String lastLemma = null;
+        return extractLastLemma(matchXml);
+    }
+
+    /** Returns the last {@code lemma="..."} value in {@code xml}, or {@code null}. */
+    private static String extractLastLemma(String xml) {
+        if (xml == null || xml.isEmpty()) return null;
+        java.util.regex.Matcher m = LEMMA_ATTR.matcher(xml);
+        String last = null;
         while (m.find()) {
-            lastLemma = m.group(1);
+            last = m.group(1);
         }
-        return lastLemma;
+        return last;
     }
 }
