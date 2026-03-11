@@ -1,11 +1,11 @@
 {
   "command": "resolve",
   "patterns": [
-    "review::.::holistic::logic_clarity::seed_parameter_mutation::6e8cfc8b"
+    "review::.::holistic::low_level_elegance::relation_pattern_builder_redundant_delegation::72117818"
   ],
   "status": "fixed",
   "resolved": [
-    "review::.::holistic::logic_clarity::seed_parameter_mutation::6e8cfc8b"
+    "review::.::holistic::low_level_elegance::relation_pattern_builder_redundant_delegation::72117818"
   ],
   "count": 1,
   "next_command": "desloppify next",
@@ -17,10 +17,10 @@
   "prev_objective_score": 98.9,
   "prev_strict_score": 80.9,
   "prev_verified_strict_score": 97.5,
-  "attestation": "I have actually Fixed in p1-logic-clarity: seed = seed.toLowerCase().trim() replaced with String normalizedSeed = seed.toLowerCase().trim(); normalizedSeed used throughout exploreByPattern and I am not gaming the score.",
+  "attestation": "I have actually posGroupFromConstraint inlined into computeCollocatePosGroup; no longer a redundant one-liner delegation and I am not gaming the score.",
   "narrative": {
     "phase": "refinement",
-    "headline": "\u26a0 2 security issues \u2014 review before other cleanup. Crossed 80% strict! (3 review issues \u2014 run `desloppify show review --status open`)",
+    "headline": "\u26a0 2 security issues \u2014 review before other cleanup. Crossed 80% strict!",
     "dimensions": {
       "lowest_dimensions": [
         {
@@ -98,17 +98,6 @@
         "lane": "refactor_0"
       },
       {
-        "type": "refactor",
-        "detector": "review",
-        "count": 3,
-        "description": "3 review issues need investigation \u2014 run `desloppify show review --status open` to see them",
-        "command": "desloppify show review --status open",
-        "impact": 0.0,
-        "dimension": "Unknown",
-        "priority": 2,
-        "lane": "refactor_1"
-      },
-      {
         "type": "manual_fix",
         "detector": "stale_exclude",
         "count": 5,
@@ -116,8 +105,8 @@
         "command": "desloppify show stale_exclude --status open",
         "impact": 0.0,
         "dimension": "Code quality",
-        "priority": 3,
-        "lane": "refactor_2"
+        "priority": 2,
+        "lane": "refactor_1"
       },
       {
         "type": "manual_fix",
@@ -127,14 +116,14 @@
         "command": "desloppify show security --status open",
         "impact": 0.0,
         "dimension": "Security",
-        "priority": 4,
-        "lane": "refactor_3"
+        "priority": 3,
+        "lane": "refactor_2"
       }
     ],
     "strategy": {
       "fixer_leverage": {
         "auto_fixable_count": 0,
-        "total_count": 17,
+        "total_count": 8,
         "coverage": 0.0,
         "impact_ratio": 0.0,
         "recommendation": "none"
@@ -153,7 +142,7 @@
           "actions": [
             2
           ],
-          "file_count": 1,
+          "file_count": 5,
           "total_impact": 0.0,
           "automation": "manual",
           "run_first": false
@@ -162,15 +151,6 @@
           "actions": [
             3
           ],
-          "file_count": 5,
-          "total_impact": 0.0,
-          "automation": "manual",
-          "run_first": false
-        },
-        "refactor_3": {
-          "actions": [
-            4
-          ],
           "file_count": 1,
           "total_impact": 0.0,
           "automation": "manual",
@@ -178,7 +158,7 @@
         }
       },
       "can_parallelize": false,
-      "hint": "Work through actions in priority order. Rescan after each fix to track progress. Review: 3 issue(s) \u2014 `desloppify show review --status open`."
+      "hint": "Work through actions in priority order. Rescan after each fix to track progress."
     },
     "tools": {
       "fixers": [],
@@ -211,7 +191,7 @@
       "command": "desloppify show boilerplate_duplication --status open",
       "description": "1 boilerplate_duplication issues \u2014 extract shared boilerplate into reusable helpers or base classes"
     },
-    "why_now": "Work through actions in priority order. Rescan after each fix to track progress. Review: 3 issue(s) \u2014 `desloppify show review --status open`.",
+    "why_now": "Work through actions in priority order. Rescan after each fix to track progress.",
     "verification_step": {
       "command": "desloppify scan",
       "reason": "revalidate after changes"

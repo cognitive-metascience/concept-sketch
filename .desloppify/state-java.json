@@ -11,15 +11,15 @@
     "total": 1244,
     "auto_resolved": 243,
     "false_positive": 0,
-    "fixed": 819,
-    "open": 11,
+    "fixed": 822,
+    "open": 8,
     "wontfix": 171,
     "by_tier": {
       "1": {
         "auto_resolved": 127,
         "false_positive": 0,
-        "fixed": 567,
-        "open": 3,
+        "fixed": 570,
+        "open": 0,
         "wontfix": 95
       },
       "2": {
@@ -49755,16 +49755,22 @@
         "suggestion": "Inline posGroupFromConstraint into its only caller (computeCollocatePosGroup) and have posGroupForPrefix return PosGroup.OTHER instead of null. This collapses the two-hop chain and eliminates the redundant wrapper.",
         "reasoning": ""
       },
-      "status": "open",
-      "note": null,
+      "status": "fixed",
+      "note": "posGroupFromConstraint inlined into computeCollocatePosGroup; no longer a redundant one-liner delegation",
       "first_seen": "2026-03-11T20:21:28+00:00",
       "last_seen": "2026-03-11T20:21:28+00:00",
-      "resolved_at": null,
+      "resolved_at": "2026-03-11T20:58:13+00:00",
       "reopen_count": 0,
       "lang": "java",
       "suppressed": false,
       "suppressed_at": null,
-      "suppression_pattern": null
+      "suppression_pattern": null,
+      "resolution_attestation": {
+        "kind": "manual",
+        "text": "I have actually posGroupFromConstraint inlined into computeCollocatePosGroup; no longer a redundant one-liner delegation and I am not gaming the score.",
+        "attested_at": "2026-03-11T20:58:13+00:00",
+        "scan_verified": false
+      }
     },
     "review::.::holistic::mid_level_elegance::parse_bcql_null_seam_break::6613f9f2": {
       "id": "review::.::holistic::mid_level_elegance::parse_bcql_null_seam_break::6613f9f2",
@@ -50023,16 +50029,22 @@
         "suggestion": "Change the return type of getVersion() to @NonNull String and remove the 'may be null for legacy configs' Javadoc note. Update any null-checks on getVersion() calls. This makes the parsed guarantee explicit in the type and removes misleading documentation.",
         "reasoning": ""
       },
-      "status": "open",
-      "note": null,
+      "status": "fixed",
+      "note": "GrammarConfig.getVersion() annotation changed from @Nullable to @NonNull \u2014 loader rejects configs without version, so null is impossible",
       "first_seen": "2026-03-11T20:21:28+00:00",
       "last_seen": "2026-03-11T20:21:28+00:00",
-      "resolved_at": null,
+      "resolved_at": "2026-03-11T20:58:10+00:00",
       "reopen_count": 0,
       "lang": "java",
       "suppressed": false,
       "suppressed_at": null,
-      "suppression_pattern": null
+      "suppression_pattern": null,
+      "resolution_attestation": {
+        "kind": "manual",
+        "text": "I have actually GrammarConfig.getVersion() annotation changed from @Nullable to @NonNull \u2014 loader rejects configs without version, so null is impossible and I am not gaming the score.",
+        "attested_at": "2026-03-11T20:58:10+00:00",
+        "scan_verified": false
+      }
     },
     "review::.::holistic::package_organization::viz_thin_package::6d6db033": {
       "id": "review::.::holistic::package_organization::viz_thin_package::6d6db033",
@@ -50332,16 +50344,22 @@
         "suggestion": "Add @Nullable annotation from org.jspecify to the return type: private @org.jspecify.annotations.Nullable BcqlRequest parseBcqlRequest(HttpExchange exchange). This makes the contract explicit and will generate IDE/static analysis warnings if callers forget the null check.",
         "reasoning": ""
       },
-      "status": "open",
-      "note": null,
+      "status": "fixed",
+      "note": "parseBcqlRequest no longer returns null \u2014 throws RequestEntityTooLargeException for 413 cases and IAE for validation failures; null return path eliminated",
       "first_seen": "2026-03-11T20:21:28+00:00",
       "last_seen": "2026-03-11T20:21:28+00:00",
-      "resolved_at": null,
+      "resolved_at": "2026-03-11T20:58:09+00:00",
       "reopen_count": 0,
       "lang": "java",
       "suppressed": false,
       "suppressed_at": null,
-      "suppression_pattern": null
+      "suppression_pattern": null,
+      "resolution_attestation": {
+        "kind": "manual",
+        "text": "I have actually parseBcqlRequest no longer returns null \u2014 throws RequestEntityTooLargeException for 413 cases and IAE for validation failures; null return path eliminated and I am not gaming the score.",
+        "attested_at": "2026-03-11T20:58:09+00:00",
+        "scan_verified": false
+      }
     },
     "review::.::holistic::design_coherence::base_explore_response_duplication::4f38ebe2": {
       "id": "review::.::holistic::design_coherence::base_explore_response_duplication::4f38ebe2",
@@ -50727,7 +50745,7 @@
       "assessed_at": "2026-03-11T20:21:28+00:00",
       "needs_review_refresh": true,
       "refresh_reason": "review_issue_fixed",
-      "stale_since": "2026-03-11T20:55:55+00:00"
+      "stale_since": "2026-03-11T20:58:10+00:00"
     },
     "package_organization": {
       "score": 79.8,
@@ -50774,8 +50792,8 @@
       "source": "holistic",
       "assessed_at": "2026-03-11T20:21:28+00:00",
       "needs_review_refresh": true,
-      "refresh_reason": "review_issue_wontfix",
-      "stale_since": "2026-03-11T20:30:55+00:00"
+      "refresh_reason": "review_issue_fixed",
+      "stale_since": "2026-03-11T20:58:09+00:00"
     },
     "api_surface_coherence": {
       "score": 72.1,
@@ -50868,7 +50886,7 @@
       "assessed_at": "2026-03-11T20:21:28+00:00",
       "needs_review_refresh": true,
       "refresh_reason": "review_issue_fixed",
-      "stale_since": "2026-03-11T20:56:19+00:00"
+      "stale_since": "2026-03-11T20:58:13+00:00"
     },
     "mid_level_elegance": {
       "score": 66.7,
@@ -53781,13 +53799,13 @@
       "strict": 65.1,
       "verified_strict_score": 65.1,
       "checks": 10,
-      "failing": 1,
+      "failing": 0,
       "tier": 4,
       "detectors": {
         "subjective_assessment": {
           "potential": 10,
           "pass_rate": 0.651,
-          "failing": 1,
+          "failing": 0,
           "weighted_failures": 3.49,
           "assessment_score": 65.1,
           "placeholder": false,
@@ -53943,13 +53961,13 @@
       "strict": 69.4,
       "verified_strict_score": 69.4,
       "checks": 10,
-      "failing": 1,
+      "failing": 0,
       "tier": 4,
       "detectors": {
         "subjective_assessment": {
           "potential": 10,
           "pass_rate": 0.694,
-          "failing": 1,
+          "failing": 0,
           "weighted_failures": 3.06,
           "assessment_score": 69.4,
           "placeholder": false,
@@ -54111,13 +54129,13 @@
       "strict": 81.5,
       "verified_strict_score": 81.5,
       "checks": 10,
-      "failing": 1,
+      "failing": 0,
       "tier": 4,
       "detectors": {
         "subjective_assessment": {
           "potential": 10,
           "pass_rate": 0.815,
-          "failing": 1,
+          "failing": 0,
           "weighted_failures": 1.85,
           "assessment_score": 81.5,
           "placeholder": false,
