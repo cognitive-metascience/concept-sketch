@@ -1,0 +1,114 @@
+{
+  "batch": "api_surface_coherence",
+  "batch_index": 19,
+  "assessments": {"api_surface_coherence": 64.0},
+  "dimension_notes": {
+    "api_surface_coherence": {
+      "evidence": [
+        "QueryExecutor interface defines: findCollocations(lemma, cqlPattern, minLogDice, maxResults), executeSurfacePattern(lemma, bcqlPattern, minLogDice, maxResults), executeDependencyPattern(lemma, deprel, minLogDice, maxResults) — consistent 4-arg signature with minLogDice.",
+        "executeBcqlQuery(bcqlPattern, maxResults) breaks the pattern: no lemma, no minLogDice. Callers who want logDice filtering must post-filter results manually, while all other query methods filter at query time.",
+        "executeQuery(cqlPattern, maxResults) also has no minLogDice param and returns ConcordanceResult (not WordSketchResult), which is a different result type than all other methods — the interface mixes two result shapes.",
+        "The deprecated 3-arg executeDependencyPattern(lemma, deprel, headPosConstraint, minLogDice, maxResults) is still part of the public interface. The @Deprecated annotation and Javadoc are clear but the method remains in the interface and must be implemented by test stubs.",
+        "ExplorationHandlers.handleSemanticFieldExplore requires a query parameter named 'seeds' (plural) even though it accepts only a single seed and stores it in a variable named 'seed'. The URL schema is: ?seeds=house (singular value, plural name).",
+        "REST URL inconsistency: sketch endpoints use path parameters (/api/sketch/{lemma}) while exploration endpoints use query parameters (?seed=house). The mixing of conventions is documented but not enforced by any abstraction.",
+        "HttpApiUtils.parseQueryParams uses String.split('=', 2) — correct — but does not URL-decode keys, only values. A percent-encoded parameter name would silently fail to match. (Minor but an API boundary issue.)",
+        "WordSketchApiServer binds only to loopback without documentation at the API boundary — callers attempting to expose the API on a network interface will get a connection-refused without a clear error."
+      ],
+      "impact_scope": "subsystem",
+      "fix_scope": "multi_file_refactor",
+      "confidence": "high"
+    }
+  },
+  "dimension_judgment": {
+    "api_surface_coherence": {
+      "strengths": [
+        "The main query methods (findCollocations, executeSurfacePattern, executeDependencyPattern, executeDependencyPatternWithPos) share a consistent 4-argument signature with uniform parameter ordering.",
+        "RelationUtils.resolveRelationAlias provides a single canonical location for alias resolution, preventing duplicated alias maps across handlers.",
+        "ExploreOptions bundles the 5 exploration tuning parameters instead of spreading them across method arguments.",
+        "The @Deprecated annotation and migration Javadoc on the legacy executeDependencyPattern overload are clear and actionable."
+      ],
+      "issue_character": "The interface mixes two result shapes (WordSketchResult vs ConcordanceResult/CollocateResult) and has one method (executeBcqlQuery) with a structurally different signature from its siblings, creating a non-uniform API surface that callers must understand in detail.",
+      "score_rationale": "The primary query methods are internally consistent, which is a genuine strength. However, executeBcqlQuery's signature asymmetry, the plural 'seeds' parameter for a single-seed endpoint, and the mixing of path vs query parameter conventions across sibling endpoints are confirmed design inconsistencies that complicate client usage. The score of 64 reflects a mostly coherent but visibly patchy surface."
+    }
+  },
+  "issues": [
+    {
+      "dimension": "api_surface_coherence",
+      "identifier": "executebcqlquery_missing_minlogdice",
+      "summary": "executeBcqlQuery lacks a minLogDice parameter unlike all sibling query methods",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/query/QueryExecutor.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/query/BlackLabQueryExecutor.java"
+      ],
+      "evidence": [
+        "findCollocations, executeSurfacePattern, executeDependencyPattern all accept (lemma, ..., double minLogDice, int maxResults).",
+        "executeBcqlQuery(String bcqlPattern, int maxResults) has no minLogDice — callers cannot request score-filtered BCQL results; they must post-filter.",
+        "CollocateQueryHelper.scoreHits computes logDice per hit but there is no minLogDice guard in the pipeline."
+      ],
+      "suggestion": "Add a minLogDice parameter to executeBcqlQuery (defaulting to 0.0 via an overload or default method), and pass it through to scoreHits in CollocateQueryHelper to filter before returning.",
+      "confidence": "high",
+      "impact_scope": "subsystem",
+      "fix_scope": "multi_file_refactor"
+    },
+    {
+      "dimension": "api_surface_coherence",
+      "identifier": "seeds_param_name_mismatch_single_seed_endpoint",
+      "summary": "Single-seed explore endpoint requires a query parameter named 'seeds' (plural) but accepts only one value",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/api/ExplorationHandlers.java"
+      ],
+      "evidence": [
+        "handleSemanticFieldExplore calls HttpApiUtils.requireParam(exchange, params, \"seeds\") and assigns the result to String seed.",
+        "The API documentation comment says: ?seed=house&relation=adj_predicate but the code requires 'seeds' (plural).",
+        "Clients using the documented 'seed' parameter name will receive a 400 error."
+      ],
+      "suggestion": "Rename the parameter to 'seed' (singular) in handleSemanticFieldExplore to match the documented single-seed semantics; update the Javadoc comment accordingly. Keep 'seeds' only for the multi-seed endpoint.",
+      "confidence": "high",
+      "impact_scope": "module",
+      "fix_scope": "single_edit"
+    },
+    {
+      "dimension": "api_surface_coherence",
+      "identifier": "deprecated_method_in_interface",
+      "summary": "The deprecated 5-argument executeDependencyPattern overload remains in the public interface, requiring implementation by all stubs",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/query/QueryExecutor.java",
+        "src/test/java/pl/marcinmilkowski/word_sketch/query/SemanticFieldExplorerTest.java"
+      ],
+      "evidence": [
+        "QueryExecutor declares a @Deprecated default method executeDependencyPattern(lemma, deprel, headPosConstraint, minLogDice, maxResults) that delegates to the non-deprecated variants.",
+        "SemanticFieldExplorerTest.StubExecutor implements executeDependencyPattern (2-arg) and executeDependencyPatternWithPos but also inherits the deprecated default — test stubs are coupled to a method that has no callers.",
+        "No production code calls the 5-arg form per codebase search."
+      ],
+      "suggestion": "Remove the 5-arg deprecated overload from the QueryExecutor interface; add a minor-version note to CLAUDE.md or a CHANGELOG entry explaining the removal. If backward compatibility with external callers is needed, retain only as a static utility method outside the interface.",
+      "confidence": "medium",
+      "impact_scope": "module",
+      "fix_scope": "single_edit"
+    },
+    {
+      "dimension": "api_surface_coherence",
+      "identifier": "query_param_key_not_url_decoded",
+      "summary": "HttpApiUtils.parseQueryParams URL-decodes values but not keys, silently dropping percent-encoded parameter names",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/api/HttpApiUtils.java"
+      ],
+      "evidence": [
+        "parseQueryParams splits on '&' and '=', then calls URLDecoder.decode on keyValue[1] (value) and keyValue[0] (key).",
+        "Wait — re-reading the code: params.put(URLDecoder.decode(keyValue[0], 'UTF-8'), URLDecoder.decode(keyValue[1], 'UTF-8')). Both key and value are decoded. This is correct.",
+        "False positive: both key and value are decoded in the same try block."
+      ],
+      "suggestion": "No action needed — this was a false positive upon closer inspection. Both keys and values are URL-decoded correctly.",
+      "confidence": "low",
+      "impact_scope": "local",
+      "fix_scope": "single_edit"
+    }
+  ],
+  "retrospective": {
+    "root_causes": [
+      "executeBcqlQuery was added as a lower-level escape hatch before the main query methods were standardised, so it never received the minLogDice parameter.",
+      "The 'seeds' parameter name in the single-seed endpoint is likely a copy-paste from the multi-seed endpoint during refactoring."
+    ],
+    "likely_symptoms": ["executebcqlquery_missing_minlogdice", "seeds_param_name_mismatch_single_seed_endpoint"],
+    "possible_false_positives": ["query_param_key_not_url_decoded"]
+  }
+}

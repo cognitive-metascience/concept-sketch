@@ -75,7 +75,7 @@ class CollocateQueryHelper {
             TermFrequencyList tfl = index.termFrequencies(sensitivity, null, Set.of(lemma.toLowerCase()));
             return tfl.frequency(lemma.toLowerCase());
         } catch (RuntimeException e) {
-            throw new IllegalStateException("Unexpected state retrieving frequency for lemma '" + lemma + "'", e);
+            throw new IOException("Unexpected failure retrieving frequency for lemma '" + lemma + "'", e);
         }
     }
 
@@ -261,8 +261,9 @@ class CollocateQueryHelper {
             }
             long collocateFreq = validCollocate ? getTotalFrequency(collocateLemma) : 0L;
 
-            double logDice = (headwordFreq > 0 && collocateFreq > 0)
+            double rawLogDice = (headwordFreq > 0 && collocateFreq > 0)
                     ? LogDiceCalculator.compute(jointFreq, headwordFreq, collocateFreq) : 0.0;
+            double logDice = Double.isNaN(rawLogDice) ? 0.0 : rawLogDice;
 
             String plainText = BlackLabSnippetParser.trimToSentence(
                     rec.leftText(), rec.matchText(), rec.rightText());

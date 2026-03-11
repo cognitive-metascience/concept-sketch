@@ -1,0 +1,110 @@
+{
+  "batch": "abstraction_fitness",
+  "batch_index": 6,
+  "assessments": {"abstraction_fitness": 64.0},
+  "dimension_notes": {
+    "abstraction_fitness": {
+      "evidence": [
+        "ExplorationResult.toMap() and ComparisonResult.toMap() duplicate the field-by-field serialization already performed by ExplorationHandlers.buildExploreResponseBody() and the formatXxx() methods in ExplorationHandlers — two complete parallel serialization paths exist for the same model objects, yet the handler never calls toMap()",
+        "CQL lemma-substitution logic appears in three independent locations: RelationConfig.mergeLemmaConstraint() (config package), PatternSubstitution.substituteCollocate() (api package), and the now-removed legacy branch in BlackLabQueryExecutor — each uses the same xpos/tag extraction + lemma prepend pattern",
+        "QueryExecutor interface has seven method signatures backed by exactly one concrete implementation (BlackLabQueryExecutor); testability justification is stated in SemanticFieldExplorer constructor comment, so this is borderline acceptable",
+        "SemanticFieldExplorer.compareCollocateProfiles() is documented explicitly as 'an intentional facade over AdjectiveCollocateRanker' — it forwards all arguments directly with no transformation, adding a call level without policy",
+        "CollocateQueryHelper cleanly encapsulates the three-phase collocate search pipeline (executeCollocateSearch, buildAndRankCollocates) that would otherwise be duplicated across four BlackLabQueryExecutor methods — good leverage",
+        "HttpApiUtils static helpers consistently enforce CORS policy and JSON encoding across all endpoints — thin but policy-enforcing",
+        "WordSketchApiServer is a pure wiring class: its registerRoutes() delegates entirely to SketchHandlers and ExplorationHandlers with no added behaviour"
+      ],
+      "impact_scope": "module",
+      "fix_scope": "multi_file_refactor",
+      "confidence": "high",
+      "sub_axes": {
+        "abstraction_leverage": 62.0,
+        "indirection_cost": 68.0,
+        "interface_honesty": 72.0,
+        "delegation_density": 58.0,
+        "definition_directness": 60.0,
+        "type_discipline": 75.0
+      }
+    }
+  },
+  "dimension_judgment": {
+    "abstraction_fitness": {
+      "strengths": [
+        "CollocateQueryHelper genuinely earns its existence: it removes ~100 lines of duplicated search/scoring/ranking logic from four BlackLabQueryExecutor methods",
+        "HttpApiUtils enforces CORS and JSON-encoding policy uniformly across all routes — thin but honest",
+        "Record types for model objects (DiscoveredNoun, CoreCollocate, AdjectiveProfile, Edge) use record syntax precisely where appropriate: immutable value objects with no added behaviour",
+        "Handler decomposition into SketchHandlers / ExplorationHandlers keeps the routing server lean and separates route dispatch from query orchestration"
+      ],
+      "issue_character": "The primary abstraction problem is structural duplication: two serialization paths for the same model (ExplorationResult/ComparisonResult) and three independent CQL lemma-substitution implementations — abstractions were added in one layer without removing or reusing the equivalent logic in another.",
+      "score_rationale": "The codebase has several abstractions that genuinely pay off (CollocateQueryHelper, HttpApiUtils, handler decomposition) but also two systemic duplication patterns that indicate abstractions were introduced without refactoring existing code. ExplorationResult.toMap() is dead serialization code relative to the handler path, and three independent CQL substitution implementations suggest the abstraction boundary was never properly decided. This sits comfortably in the 60–70 range: some strong leverage but recurring parallel-implementation debt."
+    }
+  },
+  "issues": [
+    {
+      "dimension": "abstraction_fitness",
+      "identifier": "dual_serialization_paths",
+      "summary": "ExplorationResult.toMap() / ComparisonResult.toMap() duplicate the handler's formatXxx() methods without being used by handlers",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/model/ExplorationResult.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/model/ComparisonResult.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/api/ExplorationHandlers.java"
+      ],
+      "evidence": [
+        "ExplorationResult.toMap() serializes seed_collocates, discovered_nouns, core_collocates, and edges with the same field names and rounding logic as ExplorationHandlers.buildExploreResponseBody() + formatSeedCollocate() + formatDiscoveredNoun() + formatCoreCollocate()",
+        "ExplorationHandlers never calls toMap() — it re-implements the same structure manually in buildExploreResponseBody()",
+        "ComparisonResult.toMap() similarly duplicates the handler's handleSemanticFieldComparison response building"
+      ],
+      "suggestion": "Delete the formatXxx private methods in ExplorationHandlers and have handlers call result.toMap(), or delete toMap() from model classes and commit to the handler-side formatting. Either direction eliminates the dual path; the model-owned toMap() is preferable as it keeps serialization co-located with the data.",
+      "confidence": "high",
+      "impact_scope": "module",
+      "fix_scope": "multi_file_refactor",
+      "root_cause_cluster": "abstraction_boundary_indecision"
+    },
+    {
+      "dimension": "abstraction_fitness",
+      "identifier": "triplicated_cql_lemma_substitution",
+      "summary": "CQL lemma-into-token substitution logic is independently reimplemented in three locations",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/config/RelationConfig.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/api/PatternSubstitution.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/utils/CqlUtils.java"
+      ],
+      "evidence": [
+        "RelationConfig.mergeLemmaConstraint() extracts xpos/tag from a token via CqlUtils.extractConstraintAttribute() and prepends lemma=\"...\" — head injection",
+        "PatternSubstitution.substituteCollocate() does the same extraction and prepend at the collocate position — collocate injection",
+        "Both follow the identical xpos-first, tag-fallback pattern and StringBuilder construction, diverging only in which token they target"
+      ],
+      "suggestion": "Move the shared lemma-merge primitive into CqlUtils as a single static method (e.g. CqlUtils.mergeWithLemma(constraint, lemma)) and have both RelationConfig and PatternSubstitution call it. This makes the common pattern explicit and removes two independent copies.",
+      "confidence": "high",
+      "impact_scope": "module",
+      "fix_scope": "multi_file_refactor",
+      "root_cause_cluster": "abstraction_boundary_indecision"
+    },
+    {
+      "dimension": "abstraction_fitness",
+      "identifier": "facade_compare_collocate_profiles",
+      "summary": "SemanticFieldExplorer.compareCollocateProfiles() is a no-op facade over AdjectiveCollocateRanker with no added policy",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/exploration/SemanticFieldExplorer.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/exploration/AdjectiveCollocateRanker.java"
+      ],
+      "evidence": [
+        "compareCollocateProfiles() in SemanticFieldExplorer is documented as 'an intentional facade so that callers need only depend on SemanticFieldExplorer'",
+        "The method body is a single return comparator.compareCollocateProfiles(seeds, minLogDice, topCollocates) — all arguments forwarded without transformation",
+        "If the intent is to hide AdjectiveCollocateRanker, ExplorationHandlers.handleSemanticFieldComparison already calls semanticFieldExplorer.compareCollocateProfiles — so the facade hides nothing that isn't already hidden"
+      ],
+      "suggestion": "Either inline AdjectiveCollocateRanker's logic directly into SemanticFieldExplorer (it was extracted for line-count reasons per its Javadoc) or keep the delegation but document what behavioural guarantee the facade provides beyond hiding the class name.",
+      "confidence": "medium",
+      "impact_scope": "module",
+      "fix_scope": "single_edit",
+      "root_cause_cluster": "abstraction_boundary_indecision"
+    }
+  ],
+  "retrospective": {
+    "root_causes": [
+      "Incremental feature addition without revisiting existing serialization paths — toMap() was likely added when ExplorationResult was first introduced, then handlers independently built their own format methods for flexibility, resulting in two live paths",
+      "CQL pattern manipulation was added in multiple places as each new use case appeared rather than through a shared primitive in CqlUtils"
+    ],
+    "likely_symptoms": ["dual_serialization_paths"],
+    "possible_false_positives": []
+  }
+}

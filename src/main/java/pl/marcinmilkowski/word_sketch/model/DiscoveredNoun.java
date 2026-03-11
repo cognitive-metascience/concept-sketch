@@ -12,8 +12,7 @@ public record DiscoveredNoun(
         Map<String, Double> sharedCollocates,
         int sharedCount,
         double combinedRelevanceScore,
-        double avgLogDice,
-        double sharedCollocateScore) {
+        double avgLogDice) {
 
     public List<String> sharedCollocateList() {
         return new ArrayList<>(sharedCollocates.keySet());
@@ -21,6 +20,6 @@ public record DiscoveredNoun(
 
     @Override
     public String toString() {
-        return String.format("%s (shared=%d, score=%.1f)", noun, sharedCount, sharedCollocateScore);
+        return String.format("%s (shared=%d, score=%.1f)", noun, sharedCount, combinedRelevanceScore);
     }
 }

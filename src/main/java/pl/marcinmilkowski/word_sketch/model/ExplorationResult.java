@@ -80,12 +80,6 @@ public class ExplorationResult {
         return edges;
     }
 
-    /** @deprecated Use {@link #buildEdges()} — name reflects that list construction happens on every call. */
-    @Deprecated
-    public List<Edge> getEdges() {
-        return buildEdges();
-    }
-
     @Override
     public String toString() {
         return String.format("ExplorationResult(seed='%s', collocates=%d, discovered=%d, core=%d)",
@@ -115,7 +109,7 @@ public class ExplorationResult {
             Map<String, Object> nm = new HashMap<>();
             nm.put("word", n.noun());
             nm.put("shared_count", n.sharedCount());
-            nm.put("similarity_score", Math.round(n.sharedCollocateScore() * 100.0) / 100.0);
+            nm.put("similarity_score", Math.round(n.combinedRelevanceScore() * 100.0) / 100.0);
             nm.put("avg_logdice", Math.round(n.avgLogDice() * 100.0) / 100.0);
             nm.put("shared_collocates", n.sharedCollocateList());
             nounList.add(nm);

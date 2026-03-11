@@ -177,25 +177,12 @@ public class Main {
 
         for (int i = 1; i < args.length; i++) {
             switch (args[i]) {
-                case "--index":
-                case "-i":
-                    indexPath = requireNextArg(args, ++i, "--index");
-                    break;
-                case "--lemma":
-                case "-w":
-                    lemma = requireNextArg(args, ++i, "--lemma");
-                    break;
-                case "--deprel":
-                    deprel = requireNextArg(args, ++i, "--deprel");
-                    break;
-                case "--min-logdice":
-                    minLogDice = Double.parseDouble(requireNextArg(args, ++i, "--min-logdice"));
-                    break;
-                case "--limit":
-                    limit = Integer.parseInt(requireNextArg(args, ++i, "--limit"));
-                    break;
-                default:
-                    System.err.println("Unknown option: " + args[i]);
+                case "--index": case "-i": indexPath = requireNextArg(args, ++i, "--index"); break;
+                case "--lemma": case "-w": lemma = requireNextArg(args, ++i, "--lemma"); break;
+                case "--deprel": deprel = requireNextArg(args, ++i, "--deprel"); break;
+                case "--min-logdice": minLogDice = Double.parseDouble(requireNextArg(args, ++i, "--min-logdice")); break;
+                case "--limit": limit = Integer.parseInt(requireNextArg(args, ++i, "--limit")); break;
+                default: System.err.println("Unknown option: " + args[i]);
             }
         }
 
@@ -216,7 +203,7 @@ public class Main {
 
         try (BlackLabQueryExecutor executor = new BlackLabQueryExecutor(indexPath)) {
             var results = deprel != null
-                ? executor.executeDependencyPattern(lemma, deprel, null, minLogDice, limit)
+                ? executor.executeDependencyPattern(lemma, deprel, minLogDice, limit)
                 : executor.findCollocations(lemma, "[]", minLogDice, limit);
 
             if (results.isEmpty()) {
@@ -243,16 +230,9 @@ public class Main {
 
         for (int i = 1; i < args.length; i++) {
             switch (args[i]) {
-                case "--index":
-                case "-i":
-                    indexPath = requireNextArg(args, ++i, "--index");
-                    break;
-                case "--port":
-                case "-p":
-                    port = Integer.parseInt(requireNextArg(args, ++i, "--port"));
-                    break;
-                default:
-                    System.err.println("Unknown option: " + args[i]);
+                case "--index": case "-i": indexPath = requireNextArg(args, ++i, "--index"); break;
+                case "--port": case "-p": port = Integer.parseInt(requireNextArg(args, ++i, "--port")); break;
+                default: System.err.println("Unknown option: " + args[i]);
             }
         }
 

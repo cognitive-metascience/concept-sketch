@@ -74,12 +74,6 @@ public class ComparisonResult {
         return edges;
     }
 
-    /** @deprecated Use {@link #buildEdges()} — name reflects that list construction happens on every call. */
-    @Deprecated
-    public List<Edge> getEdges() {
-        return buildEdges();
-    }
-
     @Override
     public String toString() {
         int shared = (int) adjectives.stream().filter(a -> a.presentInCount() >= 2).count();

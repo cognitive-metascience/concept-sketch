@@ -1,0 +1,90 @@
+{
+  "batch": "incomplete_migration",
+  "batch_index": 11,
+  "assessments": {"incomplete_migration": 76.0},
+  "dimension_notes": {
+    "incomplete_migration": {
+      "evidence": [
+        "QueryExecutor.java line 133: @Deprecated on executeDependencyPattern(String,String,String,double,int) overload with Javadoc pointing to two new replacements",
+        "Main.java line 219: active call to the deprecated overload — executor.executeDependencyPattern(lemma, deprel, null, minLogDice, limit) — passing null as headPosConstraint",
+        "ComparisonResult.java lines 78-80: @Deprecated getEdges() delegates to buildEdges(); no internal callers found",
+        "ExplorationResult.java lines 84-86: @Deprecated getEdges() delegates to buildEdges(); no internal callers found",
+        "BlackLabQueryExecutor.java lines 246-270: duplicate consecutive Javadoc blocks; first block describes a 'Legacy format (deprecated): %s-style substitution' that no longer exists — the else branch throws IllegalArgumentException",
+        "RelationConfig.java lines 193-203: tag= attribute path commented as 'Legacy: IPI_PAN Polish grammar... Keep this path as long as non-English grammars are supported' — intentional, documented backward-compat"
+      ],
+      "impact_scope": "local",
+      "fix_scope": "single_edit",
+      "confidence": "high"
+    }
+  },
+  "dimension_judgment": {
+    "incomplete_migration": {
+      "strengths": [
+        "Deprecated overloads carry explicit @Deprecated annotation with Javadoc @deprecated tags pointing to replacement methods",
+        "The deprecated shims correctly delegate to new split methods — no functional regression",
+        "ComparisonResult and ExplorationResult model classes both renamed the public method to buildEdges() with a clear deprecated getEdges() shim, showing intentional API cleanup",
+        "The tag= backward-compat path in RelationConfig is explicitly comment-justified with language-support rationale"
+      ],
+      "issue_character": "The migration is largely complete and well-marked; the residual issue is a single active call site in Main.java that still invokes the deprecated overload rather than the new split methods, plus two orphaned model shims with no callers.",
+      "score_rationale": "The codebase shows deliberate, annotated migration work: deprecated symbols are clearly marked and the shims correctly delegate. The one concrete failure is Main.java line 219, which calls the deprecated three-argument executeDependencyPattern instead of the new zero-headPos overload, keeping the migration incomplete. The duplicate Javadoc in buildBcqlWithLemmaSubstitution describing a removed code path is a minor cleanup item. Overall this is a 'mostly finished migration with one forgotten call site' pattern — solid enough to score well above 60, but the active deprecated call prevents a score above 80."
+    }
+  },
+  "issues": [
+    {
+      "dimension": "incomplete_migration",
+      "identifier": "deprecated_dep_pattern_called",
+      "summary": "Main.java calls deprecated executeDependencyPattern three-argument overload instead of new split methods",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/Main.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/query/QueryExecutor.java"
+      ],
+      "evidence": [
+        "Main.java line 219: executor.executeDependencyPattern(lemma, deprel, null, minLogDice, limit) calls the @Deprecated(String,String,String,double,int) overload",
+        "QueryExecutor.java line 133: @deprecated Javadoc says 'Use executeDependencyPattern(String,String,double,int) or executeDependencyPatternWithPos'"
+      ],
+      "suggestion": "Replace the deprecated call with executor.executeDependencyPattern(lemma, deprel, minLogDice, limit) — the null headPosConstraint means the two-argument overload is the correct target",
+      "confidence": "high",
+      "impact_scope": "local",
+      "fix_scope": "single_edit"
+    },
+    {
+      "dimension": "incomplete_migration",
+      "identifier": "stale_get_edges_shims",
+      "summary": "Deprecated getEdges() shims in ComparisonResult and ExplorationResult have no remaining callers",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/model/ComparisonResult.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/model/ExplorationResult.java"
+      ],
+      "evidence": [
+        "ComparisonResult.java line 79: @Deprecated getEdges() delegates to buildEdges()",
+        "ExplorationResult.java line 85: @Deprecated getEdges() delegates to buildEdges()",
+        "No calls to getEdges() found in any production source file — the shims have outlived their purpose"
+      ],
+      "suggestion": "Remove getEdges() from both model classes; all call sites already use buildEdges(). Verify with 'grep -rn getEdges src/main' before removal.",
+      "confidence": "high",
+      "impact_scope": "local",
+      "fix_scope": "single_edit"
+    },
+    {
+      "dimension": "incomplete_migration",
+      "identifier": "duplicate_legacy_javadoc",
+      "summary": "buildBcqlWithLemmaSubstitution has a duplicate Javadoc block describing a removed legacy %s substitution path",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/query/BlackLabQueryExecutor.java"
+      ],
+      "evidence": [
+        "Lines 246-264: two consecutive /** */ Javadoc blocks appear; the first describes a 'Legacy format (deprecated): %s-style substitution' that no longer exists",
+        "The actual else branch at line 269 throws IllegalArgumentException — the legacy path is gone but the first Javadoc still describes it as if it works"
+      ],
+      "suggestion": "Remove the first (stale) Javadoc block entirely; the second block correctly describes the current behaviour. The reference to legacy %s support in the interface Javadoc (QueryExecutor.findCollocations) should also be removed.",
+      "confidence": "high",
+      "impact_scope": "local",
+      "fix_scope": "single_edit"
+    }
+  ],
+  "retrospective": {
+    "root_causes": ["Migration to split dependency-pattern API was completed in the interface and implementation but the CLI call site in Main.java was not updated"],
+    "likely_symptoms": ["Compilation warning about deprecated API in Main.java"],
+    "possible_false_positives": ["tag= backward-compat in RelationConfig is intentional and should not be treated as incomplete migration"]
+  }
+}

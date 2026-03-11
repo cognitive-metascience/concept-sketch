@@ -1,0 +1,118 @@
+{
+  "batch": "naming_quality",
+  "batch_index": 5,
+  "assessments": {"naming_quality": 79.0},
+  "dimension_notes": {
+    "naming_quality": {
+      "evidence": [
+        "Method names are largely domain-aligned and action-revealing: findCollocations, executeQuery, executeBcqlQuery, executeSurfacePattern, executeDependencyPattern, exploreByPattern, compareCollocateProfiles, buildAdjectiveProfiles — all communicate intent clearly.",
+        "Variable 'cs' used for CollocateQueryHelper.CollocateSearch in three places in BlackLabQueryExecutor: findCollocations line 65, runDependencyQuery line 176, executeSurfacePattern line 214. 'cs' is opaque; the type name CollocateSearch is not well-known enough to justify the abbreviation.",
+        "handleSemanticFieldExplore (single-seed endpoint) uses requireParam(exchange, params, 'seeds') and assigns to variable 'seed' (singular). The query parameter is named 'seeds' (plural) but accepts only one value. This name/behavior mismatch can confuse API clients expecting multiple seeds.",
+        "NOUN_CQL_CONSTRAINT constant in SemanticFieldExplorer is named for its structural role (CQL constraint) but not its field type (xpos-based). The actual value is '[xpos=\"NN.*\"]'. A name like NOUN_XPOS_CONSTRAINT or NOUN_SURFACE_PATTERN would distinguish it from a deprel-based constraint.",
+        "nounsParam local variable in handleSemanticFieldComparison (ExplorationHandlers line 148) stores the value of the 'seeds' query parameter but is named 'nounsParam'. The parameter renamed from 'nouns' to 'seeds' in the API but the internal variable was not updated — name/intent mismatch.",
+        "Private method names in ExplorationHandlers are consistent and well-chosen: resolveRelationConfig, resolveExploreParams, buildBaseExploreResponse, buildExploreResponseBody, parseSeedSet — all accurately describe what they do.",
+        "Deprecated getEdges() method was replaced by buildEdges() — the new name correctly signals that a list is constructed on every call, which is a good naming evolution.",
+        "Pattern variable naming in RelationConfig: 'headPosition' (field), 'collocatePosition()' (method), 'headPosConstraint' (parameter) — these are consistent and clear.",
+        "CollocateQueryHelper inner record 'CollocateSearch' returned by executeCollocateSearch accurately names the result type. Its fields headwordFreq() and groups() are clear.",
+        "Private field 'collocateQueryHelper' in BlackLabQueryExecutor accurately names the collaborator. No generic names like 'helper' or 'manager' found at the field level."
+      ],
+      "impact_scope": "local",
+      "fix_scope": "single_edit",
+      "confidence": "high",
+      "issues_preventing_higher_score": "Variable 'cs' is an opaque abbreviation for CollocateSearch used three times in BlackLabQueryExecutor. The 'seeds' vs 'seed' mismatch in the single-seed endpoint creates a name/contract confusion. 'nounsParam' in handleSemanticFieldComparison is a stale name from a parameter rename."
+    }
+  },
+  "dimension_judgment": {
+    "naming_quality": {
+      "strengths": [
+        "Domain-specific vocabulary is used consistently: lemma, collocate, logDice, deprel, bcql, xpos — all match the linguistics/corpus-query domain and are applied uniformly.",
+        "Method names accurately describe the action: executeSurfacePattern vs executeDependencyPattern vs findCollocations vs executeBcqlQuery — each name distinguishes the method's approach, not just its general category.",
+        "The record vs class accessor naming convention (no-get for records, get-prefix for classes) is applied consistently and documented.",
+        "Deprecated getEdges() → buildEdges() rename demonstrates good naming discipline: the new name reveals the cost (list construction on every call)."
+      ],
+      "issue_character": "A small number of isolated naming issues exist: one opaque abbreviation ('cs') used in three places, one stale variable name ('nounsParam'), and one API parameter name mismatch ('seeds' for a single-seed endpoint).",
+      "score_rationale": "The codebase scores 79 on naming: the domain vocabulary is strong and method names are precise. The deductions come from three concrete issues that could mislead contributors: the 'cs' abbreviation is used in three separate methods (not a one-off), the 'seeds' parameter on a single-seed endpoint creates an API contract confusion, and 'nounsParam' is a ghost of a renamed parameter. None are severe but together they represent a consistent slight of naming discipline in specific files."
+    }
+  },
+  "issues": [
+    {
+      "dimension": "naming_quality",
+      "identifier": "cs_opaque_abbreviation",
+      "summary": "Variable 'cs' is an opaque abbreviation for CollocateSearch, used in three methods",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/query/BlackLabQueryExecutor.java"
+      ],
+      "evidence": [
+        "findCollocations: 'CollocateQueryHelper.CollocateSearch cs = collocateQueryHelper.executeCollocateSearch(bcql, lemma, true);'",
+        "runDependencyQuery: 'CollocateQueryHelper.CollocateSearch cs = collocateQueryHelper.executeCollocateSearch(bcql, lemma, true);'",
+        "executeSurfacePattern: 'CollocateQueryHelper.CollocateSearch cs = collocateQueryHelper.executeCollocateSearch(bcqlPattern, lemma, false);'",
+        "CollocateSearch is a domain-specific type not abbreviated elsewhere; 'cs' is not a registered codebase convention."
+      ],
+      "suggestion": "Rename 'cs' to 'search' or 'collocateSearch' in all three methods for consistency with the codebase's full-name convention.",
+      "confidence": "high",
+      "impact_scope": "local",
+      "fix_scope": "single_edit"
+    },
+    {
+      "dimension": "naming_quality",
+      "identifier": "single_seed_endpoint_plural_param",
+      "summary": "Single-seed endpoint accepts query parameter named 'seeds' (plural) but stores it as 'seed' (singular), creating API name/behavior mismatch",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/api/ExplorationHandlers.java"
+      ],
+      "evidence": [
+        "handleSemanticFieldExplore line 51: 'String seed = HttpApiUtils.requireParam(exchange, params, \"seeds\");'",
+        "The parameter name 'seeds' (plural) implies multiple values are accepted, but the handler treats it as a single seed string.",
+        "The multi-seed endpoint (handleSemanticFieldExploreMulti) also uses 'seeds' parameter and correctly handles multiple comma-separated values.",
+        "API clients calling the single-seed endpoint with 'seeds=theory,model' would receive unexpected behavior (the whole string used as a single seed lemma)."
+      ],
+      "suggestion": "Rename the query parameter for the single-seed endpoint from 'seeds' to 'seed' in both the handler and the API documentation. Update the README endpoint table accordingly.",
+      "confidence": "high",
+      "impact_scope": "module",
+      "fix_scope": "single_edit"
+    },
+    {
+      "dimension": "naming_quality",
+      "identifier": "nouns_param_stale_variable_name",
+      "summary": "'nounsParam' variable in handleSemanticFieldComparison is a stale name after the query parameter was renamed from 'nouns' to 'seeds'",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/api/ExplorationHandlers.java"
+      ],
+      "evidence": [
+        "handleSemanticFieldComparison line 148: 'String nounsParam = HttpApiUtils.requireParam(exchange, params, \"seeds\");'",
+        "The query parameter is 'seeds' but the local variable is 'nounsParam', suggesting 'seeds' was renamed from 'nouns' in the API but the local variable was not updated.",
+        "All other handlers in the same file use 'seedsStr' or 'seed' for the same conceptual value."
+      ],
+      "suggestion": "Rename 'nounsParam' to 'seedsParam' or 'seeds' to align with the established convention in sibling handlers.",
+      "confidence": "high",
+      "impact_scope": "local",
+      "fix_scope": "single_edit"
+    },
+    {
+      "dimension": "naming_quality",
+      "identifier": "noun_cql_constraint_underspecified",
+      "summary": "NOUN_CQL_CONSTRAINT constant name doesn't distinguish xpos-based from deprel-based constraints",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/exploration/SemanticFieldExplorer.java"
+      ],
+      "evidence": [
+        "SemanticFieldExplorer: 'private static final String NOUN_CQL_CONSTRAINT = \"[xpos=\\\"NN.*\\\"]\";'",
+        "The name 'NOUN_CQL_CONSTRAINT' is ambiguous — it could refer to a deprel, a lemma, or an xpos constraint on nouns.",
+        "Actual value is an xpos-based surface pattern. NOUN_XPOS_PATTERN or NOUN_SURFACE_CONSTRAINT would be more precise."
+      ],
+      "suggestion": "Rename to NOUN_XPOS_CONSTRAINT or NOUN_XPOS_PATTERN to match the naming specificity used elsewhere (e.g., 'headPosConstraint' in RelationConfig).",
+      "confidence": "medium",
+      "impact_scope": "local",
+      "fix_scope": "single_edit"
+    }
+  ],
+  "retrospective": {
+    "root_causes": [
+      "'cs' abbreviation likely introduced for brevity when CollocateSearch was a new type; not updated to a full name when the code stabilized.",
+      "'seeds' parameter name on the single-seed endpoint was likely copied from the multi-seed endpoint when the handler was split, without renaming.",
+      "'nounsParam' is a stale variable name from when the API parameter was 'nouns' — parameter was renamed to 'seeds' but the local variable was not updated."
+    ],
+    "likely_symptoms": [],
+    "possible_false_positives": []
+  }
+}

@@ -1,0 +1,76 @@
+{
+  "batch": "dependency_health",
+  "batch_index": 7,
+  "assessments": {"dependency_health": 81.0},
+  "dimension_notes": {
+    "dependency_health": {
+      "evidence": [
+        "pom.xml declares 4 non-test runtime dependencies: blacklab-engine, blacklab-query-parser (two complementary BlackLab artifacts for different roles), fastjson2 (JSON), SLF4J+logback (logging) — no competing libraries for any purpose",
+        "The BlackLab artifact repository is resolved via a GitHub raw-content URL: https://raw.githubusercontent.com/instituutnederlandsetaal/BlackLab/mvn-repo/ — the pom.xml comment explicitly warns this has no SLA and can become unavailable (rate-limited, branch deleted, repo renamed)",
+        "The API server uses com.sun.net.httpserver.HttpServer throughout WordSketchApiServer, SketchHandlers, ExplorationHandlers, HttpApiUtils — this is an internal JDK class not a declared dependency; it is functional but bypasses dependency management",
+        "fastjson2 version 2.0.25 is used; current stable is 2.0.54+ — gap of ~30 patch/minor versions; no visible lock file to audit transitive dependencies",
+        "No version conflicts visible: BlackLab 4.0.0 and fastjson2 2.0.25 are pin-compatible with Java 21 as declared in maven.compiler.release",
+        "Test dependencies (JUnit 5.9.0, junit-platform-launcher 1.9.0) are correctly scoped to test — minor version mismatch between JUnit API 5.9.0 and Platform 1.9.0 (different major-component versions, though compatible)",
+        "No evidence of multiple libraries for the same purpose — only one JSON library (fastjson2), one logging facade (SLF4J)"
+      ],
+      "impact_scope": "codebase",
+      "fix_scope": "single_edit",
+      "confidence": "high",
+      "issues_preventing_higher_score": "The unstable GitHub raw-content Maven repository is a build-reliability risk that cannot be mitigated from within the code; the pinned versions are modestly stale but not dangerously so."
+    }
+  },
+  "dimension_judgment": {
+    "dependency_health": {
+      "strengths": [
+        "Lean dependency footprint: only 4 runtime libraries, each serving a distinct purpose with no overlapping alternatives",
+        "No circular dependencies possible in a single-module Maven project",
+        "Test deps correctly scoped; no test libraries leaking into the production classpath"
+      ],
+      "issue_character": "Issues are operational rather than architectural: the BlackLab repository URL is a fragile external point-of-failure acknowledged in comments but not remediated, and version currency is mildly stale.",
+      "score_rationale": "The dependency set itself is disciplined — no fat imports for light use, no competing libraries, no unused declarations. The score is pulled down by the GitHub raw-content repository URL, which is a real CI reliability risk (not hypothetical — the comment explicitly names failure modes), and by the use of com.sun.net.httpserver which relies on JDK internals rather than a proper HTTP server library. These are low-probability but high-impact concerns that keep the score below 85."
+    }
+  },
+  "issues": [
+    {
+      "dimension": "dependency_health",
+      "identifier": "fragile_blacklab_maven_repo",
+      "summary": "BlackLab artifacts resolved from an unstable GitHub raw-content URL with no SLA",
+      "related_files": ["pom.xml"],
+      "evidence": [
+        "Repository URL: https://raw.githubusercontent.com/instituutnederlandsetaal/BlackLab/mvn-repo/",
+        "pom.xml comment explicitly states: 'Resolved from a GitHub raw-content URL, which has no SLA and can become unavailable (rate-limited, branch deleted, repo renamed). If this causes CI failures, install the JAR locally with install-blacklab.sh and remove this repository entry, or mirror the artifacts to a private registry.'"
+      ],
+      "suggestion": "Mirror the BlackLab JARs to an internal Nexus/Artifactory instance or GitHub Packages repository, or commit to the local-install path described in install-blacklab.sh and remove the remote repository entry to prevent silent fallthrough to the fragile URL in CI.",
+      "confidence": "high",
+      "impact_scope": "codebase",
+      "fix_scope": "single_edit"
+    },
+    {
+      "dimension": "dependency_health",
+      "identifier": "jdk_internal_http_server",
+      "summary": "Production HTTP server built on com.sun.net.httpserver which is a JDK internal class, not a managed dependency",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/api/WordSketchApiServer.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/api/HttpApiUtils.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/api/SketchHandlers.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/api/ExplorationHandlers.java"
+      ],
+      "evidence": [
+        "WordSketchApiServer uses com.sun.net.httpserver.HttpServer.create() and registers contexts via com.sun.net.httpserver.HttpHandler throughout",
+        "com.sun.net.httpserver is not declared in pom.xml — it is silently provided by the JDK runtime",
+        "The package prefix 'com.sun.*' signals a historically internal API; though partially stabilised in JDK 18+, it is not part of the public java.* surface"
+      ],
+      "suggestion": "Replace com.sun.net.httpserver with a lightweight managed dependency such as Javalin, Undertow, or Jetty (minimal embedded configuration). This is a refactor investment but eliminates JDK-version coupling for the HTTP layer and adds proper dependency management.",
+      "confidence": "medium",
+      "impact_scope": "subsystem",
+      "fix_scope": "multi_file_refactor"
+    }
+  ],
+  "retrospective": {
+    "root_causes": [
+      "BlackLab is not in Maven Central, so the path of least resistance was the GitHub raw URL provided by the project; no CI hardening was done to enforce the alternative local-install path"
+    ],
+    "likely_symptoms": [],
+    "possible_false_positives": []
+  }
+}

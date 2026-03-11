@@ -1,0 +1,72 @@
+{
+  "batch": "initialization_coupling",
+  "batch_index": 17,
+  "assessments": {"initialization_coupling": 81.0},
+  "dimension_notes": {
+    "initialization_coupling": {
+      "evidence": [
+        "BlackLabQueryExecutor constructor opens the BlackLab index and creates CollocateQueryHelper eagerly — both in the constructor body. If index opening fails, an IOException is thrown before the object is usable. This is standard Java resource-acquisition-is-initialization and correct.",
+        "Main.handleBlackLabServerCommand reads the grammar config path via System.getProperty('grammar.config', 'grammars/relations.json') inside the method at runtime, not at class-load time. This is safe for testing.",
+        "HttpApiUtils.CORS_ALLOW_ORIGIN is a static final String constant set to 'http://localhost:3000' at class-load time. There is no mechanism to override this at startup, so any deployment to a non-localhost environment will silently serve wrong CORS headers. The field is package-private; callers cannot inject an alternative value.",
+        "WordSketchApiServer binds to InetAddress.getLoopbackAddress() unconditionally in its constructor — the bind address is not configurable. This is an initialization-time decision with no runtime override path.",
+        "GrammarConfigLoader reads its JSON file in the constructor and stores the result in a final field. Its loading is triggered only when the 'server' command is invoked, not at class-load time.",
+        "No static initializer blocks with I/O or network side effects were found across the codebase.",
+        "No module-level constants computed at import time with a conflicting dynamic getter were found (this pattern doesn't apply to Java).",
+        "SemanticFieldExplorer is instantiated inside WordSketchApiServer's constructor, creating a transitive dependency chain: QueryExecutor -> CollocateQueryHelper -> BlackLabIndex, all initialised sequentially at server startup. No circular dependencies."
+      ],
+      "impact_scope": "module",
+      "fix_scope": "single_edit",
+      "confidence": "high"
+    }
+  },
+  "dimension_judgment": {
+    "initialization_coupling": {
+      "strengths": [
+        "No static initializer blocks with I/O or network side effects anywhere in the codebase.",
+        "System.getProperty for the grammar config path is read inside the command handler method, not at class-load time, making it testable.",
+        "The dependency chain (executor → helper → index) is linear and has no cycles.",
+        "Shutdown hook is registered before server construction in Main, ensuring cleanup even if the server constructor throws."
+      ],
+      "issue_character": "Two hardcoded initialization-time decisions — the CORS origin and the server bind address — are not externalised as configuration, making the server unsuitable for non-localhost deployment without code changes.",
+      "score_rationale": "The codebase avoids the worst initialization coupling patterns (no static I/O side effects, no circular inits, no stale snapshot globals). The two real issues are the CORS origin hardcoded as a static final constant and the loopback bind address hardcoded in the constructor — both constrain deployment without providing any runtime override path. These are genuinely below the 85-point threshold but the overall picture is solid for a Java research tool of this scope."
+    }
+  },
+  "issues": [
+    {
+      "dimension": "initialization_coupling",
+      "identifier": "cors_origin_hardcoded_static_constant",
+      "summary": "CORS_ALLOW_ORIGIN is a hardcoded static final constant with no runtime override path",
+      "related_files": ["src/main/java/pl/marcinmilkowski/word_sketch/api/HttpApiUtils.java"],
+      "evidence": [
+        "HttpApiUtils line: static final String CORS_ALLOW_ORIGIN = \"http://localhost:3000\";",
+        "Used directly in sendJsonResponse, sendError, sendOptionsResponse, sendBinaryResponse — all response paths.",
+        "There is no system property, environment variable, or constructor injection to change this value at startup."
+      ],
+      "suggestion": "Replace the static constant with a configurable value: read System.getProperty('cors.allow.origin', 'http://localhost:3000') once at class-load time or pass it through WordSketchApiServer's constructor and inject it into HttpApiUtils via a static setter or a dedicated CorsConfig parameter.",
+      "confidence": "high",
+      "impact_scope": "subsystem",
+      "fix_scope": "multi_file_refactor"
+    },
+    {
+      "dimension": "initialization_coupling",
+      "identifier": "server_bind_address_hardcoded",
+      "summary": "Server always binds to loopback; bind address is not configurable at startup",
+      "related_files": ["src/main/java/pl/marcinmilkowski/word_sketch/api/WordSketchApiServer.java"],
+      "evidence": [
+        "WordSketchApiServer constructor: new InetSocketAddress(InetAddress.getLoopbackAddress(), port)",
+        "Main.handleBlackLabServerCommand parses --port but has no --host or --bind option."
+      ],
+      "suggestion": "Add an optional --host parameter in Main.handleBlackLabServerCommand (defaulting to 127.0.0.1) and pass the InetAddress to WordSketchApiServer's constructor so it can be overridden for non-localhost deployments.",
+      "confidence": "medium",
+      "impact_scope": "module",
+      "fix_scope": "multi_file_refactor"
+    }
+  ],
+  "retrospective": {
+    "root_causes": [
+      "Both issues stem from the tool being designed exclusively for localhost use, with deployment flexibility treated as a non-requirement."
+    ],
+    "likely_symptoms": ["cors_origin_hardcoded_static_constant", "server_bind_address_hardcoded"],
+    "possible_false_positives": []
+  }
+}

@@ -1,0 +1,63 @@
+{
+  "batch": "authorization_consistency",
+  "batch_index": 20,
+  "assessments": {"authorization_consistency": 77.0},
+  "dimension_notes": {
+    "authorization_consistency": {
+      "evidence": [
+        "The application is a single-user, localhost-only research tool. There is no user authentication system, no session management, and no per-user data — all endpoints are intentionally public.",
+        "WordSketchApiServer binds to InetAddress.getLoopbackAddress() — OS-level network isolation substitutes for application-level auth. This is an architectural auth decision.",
+        "Input validation is applied consistently in SketchHandlers: requireParam for lemma, word1, word2; numeric parsing with 400 on NumberFormatException for limit.",
+        "ExplorationHandlers validates: seeds not empty (400), seeds >= 2 for multi-seed (400), numeric params with NumberFormatException catch (400), relation config existence (400), relationType presence (400).",
+        "No endpoint validates an upper bound on numeric parameters: limit, top, maxResults can be arbitrarily large (e.g., ?top=1000000), potentially causing memory pressure or extremely long queries.",
+        "CORS is hardcoded to http://localhost:3000. Any request from a different origin is rejected by the browser. This is a consistent policy but hardcoded.",
+        "All response paths set the same CORS header via HttpApiUtils (sendJsonResponse, sendError, sendOptionsResponse, sendBinaryResponse) — consistent application of the CORS policy.",
+        "handleBcqlQueryPost reads a raw JSON body and passes the pattern directly to executeBcqlQuery — the only sanitization is what CqlUtils.escapeForRegex provides. However, BCQL patterns are parsed by BlackLab's own parser which will reject malformed input with InvalidQuery, which is caught and re-thrown as IOException.",
+        "No endpoints are documented as explicitly public health checks (the /health endpoint returns {status:ok} without validation — this is appropriate for a health check).",
+        "No RLS, no permission strings, no role system — domain is not applicable."
+      ],
+      "impact_scope": "module",
+      "fix_scope": "single_edit",
+      "confidence": "high"
+    }
+  },
+  "dimension_judgment": {
+    "authorization_consistency": {
+      "strengths": [
+        "Server binds to loopback only — network-level isolation provides a consistent security boundary for all endpoints.",
+        "CORS policy is applied uniformly via HttpApiUtils to every response path (JSON, error, options, binary).",
+        "Input validation patterns are applied consistently: requireParam, NumberFormatException handling, and relation-config validation are used in all handler methods that accept those parameter types.",
+        "The /health endpoint correctly requires no parameters and performs no sensitive operations."
+      ],
+      "issue_character": "The main gap is the absence of upper-bound validation on numeric parameters (top, limit, maxResults), which creates a consistent but missing control — every endpoint is equally vulnerable to unbounded resource requests.",
+      "score_rationale": "This codebase has no auth system because its domain (single-user research tool, loopback only) does not require one — penalising the absence of auth would be a category error. Within its actual trust boundary, validation is applied consistently and the CORS policy is uniformly enforced. The score of 77 is anchored by the absence of numeric upper-bound guards, which is the one real consistency gap: all endpoints that accept 'top', 'limit', or 'maxResults' could benefit from a shared cap (e.g., max 500), but none implement it."
+    }
+  },
+  "issues": [
+    {
+      "dimension": "authorization_consistency",
+      "identifier": "no_upper_bound_on_numeric_params",
+      "summary": "Numeric parameters (top, limit, maxResults) have no upper-bound validation across any endpoint, allowing unbounded resource requests",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/api/ExplorationHandlers.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/api/SketchHandlers.java"
+      ],
+      "evidence": [
+        "ExplorationHandlers.resolveExploreParams: top = Integer.parseInt(params.getOrDefault('top', '15')); no upper bound check.",
+        "SketchHandlers.handleConcordanceExamples: limit = Integer.parseInt(params.getOrDefault('limit', '10')); no upper bound check.",
+        "A request with ?top=1000000 would be accepted and forwarded to SemanticFieldExplorer, potentially running 1,000,000 collocate queries against the index."
+      ],
+      "suggestion": "Add a shared MAX_TOP / MAX_LIMIT constant (e.g., 500) in HttpApiUtils or a new RequestParamValidator class, and apply it consistently in all parameter-parsing calls: if (top > MAX_TOP) { sendError(exchange, 400, 'top exceeds maximum of ' + MAX_TOP); return null; }",
+      "confidence": "high",
+      "impact_scope": "module",
+      "fix_scope": "single_edit"
+    }
+  ],
+  "retrospective": {
+    "root_causes": [
+      "The tool was designed for single-user local use where resource exhaustion by a malicious caller is not a threat model. Upper-bound guards were simply never added."
+    ],
+    "likely_symptoms": ["no_upper_bound_on_numeric_params"],
+    "possible_false_positives": []
+  }
+}

@@ -145,26 +145,19 @@ public class SemanticFieldExplorer {
 
         seed = seed.toLowerCase().trim();
 
-        logger.debug("\n=== SEMANTIC FIELD EXPLORATION ===");
-        logger.debug("Seed: {}", seed);
-        logger.debug("Relation: {}", relationName);
-        logger.debug("Pattern: {}", bcqlPattern);
-        logger.debug("Parameters: top={}, nounsPerRel={}, minShared={}, minLogDice={}", topPredicates, nounsPerPredicate, minShared, minLogDice);
-        logger.debug("------------------------------------------------------------");
+        logger.debug("Exploring semantic field: seed='{}', relation='{}', top={}, minShared={}, minLogDice={}", seed, relationName, topPredicates, minShared, minLogDice);
 
         // Step 1: Get predicates/collocates for the seed noun using the BCQL pattern
-        logger.debug("\nStep 1: Finding collocates for '{}'...", seed);
 
         List<QueryResults.WordSketchResult> seedRelations = fetchSeedCollocates(
             seed, bcqlPattern, simplePattern, minLogDice, topPredicates);
 
         if (seedRelations.isEmpty()) {
-            logger.debug("  Still no results. Seed may be too rare.");
+            logger.debug("No collocates found for seed '{}' — seed may be too rare", seed);
             return ExplorationResult.empty(seed);
         }
 
-        logger.debug("  Found {} collocates:", seedRelations.size());
-        seedRelations.forEach(a -> logger.debug("    {} (logDice={})", a.lemma(), String.format("%.2f", a.logDice())));
+        logger.debug("Found {} collocates for seed '{}'", seedRelations.size(), seed);
 
         // Build map: collocate -> logDice with seed
         Map<String, Double> seedCollocScores = new LinkedHashMap<>();
@@ -175,33 +168,19 @@ public class SemanticFieldExplorer {
         }
 
         // Step 2: For each collocate, find nouns it collocates with
-        logger.debug("\nStep 2: Finding nouns for each collocate...");
         Map<String, Map<String, Double>> nounProfiles = buildCollocateToNounsMap(
             seedCollocScores, seed, minLogDice, nounsPerPredicate);
         logger.debug("  Total candidate nouns: {}", nounProfiles.size());
 
         // Step 3: Score nouns by shared collocate count
-        logger.debug("\nStep 3: Scoring nouns by shared {}...", relationName);
         List<DiscoveredNoun> discoveredNouns = filterCandidates(nounProfiles, minShared);
-        discoveredNouns.sort((a, b) -> Double.compare(b.sharedCollocateScore(), a.sharedCollocateScore()));
+        discoveredNouns.sort((a, b) -> Double.compare(b.combinedRelevanceScore(), a.combinedRelevanceScore()));
         logger.debug("  Nouns with {}+ shared: {}", minShared, discoveredNouns.size());
 
         // Step 4: Identify core collocates
         List<CoreCollocate> coreCollocates = identifyCoreCollocates(seedCollocScores, discoveredNouns);
 
-        // Print results
-        logger.debug("\n--- RESULTS ---");
-        logger.debug("\nSemantic class (nouns similar to '{}'):", seed);
-        discoveredNouns.stream().limit(15).forEach(n ->
-            logger.debug("  {} (shared={}, score={}) <- {}", n.noun(), n.sharedCount(),
-                String.format("%.1f", n.sharedCollocateScore()), String.join(", ", n.sharedCollocates().keySet())));
-
-        logger.debug("\nCore {} (define the class):", relationName);
-        coreCollocates.stream().limit(10).forEach(a ->
-            logger.debug("  {} (in {}/{} nouns, avgLogDice={})", a.collocate(), a.sharedByCount(),
-                a.totalNouns(), String.format("%.1f", a.avgLogDice())));
-
-        logger.debug("------------------------------------------------------------");
+        logger.debug("Exploration complete for '{}': {} nouns discovered, {} core collocates", seed, discoveredNouns.size(), coreCollocates.size());
 
         return new ExplorationResult(seed, seedCollocScores, seedCollocFrequencies, discoveredNouns, coreCollocates);
     }
@@ -260,7 +239,7 @@ public class SemanticFieldExplorer {
             double combinedRelevanceScore = collocScores.values().stream().mapToDouble(Double::doubleValue).sum();
             double avgLogDice = combinedRelevanceScore / sharedCount;
             discoveredNouns.add(new DiscoveredNoun(
-                noun, collocScores, sharedCount, combinedRelevanceScore, avgLogDice, sharedCount * avgLogDice));
+                noun, collocScores, sharedCount, combinedRelevanceScore, avgLogDice));
         }
         return discoveredNouns;
     }
@@ -404,7 +383,7 @@ public class SemanticFieldExplorer {
             double avg = sharedCollocs.isEmpty() ? 0.0
                 : sharedCollocs.values().stream().mapToDouble(Double::doubleValue).average().orElse(0.0);
             double sum = sharedCollocs.values().stream().mapToDouble(Double::doubleValue).sum();
-            discoveredNounsList.add(new DiscoveredNoun(seed, sharedCollocs, count, sum, avg, count * avg));
+            discoveredNounsList.add(new DiscoveredNoun(seed, sharedCollocs, count, sum, avg));
         }
 
         List<CoreCollocate> coreCollocatesList = new ArrayList<>();

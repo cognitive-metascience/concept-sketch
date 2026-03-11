@@ -31,13 +31,8 @@ public interface QueryExecutor extends Closeable {
      * Find collocations for a lemma using a CQL pattern.
      * Groups hits by collocate identity and ranks results by logDice.
      *
-     * <p>The {@code cqlPattern} must follow one of two conventions:
-     * <ul>
-     *   <li><strong>Placeholder form</strong>: contains {@code %s}, which is replaced with the
-     *       escaped lemma before parsing, e.g. {@code "[lemma=\"%s\"] [xpos=\"JJ.*\"]"}</li>
-     *   <li><strong>Suffix form</strong>: starts with {@code [}, and is treated as a collocate
-     *       constraint to be appended after the lemma token, e.g. {@code "[xpos=\"JJ.*\"]"}</li>
-     * </ul>
+     * <p>The {@code cqlPattern} must start with {@code [} and is treated as a collocate
+     * constraint appended after the head lemma token, e.g. {@code "[xpos=\"JJ.*\"]"}.
      * Any other format throws {@link IllegalArgumentException}.
      *
      * @param lemma       The head lemma to search for
@@ -125,20 +120,6 @@ public interface QueryExecutor extends Closeable {
     List<QueryResults.WordSketchResult> executeDependencyPatternWithPos(
             String lemma, String deprel, String headPosConstraint,
             double minLogDice, int maxResults) throws IOException;
-
-    /**
-     * @deprecated Use {@link #executeDependencyPattern(String, String, double, int)} or
-     *             {@link #executeDependencyPatternWithPos(String, String, String, double, int)}.
-     */
-    @Deprecated
-    default List<QueryResults.WordSketchResult> executeDependencyPattern(
-            String lemma, String deprel, String headPosConstraint,
-            double minLogDice, int maxResults) throws IOException {
-        if (headPosConstraint != null && !headPosConstraint.isEmpty()) {
-            return executeDependencyPatternWithPos(lemma, deprel, headPosConstraint, minLogDice, maxResults);
-        }
-        return executeDependencyPattern(lemma, deprel, minLogDice, maxResults);
-    }
 
     /**
      * Get the type of this executor for logging/debugging.

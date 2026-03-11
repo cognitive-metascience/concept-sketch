@@ -1,0 +1,99 @@
+{
+  "batch": "high_level_elegance",
+  "batch_index": 2,
+  "assessments": {"high_level_elegance": 72.0},
+  "dimension_notes": {
+    "high_level_elegance": {
+      "evidence": [
+        "Package layout maps to domain capabilities: model (DTOs), config (grammar loading), query (BlackLab execution), exploration (semantic analysis), api (HTTP surface), indexer (corpus indexing), utils (shared primitives), viz (plot data). New engineers can orient quickly.",
+        "CLAUDE.md states 'SemanticFieldExplorer.java' is under 'query/' but it actually lives in 'exploration/'. Documentation has drifted from runtime reality.",
+        "QueryResults outer class holds four unrelated inner types (WordSketchResult, ConcordanceResult, SnippetResult, KwicResult, CollocateResult). Other model types are all top-level records. QueryResults is a structural outlier that obscures ownership.",
+        "ComparisonResult and ExplorationResult both have toMap() serialization methods; ExplorationHandlers duplicates this with format* private methods — unclear whether model or api layer owns JSON serialization.",
+        "ExploreOptions record (named 'Explore') vs ExplorationResult class (named 'Exploration') — asymmetry documented as intentional in ExploreOptions Javadoc but still creates cognitive friction for newcomers.",
+        "AdjectiveCollocateRanker in exploration package: the name says 'ranker' but the class performs multi-seed comparison (compareCollocateProfiles, buildAdjectiveProfiles). The responsibility is wider than the name suggests.",
+        "WordSketchApiServer Javadoc lists all 14 endpoints inline — this is a good practice and matches runtime reality.",
+        "README.md endpoint table matches actual registered routes in WordSketchApiServer, confirming docs-runtime alignment for the HTTP surface."
+      ],
+      "impact_scope": "codebase",
+      "fix_scope": "multi_file_refactor",
+      "confidence": "high"
+    }
+  },
+  "dimension_judgment": {
+    "high_level_elegance": {
+      "strengths": [
+        "Package structure maps clearly to domain capabilities (api, config, query, exploration, model, indexer, utils, viz) — a new engineer can predict where to look for any feature.",
+        "QueryExecutor interface provides a clean public surface for the query subsystem; implementations are hidden.",
+        "WordSketchApiServer Javadoc lists all endpoints, and they match the registered routes — the HTTP contract is honest.",
+        "model package uses Java records for immutable DTOs, consistent with modern Java idioms and clearly communicated in ComparisonResult's Javadoc."
+      ],
+      "issue_character": "The primary issue is ownership ambiguity: serialization responsibility is split between model toMap() methods and API handler format* methods, and CLAUDE.md has structural documentation that doesn't match actual package locations.",
+      "score_rationale": "The codebase earns a mid-70s score: the package decomposition is sound and would rank in the upper quartile for a Java project of this size, but the serialization ownership ambiguity blurs the model/api boundary, AdjectiveCollocateRanker undersells its own responsibility, and CLAUDE.md has a factual error about SemanticFieldExplorer's package location. These are real navigability costs for a new contributor, not style nits."
+    }
+  },
+  "issues": [
+    {
+      "dimension": "high_level_elegance",
+      "identifier": "claude_md_package_location_drift",
+      "summary": "CLAUDE.md documents SemanticFieldExplorer as being in query/ but it is in exploration/",
+      "related_files": [
+        "CLAUDE.md",
+        "src/main/java/pl/marcinmilkowski/word_sketch/exploration/SemanticFieldExplorer.java"
+      ],
+      "evidence": [
+        "CLAUDE.md 'Code Structure' table lists: '├── query/\\n│   ├── SemanticFieldExplorer.java'",
+        "Actual filesystem: src/main/java/pl/marcinmilkowski/word_sketch/exploration/SemanticFieldExplorer.java",
+        "The exploration/ package is not listed at all in CLAUDE.md's code structure section."
+      ],
+      "suggestion": "Update CLAUDE.md code structure section to list the exploration/ package with SemanticFieldExplorer.java and AdjectiveCollocateRanker.java. Remove SemanticFieldExplorer.java from the query/ section.",
+      "confidence": "high",
+      "impact_scope": "codebase",
+      "fix_scope": "single_edit"
+    },
+    {
+      "dimension": "high_level_elegance",
+      "identifier": "query_results_structural_outlier",
+      "summary": "QueryResults outer class bundles unrelated result types, inconsistent with top-level record pattern in model package",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/model/QueryResults.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/model/AdjectiveProfile.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/model/ExplorationResult.java"
+      ],
+      "evidence": [
+        "AdjectiveProfile, ComparisonResult, CoreCollocate, DiscoveredNoun, Edge, ExplorationResult are all top-level records/classes in the model package.",
+        "QueryResults is a private-constructor utility class containing WordSketchResult, ConcordanceResult (sealed interface), SnippetResult, KwicResult, and CollocateResult as static nested types.",
+        "Callers reference types as QueryResults.WordSketchResult, QueryResults.ConcordanceResult — the outer class name becomes a namespace prefix that adds noise without adding meaning."
+      ],
+      "suggestion": "Promote WordSketchResult, ConcordanceResult, SnippetResult, KwicResult, and CollocateResult to top-level types in the model package, consistent with AdjectiveProfile, DiscoveredNoun etc. The QueryResults wrapper class can then be deleted.",
+      "confidence": "high",
+      "impact_scope": "module",
+      "fix_scope": "multi_file_refactor"
+    },
+    {
+      "dimension": "high_level_elegance",
+      "identifier": "adjective_collocate_ranker_undersells_responsibility",
+      "summary": "AdjectiveCollocateRanker class name understates its role as the multi-seed comparison engine",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/exploration/AdjectiveCollocateRanker.java"
+      ],
+      "evidence": [
+        "AdjectiveCollocateRanker.compareCollocateProfiles() performs full multi-noun comparison returning a ComparisonResult.",
+        "AdjectiveCollocateRanker.buildAdjectiveProfiles() builds AdjectiveProfile maps across multiple seeds.",
+        "The class name implies a simple ranker but the class is the semantic comparison engine for the exploration subsystem."
+      ],
+      "suggestion": "Rename AdjectiveCollocateRanker to CollocateProfileComparator or MultiSeedComparator to reflect that it performs cross-noun comparison, not just ranking.",
+      "confidence": "medium",
+      "impact_scope": "module",
+      "fix_scope": "multi_file_refactor"
+    }
+  ],
+  "retrospective": {
+    "root_causes": [
+      "CLAUDE.md was written before SemanticFieldExplorer was moved from query/ to exploration/, and the docs were not updated.",
+      "QueryResults was likely created early to group result types before it was clear they deserved top-level status; the rest of the model grew around it.",
+      "AdjectiveCollocateRanker may have been extracted from SemanticFieldExplorer with a narrow name that didn't anticipate the full responsibility it would absorb."
+    ],
+    "likely_symptoms": ["claude_md_package_location_drift is a documentation-only fix"],
+    "possible_false_positives": []
+  }
+}

@@ -134,7 +134,7 @@ class SketchHandlers {
                     relData.put("collocations", collocations);
                     byRelation.put(rel.id(), relData);
                 }
-            } catch (Exception e) {
+            } catch (IOException | RuntimeException e) {
                 logger.warn("Relation {} failed for lemma {}: {}", rel.id(), lemma, e.getMessage());
                 relationErrors.add(rel.id() + ": " + e.getMessage());
             }
@@ -174,7 +174,7 @@ class SketchHandlers {
                     }
                     byRelation.put(rel.id(), buildRelationResponse(rel, results, collocations));
                 }
-            } catch (Exception e) {
+            } catch (IOException | RuntimeException e) {
                 logger.warn("Relation {} failed for lemma {}: {}", rel.id(), lemma, e.getMessage());
                 relationErrors.add(rel.id() + ": " + e.getMessage());
             }
