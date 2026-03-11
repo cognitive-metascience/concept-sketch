@@ -39,7 +39,7 @@ public class WordSketchApiServer {
     private final SketchHandlers sketchHandlers;
     private final ExplorationHandlers explorationHandlers;
     private final ConcordanceHandlers concordanceHandlers;
-    private final BcqlHandlers bcqlHandlers;
+    private final CorpusQueryHandlers corpusQueryHandlers;
     private final VisualizationHandlers visualizationHandlers;
     private com.sun.net.httpserver.HttpServer server;
 
@@ -56,7 +56,7 @@ public class WordSketchApiServer {
         this.sketchHandlers = new SketchHandlers(executor, grammarConfig);
         this.explorationHandlers = new ExplorationHandlers(grammarConfig, semanticFieldExplorer);
         this.concordanceHandlers = new ConcordanceHandlers(executor, grammarConfig);
-        this.bcqlHandlers = new BcqlHandlers(executor);
+        this.corpusQueryHandlers = new CorpusQueryHandlers(executor);
         this.visualizationHandlers = new VisualizationHandlers();
         // NOTE: Port binding is deferred to start() so that construction and network binding are separated.
         // This lets callers construct the server and attach post-construction configuration before binding.
@@ -95,7 +95,7 @@ public class WordSketchApiServer {
 
         // POST with JSON body to avoid URL encoding issues
         registerPostHandler(server, "/api/bcql",
-            wrapHandler(bcqlHandlers::handleBcqlQuery, "BCQL query"));
+            wrapHandler(corpusQueryHandlers::handleCorpusQuery, "BCQL query"));
     }
 
     public void start() {

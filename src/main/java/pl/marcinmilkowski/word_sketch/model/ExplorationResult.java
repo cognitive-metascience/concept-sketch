@@ -12,6 +12,12 @@ import java.util.stream.Collectors;
  * <p>Produced by {@code SemanticFieldExplorer#exploreByPattern}. All collections are
  * non-null; empty collections indicate the exploration found no candidates. Use
  * {@link #isEmpty()} to distinguish empty results from null.</p>
+ *
+ * <p><strong>Why a class rather than a record:</strong> {@code ExplorationResult} exposes
+ * computed accessors ({@link #isEmpty()}) and a factory method ({@link #empty(String)}) that
+ * go beyond raw field access. Representing it as a record would force callers to synthesise
+ * these derived views externally. A plain immutable class with a private constructor and
+ * factory keeps the construction logic encapsulated and co-located with the type.</p>
  */
 public class ExplorationResult {
     private final String seed;

@@ -8,8 +8,8 @@ import pl.marcinmilkowski.word_sketch.config.RelationConfig;
 import pl.marcinmilkowski.word_sketch.config.RelationUtils;
 import pl.marcinmilkowski.word_sketch.model.ComparisonResult;
 import pl.marcinmilkowski.word_sketch.model.ExplorationResult;
-import pl.marcinmilkowski.word_sketch.exploration.ExploreOptions;
-import pl.marcinmilkowski.word_sketch.exploration.SingleSeedExploreOptions;
+import pl.marcinmilkowski.word_sketch.exploration.ExplorationOptions;
+import pl.marcinmilkowski.word_sketch.exploration.SingleSeedExplorationOptions;
 import pl.marcinmilkowski.word_sketch.exploration.SemanticFieldExplorer;
 
 import java.util.Objects;
@@ -95,7 +95,7 @@ class ExplorationHandlers {
         double minLogDice = req.exploreParams().minLogDice();
         int nounsPerCollocate = req.exploreParams().nounsPerCollocate();
 
-        SingleSeedExploreOptions opts = new SingleSeedExploreOptions(
+        SingleSeedExplorationOptions opts = new SingleSeedExplorationOptions(
             topCollocates, nounsPerCollocate, minLogDice, minShared);
 
         ExplorationResult result = semanticFieldExplorer.exploreByPattern(seed, resolvedConfig, opts);
@@ -141,7 +141,7 @@ class ExplorationHandlers {
         int minShared = req.exploreParams().minShared();
         double minLogDice = req.exploreParams().minLogDice();
 
-        ExploreOptions opts = new ExploreOptions(topCollocates, minLogDice, minShared);
+        ExplorationOptions opts = new ExplorationOptions(topCollocates, minLogDice, minShared);
         ExplorationResult result = semanticFieldExplorer.exploreMultiSeed(seeds, resolvedConfig, opts);
 
         Map<String, Object> response = buildBaseExploreResponse(relationType, topCollocates, minShared, minLogDice, Map.of());
@@ -168,7 +168,7 @@ class ExplorationHandlers {
         int topCollocates = exploreParams.topCollocates();
         double minLogDice = exploreParams.minLogDice();
 
-        ExploreOptions opts = new ExploreOptions(topCollocates, minLogDice, exploreParams.minShared());
+        ExplorationOptions opts = new ExplorationOptions(topCollocates, minLogDice, exploreParams.minShared());
         ComparisonResult result = semanticFieldExplorer.compareCollocateProfiles(seeds, opts);
 
         Map<String, Object> response = new HashMap<>();

@@ -115,7 +115,7 @@ public class SemanticFieldExplorer {
     public ExplorationResult exploreByPattern(
             String seed,
             RelationConfig relationConfig,
-            SingleSeedExploreOptions opts) throws IOException {
+            SingleSeedExplorationOptions opts) throws IOException {
         if (relationConfig.relationType().isEmpty()) {
             throw new IllegalArgumentException(
                 "Relation '" + relationConfig.id() + "' has no relation_type — cannot perform exploration");
@@ -134,7 +134,13 @@ public class SemanticFieldExplorer {
     }
 
     /**
-     * Explore semantic field using a BCQL pattern from grammar config.
+     * Explore semantic field using pre-resolved BCQL pattern strings.
+     *
+     * <p><strong>Package-private testing seam.</strong> Production code should always call
+     * {@link #exploreByPattern(String, RelationConfig, SingleSeedExplorationOptions)}, which
+     * extracts the pattern strings from a {@link RelationConfig} and preserves the config
+     * abstraction. This overload exists solely to enable unit tests that exercise exploration
+     * logic with programmatically constructed patterns without requiring a full grammar config.
      *
      * @param seed          the seed noun to explore from
      * @param relationName  human-readable relation name for logging
@@ -148,7 +154,7 @@ public class SemanticFieldExplorer {
             String relationName,
             String bcqlPattern,
             String simplePattern,
-            SingleSeedExploreOptions opts) throws IOException {
+            SingleSeedExplorationOptions opts) throws IOException {
 
         int topPredicates = opts.topCollocates();
         int nounsPerPredicate = opts.nounsPerCollocate();
@@ -303,7 +309,7 @@ public class SemanticFieldExplorer {
      * @throws IllegalArgumentException if fewer than 2 seed nouns are provided
      */
     public ComparisonResult compareCollocateProfiles(
-            Set<String> seedNouns, ExploreOptions opts) throws IOException {
+            Set<String> seedNouns, ExplorationOptions opts) throws IOException {
         if (seedNouns == null || seedNouns.size() < 2) {
             throw new IllegalArgumentException(
                 "compareCollocateProfiles requires at least 2 seed nouns for a meaningful comparison");
@@ -345,7 +351,7 @@ public class SemanticFieldExplorer {
     public ExplorationResult exploreMultiSeed(
             Set<String> seeds,
             RelationConfig relationConfig,
-            ExploreOptions opts) throws IOException {
+            ExplorationOptions opts) throws IOException {
         return multiSeedExplorer.explore(seeds, relationConfig, opts.minLogDice(), opts.topCollocates(), opts.minShared());
     }
 

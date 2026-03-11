@@ -105,7 +105,7 @@ class SemanticFieldExplorerInternalTest {
             "theory", List.of(wsr("empirical", 8.0), wsr("scientific", 7.0))
         ));
         SemanticFieldExplorer explorer = new SemanticFieldExplorer(executor, null);
-        SingleSeedExploreOptions opts = new SingleSeedExploreOptions(10, 5, 0.0, 1);
+        SingleSeedExplorationOptions opts = new SingleSeedExplorationOptions(10, 5, 0.0, 1);
         ExplorationResult result = explorer.exploreByPattern(
             "theory", "test-relation",
             "[lemma=\"theory\"] [xpos=\"JJ.*\"]",
@@ -122,7 +122,7 @@ class SemanticFieldExplorerInternalTest {
             "theory", List.of(wsr("empirical", 8.0), wsr("scientific", 7.0))
         ));
         SemanticFieldExplorer explorer = new SemanticFieldExplorer(executor, null);
-        SingleSeedExploreOptions opts = new SingleSeedExploreOptions(10, 5, 0.0, 1);
+        SingleSeedExplorationOptions opts = new SingleSeedExplorationOptions(10, 5, 0.0, 1);
         ExplorationResult result = explorer.exploreByPattern(
             "theory", "test-relation",
             "[lemma=\"theory\"] [xpos=\"JJ.*\"]",
@@ -140,7 +140,7 @@ class SemanticFieldExplorerInternalTest {
         ));
         // null GrammarConfig → fallback noun constraint
         SemanticFieldExplorer explorer = new SemanticFieldExplorer(executor, null);
-        SingleSeedExploreOptions opts = new SingleSeedExploreOptions(10, 1, 0.0, 5);
+        SingleSeedExplorationOptions opts = new SingleSeedExplorationOptions(10, 1, 0.0, 5);
 
         explorer.exploreByPattern(
             "theory", "test-relation",
@@ -179,7 +179,7 @@ class SemanticFieldExplorerInternalTest {
             "theory", List.of(wsr("important", 8.0))
         ));
         SemanticFieldExplorer explorer = new SemanticFieldExplorer(executor, config);
-        SingleSeedExploreOptions opts = new SingleSeedExploreOptions(10, 1, 0.0, 5);
+        SingleSeedExplorationOptions opts = new SingleSeedExplorationOptions(10, 1, 0.0, 5);
 
         explorer.exploreByPattern(
             "theory", "test-relation",

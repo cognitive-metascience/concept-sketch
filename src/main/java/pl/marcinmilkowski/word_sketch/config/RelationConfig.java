@@ -152,8 +152,9 @@ public record RelationConfig(
      */
     private static PosGroup posGroupFromConstraint(String s) {
         PosGroup result = posGroupForPrefix(s, "xpos=");
-        // tag= fallback supports legacy grammar files that use "tag=" instead of "xpos=".
-        // Kept to remain compatible with older grammar configs not yet migrated to xpos=.
+        // 'tag' is a legacy attribute name equivalent to 'xpos'.
+        // Grammar files using 'tag=' should migrate to 'xpos=' (same semantic).
+        // No known active grammar files use 'tag='; retained for backward compatibility only.
         if (result == null) result = posGroupForPrefix(s, "tag=");
         return result != null ? result : PosGroup.OTHER;
     }
