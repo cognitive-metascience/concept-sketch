@@ -46,6 +46,15 @@ public class BlackLabQueryExecutor implements QueryExecutor {
     private final String indexPath;
     private final CollocateQueryHelper collocateQueryHelper;
 
+    /**
+     * Opens the BlackLab index at the given path.
+     *
+     * <p><strong>Constructor I/O note:</strong> opening the index is inherent to BlackLab's lifecycle
+     * model — the index must be open before any query can execute, and it must be explicitly closed
+     * when done. There is no meaningful "empty" state for this executor, so the I/O happens in the
+     * constructor by design. The constructor declares {@code throws IOException} so callers receive
+     * a checked exception if the index is missing or corrupt.</p>
+     */
     public BlackLabQueryExecutor(String indexPath) throws IOException {
         this.indexPath = indexPath;
         try {

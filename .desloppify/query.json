@@ -2,339 +2,79 @@
   "command": "next",
   "items": [
     {
-      "id": "review::.::holistic::contract_coherence::cc_mixed_error_path::dd0abc2b",
-      "kind": "issue",
-      "confidence": "high",
-      "detector": "review",
-      "file": ".",
-      "summary": "handleSemanticFieldExploreMulti sends 400 directly instead of throwing IllegalArgumentException like all sibling handlers",
-      "detail": {
-        "holistic": true,
-        "dimension": "contract_coherence",
-        "related_files": [
-          "src/main/java/pl/marcinmilkowski/word_sketch/api/ExplorationHandlers.java"
-        ],
-        "evidence": [
-          "Line ~99 in ExplorationHandlers: 'if (seeds.size() < 2) { HttpApiUtils.sendError(exchange, 400, ...); return; }' \u2014 bypasses wrapWithErrorHandling.",
-          "All other validation in ExplorationHandlers and sibling handler classes throws IllegalArgumentException which wrapWithErrorHandling catches and maps to 400.",
-          "The module-level contract documented in HttpApiUtils.wrapWithErrorHandling is: 'Catches IllegalArgumentException and sends a 400 response' \u2014 direct sendError calls break this contract."
-        ],
-        "suggestion": "Replace the direct sendError call with 'throw new IllegalArgumentException(\"Multi-seed exploration requires at least 2 seeds; received \" + seeds.size())' to be consistent with all other 400-class validation in this module. The wrapWithErrorHandling wrapper will catch it and send the 400 response.",
-        "reasoning": ""
-      },
-      "status": "open",
-      "primary_command": "desloppify plan resolve \"review::.::holistic::contract_coherence::cc_mixed_error_path::dd0abc2b\" --note \"<what you did>\" --confirm",
-      "queue_position": 5,
-      "plan_cluster": {
-        "name": "error-pipeline",
-        "description": "Fix error handling inconsistencies \u2014 handleSemanticFieldExploreMulti bypasses the established error pipeline; corpus builder and frequency lookup silently swallow errors",
-        "total_items": 5,
-        "action_steps": [
-          {
-            "title": "Replace HttpApiUtils.sendError(exchange, 400, ...) direct call in handleSemanticFieldExploreMulti with throw new IllegalArgumentException to match sibling handlers",
-            "detail": "In ExplorationHandlers.java handleSemanticFieldExploreMulti: replace 'HttpApiUtils.sendError(exchange, 400, ...)' with 'throw new IllegalArgumentException(\"Multi-seed exploration requires at least 2 seeds; received \" + seeds.size())' to match sibling handler pattern.",
-            "issue_refs": [
-              "dd0abc2b"
-            ],
-            "effort": "trivial"
-          },
-          {
-            "title": "Fix corpus builder silent error swallowing \u2014 propagate errors instead of logging and continuing",
-            "detail": "In BlackLabConllUIndexer.java or corpus builder: replace broad Exception catches that log-and-continue with proper IOException propagation. Narrow catch blocks to specific exception types.",
-            "issue_refs": [
-              "4820c08d"
-            ],
-            "effort": "small"
-          },
-          {
-            "title": "Fix blacklab frequency silent zero \u2014 throw or warn instead of returning 0 for failed lookups",
-            "detail": "In ExplorationHandlers.java: ensure multi-seed validation (nouns_per pre-flight check) also throws IllegalArgumentException rather than returning early with sendError, so all validation is caught by wrapWithErrorHandling.",
-            "issue_refs": [
-              "1c8c9ec3"
-            ],
-            "effort": "small"
-          },
-          {
-            "title": "Fix HybridConlluIndexer silent NumberFormatException on malformed CoNLL-U lines",
-            "detail": "In SemanticFieldExplorer.java: remove redundant null check on @NonNull parameter (ec-redundant-nonnull-check, also in ai-debt cluster). In ExplorationHandlers: ensure divergent precondition guards (cc_divergent_precondition) use consistent IllegalArgumentException style.",
-            "issue_refs": [
-              "225744b0",
-              "d6cdb599"
-            ],
-            "effort": "small"
-          }
-        ]
-      }
-    },
-    {
-      "id": "review::.::holistic::error_consistency::ec-broad-catch-constructors::4820c08d",
-      "kind": "issue",
-      "confidence": "high",
-      "detector": "review",
-      "file": ".",
-      "summary": "BlackLabQueryExecutor and BlackLabConllUIndexer catch bare Exception at construction, losing specific failure context",
-      "detail": {
-        "holistic": true,
-        "dimension": "error_consistency",
-        "related_files": [
-          "src/main/java/pl/marcinmilkowski/word_sketch/query/BlackLabQueryExecutor.java",
-          "src/main/java/pl/marcinmilkowski/word_sketch/indexer/blacklab/BlackLabConllUIndexer.java"
-        ],
-        "evidence": [
-          "BlackLabQueryExecutor constructor: 'catch (Exception e) { throw new IOException(\"Failed to open index: \" + e.getMessage(), e); }' \u2014 catches Exception broadly.",
-          "BlackLabConllUIndexer constructor: 'catch (Exception e) { throw new IOException(\"Failed to create index: \" + e.getMessage(), e); }' \u2014 same pattern.",
-          "Callers cannot distinguish a permission error from a corrupt index from a configuration error based on the IOException type alone."
-        ],
-        "suggestion": "Catch the specific BlackLab exception types (e.g. InvalidQuery, or the checked exception from BlackLab.open()) and translate each to a descriptive IOException. Add an 'index open error type' note in the exception message (e.g. 'corrupt index', 'permission denied') to preserve failure context.",
-        "reasoning": ""
-      },
-      "status": "open",
-      "primary_command": "desloppify plan resolve \"review::.::holistic::error_consistency::ec-broad-catch-constructors::4820c08d\" --note \"<what you did>\" --confirm",
-      "queue_position": 6,
-      "plan_cluster": {
-        "name": "error-pipeline",
-        "description": "Fix error handling inconsistencies \u2014 handleSemanticFieldExploreMulti bypasses the established error pipeline; corpus builder and frequency lookup silently swallow errors",
-        "total_items": 5,
-        "action_steps": [
-          {
-            "title": "Replace HttpApiUtils.sendError(exchange, 400, ...) direct call in handleSemanticFieldExploreMulti with throw new IllegalArgumentException to match sibling handlers",
-            "detail": "In ExplorationHandlers.java handleSemanticFieldExploreMulti: replace 'HttpApiUtils.sendError(exchange, 400, ...)' with 'throw new IllegalArgumentException(\"Multi-seed exploration requires at least 2 seeds; received \" + seeds.size())' to match sibling handler pattern.",
-            "issue_refs": [
-              "dd0abc2b"
-            ],
-            "effort": "trivial"
-          },
-          {
-            "title": "Fix corpus builder silent error swallowing \u2014 propagate errors instead of logging and continuing",
-            "detail": "In BlackLabConllUIndexer.java or corpus builder: replace broad Exception catches that log-and-continue with proper IOException propagation. Narrow catch blocks to specific exception types.",
-            "issue_refs": [
-              "4820c08d"
-            ],
-            "effort": "small"
-          },
-          {
-            "title": "Fix blacklab frequency silent zero \u2014 throw or warn instead of returning 0 for failed lookups",
-            "detail": "In ExplorationHandlers.java: ensure multi-seed validation (nouns_per pre-flight check) also throws IllegalArgumentException rather than returning early with sendError, so all validation is caught by wrapWithErrorHandling.",
-            "issue_refs": [
-              "1c8c9ec3"
-            ],
-            "effort": "small"
-          },
-          {
-            "title": "Fix HybridConlluIndexer silent NumberFormatException on malformed CoNLL-U lines",
-            "detail": "In SemanticFieldExplorer.java: remove redundant null check on @NonNull parameter (ec-redundant-nonnull-check, also in ai-debt cluster). In ExplorationHandlers: ensure divergent precondition guards (cc_divergent_precondition) use consistent IllegalArgumentException style.",
-            "issue_refs": [
-              "225744b0",
-              "d6cdb599"
-            ],
-            "effort": "small"
-          }
-        ]
-      }
-    },
-    {
-      "id": "review::.::holistic::error_consistency::ec-multi-seed-validation-bypass::1c8c9ec3",
-      "kind": "issue",
-      "confidence": "high",
-      "detector": "review",
-      "file": ".",
-      "summary": "handleSemanticFieldExploreMulti calls sendError() directly for seeds.size() < 2, bypassing the uniform IAE \u2192 400 pipeline",
-      "detail": {
-        "holistic": true,
-        "dimension": "error_consistency",
-        "related_files": [
-          "src/main/java/pl/marcinmilkowski/word_sketch/api/ExplorationHandlers.java"
-        ],
-        "evidence": [
-          "handleSemanticFieldExploreMulti line ~130: 'HttpApiUtils.sendError(exchange, 400, \"Multi-seed exploration requires at least 2 seeds...\")' \u2014 direct error send.",
-          "All other 400-class validation in the same class uses 'throw new IllegalArgumentException(...)' which wrapWithErrorHandling intercepts.",
-          "handleSemanticFieldComparison line ~178: 'throw new IllegalArgumentException(\"Comparison requires at least 2 seed nouns...\")' \u2014 uses the uniform pattern for an equivalent check."
-        ],
-        "suggestion": "Replace the direct sendError call with 'throw new IllegalArgumentException(\"Multi-seed exploration requires at least 2 seeds; received \" + seeds.size())' to match the pattern used everywhere else in the class and in handleSemanticFieldComparison.",
-        "reasoning": ""
-      },
-      "status": "open",
-      "primary_command": "desloppify plan resolve \"review::.::holistic::error_consistency::ec-multi-seed-validation-bypass::1c8c9ec3\" --note \"<what you did>\" --confirm",
-      "queue_position": 7,
-      "plan_cluster": {
-        "name": "error-pipeline",
-        "description": "Fix error handling inconsistencies \u2014 handleSemanticFieldExploreMulti bypasses the established error pipeline; corpus builder and frequency lookup silently swallow errors",
-        "total_items": 5,
-        "action_steps": [
-          {
-            "title": "Replace HttpApiUtils.sendError(exchange, 400, ...) direct call in handleSemanticFieldExploreMulti with throw new IllegalArgumentException to match sibling handlers",
-            "detail": "In ExplorationHandlers.java handleSemanticFieldExploreMulti: replace 'HttpApiUtils.sendError(exchange, 400, ...)' with 'throw new IllegalArgumentException(\"Multi-seed exploration requires at least 2 seeds; received \" + seeds.size())' to match sibling handler pattern.",
-            "issue_refs": [
-              "dd0abc2b"
-            ],
-            "effort": "trivial"
-          },
-          {
-            "title": "Fix corpus builder silent error swallowing \u2014 propagate errors instead of logging and continuing",
-            "detail": "In BlackLabConllUIndexer.java or corpus builder: replace broad Exception catches that log-and-continue with proper IOException propagation. Narrow catch blocks to specific exception types.",
-            "issue_refs": [
-              "4820c08d"
-            ],
-            "effort": "small"
-          },
-          {
-            "title": "Fix blacklab frequency silent zero \u2014 throw or warn instead of returning 0 for failed lookups",
-            "detail": "In ExplorationHandlers.java: ensure multi-seed validation (nouns_per pre-flight check) also throws IllegalArgumentException rather than returning early with sendError, so all validation is caught by wrapWithErrorHandling.",
-            "issue_refs": [
-              "1c8c9ec3"
-            ],
-            "effort": "small"
-          },
-          {
-            "title": "Fix HybridConlluIndexer silent NumberFormatException on malformed CoNLL-U lines",
-            "detail": "In SemanticFieldExplorer.java: remove redundant null check on @NonNull parameter (ec-redundant-nonnull-check, also in ai-debt cluster). In ExplorationHandlers: ensure divergent precondition guards (cc_divergent_precondition) use consistent IllegalArgumentException style.",
-            "issue_refs": [
-              "225744b0",
-              "d6cdb599"
-            ],
-            "effort": "small"
-          }
-        ]
-      }
-    },
-    {
-      "id": "review::.::holistic::error_consistency::ec-redundant-nonnull-check::225744b0",
-      "kind": "issue",
-      "confidence": "high",
-      "detector": "review",
-      "file": ".",
-      "summary": "SemanticFieldExplorer.compareCollocateProfiles performs an explicit null check on a @NonNull annotated parameter",
-      "detail": {
-        "holistic": true,
-        "dimension": "error_consistency",
-        "related_files": [
-          "src/main/java/pl/marcinmilkowski/word_sketch/exploration/SemanticFieldExplorer.java"
-        ],
-        "evidence": [
-          "compareCollocateProfiles signature: 'public @NonNull ComparisonResult compareCollocateProfiles(@NonNull Set<String> seedNouns, @NonNull ExplorationOptions opts)'",
-          "Method body line ~313: 'if (seedNouns == null) { throw new IllegalArgumentException(\"seedNouns must not be null\"); }' \u2014 redundant check.",
-          "No other public method in the codebase performs explicit null checks on @NonNull parameters \u2014 this is a localized inconsistency."
-        ],
-        "suggestion": "Remove the explicit null check on seedNouns \u2014 the @NonNull annotation is the declared contract. If runtime enforcement is desired, use Objects.requireNonNull() consistently across all @NonNull parameters (or rely on annotation-processing null analysis tools).",
-        "reasoning": ""
-      },
-      "status": "open",
-      "primary_command": "desloppify plan resolve \"review::.::holistic::error_consistency::ec-redundant-nonnull-check::225744b0\" --note \"<what you did>\" --confirm",
-      "queue_position": 8,
-      "plan_cluster": {
-        "name": "error-pipeline",
-        "description": "Fix error handling inconsistencies \u2014 handleSemanticFieldExploreMulti bypasses the established error pipeline; corpus builder and frequency lookup silently swallow errors",
-        "total_items": 5,
-        "action_steps": [
-          {
-            "title": "Replace HttpApiUtils.sendError(exchange, 400, ...) direct call in handleSemanticFieldExploreMulti with throw new IllegalArgumentException to match sibling handlers",
-            "detail": "In ExplorationHandlers.java handleSemanticFieldExploreMulti: replace 'HttpApiUtils.sendError(exchange, 400, ...)' with 'throw new IllegalArgumentException(\"Multi-seed exploration requires at least 2 seeds; received \" + seeds.size())' to match sibling handler pattern.",
-            "issue_refs": [
-              "dd0abc2b"
-            ],
-            "effort": "trivial"
-          },
-          {
-            "title": "Fix corpus builder silent error swallowing \u2014 propagate errors instead of logging and continuing",
-            "detail": "In BlackLabConllUIndexer.java or corpus builder: replace broad Exception catches that log-and-continue with proper IOException propagation. Narrow catch blocks to specific exception types.",
-            "issue_refs": [
-              "4820c08d"
-            ],
-            "effort": "small"
-          },
-          {
-            "title": "Fix blacklab frequency silent zero \u2014 throw or warn instead of returning 0 for failed lookups",
-            "detail": "In ExplorationHandlers.java: ensure multi-seed validation (nouns_per pre-flight check) also throws IllegalArgumentException rather than returning early with sendError, so all validation is caught by wrapWithErrorHandling.",
-            "issue_refs": [
-              "1c8c9ec3"
-            ],
-            "effort": "small"
-          },
-          {
-            "title": "Fix HybridConlluIndexer silent NumberFormatException on malformed CoNLL-U lines",
-            "detail": "In SemanticFieldExplorer.java: remove redundant null check on @NonNull parameter (ec-redundant-nonnull-check, also in ai-debt cluster). In ExplorationHandlers: ensure divergent precondition guards (cc_divergent_precondition) use consistent IllegalArgumentException style.",
-            "issue_refs": [
-              "225744b0",
-              "d6cdb599"
-            ],
-            "effort": "small"
-          }
-        ]
-      }
-    },
-    {
-      "id": "review::.::holistic::contract_coherence::cc_divergent_precondition::d6cdb599",
+      "id": "review::.::holistic::api_surface_coherence::asc_param_naming_inconsistency::5b48ab68",
       "kind": "issue",
       "confidence": "medium",
       "detector": "review",
       "file": ".",
-      "summary": "Public and package-private comparison methods have divergent contracts for seeds < 2 precondition",
+      "summary": "HTTP API uses 'seed' (singular) vs 'seeds' (plural) vs 'adjective' vs 'collocate' inconsistently across sibling endpoints",
       "detail": {
         "holistic": true,
-        "dimension": "contract_coherence",
+        "dimension": "api_surface_coherence",
         "related_files": [
-          "src/main/java/pl/marcinmilkowski/word_sketch/exploration/SemanticFieldExplorer.java",
-          "src/main/java/pl/marcinmilkowski/word_sketch/exploration/CollocateProfileComparator.java"
+          "src/main/java/pl/marcinmilkowski/word_sketch/api/ExplorationHandlers.java",
+          "src/main/java/pl/marcinmilkowski/word_sketch/api/ConcordanceHandlers.java"
         ],
         "evidence": [
-          "SemanticFieldExplorer.compareCollocateProfiles throws IllegalArgumentException when seedNouns.size() < 2.",
-          "CollocateProfileComparator.compareCollocateProfiles returns ComparisonResult.empty() when seedNouns is null or empty \u2014 a different contract for the same precondition.",
-          "A caller of the package-private method (were one added) would get empty results rather than an exception for the 1-seed case, while the public facade throws."
+          "/api/semantic-field/explore: parameter 'seed' (singular noun)",
+          "/api/semantic-field/explore-multi: parameter 'seeds' (plural)",
+          "/api/semantic-field/compare: parameter 'seeds' (plural)",
+          "/api/semantic-field/examples: parameters 'adjective' and 'noun' (domain-specific names)",
+          "/api/concordance/examples: parameters 'seed' and 'collocate' (different naming for analogous concepts)"
         ],
-        "suggestion": "Align CollocateProfileComparator.compareCollocateProfiles to throw IllegalArgumentException for size < 2 (or delegate precondition checking entirely to the public facade and document that the package-private method trusts its caller). The current split means the inner method silently returns empty for a case the outer method explicitly rejects.",
+        "suggestion": "Standardise parameter names across all exploration endpoints: use 'seeds' (plural) consistently and accept comma-separated values (with a single value being the single-seed case), making the explore and explore-multi endpoints unifiable. For the examples endpoints, align 'adjective' and 'collocate' \u2014 prefer 'collocate' as the more general term. Document the parameter contract in a shared API reference.",
         "reasoning": ""
       },
       "status": "open",
-      "primary_command": "desloppify plan resolve \"review::.::holistic::contract_coherence::cc_divergent_precondition::d6cdb599\" --note \"<what you did>\" --confirm",
-      "queue_position": 9,
+      "primary_command": "desloppify plan resolve \"review::.::holistic::api_surface_coherence::asc_param_naming_inconsistency::5b48ab68\" --note \"<what you did>\" --confirm",
+      "queue_position": 1,
       "plan_cluster": {
-        "name": "error-pipeline",
-        "description": "Fix error handling inconsistencies \u2014 handleSemanticFieldExploreMulti bypasses the established error pipeline; corpus builder and frequency lookup silently swallow errors",
-        "total_items": 5,
+        "name": "api-naming",
+        "description": "Standardize QueryExecutor interface verb conventions and fix api_surface_coherence issues \u2014 find*/execute* mix and 10-param exploreByPattern",
+        "total_items": 2,
         "action_steps": [
           {
-            "title": "Replace HttpApiUtils.sendError(exchange, 400, ...) direct call in handleSemanticFieldExploreMulti with throw new IllegalArgumentException to match sibling handlers",
-            "detail": "In ExplorationHandlers.java handleSemanticFieldExploreMulti: replace 'HttpApiUtils.sendError(exchange, 400, ...)' with 'throw new IllegalArgumentException(\"Multi-seed exploration requires at least 2 seeds; received \" + seeds.size())' to match sibling handler pattern.",
+            "title": "Standardize QueryExecutor interface: rename to use consistent find* or execute* verb prefix across findCollocations, executeCqlQuery, executeBcqlQuery, executeSurfacePattern, getTotalFrequency",
+            "detail": "In QueryExecutor.java: rename getTotalFrequency to lookupTotalFrequency or queryTotalFrequency to align with the find*/execute* family, OR rename findCollocations to executeCollocations for a unified execute* prefix. Choose one verb family and apply across all 5 methods.",
             "issue_refs": [
-              "dd0abc2b"
+              "2193f6d2"
+            ],
+            "effort": "small"
+          },
+          {
+            "title": "Fix exploreByPattern 10-parameter method \u2014 introduce ExploreByPatternOptions value object to reduce param count",
+            "detail": "In ExplorationHandlers.java: audit HTTP param names for inconsistency \u2014 specifically 'collocate' vs 'adjective' naming for the same concept across explore vs examples endpoints. Normalize to the more descriptive term.",
+            "issue_refs": [
+              "5b48ab68"
+            ],
+            "effort": "small"
+          },
+          {
+            "title": "Fix executor interface downcast leak (b3818a69) \u2014 remove instanceof checks and casts from callers",
+            "detail": "In BlackLabQueryExecutor.java: identify and remove any instanceof checks or downcast casts on QueryExecutor references that leak the concrete implementation type through the interface.",
+            "issue_refs": [
+              "2193f6d2"
+            ],
+            "effort": "small"
+          },
+          {
+            "title": "Fix exploreByPredicates alias inconsistency (936c3eb7)",
+            "detail": "In QueryExecutor.java or callers: if exploreByPredicates is an alias for another method, make the alias explicit with @deprecated or remove it. Ensure no hidden alias inconsistency remains in the interface.",
+            "issue_refs": [
+              "5b48ab68"
             ],
             "effort": "trivial"
-          },
-          {
-            "title": "Fix corpus builder silent error swallowing \u2014 propagate errors instead of logging and continuing",
-            "detail": "In BlackLabConllUIndexer.java or corpus builder: replace broad Exception catches that log-and-continue with proper IOException propagation. Narrow catch blocks to specific exception types.",
-            "issue_refs": [
-              "4820c08d"
-            ],
-            "effort": "small"
-          },
-          {
-            "title": "Fix blacklab frequency silent zero \u2014 throw or warn instead of returning 0 for failed lookups",
-            "detail": "In ExplorationHandlers.java: ensure multi-seed validation (nouns_per pre-flight check) also throws IllegalArgumentException rather than returning early with sendError, so all validation is caught by wrapWithErrorHandling.",
-            "issue_refs": [
-              "1c8c9ec3"
-            ],
-            "effort": "small"
-          },
-          {
-            "title": "Fix HybridConlluIndexer silent NumberFormatException on malformed CoNLL-U lines",
-            "detail": "In SemanticFieldExplorer.java: remove redundant null check on @NonNull parameter (ec-redundant-nonnull-check, also in ai-debt cluster). In ExplorationHandlers: ensure divergent precondition guards (cc_divergent_precondition) use consistent IllegalArgumentException style.",
-            "issue_refs": [
-              "225744b0",
-              "d6cdb599"
-            ],
-            "effort": "small"
           }
         ]
       }
     }
   ],
   "queue": {
-    "total": 5
+    "total": 1
   },
   "narrative": {
     "phase": "regression",
-    "headline": "\u26a0 2 security issues \u2014 review before other cleanup. Score shifted 0.9 pts \u2014 this is normal after structural changes. Rescan after your next fix to see the real trend. (36 review issues \u2014 run `desloppify show review --status open`)",
+    "headline": "\u26a0 2 security issues \u2014 review before other cleanup. All T1 items cleared! (4 review issues \u2014 run `desloppify show review --status open`)",
     "dimensions": {
       "lowest_dimensions": [
         {
@@ -348,7 +88,7 @@
         {
           "name": "Mid elegance",
           "strict": 49.6,
-          "failing": 3,
+          "failing": 1,
           "impact": 0.0,
           "subjective": true,
           "impact_description": "re-review to improve"
@@ -356,7 +96,7 @@
         {
           "name": "Error consistency",
           "strict": 50.7,
-          "failing": 3,
+          "failing": 0,
           "impact": 0.0,
           "subjective": true,
           "impact_description": "re-review to improve"
@@ -414,8 +154,8 @@
       {
         "type": "refactor",
         "detector": "review",
-        "count": 36,
-        "description": "36 review issues need investigation \u2014 run `desloppify show review --status open` to see them",
+        "count": 4,
+        "description": "4 review issues need investigation \u2014 run `desloppify show review --status open` to see them",
         "command": "desloppify show review --status open",
         "impact": 0.0,
         "dimension": "Unknown",
@@ -448,7 +188,7 @@
     "strategy": {
       "fixer_leverage": {
         "auto_fixable_count": 0,
-        "total_count": 116,
+        "total_count": 20,
         "coverage": 0.0,
         "impact_ratio": 0.0,
         "recommendation": "none"
@@ -492,7 +232,7 @@
         }
       },
       "can_parallelize": false,
-      "hint": "Work through actions in priority order. Rescan after each fix to track progress. Review: 36 issue(s) \u2014 `desloppify show review --status open`."
+      "hint": "Work through actions in priority order. Rescan after each fix to track progress. Review: 4 issue(s) \u2014 `desloppify show review --status open`."
     },
     "tools": {
       "fixers": [],
@@ -520,12 +260,12 @@
       "worst_gap": 30.0,
       "trend": "stable"
     },
-    "milestone": null,
+    "milestone": "All T1 items cleared!",
     "primary_action": {
       "command": "desloppify show boilerplate_duplication --status open",
       "description": "1 boilerplate_duplication issues \u2014 extract shared boilerplate into reusable helpers or base classes"
     },
-    "why_now": "Work through actions in priority order. Rescan after each fix to track progress. Review: 36 issue(s) \u2014 `desloppify show review --status open`.",
+    "why_now": "Work through actions in priority order. Rescan after each fix to track progress. Review: 4 issue(s) \u2014 `desloppify show review --status open`.",
     "verification_step": {
       "command": "desloppify scan",
       "reason": "revalidate after changes"
@@ -1362,7 +1102,7 @@
       {
         "name": "abstraction-fitness",
         "description": "Address abstraction_fitness issues \u2014 SemanticFieldExplorer zero-value facade, LongIntHashMap no visible callers, high_level_elegance explorer facade concern",
-        "item_count": 8
+        "item_count": 5
       },
       {
         "name": "cross-module",
@@ -1437,17 +1177,17 @@
       {
         "name": "multi-seed-bug",
         "description": "Fix ExplorationResult dual-mode seed field \u2014 comma-joined string used as mode discriminant is a functional design bug in the multi-seed edge graph",
-        "item_count": 5
+        "item_count": 1
       },
       {
         "name": "error-pipeline",
         "description": "Fix error handling inconsistencies \u2014 handleSemanticFieldExploreMulti bypasses the established error pipeline; corpus builder and frequency lookup silently swallow errors",
-        "item_count": 5
+        "item_count": 1
       },
       {
         "name": "ai-debt",
         "description": "Remove LLM-generated defensive boilerplate \u2014 redundant @NonNull null checks, phase-restating comments, 78-println showUsage method",
-        "item_count": 4
+        "item_count": 2
       },
       {
         "name": "api-naming",
@@ -1457,31 +1197,31 @@
       {
         "name": "conventions",
         "description": "Normalize accessor style in model package, add missing final modifier to RelationUtils, and fix naming quality violations",
-        "item_count": 8
+        "item_count": 0
       },
       {
         "name": "options-dedup",
         "description": "Eliminate SingleSeedExplorationOptions field duplication \u2014 it duplicates top/minLogDice/maxPerRelation from ExplorationOptions",
-        "item_count": 2
+        "item_count": 0
       },
       {
         "name": "low-level-elegance",
         "description": "Fix low_level_elegance issues \u2014 hardcoded result limits inconsistency, writer=null sentinel, showUsage println sprawl",
-        "item_count": 3
+        "item_count": 0
       },
       {
         "name": "design-debt",
         "description": "Fix design_coherence and initialization_coupling issues \u2014 handler asymmetry, constructor I/O coupling",
-        "item_count": 2
+        "item_count": 0
       },
       {
         "name": "test-strategy",
         "description": "Fix test_strategy issues \u2014 BlackLabDummyTest placeholder, missing integration coverage",
-        "item_count": 2
+        "item_count": 0
       }
     ],
-    "total_ordered": 72,
-    "total_skipped": 261,
+    "total_ordered": 47,
+    "total_skipped": 256,
     "plan_overrides_narrative": true
   },
   "overall_score": 75.9,
@@ -1502,7 +1242,7 @@
       "score": 55.5,
       "strict": 55.5,
       "checks": 10,
-      "failing": 4,
+      "failing": 1,
       "tier": 4,
       "subjective": true,
       "placeholder": false,
@@ -1515,7 +1255,7 @@
       "score": 52.0,
       "strict": 52.0,
       "checks": 10,
-      "failing": 2,
+      "failing": 1,
       "tier": 4,
       "subjective": true,
       "placeholder": false,
@@ -1528,7 +1268,7 @@
       "score": 53.0,
       "strict": 53.0,
       "checks": 10,
-      "failing": 3,
+      "failing": 0,
       "tier": 4,
       "subjective": true,
       "placeholder": false,
@@ -1566,7 +1306,7 @@
       "score": 65.1,
       "strict": 65.1,
       "checks": 10,
-      "failing": 2,
+      "failing": 0,
       "tier": 4,
       "subjective": true,
       "placeholder": false,
@@ -1579,7 +1319,7 @@
       "score": 61.2,
       "strict": 61.2,
       "checks": 10,
-      "failing": 2,
+      "failing": 0,
       "tier": 4,
       "subjective": true,
       "placeholder": false,
@@ -1605,7 +1345,7 @@
       "score": 72.8,
       "strict": 72.8,
       "checks": 10,
-      "failing": 1,
+      "failing": 0,
       "tier": 4,
       "subjective": true,
       "placeholder": false,
@@ -1627,7 +1367,7 @@
       "score": 55.9,
       "strict": 55.9,
       "checks": 30,
-      "failing": 8,
+      "failing": 1,
       "tier": 4,
       "subjective": true,
       "placeholder": false,
@@ -1642,7 +1382,7 @@
       "score": 50.7,
       "strict": 50.7,
       "checks": 10,
-      "failing": 3,
+      "failing": 0,
       "tier": 4,
       "subjective": true,
       "placeholder": false,
@@ -1655,7 +1395,7 @@
       "score": 86.3,
       "strict": 86.3,
       "checks": 10,
-      "failing": 1,
+      "failing": 0,
       "tier": 4,
       "subjective": true,
       "placeholder": false,
@@ -1668,7 +1408,7 @@
       "score": 73.4,
       "strict": 73.4,
       "checks": 10,
-      "failing": 2,
+      "failing": 0,
       "tier": 4,
       "subjective": true,
       "placeholder": false,
@@ -1681,7 +1421,7 @@
       "score": 62.8,
       "strict": 62.8,
       "checks": 10,
-      "failing": 2,
+      "failing": 0,
       "tier": 4,
       "subjective": true,
       "placeholder": false,
@@ -1716,7 +1456,7 @@
       "score": 78.8,
       "strict": 78.8,
       "checks": 10,
-      "failing": 1,
+      "failing": 0,
       "tier": 4,
       "subjective": true,
       "placeholder": false,
@@ -1729,7 +1469,7 @@
       "score": 55.1,
       "strict": 55.1,
       "checks": 10,
-      "failing": 2,
+      "failing": 0,
       "tier": 4,
       "subjective": true,
       "placeholder": false,
@@ -1744,7 +1484,7 @@
       "score": 55.5,
       "strict": 55.5,
       "checks": 10,
-      "failing": 4,
+      "failing": 1,
       "tier": 4,
       "subjective": true,
       "placeholder": false,
@@ -1757,7 +1497,7 @@
       "score": 52.0,
       "strict": 52.0,
       "checks": 10,
-      "failing": 2,
+      "failing": 1,
       "tier": 4,
       "subjective": true,
       "placeholder": false,
@@ -1770,7 +1510,7 @@
       "score": 53.0,
       "strict": 53.0,
       "checks": 10,
-      "failing": 3,
+      "failing": 0,
       "tier": 4,
       "subjective": true,
       "placeholder": false,
@@ -1799,7 +1539,7 @@
       "score": 65.1,
       "strict": 65.1,
       "checks": 10,
-      "failing": 2,
+      "failing": 0,
       "tier": 4,
       "subjective": true,
       "placeholder": false,
@@ -1812,7 +1552,7 @@
       "score": 61.2,
       "strict": 61.2,
       "checks": 10,
-      "failing": 2,
+      "failing": 0,
       "tier": 4,
       "subjective": true,
       "placeholder": false,
@@ -1838,7 +1578,7 @@
       "score": 72.8,
       "strict": 72.8,
       "checks": 10,
-      "failing": 1,
+      "failing": 0,
       "tier": 4,
       "subjective": true,
       "placeholder": false,
@@ -1851,7 +1591,7 @@
       "score": 55.9,
       "strict": 55.9,
       "checks": 30,
-      "failing": 8,
+      "failing": 1,
       "tier": 4,
       "subjective": true,
       "placeholder": false,
@@ -1866,7 +1606,7 @@
       "score": 50.7,
       "strict": 50.7,
       "checks": 10,
-      "failing": 3,
+      "failing": 0,
       "tier": 4,
       "subjective": true,
       "placeholder": false,
@@ -1879,7 +1619,7 @@
       "score": 86.3,
       "strict": 86.3,
       "checks": 10,
-      "failing": 1,
+      "failing": 0,
       "tier": 4,
       "subjective": true,
       "placeholder": false,
@@ -1892,7 +1632,7 @@
       "score": 73.4,
       "strict": 73.4,
       "checks": 10,
-      "failing": 2,
+      "failing": 0,
       "tier": 4,
       "subjective": true,
       "placeholder": false,
@@ -1905,7 +1645,7 @@
       "score": 62.8,
       "strict": 62.8,
       "checks": 10,
-      "failing": 2,
+      "failing": 0,
       "tier": 4,
       "subjective": true,
       "placeholder": false,
@@ -1931,7 +1671,7 @@
       "score": 78.8,
       "strict": 78.8,
       "checks": 10,
-      "failing": 1,
+      "failing": 0,
       "tier": 4,
       "subjective": true,
       "placeholder": false,
@@ -1944,7 +1684,7 @@
       "score": 55.1,
       "strict": 55.1,
       "checks": 10,
-      "failing": 2,
+      "failing": 0,
       "tier": 4,
       "subjective": true,
       "placeholder": false,

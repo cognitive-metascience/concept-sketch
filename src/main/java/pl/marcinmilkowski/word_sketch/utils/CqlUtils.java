@@ -138,19 +138,19 @@ public final class CqlUtils {
         if (position > tokens.size()) {
             return pattern;
         }
-        tokens.set(position - 1, mergeLemmaConstraint(tokens.get(position - 1), lemma));
+        tokens.set(position - 1, injectLemmaConstraint(tokens.get(position - 1), lemma));
         return String.join(" ", tokens);
     }
 
     /**
-     * Merges a lemma constraint with the existing xpos/tag constraint in a CQL token.
+     * Injects a lemma constraint into the existing xpos/tag constraint in a CQL token.
      * E.g. {@code "[xpos=\"NN.*\"]"} + {@code "theory"} → {@code "[lemma=\"theory\" & xpos=\"NN.*\"]"}.
      *
      * @param existingConstraint the original CQL token constraint (including brackets)
      * @param lemma              the lemma value to inject
-     * @return the merged constraint with both lemma and any original POS constraints
+     * @return the updated constraint with both lemma and any original POS constraints
      */
-    public static String mergeLemmaConstraint(String existingConstraint, String lemma) {
+    public static String injectLemmaConstraint(String existingConstraint, String lemma) {
         String xposPattern = extractConstraintAttribute(existingConstraint, "xpos");
         String tagPattern = extractConstraintAttribute(existingConstraint, "tag");
         StringBuilder sb = new StringBuilder();
