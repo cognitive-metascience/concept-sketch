@@ -63,7 +63,7 @@ public class BlackLabQueryExecutor implements QueryExecutor {
         HitGroups groups = cs.groups();
 
         Map<String, Long> freqMap = new LinkedHashMap<>();
-        Map<String, String> posMap = new HashMap<>();
+        Map<String, String> lemmaPosMap = new HashMap<>();
 
         for (HitGroup group : groups) {
             String identity = group.identity().toString();
@@ -79,10 +79,10 @@ public class BlackLabQueryExecutor implements QueryExecutor {
             String key = collocateLemma.toLowerCase();
             freqMap.merge(key, group.size(), Long::sum);
             String pos = BlackLabSnippetParser.extractPosFromMatch(identity);
-            if (pos != null) posMap.put(key, pos);
+            if (pos != null) lemmaPosMap.put(key, pos);
         }
 
-        return helper.buildAndRankCollocates(freqMap, posMap, headwordFreq, minLogDice, maxResults);
+        return helper.buildAndRankCollocates(freqMap, lemmaPosMap, headwordFreq, minLogDice, maxResults);
     }
 
     @Override
@@ -205,7 +205,7 @@ public class BlackLabQueryExecutor implements QueryExecutor {
         for (HitGroup group : groups) {
             String identity = group.identity().toString();
             if (identity != null && !identity.isEmpty()) {
-                String collocate = BlackLabSnippetParser.extractLemmaAt(identity, collocateLabelPos);
+                String collocate = BlackLabSnippetParser.extractCollocateFromXmlByPosition(identity, collocateLabelPos);
                 if (collocate == null || collocate.isEmpty()) {
                     collocate = BlackLabSnippetParser.extractPlainTextTokenAt(identity, collocateLabelPos);
                 }

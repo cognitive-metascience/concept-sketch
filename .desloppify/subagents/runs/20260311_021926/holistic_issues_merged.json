@@ -1,0 +1,379 @@
+{
+  "assessments": {
+    "api_surface_coherence": 65.5,
+    "mid_level_elegance": 51.4,
+    "naming_quality": 65.4,
+    "test_strategy": 26.0
+  },
+  "dimension_notes": {
+    "mid_level_elegance": {
+      "evidence": [
+        "HttpApiUtils centralises all HTTP boundary concerns (JSON serialisation, CORS headers, error codes, parameter validation) \u2014 no ad-hoc response building leaks into handlers",
+        "RelationUtils.resolveRelationAlias isolates alias\u2192canonical-ID translation in one static map; all handlers call through it uniformly",
+        "CollocateQueryHelper is a package-private helper that extracts grouped collocate search + scoring shared by three BlackLabQueryExecutor methods; the CollocateSearch record makes the handoff data explicit",
+        "ExplorationHandlers.parseExploreParams and resolveRelationConfig are shared preamble methods reused across both exploration handlers, preventing duplicated parsing/error logic",
+        "QueryExecutor interface provides a clean seam between the HTTP layer and the index layer; ExplorationHandlers only sees SemanticFieldExplorer, never the raw executor",
+        "In exploreMultiSeed (lines 407-410 of SemanticFieldExplorer), ExplorationResult is constructed with seed=String.join(',', seeds) and discoveredNouns holding the seeds themselves \u2014 semantically different from single-seed mode where discoveredNouns are actually discovered similar nouns",
+        "ExplorationResult.getEdges() generates edge-type strings 'seed_adj' and 'discovered_adj' based on single-seed semantics; in multi-seed mode these labels are misleading because every 'discovered' noun is actually a seed",
+        "Both handleSemanticFieldExploreMulti (lines 98-114) and handleSemanticFieldComparison (lines 148-152) in ExplorationHandlers contain identical comma-split/trim/toLowerCase/LinkedHashSet seed-cleaning logic with no extraction",
+        "BlackLabSnippetParser.extractLemmaAt (line 220-222) is a one-line forwarding alias for extractCollocateFromXmlByPosition with no added behaviour \u2014 the 'Consolidated clean API' comment implies this was meant to unify callers, but CollocateQueryHelper still calls extractCollocateFromXmlByPosition directly",
+        "WordSketchApiServer constructor creates SemanticFieldExplorer, SketchHandlers, and ExplorationHandlers internally (lines 46-48) rather than accepting them; a TODO comment at line 49 acknowledges this is wrong but defers it \u2014 the server boundary absorbs construction responsibilities instead of delegating them"
+      ],
+      "impact_scope": "module",
+      "fix_scope": "multi_file_refactor",
+      "confidence": "high",
+      "issues_preventing_higher_score": ""
+    },
+    "test_strategy": {
+      "evidence": [
+        "SemanticFieldExplorerTest covers only compareCollocateProfiles(); the two primary exploration paths exploreByPattern() and exploreMultiSeed() (412-line class) have zero stub-based unit test coverage",
+        "CollocateQueryHelper (240+ lines, two-phase BCQL collect\u2192score pipeline, core ranking logic) has no test class at all",
+        "All four live-index test classes (BlackLabQueryExecutorTest, DependencySketchTest, BlackLabBcqlConcordanceTest, BlackLabDummyTest) guard with Assumptions.assumeTrue(indexDir.exists()); they permanently skip in any CI environment without the D:\\corpora_philsci\\bi path",
+        "CqlUtils (pure static functions, fully testable in isolation) has no tests despite PatternSubstitution \u2014 a sibling pure-utility class \u2014 being well covered",
+        "BlackLabSnippetParserTest is thorough: 300 lines, covers null/empty/boundary/multi-token cases for every public method",
+        "HandlersTest uses a well-crafted MockExchange and covers both 400 error paths and 200 happy paths for SketchHandlers and ExplorationHandlers",
+        "SemanticFieldExplorerTest employs a clean StubExecutor pattern, covering intersection/partial-sharing/edge-weight logic without requiring a real index"
+      ],
+      "impact_scope": "subsystem",
+      "fix_scope": "multi_file_refactor",
+      "confidence": "high",
+      "issues_preventing_higher_score": ""
+    },
+    "naming_quality": {
+      "evidence": [
+        "Class names are precise and domain-specific throughout: BlackLabQueryExecutor, CollocateQueryHelper, SemanticFieldExplorer, BlackLabSnippetParser \u2014 no vague generic names",
+        "Domain model records AdjectiveProfile, DiscoveredNoun, CoreCollocate, ExploreOptions, ExplorationResult all name the concept, not the structure",
+        "Handler methods use clear action verbs: handleSemanticFieldExplore, handleSemanticFieldExploreMulti, handleSemanticFieldComparison, handleConcordanceExamples",
+        "ExplorationHandlers.buildExploreResponseBody line 316 uses 'ca' for CoreCollocate; line 309 uses 'dn' for DiscoveredNoun \u2014 opaque abbreviations not established elsewhere in the codebase",
+        "BlackLabQueryExecutor.findCollocations (line 66) names its POS map 'posMap', while executeDependencyPattern (line 166) names the same concept 'lemmaPosMap' for a structurally identical Map<String,String>",
+        "Four private format methods in ExplorationHandlers (formatSeedCollocate, formatDiscoveredNoun, formatCoreCollocate, formatEdge) all declare the return map as 'Map<String,Object> m', below codebase norms \u2014 contrast with formatAdjectiveProfile which uses 'adjMap' and 'scores'",
+        "HttpApiUtils.requireParam line 95: local variable named 'v' for a parameter value \u2014 fine scope but inconsistent with codebase convention that prefers full names",
+        "buildBaseExploreResponse uses 'paramsUsed' for a map that becomes the 'parameters' JSON key in the response \u2014 the variable name implies what produced it, not what it represents",
+        "DiscoveredNoun record has both cumulativeScore (raw sum of logDice) and similarityScore (sharedCount * avgLogDice) \u2014 the distinction between these two scoring concepts is not clear from names alone"
+      ],
+      "impact_scope": "local",
+      "fix_scope": "multi_file_refactor",
+      "confidence": "high",
+      "issues_preventing_higher_score": ""
+    },
+    "api_surface_coherence": {
+      "evidence": [
+        "SemanticFieldExplorer.exploreByPattern(String seed, RelationConfig, ExploreOptions) bundles tuning params into ExploreOptions, but the sibling method exploreMultiSeed(Set<String> seeds, RelationConfig, double minLogDice, int topCollocates, int minShared) takes the same logical parameters as 3 flat args instead",
+        "QueryExecutor interface mixes result-type families and threshold responsibility: findCollocations/executeSurfacePattern/executeDependencyPattern all accept minLogDice and maxResults and return WordSketchResult, while executeQuery/executeBcqlQuery drop minLogDice entirely and return ConcordanceResult/CollocateResult \u2014 the split is justified by purpose but the naming (findCollocations vs executeQuery vs executeBcqlQuery) obscures which methods threshold results internally",
+        "HttpApiUtils methods are fully consistent: sendJsonResponse(exchange, data), sendError(exchange, code, message), sendOptionsResponse(exchange, allowedMethods), sendBinaryResponse(exchange, contentType, bytes) \u2014 uniform exchange-first convention throughout",
+        "All ExplorationHandlers handler methods follow the same shape: parse query string \u2192 requireParam null-check \u2192 resolveRelationConfig \u2192 parseExploreParams \u2192 call explorer \u2192 build response Map \u2192 sendJsonResponse; error paths are uniformly handled via sendError",
+        "compareCollocateProfiles(Set<String> seeds, double minLogDice, int topCollocates) uses flat params \u2014 same flat-param style as exploreMultiSeed, but ExploreOptions bundles an overlapping set (topCollocates, minLogDice, minShared) for exploreByPattern"
+      ],
+      "impact_scope": "module",
+      "fix_scope": "multi_file_refactor",
+      "confidence": "high",
+      "issues_preventing_higher_score": ""
+    }
+  },
+  "dimension_judgment": {
+    "mid_level_elegance": {
+      "strengths": [
+        "HttpApiUtils is a single, explicit translation layer for all HTTP response concerns \u2014 CORS, serialisation, method validation, parameter validation \u2014 so no handler duplicates this logic",
+        "RelationUtils.resolveRelationAlias puts alias resolution in one obvious place; every handler calls through it and the result is always lower-cased and canonical",
+        "CollocateQueryHelper's CollocateSearch record makes the query\u2192ranking handoff explicit: headwordFreq and HitGroups travel together as a named tuple rather than out-parameters",
+        "ExplorationHandlers.parseExploreParams and resolveRelationConfig avoid copy-pasting the shared request-parsing preamble across two nearly-identical handlers",
+        "The QueryExecutor interface creates a clean, well-documented seam so that ExplorationHandlers and SketchHandlers never import BlackLab types \u2014 index coupling is contained"
+      ],
+      "issue_character": "Issues are localised but recurrent boundary shortcuts: the same model class is semantically repurposed across two exploration modes without adapting its edge-generation contract, seed-string parsing is duplicated rather than extracted, and the API server's constructor absorbs object construction that should be injected \u2014 each a small seam that adds cognitive overhead when tracing data flow.",
+      "score_rationale": "The codebase sits solidly in the 'decent foundations with identifiable friction' band. The utility layer (HttpApiUtils, RelationUtils, CollocateQueryHelper) is genuinely well-designed \u2014 inputs/outputs at each boundary are explicit and data translation is localised. What pulls the score down is the ExplorationResult semantic overloading across single/multi-seed modes: the same model, edge-type strings, and response builder are shared, hiding a meaningful difference in what 'discoveredNouns' means and producing subtly wrong edge labels in multi-seed output. Alongside the duplicated seed-parsing boilerplate, the constructor-owned collaborators in WordSketchApiServer, and a dead-alias method in BlackLabSnippetParser, the codebase reads as mostly clean with a recurring pattern of boundary shortcuts rather than deep structural dysfunction \u2014 placing it in the 65-70 range rather than below 60."
+    },
+    "test_strategy": {
+      "strengths": [
+        "BlackLabSnippetParserTest is exemplary: all public methods covered with null, empty, boundary, multi-token, and fallback cases \u2014 a genuine high-quality unit test suite",
+        "SemanticFieldExplorerTest introduces a clean StubExecutor that isolates the comparison/ranking logic from the BlackLab backend, demonstrating the right test architecture for this codebase",
+        "HandlersTest uses a compact MockExchange to test both input-validation 400 paths and full 200 happy-paths for HTTP handlers without starting a server",
+        "RelationUtilsTest exhaustively covers case-insensitivity and alias resolution, including null input and unknown input passthrough"
+      ],
+      "issue_character": "The gaps are concentrated in two layers that are never reached by the existing stub-based tests: the outer exploration orchestration (SemanticFieldExplorer's exploreByPattern/exploreMultiSeed paths) and the inner execution backbone (CollocateQueryHelper), while every live-index test that could close those gaps is permanently skipped in CI.",
+      "score_rationale": "The codebase scores above 40 because the parsing and utility layers are well-tested and the test infrastructure (stubs, MockExchange, GrammarConfigHelper) is thoughtfully designed. However, the two most critical runtime paths \u2014 the product's core exploration feature (exploreByPattern/exploreMultiSeed) and the collocate ranking pipeline (CollocateQueryHelper) \u2014 have zero automated coverage. All four live-index tests that would verify the BlackLab integration are structurally uncallable in CI due to hard-coded local paths. This places the codebase firmly in the 'significant drag' band: solid testing culture in the utility layer but the business logic core is untested."
+    },
+    "naming_quality": {
+      "strengths": [
+        "Class and interface names throughout are precise domain terms with no vague verbs: SemanticFieldExplorer, CollocateQueryHelper, BlackLabSnippetParser, AdjectiveCollocateComparator",
+        "Domain model records consistently name the concept, not the container: AdjectiveProfile, DiscoveredNoun, CoreCollocate, ExploreOptions \u2014 a developer unfamiliar with the codebase can infer purpose immediately",
+        "API handler method names follow a clear and consistent handle* pattern with specific subject+action naming (handleSemanticFieldExploreMulti, handleConcordanceExamples)",
+        "The logDice domain term is applied consistently throughout field names, parameters, constants, and JSON keys with no divergence",
+        "RelationUtils.resolveRelationAlias, buildAndRankCollocates, buildRawAdjectiveProfiles, buildBaseExploreResponse all reveal intent precisely"
+      ],
+      "issue_character": "Issues are scattered and localized rather than systemic: a cluster of single-letter local variable names in short formatter methods, one vocabulary divergence between two methods naming the same map concept differently, and one ambiguous dual-score field in a domain model record.",
+      "score_rationale": "The codebase names things well at every structural level \u2014 packages, classes, interfaces, public methods, and domain model fields are all precise and communicative. What pulls the score down from the 85+ range is a recurring pattern of opaque abbreviations in private formatter methods (m, ca, dn, v) that are inconsistent with the fuller names used everywhere else, plus one genuine vocabulary divergence (posMap vs lemmaPosMap) for the same concept in the same file, and one unclear dual-score naming in DiscoveredNoun. These are real drag on a developer reading the format internals but do not affect the dominant naming quality of the codebase, placing it solidly in the 78-80 range \u2014 strong naming with uneven spots in a specific layer."
+    },
+    "api_surface_coherence": {
+      "strengths": [
+        "HttpApiUtils is a model of API consistency: all response-sending methods take HttpExchange as their first argument with predictable subsequent parameters, and the class is exclusively static utilities with no state",
+        "QueryExecutor is thoroughly documented with Javadoc that explicitly distinguishes the four execution styles (CQL vs BCQL, concordance vs collocate), reducing the cognitive cost of the naming asymmetry",
+        "All handler methods in ExplorationHandlers share a uniform control-flow skeleton (requireParam \u2192 resolveRelationConfig \u2192 parseExploreParams \u2192 service call \u2192 sendJsonResponse), making the error-path shape predictable across endpoints",
+        "ExploreOptions exists as a parameter-object for exploreByPattern, demonstrating that the team recognized the value of bundling related tuning knobs"
+      ],
+      "issue_character": "The core issue is intra-class inconsistency within SemanticFieldExplorer: the ExploreOptions parameter-object pattern exists and is used for one public method but not extended to sibling methods that accept overlapping parameters as flat args.",
+      "score_rationale": "The HTTP-layer API (HttpApiUtils, handler methods) is consistently shaped and the QueryExecutor interface is well-annotated, which pushes quality above 60. However, the public SemanticFieldExplorer API is split: exploreByPattern uses ExploreOptions while exploreMultiSeed and compareCollocateProfiles take the same logical parameters as flat args, creating inconsistency at the most-used service-layer boundary. This is not a deeply structural problem \u2014 it is fixable with an overload \u2014 but a developer navigating between these methods will notice the mismatch and cannot apply the same call pattern. Against global anchors, this is solidly 'significant drag that is not ubiquitous,' placing the score around 70."
+    }
+  },
+  "issues": [
+    {
+      "dimension": "mid_level_elegance",
+      "identifier": "exploration_result_semantic_overload",
+      "summary": "ExplorationResult reused across single-seed and multi-seed modes with different semantics for discoveredNouns, producing wrong edge-type labels in multi-seed output",
+      "confidence": "high",
+      "suggestion": "Introduce a separate result type (e.g. MultiSeedExplorationResult) or a factory method that builds the edge list correctly for multi-seed context (edge type 'seed_collocate' instead of 'discovered_adj'), keeping the API response shape consistent while making the semantic difference explicit at the boundary rather than hiding it inside getEdges()",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/exploration/SemanticFieldExplorer.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/model/ExplorationResult.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/api/ExplorationHandlers.java"
+      ],
+      "evidence": [
+        "exploreMultiSeed (line 392) stores each seed word as a DiscoveredNoun with seed's own collocates \u2014 semantically the seeds are not 'discovered' nouns",
+        "ExplorationResult is constructed with seed=String.join(',', seeds) (line 408), so getEdges() generates a 'seed_adj' edge from a comma-joined multi-seed string rather than a real seed word",
+        "ExplorationResult.getEdges() emits type='discovered_adj' for edges from discoveredNouns, but in multi-seed context these nodes are the input seeds, not discovered similar words",
+        "buildExploreResponseBody in ExplorationHandlers calls result.getEdges() identically for both modes, so the API returns misleadingly-labelled edge types in multi-seed responses"
+      ],
+      "impact_scope": "module",
+      "fix_scope": "multi_file_refactor"
+    },
+    {
+      "dimension": "mid_level_elegance",
+      "identifier": "duplicated_seed_parsing",
+      "summary": "Identical comma-split/trim/toLowerCase/LinkedHashSet seed-cleaning logic duplicated in two ExplorationHandlers methods",
+      "confidence": "high",
+      "suggestion": "Extract a private parseSeeds(String csv, int minCount) method that performs the split/trim/lowercase/dedup and throws a validated error or returns the set, then call it from both handlers",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/api/ExplorationHandlers.java"
+      ],
+      "evidence": [
+        "handleSemanticFieldExploreMulti lines 98-114: splits seedsStr by comma, trims, lowercases, adds to LinkedHashSet, rejects size < 2",
+        "handleSemanticFieldComparison lines 148-152: identical split/trim/lowercase/LinkedHashSet logic on nounsParam",
+        "The two blocks are functionally identical but separated by ~50 lines and use different variable names (seedsStr vs nounsParam)"
+      ],
+      "impact_scope": "local",
+      "fix_scope": "single_edit"
+    },
+    {
+      "dimension": "mid_level_elegance",
+      "identifier": "server_owns_collaborator_construction",
+      "summary": "WordSketchApiServer constructor constructs SemanticFieldExplorer and handler objects instead of accepting them, making the API boundary opaque",
+      "confidence": "high",
+      "suggestion": "Accept SketchHandlers and ExplorationHandlers as constructor parameters, constructing them at the call site in Main.java; this makes the composition graph visible at the wiring layer and removes construction from the server boundary",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/api/WordSketchApiServer.java"
+      ],
+      "evidence": [
+        "Constructor at line 46 creates 'new SemanticFieldExplorer(executor)' rather than accepting it as a parameter",
+        "Lines 47-48 create SketchHandlers and ExplorationHandlers internally from the constructed components",
+        "A TODO comment at line 49 acknowledges server setup responsibilities should move out of the constructor but defers it"
+      ],
+      "impact_scope": "module",
+      "fix_scope": "multi_file_refactor"
+    },
+    {
+      "dimension": "mid_level_elegance",
+      "identifier": "dead_alias_extract_lemma_at",
+      "summary": "BlackLabSnippetParser.extractLemmaAt is a trivial one-line alias for extractCollocateFromXmlByPosition with no added behaviour, creating unnecessary indirection at the module boundary",
+      "confidence": "high",
+      "suggestion": "Inline extractCollocateFromXmlByPosition into extractLemmaAt (make it the single implementation), or remove extractLemmaAt and update callers to call extractCollocateFromXmlByPosition directly; either choice eliminates the ambiguous alias",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/query/BlackLabSnippetParser.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/query/CollocateQueryHelper.java"
+      ],
+      "evidence": [
+        "extractLemmaAt (line 220-222) calls extractCollocateFromXmlByPosition(xml, position) and returns the result unchanged",
+        "The 'Consolidated clean API' comment implies extractLemmaAt should be the canonical entry point, but CollocateQueryHelper.extractCollocateLemma (line 282) still calls extractCollocateFromXmlByPosition directly, bypassing the alias",
+        "Two names for the same operation with no behavioural distinction forces readers to verify they are equivalent before trusting either"
+      ],
+      "impact_scope": "local",
+      "fix_scope": "single_edit"
+    },
+    {
+      "dimension": "test_strategy",
+      "identifier": "explorer_core_paths_untested",
+      "summary": "SemanticFieldExplorer.exploreByPattern() and exploreMultiSeed() have zero unit coverage despite being the application's primary feature paths",
+      "confidence": "high",
+      "suggestion": "Add stub-based tests for exploreByPattern() and exploreMultiSeed() using the existing StubExecutor pattern: verify that ExplorationResult contains expected discovered_nouns, core_collocates, and edges for a controlled collocate map",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/exploration/SemanticFieldExplorer.java",
+        "src/test/java/pl/marcinmilkowski/word_sketch/query/SemanticFieldExplorerTest.java"
+      ],
+      "evidence": [
+        "SemanticFieldExplorerTest covers only compareCollocateProfiles(); no test exercises exploreByPattern(seed, relationConfig, opts) or exploreMultiSeed()",
+        "SemanticFieldExplorer is 412 lines with non-trivial private helpers (fetchSeedCollocates, buildNounCollocateMap, scoreAndFilterCandidates, identifyCoreCollocates) \u2014 all dead code from the test perspective",
+        "The StubExecutor in SemanticFieldExplorerTest already supports findCollocations() and executeSurfacePattern(), so coverage could be added without new infrastructure"
+      ],
+      "impact_scope": "subsystem",
+      "fix_scope": "multi_file_refactor"
+    },
+    {
+      "dimension": "test_strategy",
+      "identifier": "collocate_query_helper_untested",
+      "summary": "CollocateQueryHelper \u2014 the two-phase BCQL collect\u2192score pipeline that all collocate ranking depends on \u2014 has no test coverage at all",
+      "confidence": "high",
+      "suggestion": "Create CollocateQueryHelperTest covering: (1) extractCollocateLemma with pos=0 vs pos>0 inputs, (2) buildAndRankCollocates with a mock getTotalFrequency by extracting a testable interface or using a subclass stub for the frequency lookup",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/query/CollocateQueryHelper.java"
+      ],
+      "evidence": [
+        "CollocateQueryHelper is 240+ lines with package-private methods collectHits(), scoreHits(), buildAndRankCollocates(), and the static extractCollocateLemma()",
+        "The static extractCollocateLemma() method is pure logic (delegates to BlackLabSnippetParser based on collocatePos) and is directly testable without a BlackLab index",
+        "buildAndRankCollocates() applies logDice filtering and sorting \u2014 the ranking correctness is never verified in isolation",
+        "No test file exists for CollocateQueryHelper; grep across src/test confirms zero references"
+      ],
+      "impact_scope": "module",
+      "fix_scope": "multi_file_refactor"
+    },
+    {
+      "dimension": "test_strategy",
+      "identifier": "live_index_tests_always_skip_in_ci",
+      "summary": "All four live-index test classes permanently skip in CI due to hard-coded local index paths, providing no integration safety net",
+      "confidence": "high",
+      "suggestion": "Ship a minimal test index (50-100 sentence CoNLL-U fixture) under src/test/resources/ and use it in these tests so the BlackLab integration is verified on every CI run; keep the env-var override for developer convenience with real corpora",
+      "related_files": [
+        "src/test/java/pl/marcinmilkowski/word_sketch/query/BlackLabQueryExecutorTest.java",
+        "src/test/java/pl/marcinmilkowski/word_sketch/query/DependencySketchTest.java",
+        "src/test/java/pl/marcinmilkowski/word_sketch/query/BlackLabBcqlConcordanceTest.java",
+        "src/test/java/pl/marcinmilkowski/word_sketch/query/BlackLabDummyTest.java"
+      ],
+      "evidence": [
+        "All four classes default to 'D:\\\\corpora_philsci\\\\bi' when CONCEPT_SKETCH_TEST_INDEX env var is absent \u2014 a Windows-only local path that will never exist in CI",
+        "BlackLabDummyTest iterates patterns and calls assumeTrue(false) on IOException, meaning the test can pass vacuously even if every pattern fails",
+        "BlackLabBcqlConcordanceTest uses @EnabledIf(\"indexExists\") which evaluates to false in CI, silently suppressing 2 tests"
+      ],
+      "impact_scope": "codebase",
+      "fix_scope": "architectural_change"
+    },
+    {
+      "dimension": "test_strategy",
+      "identifier": "cqlutils_pure_logic_untested",
+      "summary": "CqlUtils \u2014 pure static utility used by both PatternSubstitution and GrammarConfigLoader \u2014 has no tests despite being trivially testable",
+      "confidence": "high",
+      "suggestion": "Add CqlUtilsTest with cases for extractConstraintAttribute (found, not found, null input, multiple attributes) and the escape helper (backslash, quote, combined)",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/utils/CqlUtils.java"
+      ],
+      "evidence": [
+        "CqlUtils contains extractConstraintAttribute() and CQL-escaping helpers \u2014 pure string processing with no dependencies",
+        "PatternSubstitution (a sibling utility) has 95-line test coverage, showing the pattern is established",
+        "No reference to CqlUtils appears anywhere in src/test/"
+      ],
+      "impact_scope": "local",
+      "fix_scope": "single_edit"
+    },
+    {
+      "dimension": "naming_quality",
+      "identifier": "posmap_vocab_divergence",
+      "summary": "Same concept named 'posMap' in findCollocations and 'lemmaPosMap' in executeDependencyPattern within the same file",
+      "confidence": "high",
+      "suggestion": "Standardise on one name for this concept across both methods; 'collocatePosMap' makes the key domain explicit \u2014 rename line 66's 'posMap' to 'collocatePosMap' to match line 166's more descriptive style (or vice-versa)",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/query/BlackLabQueryExecutor.java"
+      ],
+      "evidence": [
+        "Line 66: Map<String, String> posMap = new HashMap<>(); \u2014 holds collocate-lemma \u2192 POS-tag mapping",
+        "Line 166: Map<String, String> lemmaPosMap = new HashMap<>(); \u2014 identical concept and usage in executeDependencyPattern",
+        "Both maps are passed to helper.buildAndRankCollocates(freqMap, posMap/lemmaPosMap, ...) in the same role"
+      ],
+      "impact_scope": "local",
+      "fix_scope": "single_edit"
+    },
+    {
+      "dimension": "naming_quality",
+      "identifier": "opaque_map_variable_m",
+      "summary": "Four private format methods in ExplorationHandlers all use 'm' as the local map variable, inconsistent with the codebase norm of descriptive local names",
+      "confidence": "high",
+      "suggestion": "Rename 'm' to a name matching the method's subject: 'collocateMap' in formatSeedCollocate, 'nounMap' in formatDiscoveredNoun, 'coreCollocateMap' in formatCoreCollocate, 'edgeMap' in formatEdge",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/api/ExplorationHandlers.java"
+      ],
+      "evidence": [
+        "formatSeedCollocate line 258: Map<String, Object> m = new HashMap<>();",
+        "formatDiscoveredNoun line 266: Map<String, Object> m = new HashMap<>();",
+        "formatCoreCollocate line 276: Map<String, Object> m = new HashMap<>();",
+        "formatEdge line 286: Map<String, Object> m = new HashMap<>();",
+        "Contrast: formatAdjectiveProfile (line 371) uses 'adjMap' and 'scores' \u2014 clearly descriptive names in the same class"
+      ],
+      "impact_scope": "local",
+      "fix_scope": "single_edit"
+    },
+    {
+      "dimension": "naming_quality",
+      "identifier": "opaque_loop_vars_ca_dn",
+      "summary": "Loop variables 'ca' (CoreCollocate) and 'dn' (DiscoveredNoun) in ExplorationHandlers are unexplained abbreviations not established in codebase convention",
+      "confidence": "medium",
+      "suggestion": "Expand to 'discoveredNoun' / 'noun' and 'coreCollocate' / 'collocate' respectively; the full names are not verbose in this context",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/api/ExplorationHandlers.java"
+      ],
+      "evidence": [
+        "Line 309: for (DiscoveredNoun dn : result.getDiscoveredNouns())",
+        "Line 316: for (CoreCollocate ca : result.getCoreCollocates())",
+        "Line 265 parameter: formatDiscoveredNoun(DiscoveredNoun dn) \u2014 also uses the abbreviation in the method signature",
+        "Line 275: formatCoreCollocate(CoreCollocate ca) \u2014 abbreviation in parameter name",
+        "No other place in the codebase uses 'dn' or 'ca' as type abbreviations"
+      ],
+      "impact_scope": "local",
+      "fix_scope": "single_edit"
+    },
+    {
+      "dimension": "naming_quality",
+      "identifier": "cumulative_score_ambiguity",
+      "summary": "DiscoveredNoun has both 'cumulativeScore' and 'similarityScore' fields where the distinction between the two scoring concepts is not apparent from names alone",
+      "confidence": "medium",
+      "suggestion": "Rename 'cumulativeScore' to 'totalLogDiceSum' or 'sumLogDice' to make its computation explicit; rename 'similarityScore' to 'weightedSimilarity' or 'rankedScore' to distinguish it as the primary ranking key",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/model/DiscoveredNoun.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/exploration/SemanticFieldExplorer.java"
+      ],
+      "evidence": [
+        "DiscoveredNoun record fields: double cumulativeScore and double similarityScore",
+        "SemanticFieldExplorer line 249: double cumulativeScore = collocScores.values().stream().mapToDouble(Double::doubleValue).sum(); \u2014 it is a raw sum",
+        "SemanticFieldExplorer line 252: new DiscoveredNoun(..., cumulativeScore, avgLogDice, sharedCount * avgLogDice) \u2014 similarityScore is sharedCount * avgLogDice",
+        "Both fields are conceptually 'how similar is this noun to the seed' and diverge only in formula; neither name communicates the formula"
+      ],
+      "impact_scope": "module",
+      "fix_scope": "multi_file_refactor"
+    },
+    {
+      "dimension": "api_surface_coherence",
+      "identifier": "explore_params_inconsistency",
+      "summary": "exploreMultiSeed takes flat minLogDice/topCollocates/minShared args while sibling exploreByPattern uses ExploreOptions for the same parameters",
+      "confidence": "high",
+      "suggestion": "Add an overload exploreMultiSeed(Set<String> seeds, RelationConfig, ExploreOptions) that delegates to the current flat-param implementation, and do the same for compareCollocateProfiles; update ExplorationHandlers to call the options-taking overloads so the service layer sees a uniform shape",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/exploration/SemanticFieldExplorer.java"
+      ],
+      "evidence": [
+        "exploreByPattern(String seed, RelationConfig, ExploreOptions opts) bundles topCollocates, minLogDice, minShared into ExploreOptions",
+        "exploreMultiSeed(Set<String> seeds, RelationConfig relationConfig, double minLogDice, int topCollocates, int minShared) spreads the same logical parameters as positional arguments",
+        "compareCollocateProfiles(Set<String> seeds, double minLogDice, int topCollocates) also uses flat params, reinforcing the split"
+      ],
+      "impact_scope": "module",
+      "fix_scope": "multi_file_refactor"
+    }
+  ],
+  "review_quality": {
+    "batch_count": 4,
+    "dimension_coverage": 1.0,
+    "evidence_density": 2.875,
+    "high_score_missing_issue_note": 0,
+    "issue_pressure": 23.378,
+    "dimensions_with_issues": 4
+  },
+  "provenance": {
+    "kind": "blind_review_batch_import",
+    "blind": true,
+    "runner": "claude",
+    "run_stamp": "20260311_021926",
+    "created_at": "2026-03-11T02:30:24+00:00",
+    "batch_count": 4,
+    "batch_indexes": [
+      1,
+      2,
+      3,
+      4
+    ],
+    "packet_path": "/mnt/d/git/word-sketch-lucene/.desloppify/review_packet_blind.json",
+    "packet_sha256": "6daa5fed925abe0b2a2afb8c0f9cb3342340cc9fe7f2dcfd517b90b3329f573f"
+  }
+}

@@ -97,14 +97,7 @@ class ExplorationHandlers {
         String seedsStr = HttpApiUtils.requireParam(exchange, params, "seeds");
         if (seedsStr == null) return;
 
-        String[] seedArray = seedsStr.split(",");
-        Set<String> seeds = new LinkedHashSet<>();
-        for (String s : seedArray) {
-            String cleaned = s.trim().toLowerCase();
-            if (!cleaned.isEmpty()) {
-                seeds.add(cleaned);
-            }
-        }
+        Set<String> seeds = parseSeedSet(seedsStr);
 
         if (seeds.size() < 2) {
             HttpApiUtils.sendError(exchange, 400, "Need at least 2 seeds for multi-seed exploration");
@@ -155,11 +148,7 @@ class ExplorationHandlers {
         String nounsParam = HttpApiUtils.requireParam(exchange, params, "seeds");
         if (nounsParam == null) return;
 
-        Set<String> seeds = new LinkedHashSet<>();
-        for (String s : nounsParam.split(",")) {
-            String cleaned = s.trim().toLowerCase();
-            if (!cleaned.isEmpty()) seeds.add(cleaned);
-        }
+        Set<String> seeds = parseSeedSet(nounsParam);
 
         double minLogDice;
         int topCollocates;
@@ -255,40 +244,40 @@ class ExplorationHandlers {
     }
 
     private static Map<String, Object> formatSeedCollocate(String word, double logDice, long frequency) {
-        Map<String, Object> m = new HashMap<>();
-        m.put("word", word);
-        m.put("log_dice", Math.round(logDice * 100.0) / 100.0);
-        m.put("frequency", frequency);
-        return m;
+        Map<String, Object> result = new HashMap<>();
+        result.put("word", word);
+        result.put("log_dice", Math.round(logDice * 100.0) / 100.0);
+        result.put("frequency", frequency);
+        return result;
     }
 
-    private static Map<String, Object> formatDiscoveredNoun(DiscoveredNoun dn) {
-        Map<String, Object> m = new HashMap<>();
-        m.put("word", dn.noun());
-        m.put("shared_count", dn.sharedCount());
-        m.put("similarity_score", Math.round(dn.similarityScore() * 100.0) / 100.0);
-        m.put("avg_logdice", Math.round(dn.avgLogDice() * 100.0) / 100.0);
-        m.put("shared_collocates", dn.sharedCollocateList());
-        return m;
+    private static Map<String, Object> formatDiscoveredNoun(DiscoveredNoun discoveredNoun) {
+        Map<String, Object> result = new HashMap<>();
+        result.put("word", discoveredNoun.noun());
+        result.put("shared_count", discoveredNoun.sharedCount());
+        result.put("similarity_score", Math.round(discoveredNoun.sharedCollocateScore() * 100.0) / 100.0);
+        result.put("avg_logdice", Math.round(discoveredNoun.avgLogDice() * 100.0) / 100.0);
+        result.put("shared_collocates", discoveredNoun.sharedCollocateList());
+        return result;
     }
 
-    private static Map<String, Object> formatCoreCollocate(CoreCollocate ca) {
-        Map<String, Object> m = new HashMap<>();
-        m.put("word", ca.collocate());
-        m.put("shared_by_count", ca.sharedByCount());
-        m.put("total_nouns", ca.totalNouns());
-        m.put("coverage", Math.round(ca.coverage() * 100.0) / 100.0);
-        m.put("seed_logdice", Math.round(ca.seedLogDice() * 100.0) / 100.0);
-        return m;
+    private static Map<String, Object> formatCoreCollocate(CoreCollocate collocate) {
+        Map<String, Object> result = new HashMap<>();
+        result.put("word", collocate.collocate());
+        result.put("shared_by_count", collocate.sharedByCount());
+        result.put("total_nouns", collocate.totalNouns());
+        result.put("coverage", Math.round(collocate.coverage() * 100.0) / 100.0);
+        result.put("seed_logdice", Math.round(collocate.seedLogDice() * 100.0) / 100.0);
+        return result;
     }
 
     private static Map<String, Object> formatEdge(Edge edge) {
-        Map<String, Object> m = new HashMap<>();
-        m.put("source", edge.source());
-        m.put("target", edge.target());
-        m.put("log_dice", Math.round(edge.weight() * 100.0) / 100.0);
-        m.put("type", edge.type());
-        return m;
+        Map<String, Object> result = new HashMap<>();
+        result.put("source", edge.source());
+        result.put("target", edge.target());
+        result.put("log_dice", Math.round(edge.weight() * 100.0) / 100.0);
+        result.put("type", edge.type());
+        return result;
     }
 
     /**
@@ -306,15 +295,15 @@ class ExplorationHandlers {
         response.put("seed_collocates_count", seedCollocs.size());
 
         List<Map<String, Object>> nouns = new ArrayList<>();
-        for (DiscoveredNoun dn : result.getDiscoveredNouns()) {
-            nouns.add(formatDiscoveredNoun(dn));
+        for (DiscoveredNoun discoveredNoun : result.getDiscoveredNouns()) {
+            nouns.add(formatDiscoveredNoun(discoveredNoun));
         }
         response.put("discovered_nouns", nouns);
         response.put("discovered_nouns_count", nouns.size());
 
         List<Map<String, Object>> coreCollocs = new ArrayList<>();
-        for (CoreCollocate ca : result.getCoreCollocates()) {
-            coreCollocs.add(formatCoreCollocate(ca));
+        for (CoreCollocate collocate : result.getCoreCollocates()) {
+            coreCollocs.add(formatCoreCollocate(collocate));
         }
         response.put("core_collocates", coreCollocs);
         response.put("core_collocates_count", coreCollocs.size());
@@ -379,6 +368,18 @@ class ExplorationHandlers {
             adj.strongestNoun().ifPresent(n -> adjMap.put("specific_to", n));
         }
         return adjMap;
+    }
+
+    /** Parses a comma-separated seeds parameter into a cleaned, lowercased ordered set. */
+    private static Set<String> parseSeedSet(String seedsParam) {
+        Set<String> seeds = new LinkedHashSet<>();
+        if (seedsParam != null) {
+            for (String s : seedsParam.split(",")) {
+                String cleaned = s.trim().toLowerCase();
+                if (!cleaned.isEmpty()) seeds.add(cleaned);
+            }
+        }
+        return seeds;
     }
 
     private record ExploreParams(int topCollocates, int minShared, double minLogDice, int nounsPerSeed) {}

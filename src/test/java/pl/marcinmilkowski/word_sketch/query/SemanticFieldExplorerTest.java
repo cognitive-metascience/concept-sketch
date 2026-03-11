@@ -242,4 +242,95 @@ class SemanticFieldExplorerTest {
         assertNotNull(theoryEdge, "Should have abstract→theory edge");
         assertEquals(9.0, theoryEdge.weight(), 0.001);
     }
+
+    // ── exploreByPattern ──────────────────────────────────────────────────────
+
+    @Test
+    @DisplayName("exploreByPattern: returns non-null result for known seed")
+    void exploreByPattern_returnsNonNullResult() throws IOException {
+        StubExecutor executor = new StubExecutor(Map.of(
+            "theory", List.of(wsr("empirical", 8.0), wsr("scientific", 7.0))
+        ));
+
+        SemanticFieldExplorer explorer = new SemanticFieldExplorer(executor);
+        ExploreOptions opts = new ExploreOptions(10, 5, 0.0, 1, false);
+
+        ExplorationResult result = explorer.exploreByPattern(
+            "theory", "test-relation",
+            "[lemma=\"theory\"] [xpos=\"JJ.*\"]",
+            "[xpos=\"JJ.*\"]",
+            opts);
+
+        assertNotNull(result, "Result should not be null");
+        assertEquals("theory", result.getSeed(), "Result seed should match input");
+    }
+
+    @Test
+    @DisplayName("exploreByPattern: seed collocates map contains expected entries")
+    void exploreByPattern_seedCollocatesContainExpected() throws IOException {
+        StubExecutor executor = new StubExecutor(Map.of(
+            "theory", List.of(wsr("empirical", 8.0), wsr("scientific", 7.0))
+        ));
+
+        SemanticFieldExplorer explorer = new SemanticFieldExplorer(executor);
+        ExploreOptions opts = new ExploreOptions(10, 5, 0.0, 1, false);
+
+        ExplorationResult result = explorer.exploreByPattern(
+            "theory", "test-relation",
+            "[lemma=\"theory\"] [xpos=\"JJ.*\"]",
+            "[xpos=\"JJ.*\"]",
+            opts);
+
+        assertNotNull(result.getSeedCollocates(), "Seed collocates map should not be null");
+        assertTrue(result.getSeedCollocates().containsKey("empirical"),
+            "Seed collocates should contain 'empirical'");
+    }
+
+    // ── exploreMultiSeed ──────────────────────────────────────────────────────
+
+    @Test
+    @DisplayName("exploreMultiSeed: returns non-null result for two seeds")
+    void exploreMultiSeed_returnsNonNullResult() throws IOException {
+        StubExecutor executor = new StubExecutor(Map.of(
+            "theory",  List.of(wsr("empirical", 8.0), wsr("scientific", 7.0)),
+            "model",   List.of(wsr("empirical", 7.5), wsr("theoretical", 6.0))
+        ));
+
+        SemanticFieldExplorer explorer = new SemanticFieldExplorer(executor);
+
+        ExplorationResult result = explorer.exploreMultiSeed(
+            Set.of("theory", "model"),
+            new pl.marcinmilkowski.word_sketch.config.RelationConfig(
+                "test", "test", "test", "[xpos=\"NN.*\"] [xpos=\"JJ.*\"]",
+                1, 2, false, 0,
+                java.util.Optional.of(pl.marcinmilkowski.word_sketch.config.RelationType.SURFACE),
+                true),
+            0.0, 10, 1);
+
+        assertNotNull(result, "Result should not be null");
+    }
+
+    @Test
+    @DisplayName("exploreMultiSeed: shared collocates appear in seed collocates")
+    void exploreMultiSeed_sharedCollocateInSeedMap() throws IOException {
+        StubExecutor executor = new StubExecutor(Map.of(
+            "theory",  List.of(wsr("empirical", 8.0), wsr("scientific", 7.0)),
+            "model",   List.of(wsr("empirical", 7.5), wsr("formal", 6.0))
+        ));
+
+        SemanticFieldExplorer explorer = new SemanticFieldExplorer(executor);
+
+        ExplorationResult result = explorer.exploreMultiSeed(
+            Set.of("theory", "model"),
+            new pl.marcinmilkowski.word_sketch.config.RelationConfig(
+                "test", "test", "test", "[xpos=\"NN.*\"] [xpos=\"JJ.*\"]",
+                1, 2, false, 0,
+                java.util.Optional.of(pl.marcinmilkowski.word_sketch.config.RelationType.SURFACE),
+                true),
+            0.0, 10, 2);
+
+        assertNotNull(result.getSeedCollocates(), "Seed collocates should not be null");
+        assertTrue(result.getSeedCollocates().containsKey("empirical"),
+            "Shared collocate 'empirical' should appear in seed collocates map");
+    }
 }

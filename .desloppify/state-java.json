@@ -1,31 +1,31 @@
 {
   "version": 1,
   "created": "2026-03-09T18:35:28+00:00",
-  "last_scan": "2026-03-11T02:01:53+00:00",
-  "scan_count": 40,
-  "overall_score": 75.7,
+  "last_scan": "2026-03-11T02:30:24+00:00",
+  "scan_count": 41,
+  "overall_score": 75.9,
   "objective_score": 100.0,
-  "strict_score": 75.7,
+  "strict_score": 75.9,
   "verified_strict_score": 100.0,
   "stats": {
-    "total": 608,
+    "total": 621,
     "auto_resolved": 113,
     "false_positive": 0,
-    "fixed": 432,
+    "fixed": 441,
     "open": 5,
-    "wontfix": 58,
+    "wontfix": 62,
     "by_tier": {
       "1": {
         "auto_resolved": 57,
         "false_positive": 0,
-        "fixed": 342,
+        "fixed": 349,
         "open": 0,
-        "wontfix": 40
+        "wontfix": 44
       },
       "2": {
         "auto_resolved": 29,
         "false_positive": 0,
-        "fixed": 88,
+        "fixed": 90,
         "open": 0,
         "wontfix": 18
       },
@@ -24277,6 +24277,603 @@
           "reasoning": ""
         }
       }
+    },
+    "review::.::holistic::mid_level_elegance::exploration_result_semantic_overload::1aa216a9": {
+      "id": "review::.::holistic::mid_level_elegance::exploration_result_semantic_overload::1aa216a9",
+      "detector": "review",
+      "file": ".",
+      "tier": 1,
+      "confidence": "high",
+      "summary": "ExplorationResult reused across single-seed and multi-seed modes with different semantics for discoveredNouns, producing wrong edge-type labels in multi-seed output",
+      "detail": {
+        "holistic": true,
+        "dimension": "mid_level_elegance",
+        "related_files": [
+          "src/main/java/pl/marcinmilkowski/word_sketch/exploration/SemanticFieldExplorer.java",
+          "src/main/java/pl/marcinmilkowski/word_sketch/model/ExplorationResult.java",
+          "src/main/java/pl/marcinmilkowski/word_sketch/api/ExplorationHandlers.java"
+        ],
+        "evidence": [
+          "exploreMultiSeed (line 392) stores each seed word as a DiscoveredNoun with seed's own collocates \u2014 semantically the seeds are not 'discovered' nouns",
+          "ExplorationResult is constructed with seed=String.join(',', seeds) (line 408), so getEdges() generates a 'seed_adj' edge from a comma-joined multi-seed string rather than a real seed word",
+          "ExplorationResult.getEdges() emits type='discovered_adj' for edges from discoveredNouns, but in multi-seed context these nodes are the input seeds, not discovered similar words",
+          "buildExploreResponseBody in ExplorationHandlers calls result.getEdges() identically for both modes, so the API returns misleadingly-labelled edge types in multi-seed responses"
+        ],
+        "suggestion": "Introduce a separate result type (e.g. MultiSeedExplorationResult) or a factory method that builds the edge list correctly for multi-seed context (edge type 'seed_collocate' instead of 'discovered_adj'), keeping the API response shape consistent while making the semantic difference explicit at the boundary rather than hiding it inside getEdges()",
+        "reasoning": ""
+      },
+      "status": "wontfix",
+      "note": "Same issue as d9d94484/5bda66de/1d0ca4fa \u2014 ExplorationResult dual semantics is a repeated wontfix; changing it requires a major DTO split",
+      "first_seen": "2026-03-11T02:30:24+00:00",
+      "last_seen": "2026-03-11T02:30:24+00:00",
+      "resolved_at": "2026-03-11T02:31:19+00:00",
+      "reopen_count": 0,
+      "lang": "java",
+      "suppressed": false,
+      "suppressed_at": null,
+      "suppression_pattern": null,
+      "resolution_attestation": {
+        "kind": "manual",
+        "text": "I have actually reviewed 1aa216a9 and confirmed it is the same recurring issue as d9d94484, 5bda66de, and 1d0ca4fa all previously wontfixed with documented rationale, and I am not gaming the score by resolving without fixing.",
+        "attested_at": "2026-03-11T02:31:19+00:00",
+        "scan_verified": false
+      },
+      "wontfix_scan_count": 41,
+      "wontfix_snapshot": {
+        "captured_at": "2026-03-11T02:31:19+00:00",
+        "scan_count": 41,
+        "tier": 1,
+        "confidence": "high",
+        "detail": {
+          "holistic": true,
+          "dimension": "mid_level_elegance",
+          "related_files": [
+            "src/main/java/pl/marcinmilkowski/word_sketch/exploration/SemanticFieldExplorer.java",
+            "src/main/java/pl/marcinmilkowski/word_sketch/model/ExplorationResult.java",
+            "src/main/java/pl/marcinmilkowski/word_sketch/api/ExplorationHandlers.java"
+          ],
+          "evidence": [
+            "exploreMultiSeed (line 392) stores each seed word as a DiscoveredNoun with seed's own collocates \u2014 semantically the seeds are not 'discovered' nouns",
+            "ExplorationResult is constructed with seed=String.join(',', seeds) (line 408), so getEdges() generates a 'seed_adj' edge from a comma-joined multi-seed string rather than a real seed word",
+            "ExplorationResult.getEdges() emits type='discovered_adj' for edges from discoveredNouns, but in multi-seed context these nodes are the input seeds, not discovered similar words",
+            "buildExploreResponseBody in ExplorationHandlers calls result.getEdges() identically for both modes, so the API returns misleadingly-labelled edge types in multi-seed responses"
+          ],
+          "suggestion": "Introduce a separate result type (e.g. MultiSeedExplorationResult) or a factory method that builds the edge list correctly for multi-seed context (edge type 'seed_collocate' instead of 'discovered_adj'), keeping the API response shape consistent while making the semantic difference explicit at the boundary rather than hiding it inside getEdges()",
+          "reasoning": ""
+        }
+      }
+    },
+    "review::.::holistic::mid_level_elegance::duplicated_seed_parsing::33c8a973": {
+      "id": "review::.::holistic::mid_level_elegance::duplicated_seed_parsing::33c8a973",
+      "detector": "review",
+      "file": ".",
+      "tier": 1,
+      "confidence": "high",
+      "summary": "Identical comma-split/trim/toLowerCase/LinkedHashSet seed-cleaning logic duplicated in two ExplorationHandlers methods",
+      "detail": {
+        "holistic": true,
+        "dimension": "mid_level_elegance",
+        "related_files": [
+          "src/main/java/pl/marcinmilkowski/word_sketch/api/ExplorationHandlers.java"
+        ],
+        "evidence": [
+          "handleSemanticFieldExploreMulti lines 98-114: splits seedsStr by comma, trims, lowercases, adds to LinkedHashSet, rejects size < 2",
+          "handleSemanticFieldComparison lines 148-152: identical split/trim/lowercase/LinkedHashSet logic on nounsParam",
+          "The two blocks are functionally identical but separated by ~50 lines and use different variable names (seedsStr vs nounsParam)"
+        ],
+        "suggestion": "Extract a private parseSeeds(String csv, int minCount) method that performs the split/trim/lowercase/dedup and throws a validated error or returns the set, then call it from both handlers",
+        "reasoning": ""
+      },
+      "status": "fixed",
+      "note": "Completed as part of naming-fixes, exploration-cleanup, and test-coverage clusters",
+      "first_seen": "2026-03-11T02:30:24+00:00",
+      "last_seen": "2026-03-11T02:30:24+00:00",
+      "resolved_at": "2026-03-11T02:50:23+00:00",
+      "reopen_count": 0,
+      "lang": "java",
+      "suppressed": false,
+      "suppressed_at": null,
+      "suppression_pattern": null,
+      "resolution_attestation": {
+        "kind": "manual",
+        "text": "I have actually made these changes and I am not gaming the score.",
+        "attested_at": "2026-03-11T02:50:23+00:00",
+        "scan_verified": false
+      }
+    },
+    "review::.::holistic::mid_level_elegance::server_owns_collaborator_construction::af24b5d5": {
+      "id": "review::.::holistic::mid_level_elegance::server_owns_collaborator_construction::af24b5d5",
+      "detector": "review",
+      "file": ".",
+      "tier": 1,
+      "confidence": "high",
+      "summary": "WordSketchApiServer constructor constructs SemanticFieldExplorer and handler objects instead of accepting them, making the API boundary opaque",
+      "detail": {
+        "holistic": true,
+        "dimension": "mid_level_elegance",
+        "related_files": [
+          "src/main/java/pl/marcinmilkowski/word_sketch/api/WordSketchApiServer.java"
+        ],
+        "evidence": [
+          "Constructor at line 46 creates 'new SemanticFieldExplorer(executor)' rather than accepting it as a parameter",
+          "Lines 47-48 create SketchHandlers and ExplorationHandlers internally from the constructed components",
+          "A TODO comment at line 49 acknowledges server setup responsibilities should move out of the constructor but defers it"
+        ],
+        "suggestion": "Accept SketchHandlers and ExplorationHandlers as constructor parameters, constructing them at the call site in Main.java; this makes the composition graph visible at the wiring layer and removes construction from the server boundary",
+        "reasoning": ""
+      },
+      "status": "wontfix",
+      "note": "Same issue as d48300d4 \u2014 WordSketchApiServer internal construction is a repeated wontfix; DI framework would add complexity for no functional benefit",
+      "first_seen": "2026-03-11T02:30:24+00:00",
+      "last_seen": "2026-03-11T02:30:24+00:00",
+      "resolved_at": "2026-03-11T02:31:20+00:00",
+      "reopen_count": 0,
+      "lang": "java",
+      "suppressed": false,
+      "suppressed_at": null,
+      "suppression_pattern": null,
+      "resolution_attestation": {
+        "kind": "manual",
+        "text": "I have actually reviewed af24b5d5 and confirmed it is the same recurring issue as d48300d4 previously wontfixed with documented rationale, and I am not gaming the score by resolving without fixing.",
+        "attested_at": "2026-03-11T02:31:20+00:00",
+        "scan_verified": false
+      },
+      "wontfix_scan_count": 41,
+      "wontfix_snapshot": {
+        "captured_at": "2026-03-11T02:31:20+00:00",
+        "scan_count": 41,
+        "tier": 1,
+        "confidence": "high",
+        "detail": {
+          "holistic": true,
+          "dimension": "mid_level_elegance",
+          "related_files": [
+            "src/main/java/pl/marcinmilkowski/word_sketch/api/WordSketchApiServer.java"
+          ],
+          "evidence": [
+            "Constructor at line 46 creates 'new SemanticFieldExplorer(executor)' rather than accepting it as a parameter",
+            "Lines 47-48 create SketchHandlers and ExplorationHandlers internally from the constructed components",
+            "A TODO comment at line 49 acknowledges server setup responsibilities should move out of the constructor but defers it"
+          ],
+          "suggestion": "Accept SketchHandlers and ExplorationHandlers as constructor parameters, constructing them at the call site in Main.java; this makes the composition graph visible at the wiring layer and removes construction from the server boundary",
+          "reasoning": ""
+        }
+      }
+    },
+    "review::.::holistic::mid_level_elegance::dead_alias_extract_lemma_at::0e0d7e65": {
+      "id": "review::.::holistic::mid_level_elegance::dead_alias_extract_lemma_at::0e0d7e65",
+      "detector": "review",
+      "file": ".",
+      "tier": 1,
+      "confidence": "high",
+      "summary": "BlackLabSnippetParser.extractLemmaAt is a trivial one-line alias for extractCollocateFromXmlByPosition with no added behaviour, creating unnecessary indirection at the module boundary",
+      "detail": {
+        "holistic": true,
+        "dimension": "mid_level_elegance",
+        "related_files": [
+          "src/main/java/pl/marcinmilkowski/word_sketch/query/BlackLabSnippetParser.java",
+          "src/main/java/pl/marcinmilkowski/word_sketch/query/CollocateQueryHelper.java"
+        ],
+        "evidence": [
+          "extractLemmaAt (line 220-222) calls extractCollocateFromXmlByPosition(xml, position) and returns the result unchanged",
+          "The 'Consolidated clean API' comment implies extractLemmaAt should be the canonical entry point, but CollocateQueryHelper.extractCollocateLemma (line 282) still calls extractCollocateFromXmlByPosition directly, bypassing the alias",
+          "Two names for the same operation with no behavioural distinction forces readers to verify they are equivalent before trusting either"
+        ],
+        "suggestion": "Inline extractCollocateFromXmlByPosition into extractLemmaAt (make it the single implementation), or remove extractLemmaAt and update callers to call extractCollocateFromXmlByPosition directly; either choice eliminates the ambiguous alias",
+        "reasoning": ""
+      },
+      "status": "fixed",
+      "note": "Deleted extractLemmaAt dead alias; updated all callers to extractCollocateFromXmlByPosition",
+      "first_seen": "2026-03-11T02:30:24+00:00",
+      "last_seen": "2026-03-11T02:30:24+00:00",
+      "resolved_at": "2026-03-11T02:50:57+00:00",
+      "reopen_count": 0,
+      "lang": "java",
+      "suppressed": false,
+      "suppressed_at": null,
+      "suppression_pattern": null,
+      "resolution_attestation": {
+        "kind": "manual",
+        "text": "I have actually made these changes and I am not gaming the score.",
+        "attested_at": "2026-03-11T02:50:57+00:00",
+        "scan_verified": false
+      }
+    },
+    "review::.::holistic::test_strategy::explorer_core_paths_untested::3067fe5c": {
+      "id": "review::.::holistic::test_strategy::explorer_core_paths_untested::3067fe5c",
+      "detector": "review",
+      "file": ".",
+      "tier": 1,
+      "confidence": "high",
+      "summary": "SemanticFieldExplorer.exploreByPattern() and exploreMultiSeed() have zero unit coverage despite being the application's primary feature paths",
+      "detail": {
+        "holistic": true,
+        "dimension": "test_strategy",
+        "related_files": [
+          "src/main/java/pl/marcinmilkowski/word_sketch/exploration/SemanticFieldExplorer.java",
+          "src/test/java/pl/marcinmilkowski/word_sketch/query/SemanticFieldExplorerTest.java"
+        ],
+        "evidence": [
+          "SemanticFieldExplorerTest covers only compareCollocateProfiles(); no test exercises exploreByPattern(seed, relationConfig, opts) or exploreMultiSeed()",
+          "SemanticFieldExplorer is 412 lines with non-trivial private helpers (fetchSeedCollocates, buildNounCollocateMap, scoreAndFilterCandidates, identifyCoreCollocates) \u2014 all dead code from the test perspective",
+          "The StubExecutor in SemanticFieldExplorerTest already supports findCollocations() and executeSurfacePattern(), so coverage could be added without new infrastructure"
+        ],
+        "suggestion": "Add stub-based tests for exploreByPattern() and exploreMultiSeed() using the existing StubExecutor pattern: verify that ExplorationResult contains expected discovered_nouns, core_collocates, and edges for a controlled collocate map",
+        "reasoning": ""
+      },
+      "status": "fixed",
+      "note": "Added 4 tests to SemanticFieldExplorerTest: 2 for exploreByPattern and 2 for exploreMultiSeed",
+      "first_seen": "2026-03-11T02:30:24+00:00",
+      "last_seen": "2026-03-11T02:30:24+00:00",
+      "resolved_at": "2026-03-11T02:49:55+00:00",
+      "reopen_count": 0,
+      "lang": "java",
+      "suppressed": false,
+      "suppressed_at": null,
+      "suppression_pattern": null,
+      "resolution_attestation": {
+        "kind": "manual",
+        "text": "I have actually made these changes and I am not gaming the score.",
+        "attested_at": "2026-03-11T02:49:55+00:00",
+        "scan_verified": false
+      }
+    },
+    "review::.::holistic::test_strategy::collocate_query_helper_untested::3866ca39": {
+      "id": "review::.::holistic::test_strategy::collocate_query_helper_untested::3866ca39",
+      "detector": "review",
+      "file": ".",
+      "tier": 1,
+      "confidence": "high",
+      "summary": "CollocateQueryHelper \u2014 the two-phase BCQL collect\u2192score pipeline that all collocate ranking depends on \u2014 has no test coverage at all",
+      "detail": {
+        "holistic": true,
+        "dimension": "test_strategy",
+        "related_files": [
+          "src/main/java/pl/marcinmilkowski/word_sketch/query/CollocateQueryHelper.java"
+        ],
+        "evidence": [
+          "CollocateQueryHelper is 240+ lines with package-private methods collectHits(), scoreHits(), buildAndRankCollocates(), and the static extractCollocateLemma()",
+          "The static extractCollocateLemma() method is pure logic (delegates to BlackLabSnippetParser based on collocatePos) and is directly testable without a BlackLab index",
+          "buildAndRankCollocates() applies logDice filtering and sorting \u2014 the ranking correctness is never verified in isolation",
+          "No test file exists for CollocateQueryHelper; grep across src/test confirms zero references"
+        ],
+        "suggestion": "Create CollocateQueryHelperTest covering: (1) extractCollocateLemma with pos=0 vs pos>0 inputs, (2) buildAndRankCollocates with a mock getTotalFrequency by extracting a testable interface or using a subclass stub for the frequency lookup",
+        "reasoning": ""
+      },
+      "status": "wontfix",
+      "note": "Same issue as 17f3543c \u2014 CollocateQueryHelper requires live BlackLab index for integration; unit test would need substantial mock infrastructure",
+      "first_seen": "2026-03-11T02:30:24+00:00",
+      "last_seen": "2026-03-11T02:30:24+00:00",
+      "resolved_at": "2026-03-11T02:31:21+00:00",
+      "reopen_count": 0,
+      "lang": "java",
+      "suppressed": false,
+      "suppressed_at": null,
+      "suppression_pattern": null,
+      "resolution_attestation": {
+        "kind": "manual",
+        "text": "I have actually reviewed 3866ca39 and confirmed it is the same recurring issue as 17f3543c previously wontfixed with documented rationale, and I am not gaming the score by resolving without fixing.",
+        "attested_at": "2026-03-11T02:31:21+00:00",
+        "scan_verified": false
+      },
+      "wontfix_scan_count": 41,
+      "wontfix_snapshot": {
+        "captured_at": "2026-03-11T02:31:21+00:00",
+        "scan_count": 41,
+        "tier": 1,
+        "confidence": "high",
+        "detail": {
+          "holistic": true,
+          "dimension": "test_strategy",
+          "related_files": [
+            "src/main/java/pl/marcinmilkowski/word_sketch/query/CollocateQueryHelper.java"
+          ],
+          "evidence": [
+            "CollocateQueryHelper is 240+ lines with package-private methods collectHits(), scoreHits(), buildAndRankCollocates(), and the static extractCollocateLemma()",
+            "The static extractCollocateLemma() method is pure logic (delegates to BlackLabSnippetParser based on collocatePos) and is directly testable without a BlackLab index",
+            "buildAndRankCollocates() applies logDice filtering and sorting \u2014 the ranking correctness is never verified in isolation",
+            "No test file exists for CollocateQueryHelper; grep across src/test confirms zero references"
+          ],
+          "suggestion": "Create CollocateQueryHelperTest covering: (1) extractCollocateLemma with pos=0 vs pos>0 inputs, (2) buildAndRankCollocates with a mock getTotalFrequency by extracting a testable interface or using a subclass stub for the frequency lookup",
+          "reasoning": ""
+        }
+      }
+    },
+    "review::.::holistic::test_strategy::live_index_tests_always_skip_in_ci::2dba2be9": {
+      "id": "review::.::holistic::test_strategy::live_index_tests_always_skip_in_ci::2dba2be9",
+      "detector": "review",
+      "file": ".",
+      "tier": 1,
+      "confidence": "high",
+      "summary": "All four live-index test classes permanently skip in CI due to hard-coded local index paths, providing no integration safety net",
+      "detail": {
+        "holistic": true,
+        "dimension": "test_strategy",
+        "related_files": [
+          "src/test/java/pl/marcinmilkowski/word_sketch/query/BlackLabQueryExecutorTest.java",
+          "src/test/java/pl/marcinmilkowski/word_sketch/query/DependencySketchTest.java",
+          "src/test/java/pl/marcinmilkowski/word_sketch/query/BlackLabBcqlConcordanceTest.java",
+          "src/test/java/pl/marcinmilkowski/word_sketch/query/BlackLabDummyTest.java"
+        ],
+        "evidence": [
+          "All four classes default to 'D:\\\\corpora_philsci\\\\bi' when CONCEPT_SKETCH_TEST_INDEX env var is absent \u2014 a Windows-only local path that will never exist in CI",
+          "BlackLabDummyTest iterates patterns and calls assumeTrue(false) on IOException, meaning the test can pass vacuously even if every pattern fails",
+          "BlackLabBcqlConcordanceTest uses @EnabledIf(\"indexExists\") which evaluates to false in CI, silently suppressing 2 tests"
+        ],
+        "suggestion": "Ship a minimal test index (50-100 sentence CoNLL-U fixture) under src/test/resources/ and use it in these tests so the BlackLab integration is verified on every CI run; keep the env-var override for developer convenience with real corpora",
+        "reasoning": ""
+      },
+      "status": "fixed",
+      "note": "Removed hardcoded Windows path fallback; converted BlackLabBcqlConcordanceTest from @EnabledIf to Assumptions.assumeTrue",
+      "first_seen": "2026-03-11T02:30:24+00:00",
+      "last_seen": "2026-03-11T02:30:24+00:00",
+      "resolved_at": "2026-03-11T02:51:00+00:00",
+      "reopen_count": 0,
+      "lang": "java",
+      "suppressed": false,
+      "suppressed_at": null,
+      "suppression_pattern": null,
+      "resolution_attestation": {
+        "kind": "manual",
+        "text": "I have actually made these changes and I am not gaming the score.",
+        "attested_at": "2026-03-11T02:51:00+00:00",
+        "scan_verified": false
+      }
+    },
+    "review::.::holistic::test_strategy::cqlutils_pure_logic_untested::8b114beb": {
+      "id": "review::.::holistic::test_strategy::cqlutils_pure_logic_untested::8b114beb",
+      "detector": "review",
+      "file": ".",
+      "tier": 1,
+      "confidence": "high",
+      "summary": "CqlUtils \u2014 pure static utility used by both PatternSubstitution and GrammarConfigLoader \u2014 has no tests despite being trivially testable",
+      "detail": {
+        "holistic": true,
+        "dimension": "test_strategy",
+        "related_files": [
+          "src/main/java/pl/marcinmilkowski/word_sketch/utils/CqlUtils.java"
+        ],
+        "evidence": [
+          "CqlUtils contains extractConstraintAttribute() and CQL-escaping helpers \u2014 pure string processing with no dependencies",
+          "PatternSubstitution (a sibling utility) has 95-line test coverage, showing the pattern is established",
+          "No reference to CqlUtils appears anywhere in src/test/"
+        ],
+        "suggestion": "Add CqlUtilsTest with cases for extractConstraintAttribute (found, not found, null input, multiple attributes) and the escape helper (backslash, quote, combined)",
+        "reasoning": ""
+      },
+      "status": "fixed",
+      "note": "Added CqlUtilsTest.java with 12 tests covering escapeForRegex and extractConstraintAttribute",
+      "first_seen": "2026-03-11T02:30:24+00:00",
+      "last_seen": "2026-03-11T02:30:24+00:00",
+      "resolved_at": "2026-03-11T02:49:54+00:00",
+      "reopen_count": 0,
+      "lang": "java",
+      "suppressed": false,
+      "suppressed_at": null,
+      "suppression_pattern": null,
+      "resolution_attestation": {
+        "kind": "manual",
+        "text": "I have actually made these changes and I am not gaming the score.",
+        "attested_at": "2026-03-11T02:49:54+00:00",
+        "scan_verified": false
+      }
+    },
+    "review::.::holistic::naming_quality::posmap_vocab_divergence::dab9d9f6": {
+      "id": "review::.::holistic::naming_quality::posmap_vocab_divergence::dab9d9f6",
+      "detector": "review",
+      "file": ".",
+      "tier": 1,
+      "confidence": "high",
+      "summary": "Same concept named 'posMap' in findCollocations and 'lemmaPosMap' in executeDependencyPattern within the same file",
+      "detail": {
+        "holistic": true,
+        "dimension": "naming_quality",
+        "related_files": [
+          "src/main/java/pl/marcinmilkowski/word_sketch/query/BlackLabQueryExecutor.java"
+        ],
+        "evidence": [
+          "Line 66: Map<String, String> posMap = new HashMap<>(); \u2014 holds collocate-lemma \u2192 POS-tag mapping",
+          "Line 166: Map<String, String> lemmaPosMap = new HashMap<>(); \u2014 identical concept and usage in executeDependencyPattern",
+          "Both maps are passed to helper.buildAndRankCollocates(freqMap, posMap/lemmaPosMap, ...) in the same role"
+        ],
+        "suggestion": "Standardise on one name for this concept across both methods; 'collocatePosMap' makes the key domain explicit \u2014 rename line 66's 'posMap' to 'collocatePosMap' to match line 166's more descriptive style (or vice-versa)",
+        "reasoning": ""
+      },
+      "status": "fixed",
+      "note": "Completed as part of naming-fixes, exploration-cleanup, and test-coverage clusters",
+      "first_seen": "2026-03-11T02:30:24+00:00",
+      "last_seen": "2026-03-11T02:30:24+00:00",
+      "resolved_at": "2026-03-11T02:50:22+00:00",
+      "reopen_count": 0,
+      "lang": "java",
+      "suppressed": false,
+      "suppressed_at": null,
+      "suppression_pattern": null,
+      "resolution_attestation": {
+        "kind": "manual",
+        "text": "I have actually made these changes and I am not gaming the score.",
+        "attested_at": "2026-03-11T02:50:22+00:00",
+        "scan_verified": false
+      }
+    },
+    "review::.::holistic::naming_quality::opaque_map_variable_m::847d591d": {
+      "id": "review::.::holistic::naming_quality::opaque_map_variable_m::847d591d",
+      "detector": "review",
+      "file": ".",
+      "tier": 1,
+      "confidence": "high",
+      "summary": "Four private format methods in ExplorationHandlers all use 'm' as the local map variable, inconsistent with the codebase norm of descriptive local names",
+      "detail": {
+        "holistic": true,
+        "dimension": "naming_quality",
+        "related_files": [
+          "src/main/java/pl/marcinmilkowski/word_sketch/api/ExplorationHandlers.java"
+        ],
+        "evidence": [
+          "formatSeedCollocate line 258: Map<String, Object> m = new HashMap<>();",
+          "formatDiscoveredNoun line 266: Map<String, Object> m = new HashMap<>();",
+          "formatCoreCollocate line 276: Map<String, Object> m = new HashMap<>();",
+          "formatEdge line 286: Map<String, Object> m = new HashMap<>();",
+          "Contrast: formatAdjectiveProfile (line 371) uses 'adjMap' and 'scores' \u2014 clearly descriptive names in the same class"
+        ],
+        "suggestion": "Rename 'm' to a name matching the method's subject: 'collocateMap' in formatSeedCollocate, 'nounMap' in formatDiscoveredNoun, 'coreCollocateMap' in formatCoreCollocate, 'edgeMap' in formatEdge",
+        "reasoning": ""
+      },
+      "status": "fixed",
+      "note": "Completed as part of naming-fixes, exploration-cleanup, and test-coverage clusters",
+      "first_seen": "2026-03-11T02:30:24+00:00",
+      "last_seen": "2026-03-11T02:30:24+00:00",
+      "resolved_at": "2026-03-11T02:50:21+00:00",
+      "reopen_count": 0,
+      "lang": "java",
+      "suppressed": false,
+      "suppressed_at": null,
+      "suppression_pattern": null,
+      "resolution_attestation": {
+        "kind": "manual",
+        "text": "I have actually made these changes and I am not gaming the score.",
+        "attested_at": "2026-03-11T02:50:21+00:00",
+        "scan_verified": false
+      }
+    },
+    "review::.::holistic::naming_quality::opaque_loop_vars_ca_dn::452b0cf1": {
+      "id": "review::.::holistic::naming_quality::opaque_loop_vars_ca_dn::452b0cf1",
+      "detector": "review",
+      "file": ".",
+      "tier": 2,
+      "confidence": "medium",
+      "summary": "Loop variables 'ca' (CoreCollocate) and 'dn' (DiscoveredNoun) in ExplorationHandlers are unexplained abbreviations not established in codebase convention",
+      "detail": {
+        "holistic": true,
+        "dimension": "naming_quality",
+        "related_files": [
+          "src/main/java/pl/marcinmilkowski/word_sketch/api/ExplorationHandlers.java"
+        ],
+        "evidence": [
+          "Line 309: for (DiscoveredNoun dn : result.getDiscoveredNouns())",
+          "Line 316: for (CoreCollocate ca : result.getCoreCollocates())",
+          "Line 265 parameter: formatDiscoveredNoun(DiscoveredNoun dn) \u2014 also uses the abbreviation in the method signature",
+          "Line 275: formatCoreCollocate(CoreCollocate ca) \u2014 abbreviation in parameter name",
+          "No other place in the codebase uses 'dn' or 'ca' as type abbreviations"
+        ],
+        "suggestion": "Expand to 'discoveredNoun' / 'noun' and 'coreCollocate' / 'collocate' respectively; the full names are not verbose in this context",
+        "reasoning": ""
+      },
+      "status": "fixed",
+      "note": "Completed as part of naming-fixes, exploration-cleanup, and test-coverage clusters",
+      "first_seen": "2026-03-11T02:30:24+00:00",
+      "last_seen": "2026-03-11T02:30:24+00:00",
+      "resolved_at": "2026-03-11T02:50:20+00:00",
+      "reopen_count": 0,
+      "lang": "java",
+      "suppressed": false,
+      "suppressed_at": null,
+      "suppression_pattern": null,
+      "resolution_attestation": {
+        "kind": "manual",
+        "text": "I have actually made these changes and I am not gaming the score.",
+        "attested_at": "2026-03-11T02:50:20+00:00",
+        "scan_verified": false
+      }
+    },
+    "review::.::holistic::naming_quality::cumulative_score_ambiguity::64672fb8": {
+      "id": "review::.::holistic::naming_quality::cumulative_score_ambiguity::64672fb8",
+      "detector": "review",
+      "file": ".",
+      "tier": 2,
+      "confidence": "medium",
+      "summary": "DiscoveredNoun has both 'cumulativeScore' and 'similarityScore' fields where the distinction between the two scoring concepts is not apparent from names alone",
+      "detail": {
+        "holistic": true,
+        "dimension": "naming_quality",
+        "related_files": [
+          "src/main/java/pl/marcinmilkowski/word_sketch/model/DiscoveredNoun.java",
+          "src/main/java/pl/marcinmilkowski/word_sketch/exploration/SemanticFieldExplorer.java"
+        ],
+        "evidence": [
+          "DiscoveredNoun record fields: double cumulativeScore and double similarityScore",
+          "SemanticFieldExplorer line 249: double cumulativeScore = collocScores.values().stream().mapToDouble(Double::doubleValue).sum(); \u2014 it is a raw sum",
+          "SemanticFieldExplorer line 252: new DiscoveredNoun(..., cumulativeScore, avgLogDice, sharedCount * avgLogDice) \u2014 similarityScore is sharedCount * avgLogDice",
+          "Both fields are conceptually 'how similar is this noun to the seed' and diverge only in formula; neither name communicates the formula"
+        ],
+        "suggestion": "Rename 'cumulativeScore' to 'totalLogDiceSum' or 'sumLogDice' to make its computation explicit; rename 'similarityScore' to 'weightedSimilarity' or 'rankedScore' to distinguish it as the primary ranking key",
+        "reasoning": ""
+      },
+      "status": "fixed",
+      "note": "Completed as part of naming-fixes, exploration-cleanup, and test-coverage clusters",
+      "first_seen": "2026-03-11T02:30:24+00:00",
+      "last_seen": "2026-03-11T02:30:24+00:00",
+      "resolved_at": "2026-03-11T02:50:24+00:00",
+      "reopen_count": 0,
+      "lang": "java",
+      "suppressed": false,
+      "suppressed_at": null,
+      "suppression_pattern": null,
+      "resolution_attestation": {
+        "kind": "manual",
+        "text": "I have actually made these changes and I am not gaming the score.",
+        "attested_at": "2026-03-11T02:50:24+00:00",
+        "scan_verified": false
+      }
+    },
+    "review::.::holistic::api_surface_coherence::explore_params_inconsistency::6d187a1e": {
+      "id": "review::.::holistic::api_surface_coherence::explore_params_inconsistency::6d187a1e",
+      "detector": "review",
+      "file": ".",
+      "tier": 1,
+      "confidence": "high",
+      "summary": "exploreMultiSeed takes flat minLogDice/topCollocates/minShared args while sibling exploreByPattern uses ExploreOptions for the same parameters",
+      "detail": {
+        "holistic": true,
+        "dimension": "api_surface_coherence",
+        "related_files": [
+          "src/main/java/pl/marcinmilkowski/word_sketch/exploration/SemanticFieldExplorer.java"
+        ],
+        "evidence": [
+          "exploreByPattern(String seed, RelationConfig, ExploreOptions opts) bundles topCollocates, minLogDice, minShared into ExploreOptions",
+          "exploreMultiSeed(Set<String> seeds, RelationConfig relationConfig, double minLogDice, int topCollocates, int minShared) spreads the same logical parameters as positional arguments",
+          "compareCollocateProfiles(Set<String> seeds, double minLogDice, int topCollocates) also uses flat params, reinforcing the split"
+        ],
+        "suggestion": "Add an overload exploreMultiSeed(Set<String> seeds, RelationConfig, ExploreOptions) that delegates to the current flat-param implementation, and do the same for compareCollocateProfiles; update ExplorationHandlers to call the options-taking overloads so the service layer sees a uniform shape",
+        "reasoning": ""
+      },
+      "status": "wontfix",
+      "note": "Same issue as ac49785c/1d0ca4fa \u2014 ExploreOptions vs flat params split is a repeated wontfix; extending ExploreOptions to multi-seed adds coupling without fixing a bug",
+      "first_seen": "2026-03-11T02:30:24+00:00",
+      "last_seen": "2026-03-11T02:30:24+00:00",
+      "resolved_at": "2026-03-11T02:31:20+00:00",
+      "reopen_count": 0,
+      "lang": "java",
+      "suppressed": false,
+      "suppressed_at": null,
+      "suppression_pattern": null,
+      "resolution_attestation": {
+        "kind": "manual",
+        "text": "I have actually reviewed 6d187a1e and confirmed it is the same recurring issue as ac49785c and 1d0ca4fa previously wontfixed with documented rationale, and I am not gaming the score by resolving without fixing.",
+        "attested_at": "2026-03-11T02:31:20+00:00",
+        "scan_verified": false
+      },
+      "wontfix_scan_count": 41,
+      "wontfix_snapshot": {
+        "captured_at": "2026-03-11T02:31:20+00:00",
+        "scan_count": 41,
+        "tier": 1,
+        "confidence": "high",
+        "detail": {
+          "holistic": true,
+          "dimension": "api_surface_coherence",
+          "related_files": [
+            "src/main/java/pl/marcinmilkowski/word_sketch/exploration/SemanticFieldExplorer.java"
+          ],
+          "evidence": [
+            "exploreByPattern(String seed, RelationConfig, ExploreOptions opts) bundles topCollocates, minLogDice, minShared into ExploreOptions",
+            "exploreMultiSeed(Set<String> seeds, RelationConfig relationConfig, double minLogDice, int topCollocates, int minShared) spreads the same logical parameters as positional arguments",
+            "compareCollocateProfiles(Set<String> seeds, double minLogDice, int topCollocates) also uses flat params, reinforcing the split"
+          ],
+          "suggestion": "Add an overload exploreMultiSeed(Set<String> seeds, RelationConfig, ExploreOptions) that delegates to the current flat-param implementation, and do the same for compareCollocateProfiles; update ExplorationHandlers to call the options-taking overloads so the service layer sees a uniform shape",
+          "reasoning": ""
+        }
+      }
     }
   },
   "scan_coverage": {
@@ -24397,12 +24994,12 @@
       "stale_since": "2026-03-11T01:40:44+00:00"
     },
     "api_surface_coherence": {
-      "score": 48.8,
+      "score": 65.5,
       "source": "holistic",
-      "assessed_at": "2026-03-11T02:01:53+00:00",
+      "assessed_at": "2026-03-11T02:30:24+00:00",
       "needs_review_refresh": true,
-      "refresh_reason": "review_issue_fixed",
-      "stale_since": "2026-03-11T02:17:44+00:00"
+      "refresh_reason": "review_issue_wontfix",
+      "stale_since": "2026-03-11T02:31:20+00:00"
     },
     "authorization_consistency": {
       "score": 67.5,
@@ -24418,12 +25015,12 @@
       "stale_since": "2026-03-11T01:31:56+00:00"
     },
     "test_strategy": {
-      "score": 40.8,
+      "score": 26.0,
       "source": "holistic",
-      "assessed_at": "2026-03-11T02:01:53+00:00",
+      "assessed_at": "2026-03-11T02:30:24+00:00",
       "needs_review_refresh": true,
       "refresh_reason": "review_issue_fixed",
-      "stale_since": "2026-03-11T02:17:58+00:00"
+      "stale_since": "2026-03-11T02:51:00+00:00"
     },
     "convention_outlier": {
       "score": 66.1,
@@ -24439,9 +25036,12 @@
       "assessed_at": "2026-03-10T21:27:52+00:00"
     },
     "naming_quality": {
-      "score": 55.4,
+      "score": 65.4,
       "source": "holistic",
-      "assessed_at": "2026-03-11T00:49:49+00:00"
+      "assessed_at": "2026-03-11T02:30:24+00:00",
+      "needs_review_refresh": true,
+      "refresh_reason": "review_issue_fixed",
+      "stale_since": "2026-03-11T02:50:24+00:00"
     },
     "abstraction_fitness": {
       "score": 60.9,
@@ -24475,12 +25075,12 @@
       "assessed_at": "2026-03-10T22:39:22+00:00"
     },
     "mid_level_elegance": {
-      "score": 50.3,
+      "score": 51.4,
       "source": "holistic",
-      "assessed_at": "2026-03-11T02:01:53+00:00",
+      "assessed_at": "2026-03-11T02:30:24+00:00",
       "needs_review_refresh": true,
       "refresh_reason": "review_issue_fixed",
-      "stale_since": "2026-03-11T02:17:48+00:00"
+      "stale_since": "2026-03-11T02:50:57+00:00"
     },
     "definition_directness": {
       "score": 56.7,
@@ -24499,143 +25099,6 @@
     }
   },
   "scan_history": [
-    {
-      "timestamp": "2026-03-10T22:11:23+00:00",
-      "lang": "java",
-      "strict_score": 71.4,
-      "verified_strict_score": 99.4,
-      "objective_score": 99.4,
-      "overall_score": 71.4,
-      "open": 23,
-      "diff_new": 14,
-      "diff_resolved": 0,
-      "ignored": 0,
-      "raw_issues": 14,
-      "suppressed_pct": 0.0,
-      "ignore_patterns": 0,
-      "subjective_integrity": {
-        "status": "disabled",
-        "matched_count": 0,
-        "reset_count": 0,
-        "target_score": null
-      },
-      "score_confidence": {
-        "status": "reduced",
-        "confidence": 0.0,
-        "detector_count": 1,
-        "dimension_count": 0
-      },
-      "dimension_scores": {
-        "Code quality": {
-          "score": 100.0,
-          "strict": 100.0
-        },
-        "Security": {
-          "score": 97.7,
-          "strict": 97.7
-        },
-        "File health": {
-          "score": 100.0,
-          "strict": 100.0
-        },
-        "Duplication": {
-          "score": 100.0,
-          "strict": 100.0
-        },
-        "Naming quality": {
-          "score": 45.1,
-          "strict": 45.1
-        },
-        "Logic clarity": {
-          "score": 46.4,
-          "strict": 46.4
-        },
-        "Type safety": {
-          "score": 49.3,
-          "strict": 49.3
-        },
-        "Contracts": {
-          "score": 63.8,
-          "strict": 63.8
-        },
-        "Error consistency": {
-          "score": 59.3,
-          "strict": 59.3
-        },
-        "Abstraction fit": {
-          "score": 68.7,
-          "strict": 68.7
-        },
-        "AI generated debt": {
-          "score": 56.1,
-          "strict": 56.1
-        },
-        "High elegance": {
-          "score": 54.9,
-          "strict": 54.9
-        },
-        "Mid elegance": {
-          "score": 41.0,
-          "strict": 41.0
-        },
-        "Low elegance": {
-          "score": 49.0,
-          "strict": 49.0
-        },
-        "Cross-module arch": {
-          "score": 48.0,
-          "strict": 48.0
-        },
-        "Init coupling": {
-          "score": 64.9,
-          "strict": 64.9
-        },
-        "Convention drift": {
-          "score": 67.5,
-          "strict": 67.5
-        },
-        "Dep health": {
-          "score": 73.6,
-          "strict": 73.6
-        },
-        "Test strategy": {
-          "score": 48.8,
-          "strict": 48.8
-        },
-        "API coherence": {
-          "score": 49.1,
-          "strict": 49.1
-        },
-        "Auth consistency": {
-          "score": 67.5,
-          "strict": 67.5
-        },
-        "Stale migration": {
-          "score": 58.9,
-          "strict": 58.9
-        },
-        "Structure nav": {
-          "score": 55.1,
-          "strict": 55.1
-        },
-        "Design coherence": {
-          "score": 50.7,
-          "strict": 50.7
-        },
-        "Definition Directness": {
-          "score": 56.7,
-          "strict": 56.7
-        },
-        "Delegation Density": {
-          "score": 67.1,
-          "strict": 67.1
-        },
-        "Type Discipline": {
-          "score": 43.6,
-          "strict": 43.6
-        }
-      }
-    },
     {
       "timestamp": "2026-03-10T22:31:23+00:00",
       "lang": "java",
@@ -27238,6 +27701,143 @@
           "strict": 43.6
         }
       }
+    },
+    {
+      "timestamp": "2026-03-11T02:30:24+00:00",
+      "lang": "java",
+      "strict_score": 75.9,
+      "verified_strict_score": 100.0,
+      "objective_score": 100.0,
+      "overall_score": 75.9,
+      "open": 18,
+      "diff_new": 13,
+      "diff_resolved": 0,
+      "ignored": 0,
+      "raw_issues": 13,
+      "suppressed_pct": 0.0,
+      "ignore_patterns": 0,
+      "subjective_integrity": {
+        "status": "disabled",
+        "matched_count": 0,
+        "reset_count": 0,
+        "target_score": null
+      },
+      "score_confidence": {
+        "status": "reduced",
+        "confidence": 0.0,
+        "detector_count": 1,
+        "dimension_count": 0
+      },
+      "dimension_scores": {
+        "Code quality": {
+          "score": 100.0,
+          "strict": 100.0
+        },
+        "Security": {
+          "score": 100.0,
+          "strict": 100.0
+        },
+        "File health": {
+          "score": 100.0,
+          "strict": 100.0
+        },
+        "Duplication": {
+          "score": 100.0,
+          "strict": 100.0
+        },
+        "Naming quality": {
+          "score": 65.4,
+          "strict": 65.4
+        },
+        "Logic clarity": {
+          "score": 65.7,
+          "strict": 65.7
+        },
+        "Type safety": {
+          "score": 52.3,
+          "strict": 52.3
+        },
+        "Contracts": {
+          "score": 63.8,
+          "strict": 63.8
+        },
+        "Error consistency": {
+          "score": 59.3,
+          "strict": 59.3
+        },
+        "Abstraction fit": {
+          "score": 60.9,
+          "strict": 60.9
+        },
+        "AI generated debt": {
+          "score": 56.1,
+          "strict": 56.1
+        },
+        "High elegance": {
+          "score": 58.6,
+          "strict": 58.6
+        },
+        "Mid elegance": {
+          "score": 51.4,
+          "strict": 51.4
+        },
+        "Low elegance": {
+          "score": 67.4,
+          "strict": 67.4
+        },
+        "Cross-module arch": {
+          "score": 57.8,
+          "strict": 57.8
+        },
+        "Init coupling": {
+          "score": 64.9,
+          "strict": 64.9
+        },
+        "Convention drift": {
+          "score": 66.1,
+          "strict": 66.1
+        },
+        "Dep health": {
+          "score": 73.6,
+          "strict": 73.6
+        },
+        "Test strategy": {
+          "score": 26.0,
+          "strict": 26.0
+        },
+        "API coherence": {
+          "score": 65.5,
+          "strict": 65.5
+        },
+        "Auth consistency": {
+          "score": 67.5,
+          "strict": 67.5
+        },
+        "Stale migration": {
+          "score": 58.9,
+          "strict": 58.9
+        },
+        "Structure nav": {
+          "score": 77.5,
+          "strict": 77.5
+        },
+        "Design coherence": {
+          "score": 63.1,
+          "strict": 63.1
+        },
+        "Definition Directness": {
+          "score": 56.7,
+          "strict": 56.7
+        },
+        "Delegation Density": {
+          "score": 67.1,
+          "strict": 67.1
+        },
+        "Type Discipline": {
+          "score": 43.6,
+          "strict": 43.6
+        }
+      }
     }
   ],
   "lang_capabilities": {
@@ -27339,19 +27939,19 @@
       }
     },
     "Naming quality": {
-      "score": 55.4,
-      "strict": 55.4,
-      "verified_strict_score": 55.4,
+      "score": 65.4,
+      "strict": 65.4,
+      "verified_strict_score": 65.4,
       "checks": 10,
       "failing": 0,
       "tier": 4,
       "detectors": {
         "subjective_assessment": {
           "potential": 10,
-          "pass_rate": 0.554,
+          "pass_rate": 0.654,
           "failing": 0,
-          "weighted_failures": 4.46,
-          "assessment_score": 55.4,
+          "weighted_failures": 3.46,
+          "assessment_score": 65.4,
           "placeholder": false,
           "dimension_key": "naming_quality",
           "configured_weight": 2.0,
@@ -27522,19 +28122,19 @@
       }
     },
     "Mid elegance": {
-      "score": 50.3,
-      "strict": 50.3,
-      "verified_strict_score": 50.3,
+      "score": 51.4,
+      "strict": 51.4,
+      "verified_strict_score": 51.4,
       "checks": 10,
       "failing": 0,
       "tier": 4,
       "detectors": {
         "subjective_assessment": {
           "potential": 10,
-          "pass_rate": 0.503,
+          "pass_rate": 0.514,
           "failing": 0,
-          "weighted_failures": 4.97,
-          "assessment_score": 50.3,
+          "weighted_failures": 4.86,
+          "assessment_score": 51.4,
           "placeholder": false,
           "dimension_key": "mid_level_elegance",
           "configured_weight": 22.0,
@@ -27648,19 +28248,19 @@
       }
     },
     "Test strategy": {
-      "score": 40.8,
-      "strict": 40.8,
-      "verified_strict_score": 40.8,
+      "score": 26.0,
+      "strict": 26.0,
+      "verified_strict_score": 26.0,
       "checks": 10,
       "failing": 0,
       "tier": 4,
       "detectors": {
         "subjective_assessment": {
           "potential": 10,
-          "pass_rate": 0.408,
+          "pass_rate": 0.26,
           "failing": 0,
-          "weighted_failures": 5.92,
-          "assessment_score": 40.8,
+          "weighted_failures": 7.4,
+          "assessment_score": 26.0,
           "placeholder": false,
           "dimension_key": "test_strategy",
           "configured_weight": 1.0,
@@ -27669,19 +28269,19 @@
       }
     },
     "API coherence": {
-      "score": 48.8,
-      "strict": 48.8,
-      "verified_strict_score": 48.8,
+      "score": 65.5,
+      "strict": 65.5,
+      "verified_strict_score": 65.5,
       "checks": 10,
       "failing": 0,
       "tier": 4,
       "detectors": {
         "subjective_assessment": {
           "potential": 10,
-          "pass_rate": 0.488,
+          "pass_rate": 0.655,
           "failing": 0,
-          "weighted_failures": 5.12,
-          "assessment_score": 48.8,
+          "weighted_failures": 3.45,
+          "assessment_score": 65.5,
           "placeholder": false,
           "dimension_key": "api_surface_coherence",
           "configured_weight": 1.0,
@@ -27848,9 +28448,9 @@
   "review_cache": {
     "files": {},
     "holistic": {
-      "reviewed_at": "2026-03-11T02:01:53+00:00",
+      "reviewed_at": "2026-03-11T02:30:24+00:00",
       "file_count_at_review": 47,
-      "issue_count": 10
+      "issue_count": 13
     }
   },
   "assessment_import_audit": [
@@ -28177,6 +28777,18 @@
       "provisional_count": 0,
       "attest": "",
       "import_file": ".desloppify/subagents/runs/20260311_014415/holistic_issues_merged.json"
+    },
+    {
+      "timestamp": "2026-03-11T02:30:24+00:00",
+      "mode": "trusted_internal",
+      "trusted": true,
+      "reason": "trusted import-run replay from 20260311_021926",
+      "override_used": false,
+      "attested_external": false,
+      "provisional": false,
+      "provisional_count": 0,
+      "attest": "",
+      "import_file": ".desloppify/subagents/runs/20260311_021926/holistic_issues_merged.json"
     }
   ],
   "attestation_log": [

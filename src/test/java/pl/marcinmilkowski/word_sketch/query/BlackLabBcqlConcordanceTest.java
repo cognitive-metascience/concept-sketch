@@ -1,7 +1,7 @@
 package pl.marcinmilkowski.word_sketch.query;
 
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.EnabledIf;
+import org.junit.jupiter.api.Assumptions;
 import java.io.File;
 import java.util.List;
 import pl.marcinmilkowski.word_sketch.query.QueryResults;
@@ -19,11 +19,16 @@ public class BlackLabBcqlConcordanceTest {
 
     private static final String INDEX_PATH = System.getenv("CONCEPT_SKETCH_TEST_INDEX") != null
             ? System.getenv("CONCEPT_SKETCH_TEST_INDEX")
-            : System.getProperty("conceptSketch.testIndex", "D:\\corpora_philsci\\bi");
+            : System.getProperty("conceptSketch.testIndex");
+
+    private static void assumeIndexAvailable() {
+        Assumptions.assumeTrue(INDEX_PATH != null && new File(INDEX_PATH).exists(),
+            "Test skipped: index not available — set CONCEPT_SKETCH_TEST_INDEX to enable");
+    }
 
     @Test
-    @EnabledIf("indexExists")
     public void testBcqlQueryReturnsFullSentences() throws Exception {
+        assumeIndexAvailable();
         try (BlackLabQueryExecutor executor = new BlackLabQueryExecutor(INDEX_PATH)) {
             String bcqlPattern = "1:[lemma=\"theory\"] [lemma=\"be\"] 2:[xpos=\"JJ.*\"]";
 
@@ -46,8 +51,8 @@ public class BlackLabBcqlConcordanceTest {
     }
 
     @Test
-    @EnabledIf("indexExists")
     public void testBcqlQueryWithIrrelevant() throws Exception {
+        assumeIndexAvailable();
         try (BlackLabQueryExecutor executor = new BlackLabQueryExecutor(INDEX_PATH)) {
             String bcqlPattern = "1:[lemma=\"concept\"] [lemma=\"be\"] 2:[xpos=\"JJ.*\"]";
 
@@ -63,9 +68,5 @@ public class BlackLabBcqlConcordanceTest {
                     "Should return full sentence, got: " + r.getSentence().length() + " chars");
             }
         }
-    }
-
-    private static boolean indexExists() {
-        return new File(INDEX_PATH).exists();
     }
 }

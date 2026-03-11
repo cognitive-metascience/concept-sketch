@@ -1,0 +1,124 @@
+{
+  "batch": "test_strategy",
+  "batch_index": 2,
+  "assessments": {
+    "test_strategy": 50.0
+  },
+  "dimension_notes": {
+    "test_strategy": {
+      "evidence": [
+        "SemanticFieldExplorerTest covers only compareCollocateProfiles(); the two primary exploration paths exploreByPattern() and exploreMultiSeed() (412-line class) have zero stub-based unit test coverage",
+        "CollocateQueryHelper (240+ lines, two-phase BCQL collect→score pipeline, core ranking logic) has no test class at all",
+        "All four live-index test classes (BlackLabQueryExecutorTest, DependencySketchTest, BlackLabBcqlConcordanceTest, BlackLabDummyTest) guard with Assumptions.assumeTrue(indexDir.exists()); they permanently skip in any CI environment without the D:\\corpora_philsci\\bi path",
+        "CqlUtils (pure static functions, fully testable in isolation) has no tests despite PatternSubstitution — a sibling pure-utility class — being well covered",
+        "BlackLabSnippetParserTest is thorough: 300 lines, covers null/empty/boundary/multi-token cases for every public method",
+        "HandlersTest uses a well-crafted MockExchange and covers both 400 error paths and 200 happy paths for SketchHandlers and ExplorationHandlers",
+        "SemanticFieldExplorerTest employs a clean StubExecutor pattern, covering intersection/partial-sharing/edge-weight logic without requiring a real index"
+      ],
+      "impact_scope": "subsystem",
+      "fix_scope": "multi_file_refactor",
+      "confidence": "high"
+    }
+  },
+  "dimension_judgment": {
+    "test_strategy": {
+      "strengths": [
+        "BlackLabSnippetParserTest is exemplary: all public methods covered with null, empty, boundary, multi-token, and fallback cases — a genuine high-quality unit test suite",
+        "SemanticFieldExplorerTest introduces a clean StubExecutor that isolates the comparison/ranking logic from the BlackLab backend, demonstrating the right test architecture for this codebase",
+        "HandlersTest uses a compact MockExchange to test both input-validation 400 paths and full 200 happy-paths for HTTP handlers without starting a server",
+        "RelationUtilsTest exhaustively covers case-insensitivity and alias resolution, including null input and unknown input passthrough"
+      ],
+      "issue_character": "The gaps are concentrated in two layers that are never reached by the existing stub-based tests: the outer exploration orchestration (SemanticFieldExplorer's exploreByPattern/exploreMultiSeed paths) and the inner execution backbone (CollocateQueryHelper), while every live-index test that could close those gaps is permanently skipped in CI.",
+      "score_rationale": "The codebase scores above 40 because the parsing and utility layers are well-tested and the test infrastructure (stubs, MockExchange, GrammarConfigHelper) is thoughtfully designed. However, the two most critical runtime paths — the product's core exploration feature (exploreByPattern/exploreMultiSeed) and the collocate ranking pipeline (CollocateQueryHelper) — have zero automated coverage. All four live-index tests that would verify the BlackLab integration are structurally uncallable in CI due to hard-coded local paths. This places the codebase firmly in the 'significant drag' band: solid testing culture in the utility layer but the business logic core is untested."
+    }
+  },
+  "issues": [
+    {
+      "dimension": "test_strategy",
+      "identifier": "explorer_core_paths_untested",
+      "summary": "SemanticFieldExplorer.exploreByPattern() and exploreMultiSeed() have zero unit coverage despite being the application's primary feature paths",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/exploration/SemanticFieldExplorer.java",
+        "src/test/java/pl/marcinmilkowski/word_sketch/query/SemanticFieldExplorerTest.java"
+      ],
+      "evidence": [
+        "SemanticFieldExplorerTest covers only compareCollocateProfiles(); no test exercises exploreByPattern(seed, relationConfig, opts) or exploreMultiSeed()",
+        "SemanticFieldExplorer is 412 lines with non-trivial private helpers (fetchSeedCollocates, buildNounCollocateMap, scoreAndFilterCandidates, identifyCoreCollocates) — all dead code from the test perspective",
+        "The StubExecutor in SemanticFieldExplorerTest already supports findCollocations() and executeSurfacePattern(), so coverage could be added without new infrastructure"
+      ],
+      "suggestion": "Add stub-based tests for exploreByPattern() and exploreMultiSeed() using the existing StubExecutor pattern: verify that ExplorationResult contains expected discovered_nouns, core_collocates, and edges for a controlled collocate map",
+      "confidence": "high",
+      "impact_scope": "subsystem",
+      "fix_scope": "multi_file_refactor",
+      "root_cause_cluster": "missing_unit_tests_for_orchestration"
+    },
+    {
+      "dimension": "test_strategy",
+      "identifier": "collocate_query_helper_untested",
+      "summary": "CollocateQueryHelper — the two-phase BCQL collect→score pipeline that all collocate ranking depends on — has no test coverage at all",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/query/CollocateQueryHelper.java"
+      ],
+      "evidence": [
+        "CollocateQueryHelper is 240+ lines with package-private methods collectHits(), scoreHits(), buildAndRankCollocates(), and the static extractCollocateLemma()",
+        "The static extractCollocateLemma() method is pure logic (delegates to BlackLabSnippetParser based on collocatePos) and is directly testable without a BlackLab index",
+        "buildAndRankCollocates() applies logDice filtering and sorting — the ranking correctness is never verified in isolation",
+        "No test file exists for CollocateQueryHelper; grep across src/test confirms zero references"
+      ],
+      "suggestion": "Create CollocateQueryHelperTest covering: (1) extractCollocateLemma with pos=0 vs pos>0 inputs, (2) buildAndRankCollocates with a mock getTotalFrequency by extracting a testable interface or using a subclass stub for the frequency lookup",
+      "confidence": "high",
+      "impact_scope": "module",
+      "fix_scope": "multi_file_refactor",
+      "root_cause_cluster": "missing_unit_tests_for_orchestration"
+    },
+    {
+      "dimension": "test_strategy",
+      "identifier": "live_index_tests_always_skip_in_ci",
+      "summary": "All four live-index test classes permanently skip in CI due to hard-coded local index paths, providing no integration safety net",
+      "related_files": [
+        "src/test/java/pl/marcinmilkowski/word_sketch/query/BlackLabQueryExecutorTest.java",
+        "src/test/java/pl/marcinmilkowski/word_sketch/query/DependencySketchTest.java",
+        "src/test/java/pl/marcinmilkowski/word_sketch/query/BlackLabBcqlConcordanceTest.java",
+        "src/test/java/pl/marcinmilkowski/word_sketch/query/BlackLabDummyTest.java"
+      ],
+      "evidence": [
+        "All four classes default to 'D:\\\\corpora_philsci\\\\bi' when CONCEPT_SKETCH_TEST_INDEX env var is absent — a Windows-only local path that will never exist in CI",
+        "BlackLabDummyTest iterates patterns and calls assumeTrue(false) on IOException, meaning the test can pass vacuously even if every pattern fails",
+        "BlackLabBcqlConcordanceTest uses @EnabledIf(\"indexExists\") which evaluates to false in CI, silently suppressing 2 tests"
+      ],
+      "suggestion": "Ship a minimal test index (50-100 sentence CoNLL-U fixture) under src/test/resources/ and use it in these tests so the BlackLab integration is verified on every CI run; keep the env-var override for developer convenience with real corpora",
+      "confidence": "high",
+      "impact_scope": "codebase",
+      "fix_scope": "architectural_change",
+      "root_cause_cluster": "integration_test_skippability"
+    },
+    {
+      "dimension": "test_strategy",
+      "identifier": "cqlutils_pure_logic_untested",
+      "summary": "CqlUtils — pure static utility used by both PatternSubstitution and GrammarConfigLoader — has no tests despite being trivially testable",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/utils/CqlUtils.java"
+      ],
+      "evidence": [
+        "CqlUtils contains extractConstraintAttribute() and CQL-escaping helpers — pure string processing with no dependencies",
+        "PatternSubstitution (a sibling utility) has 95-line test coverage, showing the pattern is established",
+        "No reference to CqlUtils appears anywhere in src/test/"
+      ],
+      "suggestion": "Add CqlUtilsTest with cases for extractConstraintAttribute (found, not found, null input, multiple attributes) and the escape helper (backslash, quote, combined)",
+      "confidence": "high",
+      "impact_scope": "local",
+      "fix_scope": "single_edit"
+    }
+  ],
+  "retrospective": {
+    "root_causes": [
+      "Test coverage was grown from the outside in (handlers → parsing utilities) but the orchestration middle layer (SemanticFieldExplorer exploration paths, CollocateQueryHelper pipeline) was never given stub-based coverage",
+      "Live-index tests were written as developer convenience scripts rather than CI-runnable integration tests, defaulting to developer-local paths with no fallback fixture corpus"
+    ],
+    "likely_symptoms": [
+      "exploreByPattern/exploreMultiSeed regressions would be caught only by manual testing",
+      "CollocateQueryHelper ranking bugs (wrong logDice filter, wrong sort direction) would be invisible until runtime"
+    ],
+    "possible_false_positives": []
+  }
+}

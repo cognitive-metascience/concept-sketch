@@ -13,9 +13,9 @@ public class BlackLabDummyTest {
     public void testSubjectOf() throws Exception {
         String indexPath = System.getenv("CONCEPT_SKETCH_TEST_INDEX") != null
                 ? System.getenv("CONCEPT_SKETCH_TEST_INDEX")
-                : System.getProperty("conceptSketch.testIndex", "D:\\corpora_philsci\\bi");
-        File indexDir = new File(indexPath);
-        Assumptions.assumeTrue(indexDir.exists(), "Test skipped: index not available at " + indexPath);
+                : System.getProperty("conceptSketch.testIndex");
+        File indexDir = indexPath != null ? new File(indexPath) : null;
+        Assumptions.assumeTrue(indexDir != null && indexDir.exists(), "Test skipped: index not available at " + indexPath);
 
         try (BlackLabQueryExecutor executor = new BlackLabQueryExecutor(indexPath)) {
             String[] patterns = {

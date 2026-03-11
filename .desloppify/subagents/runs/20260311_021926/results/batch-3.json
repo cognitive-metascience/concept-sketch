@@ -1,0 +1,115 @@
+{
+  "batch": "naming_quality",
+  "batch_index": 3,
+  "assessments": {"naming_quality": 79.0},
+  "dimension_notes": {
+    "naming_quality": {
+      "evidence": [
+        "Class names are precise and domain-specific throughout: BlackLabQueryExecutor, CollocateQueryHelper, SemanticFieldExplorer, BlackLabSnippetParser — no vague generic names",
+        "Domain model records AdjectiveProfile, DiscoveredNoun, CoreCollocate, ExploreOptions, ExplorationResult all name the concept, not the structure",
+        "Handler methods use clear action verbs: handleSemanticFieldExplore, handleSemanticFieldExploreMulti, handleSemanticFieldComparison, handleConcordanceExamples",
+        "ExplorationHandlers.buildExploreResponseBody line 316 uses 'ca' for CoreCollocate; line 309 uses 'dn' for DiscoveredNoun — opaque abbreviations not established elsewhere in the codebase",
+        "BlackLabQueryExecutor.findCollocations (line 66) names its POS map 'posMap', while executeDependencyPattern (line 166) names the same concept 'lemmaPosMap' for a structurally identical Map<String,String>",
+        "Four private format methods in ExplorationHandlers (formatSeedCollocate, formatDiscoveredNoun, formatCoreCollocate, formatEdge) all declare the return map as 'Map<String,Object> m', below codebase norms — contrast with formatAdjectiveProfile which uses 'adjMap' and 'scores'",
+        "HttpApiUtils.requireParam line 95: local variable named 'v' for a parameter value — fine scope but inconsistent with codebase convention that prefers full names",
+        "buildBaseExploreResponse uses 'paramsUsed' for a map that becomes the 'parameters' JSON key in the response — the variable name implies what produced it, not what it represents",
+        "DiscoveredNoun record has both cumulativeScore (raw sum of logDice) and similarityScore (sharedCount * avgLogDice) — the distinction between these two scoring concepts is not clear from names alone"
+      ],
+      "impact_scope": "local",
+      "fix_scope": "multi_file_refactor",
+      "confidence": "high"
+    }
+  },
+  "dimension_judgment": {
+    "naming_quality": {
+      "strengths": [
+        "Class and interface names throughout are precise domain terms with no vague verbs: SemanticFieldExplorer, CollocateQueryHelper, BlackLabSnippetParser, AdjectiveCollocateComparator",
+        "Domain model records consistently name the concept, not the container: AdjectiveProfile, DiscoveredNoun, CoreCollocate, ExploreOptions — a developer unfamiliar with the codebase can infer purpose immediately",
+        "API handler method names follow a clear and consistent handle* pattern with specific subject+action naming (handleSemanticFieldExploreMulti, handleConcordanceExamples)",
+        "The logDice domain term is applied consistently throughout field names, parameters, constants, and JSON keys with no divergence",
+        "RelationUtils.resolveRelationAlias, buildAndRankCollocates, buildRawAdjectiveProfiles, buildBaseExploreResponse all reveal intent precisely"
+      ],
+      "issue_character": "Issues are scattered and localized rather than systemic: a cluster of single-letter local variable names in short formatter methods, one vocabulary divergence between two methods naming the same map concept differently, and one ambiguous dual-score field in a domain model record.",
+      "score_rationale": "The codebase names things well at every structural level — packages, classes, interfaces, public methods, and domain model fields are all precise and communicative. What pulls the score down from the 85+ range is a recurring pattern of opaque abbreviations in private formatter methods (m, ca, dn, v) that are inconsistent with the fuller names used everywhere else, plus one genuine vocabulary divergence (posMap vs lemmaPosMap) for the same concept in the same file, and one unclear dual-score naming in DiscoveredNoun. These are real drag on a developer reading the format internals but do not affect the dominant naming quality of the codebase, placing it solidly in the 78-80 range — strong naming with uneven spots in a specific layer."
+    }
+  },
+  "issues": [
+    {
+      "dimension": "naming_quality",
+      "identifier": "posmap_vocab_divergence",
+      "summary": "Same concept named 'posMap' in findCollocations and 'lemmaPosMap' in executeDependencyPattern within the same file",
+      "related_files": ["src/main/java/pl/marcinmilkowski/word_sketch/query/BlackLabQueryExecutor.java"],
+      "evidence": [
+        "Line 66: Map<String, String> posMap = new HashMap<>(); — holds collocate-lemma → POS-tag mapping",
+        "Line 166: Map<String, String> lemmaPosMap = new HashMap<>(); — identical concept and usage in executeDependencyPattern",
+        "Both maps are passed to helper.buildAndRankCollocates(freqMap, posMap/lemmaPosMap, ...) in the same role"
+      ],
+      "suggestion": "Standardise on one name for this concept across both methods; 'collocatePosMap' makes the key domain explicit — rename line 66's 'posMap' to 'collocatePosMap' to match line 166's more descriptive style (or vice-versa)",
+      "confidence": "high",
+      "impact_scope": "local",
+      "fix_scope": "single_edit"
+    },
+    {
+      "dimension": "naming_quality",
+      "identifier": "opaque_map_variable_m",
+      "summary": "Four private format methods in ExplorationHandlers all use 'm' as the local map variable, inconsistent with the codebase norm of descriptive local names",
+      "related_files": ["src/main/java/pl/marcinmilkowski/word_sketch/api/ExplorationHandlers.java"],
+      "evidence": [
+        "formatSeedCollocate line 258: Map<String, Object> m = new HashMap<>();",
+        "formatDiscoveredNoun line 266: Map<String, Object> m = new HashMap<>();",
+        "formatCoreCollocate line 276: Map<String, Object> m = new HashMap<>();",
+        "formatEdge line 286: Map<String, Object> m = new HashMap<>();",
+        "Contrast: formatAdjectiveProfile (line 371) uses 'adjMap' and 'scores' — clearly descriptive names in the same class"
+      ],
+      "suggestion": "Rename 'm' to a name matching the method's subject: 'collocateMap' in formatSeedCollocate, 'nounMap' in formatDiscoveredNoun, 'coreCollocateMap' in formatCoreCollocate, 'edgeMap' in formatEdge",
+      "confidence": "high",
+      "impact_scope": "local",
+      "fix_scope": "single_edit"
+    },
+    {
+      "dimension": "naming_quality",
+      "identifier": "opaque_loop_vars_ca_dn",
+      "summary": "Loop variables 'ca' (CoreCollocate) and 'dn' (DiscoveredNoun) in ExplorationHandlers are unexplained abbreviations not established in codebase convention",
+      "related_files": ["src/main/java/pl/marcinmilkowski/word_sketch/api/ExplorationHandlers.java"],
+      "evidence": [
+        "Line 309: for (DiscoveredNoun dn : result.getDiscoveredNouns())",
+        "Line 316: for (CoreCollocate ca : result.getCoreCollocates())",
+        "Line 265 parameter: formatDiscoveredNoun(DiscoveredNoun dn) — also uses the abbreviation in the method signature",
+        "Line 275: formatCoreCollocate(CoreCollocate ca) — abbreviation in parameter name",
+        "No other place in the codebase uses 'dn' or 'ca' as type abbreviations"
+      ],
+      "suggestion": "Expand to 'discoveredNoun' / 'noun' and 'coreCollocate' / 'collocate' respectively; the full names are not verbose in this context",
+      "confidence": "medium",
+      "impact_scope": "local",
+      "fix_scope": "single_edit"
+    },
+    {
+      "dimension": "naming_quality",
+      "identifier": "cumulative_score_ambiguity",
+      "summary": "DiscoveredNoun has both 'cumulativeScore' and 'similarityScore' fields where the distinction between the two scoring concepts is not apparent from names alone",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/model/DiscoveredNoun.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/exploration/SemanticFieldExplorer.java"
+      ],
+      "evidence": [
+        "DiscoveredNoun record fields: double cumulativeScore and double similarityScore",
+        "SemanticFieldExplorer line 249: double cumulativeScore = collocScores.values().stream().mapToDouble(Double::doubleValue).sum(); — it is a raw sum",
+        "SemanticFieldExplorer line 252: new DiscoveredNoun(..., cumulativeScore, avgLogDice, sharedCount * avgLogDice) — similarityScore is sharedCount * avgLogDice",
+        "Both fields are conceptually 'how similar is this noun to the seed' and diverge only in formula; neither name communicates the formula"
+      ],
+      "suggestion": "Rename 'cumulativeScore' to 'totalLogDiceSum' or 'sumLogDice' to make its computation explicit; rename 'similarityScore' to 'weightedSimilarity' or 'rankedScore' to distinguish it as the primary ranking key",
+      "confidence": "medium",
+      "impact_scope": "module",
+      "fix_scope": "multi_file_refactor"
+    }
+  ],
+  "retrospective": {
+    "root_causes": [
+      "The format* private methods were likely written quickly as internal-only helpers, so abbreviated local names were not reviewed against codebase conventions",
+      "The posMap/lemmaPosMap divergence suggests findCollocations and executeDependencyPattern were written at different times without a shared naming convention for the collocate-to-POS intermediate map",
+      "DiscoveredNoun's dual scoring fields reflect an evolving scoring strategy where both intermediate and final scores were retained without a clear naming contract"
+    ],
+    "likely_symptoms": [],
+    "possible_false_positives": []
+  }
+}

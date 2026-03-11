@@ -1,0 +1,127 @@
+{
+  "batch": "mid_level_elegance",
+  "batch_index": 1,
+  "assessments": {
+    "mid_level_elegance": 68.0
+  },
+  "dimension_notes": {
+    "mid_level_elegance": {
+      "evidence": [
+        "HttpApiUtils centralises all HTTP boundary concerns (JSON serialisation, CORS headers, error codes, parameter validation) — no ad-hoc response building leaks into handlers",
+        "RelationUtils.resolveRelationAlias isolates alias→canonical-ID translation in one static map; all handlers call through it uniformly",
+        "CollocateQueryHelper is a package-private helper that extracts grouped collocate search + scoring shared by three BlackLabQueryExecutor methods; the CollocateSearch record makes the handoff data explicit",
+        "ExplorationHandlers.parseExploreParams and resolveRelationConfig are shared preamble methods reused across both exploration handlers, preventing duplicated parsing/error logic",
+        "QueryExecutor interface provides a clean seam between the HTTP layer and the index layer; ExplorationHandlers only sees SemanticFieldExplorer, never the raw executor",
+        "In exploreMultiSeed (lines 407-410 of SemanticFieldExplorer), ExplorationResult is constructed with seed=String.join(',', seeds) and discoveredNouns holding the seeds themselves — semantically different from single-seed mode where discoveredNouns are actually discovered similar nouns",
+        "ExplorationResult.getEdges() generates edge-type strings 'seed_adj' and 'discovered_adj' based on single-seed semantics; in multi-seed mode these labels are misleading because every 'discovered' noun is actually a seed",
+        "Both handleSemanticFieldExploreMulti (lines 98-114) and handleSemanticFieldComparison (lines 148-152) in ExplorationHandlers contain identical comma-split/trim/toLowerCase/LinkedHashSet seed-cleaning logic with no extraction",
+        "BlackLabSnippetParser.extractLemmaAt (line 220-222) is a one-line forwarding alias for extractCollocateFromXmlByPosition with no added behaviour — the 'Consolidated clean API' comment implies this was meant to unify callers, but CollocateQueryHelper still calls extractCollocateFromXmlByPosition directly",
+        "WordSketchApiServer constructor creates SemanticFieldExplorer, SketchHandlers, and ExplorationHandlers internally (lines 46-48) rather than accepting them; a TODO comment at line 49 acknowledges this is wrong but defers it — the server boundary absorbs construction responsibilities instead of delegating them"
+      ],
+      "impact_scope": "module",
+      "fix_scope": "multi_file_refactor",
+      "confidence": "high"
+    }
+  },
+  "dimension_judgment": {
+    "mid_level_elegance": {
+      "strengths": [
+        "HttpApiUtils is a single, explicit translation layer for all HTTP response concerns — CORS, serialisation, method validation, parameter validation — so no handler duplicates this logic",
+        "RelationUtils.resolveRelationAlias puts alias resolution in one obvious place; every handler calls through it and the result is always lower-cased and canonical",
+        "CollocateQueryHelper's CollocateSearch record makes the query→ranking handoff explicit: headwordFreq and HitGroups travel together as a named tuple rather than out-parameters",
+        "ExplorationHandlers.parseExploreParams and resolveRelationConfig avoid copy-pasting the shared request-parsing preamble across two nearly-identical handlers",
+        "The QueryExecutor interface creates a clean, well-documented seam so that ExplorationHandlers and SketchHandlers never import BlackLab types — index coupling is contained"
+      ],
+      "issue_character": "Issues are localised but recurrent boundary shortcuts: the same model class is semantically repurposed across two exploration modes without adapting its edge-generation contract, seed-string parsing is duplicated rather than extracted, and the API server's constructor absorbs object construction that should be injected — each a small seam that adds cognitive overhead when tracing data flow.",
+      "score_rationale": "The codebase sits solidly in the 'decent foundations with identifiable friction' band. The utility layer (HttpApiUtils, RelationUtils, CollocateQueryHelper) is genuinely well-designed — inputs/outputs at each boundary are explicit and data translation is localised. What pulls the score down is the ExplorationResult semantic overloading across single/multi-seed modes: the same model, edge-type strings, and response builder are shared, hiding a meaningful difference in what 'discoveredNouns' means and producing subtly wrong edge labels in multi-seed output. Alongside the duplicated seed-parsing boilerplate, the constructor-owned collaborators in WordSketchApiServer, and a dead-alias method in BlackLabSnippetParser, the codebase reads as mostly clean with a recurring pattern of boundary shortcuts rather than deep structural dysfunction — placing it in the 65-70 range rather than below 60."
+    }
+  },
+  "issues": [
+    {
+      "dimension": "mid_level_elegance",
+      "identifier": "exploration_result_semantic_overload",
+      "summary": "ExplorationResult reused across single-seed and multi-seed modes with different semantics for discoveredNouns, producing wrong edge-type labels in multi-seed output",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/exploration/SemanticFieldExplorer.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/model/ExplorationResult.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/api/ExplorationHandlers.java"
+      ],
+      "evidence": [
+        "exploreMultiSeed (line 392) stores each seed word as a DiscoveredNoun with seed's own collocates — semantically the seeds are not 'discovered' nouns",
+        "ExplorationResult is constructed with seed=String.join(',', seeds) (line 408), so getEdges() generates a 'seed_adj' edge from a comma-joined multi-seed string rather than a real seed word",
+        "ExplorationResult.getEdges() emits type='discovered_adj' for edges from discoveredNouns, but in multi-seed context these nodes are the input seeds, not discovered similar words",
+        "buildExploreResponseBody in ExplorationHandlers calls result.getEdges() identically for both modes, so the API returns misleadingly-labelled edge types in multi-seed responses"
+      ],
+      "suggestion": "Introduce a separate result type (e.g. MultiSeedExplorationResult) or a factory method that builds the edge list correctly for multi-seed context (edge type 'seed_collocate' instead of 'discovered_adj'), keeping the API response shape consistent while making the semantic difference explicit at the boundary rather than hiding it inside getEdges()",
+      "confidence": "high",
+      "impact_scope": "module",
+      "fix_scope": "multi_file_refactor",
+      "root_cause_cluster": "model_reuse_across_modes"
+    },
+    {
+      "dimension": "mid_level_elegance",
+      "identifier": "duplicated_seed_parsing",
+      "summary": "Identical comma-split/trim/toLowerCase/LinkedHashSet seed-cleaning logic duplicated in two ExplorationHandlers methods",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/api/ExplorationHandlers.java"
+      ],
+      "evidence": [
+        "handleSemanticFieldExploreMulti lines 98-114: splits seedsStr by comma, trims, lowercases, adds to LinkedHashSet, rejects size < 2",
+        "handleSemanticFieldComparison lines 148-152: identical split/trim/lowercase/LinkedHashSet logic on nounsParam",
+        "The two blocks are functionally identical but separated by ~50 lines and use different variable names (seedsStr vs nounsParam)"
+      ],
+      "suggestion": "Extract a private parseSeeds(String csv, int minCount) method that performs the split/trim/lowercase/dedup and throws a validated error or returns the set, then call it from both handlers",
+      "confidence": "high",
+      "impact_scope": "local",
+      "fix_scope": "single_edit",
+      "root_cause_cluster": "boundary_glue_duplication"
+    },
+    {
+      "dimension": "mid_level_elegance",
+      "identifier": "server_owns_collaborator_construction",
+      "summary": "WordSketchApiServer constructor constructs SemanticFieldExplorer and handler objects instead of accepting them, making the API boundary opaque",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/api/WordSketchApiServer.java"
+      ],
+      "evidence": [
+        "Constructor at line 46 creates 'new SemanticFieldExplorer(executor)' rather than accepting it as a parameter",
+        "Lines 47-48 create SketchHandlers and ExplorationHandlers internally from the constructed components",
+        "A TODO comment at line 49 acknowledges server setup responsibilities should move out of the constructor but defers it"
+      ],
+      "suggestion": "Accept SketchHandlers and ExplorationHandlers as constructor parameters, constructing them at the call site in Main.java; this makes the composition graph visible at the wiring layer and removes construction from the server boundary",
+      "confidence": "high",
+      "impact_scope": "module",
+      "fix_scope": "multi_file_refactor",
+      "root_cause_cluster": "boundary_ownership"
+    },
+    {
+      "dimension": "mid_level_elegance",
+      "identifier": "dead_alias_extract_lemma_at",
+      "summary": "BlackLabSnippetParser.extractLemmaAt is a trivial one-line alias for extractCollocateFromXmlByPosition with no added behaviour, creating unnecessary indirection at the module boundary",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/query/BlackLabSnippetParser.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/query/CollocateQueryHelper.java"
+      ],
+      "evidence": [
+        "extractLemmaAt (line 220-222) calls extractCollocateFromXmlByPosition(xml, position) and returns the result unchanged",
+        "The 'Consolidated clean API' comment implies extractLemmaAt should be the canonical entry point, but CollocateQueryHelper.extractCollocateLemma (line 282) still calls extractCollocateFromXmlByPosition directly, bypassing the alias",
+        "Two names for the same operation with no behavioural distinction forces readers to verify they are equivalent before trusting either"
+      ],
+      "suggestion": "Inline extractCollocateFromXmlByPosition into extractLemmaAt (make it the single implementation), or remove extractLemmaAt and update callers to call extractCollocateFromXmlByPosition directly; either choice eliminates the ambiguous alias",
+      "confidence": "high",
+      "impact_scope": "local",
+      "fix_scope": "single_edit",
+      "root_cause_cluster": "boundary_glue_duplication"
+    }
+  ],
+  "retrospective": {
+    "root_causes": [
+      "model_reuse_across_modes: ExplorationResult was designed for single-seed exploration and then reused for multi-seed by repurposing field semantics rather than extending or specialising the model, pushing the semantic difference into callers",
+      "boundary_glue_duplication: Several small utilities (seed parsing, lemma extraction alias) were not extracted when first duplicated, leaving two closely-coupled call sites doing the same work"
+    ],
+    "likely_symptoms": [
+      "exploration_result_semantic_overload may appear in other dimensions if the misleading edge labels surface as a contract coherence or naming issue"
+    ],
+    "possible_false_positives": []
+  }
+}

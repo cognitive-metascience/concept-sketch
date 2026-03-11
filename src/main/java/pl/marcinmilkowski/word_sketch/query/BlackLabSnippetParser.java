@@ -210,18 +210,6 @@ public class BlackLabSnippetParser {
     // ==================== Consolidated clean API ====================
 
     /**
-     * Extract lemma at a specific 1-based token position from XML snippet.
-     * This is the canonical method for positional lemma extraction.
-     *
-     * @param xml      XML snippet containing {@code lemma="..."} attributes
-     * @param position 1-based token position
-     * @return The lemma at that position, or {@code null} if not found
-     */
-    static String extractLemmaAt(String xml, int position) {
-        return extractCollocateFromXmlByPosition(xml, position);
-    }
-
-    /**
      * Extract the collocate (labeled {@code 2:}) lemma from a BCQL match snippet.
      * Finds the last lemma attribute, which corresponds to the collocate in most patterns.
      * For precise positional extraction, use {@link #extractLemmaAt(String, int)}.

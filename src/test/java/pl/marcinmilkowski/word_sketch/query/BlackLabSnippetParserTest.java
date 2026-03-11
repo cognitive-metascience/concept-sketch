@@ -253,28 +253,28 @@ class BlackLabSnippetParserTest {
         assertEquals(-1, BlackLabSnippetParser.findLabelPosition(null, 1));
     }
 
-    // ── extractLemmaAt (positional) ──────────────────────────────────────────
+    // ── extractCollocateFromXmlByPosition (positional) ───────────────────────
 
     @Test
-    @DisplayName("extractLemmaAt: extracts token at exact position")
+    @DisplayName("extractCollocateFromXmlByPosition: extracts token at exact position")
     void extractLemmaAt_exactPosition() {
         String xml = "<w lemma=\"the\"/> <w lemma=\"quick\"/> <w lemma=\"fox\"/>";
-        assertEquals("the", BlackLabSnippetParser.extractLemmaAt(xml, 1));
-        assertEquals("quick", BlackLabSnippetParser.extractLemmaAt(xml, 2));
-        assertEquals("fox", BlackLabSnippetParser.extractLemmaAt(xml, 3));
+        assertEquals("the", BlackLabSnippetParser.extractCollocateFromXmlByPosition(xml, 1));
+        assertEquals("quick", BlackLabSnippetParser.extractCollocateFromXmlByPosition(xml, 2));
+        assertEquals("fox", BlackLabSnippetParser.extractCollocateFromXmlByPosition(xml, 3));
     }
 
     @Test
-    @DisplayName("extractLemmaAt: position beyond count returns null")
+    @DisplayName("extractCollocateFromXmlByPosition: position beyond count returns null")
     void extractLemmaAt_beyondCountReturnsNull() {
         String xml = "<w lemma=\"cat\"/> <w lemma=\"dog\"/>";
-        assertNull(BlackLabSnippetParser.extractLemmaAt(xml, 10));
+        assertNull(BlackLabSnippetParser.extractCollocateFromXmlByPosition(xml, 10));
     }
 
     @Test
-    @DisplayName("extractLemmaAt: null input returns null")
+    @DisplayName("extractCollocateFromXmlByPosition: null input returns null")
     void extractLemmaAt_nullReturnsNull() {
-        assertNull(BlackLabSnippetParser.extractLemmaAt(null, 1));
+        assertNull(BlackLabSnippetParser.extractCollocateFromXmlByPosition(null, 1));
     }
 
     // ── trimToSentence integration ────────────────────────────────────────────

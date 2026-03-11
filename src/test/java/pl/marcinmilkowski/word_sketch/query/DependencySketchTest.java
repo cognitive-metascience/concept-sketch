@@ -20,12 +20,12 @@ public class DependencySketchTest {
 
     private static final String INDEX_PATH = System.getenv("CONCEPT_SKETCH_TEST_INDEX") != null
             ? System.getenv("CONCEPT_SKETCH_TEST_INDEX")
-            : System.getProperty("conceptSketch.testIndex", "D:\\corpora_philsci\\bi");
+            : System.getProperty("conceptSketch.testIndex");
 
     @Test
     public void testDependencyNsubjQuery() throws Exception {
-        File indexDir = new File(INDEX_PATH);
-        Assumptions.assumeTrue(indexDir.exists(), "Skipping: index not found at " + INDEX_PATH);
+        File indexDir = INDEX_PATH != null ? new File(INDEX_PATH) : null;
+        Assumptions.assumeTrue(indexDir != null && indexDir.exists(), "Skipping: index not found at " + INDEX_PATH);
 
         try (BlackLabQueryExecutor executor = new BlackLabQueryExecutor(INDEX_PATH)) {
             List<QueryResults.WordSketchResult> results = executor.executeDependencyPattern(
@@ -38,8 +38,8 @@ public class DependencySketchTest {
 
     @Test
     public void testDependencyAmodQuery() throws Exception {
-        File indexDir = new File(INDEX_PATH);
-        Assumptions.assumeTrue(indexDir.exists(), "Skipping: index not found at " + INDEX_PATH);
+        File indexDir = INDEX_PATH != null ? new File(INDEX_PATH) : null;
+        Assumptions.assumeTrue(indexDir != null && indexDir.exists(), "Skipping: index not found at " + INDEX_PATH);
 
         try (BlackLabQueryExecutor executor = new BlackLabQueryExecutor(INDEX_PATH)) {
             List<QueryResults.WordSketchResult> results = executor.executeDependencyPattern(
@@ -52,8 +52,8 @@ public class DependencySketchTest {
 
     @Test
     public void testDependencyObjQuery() throws Exception {
-        File indexDir = new File(INDEX_PATH);
-        Assumptions.assumeTrue(indexDir.exists(), "Skipping: index not found at " + INDEX_PATH);
+        File indexDir = INDEX_PATH != null ? new File(INDEX_PATH) : null;
+        Assumptions.assumeTrue(indexDir != null && indexDir.exists(), "Skipping: index not found at " + INDEX_PATH);
 
         try (BlackLabQueryExecutor executor = new BlackLabQueryExecutor(INDEX_PATH)) {
             List<QueryResults.WordSketchResult> results = executor.executeDependencyPattern(
@@ -66,8 +66,8 @@ public class DependencySketchTest {
 
     @Test
     public void testDependencyWithPosConstraint() throws Exception {
-        File indexDir = new File(INDEX_PATH);
-        Assumptions.assumeTrue(indexDir.exists(), "Skipping: index not found at " + INDEX_PATH);
+        File indexDir = INDEX_PATH != null ? new File(INDEX_PATH) : null;
+        Assumptions.assumeTrue(indexDir != null && indexDir.exists(), "Skipping: index not found at " + INDEX_PATH);
 
         try (BlackLabQueryExecutor executor = new BlackLabQueryExecutor(INDEX_PATH)) {
             List<QueryResults.WordSketchResult> results = executor.executeDependencyPattern(
@@ -80,8 +80,8 @@ public class DependencySketchTest {
 
     @Test
     public void testDependencyEmptyLemma() throws Exception {
-        File indexDir = new File(INDEX_PATH);
-        Assumptions.assumeTrue(indexDir.exists(), "Skipping: index not found at " + INDEX_PATH);
+        File indexDir = INDEX_PATH != null ? new File(INDEX_PATH) : null;
+        Assumptions.assumeTrue(indexDir != null && indexDir.exists(), "Skipping: index not found at " + INDEX_PATH);
 
         try (BlackLabQueryExecutor executor = new BlackLabQueryExecutor(INDEX_PATH)) {
             List<QueryResults.WordSketchResult> results = executor.executeDependencyPattern(
@@ -94,8 +94,8 @@ public class DependencySketchTest {
 
     @Test
     public void testDependencyNullDeprel() throws Exception {
-        File indexDir = new File(INDEX_PATH);
-        Assumptions.assumeTrue(indexDir.exists(), "Skipping: index not found at " + INDEX_PATH);
+        File indexDir = INDEX_PATH != null ? new File(INDEX_PATH) : null;
+        Assumptions.assumeTrue(indexDir != null && indexDir.exists(), "Skipping: index not found at " + INDEX_PATH);
 
         try (BlackLabQueryExecutor executor = new BlackLabQueryExecutor(INDEX_PATH)) {
             List<QueryResults.WordSketchResult> results = executor.executeDependencyPattern(

@@ -19,10 +19,11 @@ class BlackLabQueryExecutorTest {
 
     private static final String INDEX_PATH = System.getenv("CONCEPT_SKETCH_TEST_INDEX") != null
             ? System.getenv("CONCEPT_SKETCH_TEST_INDEX")
-            : System.getProperty("conceptSketch.testIndex", "D:\\corpora_philsci\\bi");
+            : System.getProperty("conceptSketch.testIndex");
 
     @BeforeAll
     static void requireIndex() {
+        Assumptions.assumeTrue(INDEX_PATH != null, "No index path configured — set CONCEPT_SKETCH_TEST_INDEX to enable");
         Path path = Path.of(INDEX_PATH);
         Assumptions.assumeTrue(path.toFile().exists(),
             "Requires live BlackLab index at " + path + " — set CONCEPT_SKETCH_TEST_INDEX to enable");

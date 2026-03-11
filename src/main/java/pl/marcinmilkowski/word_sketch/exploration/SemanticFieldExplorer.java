@@ -172,7 +172,7 @@ public class SemanticFieldExplorer {
         // Step 3: Score nouns by shared collocate count
         logger.debug("\nStep 3: Scoring nouns by shared {}...", relationName);
         List<DiscoveredNoun> discoveredNouns = scoreAndFilterCandidates(nounProfiles, minShared);
-        discoveredNouns.sort((a, b) -> Double.compare(b.similarityScore(), a.similarityScore()));
+        discoveredNouns.sort((a, b) -> Double.compare(b.sharedCollocateScore(), a.sharedCollocateScore()));
         logger.debug("  Nouns with {}+ shared: {}", minShared, discoveredNouns.size());
 
         // Step 4: Identify core collocates
@@ -183,7 +183,7 @@ public class SemanticFieldExplorer {
         logger.debug("\nSemantic class (nouns similar to '{}'):", seed);
         discoveredNouns.stream().limit(15).forEach(n ->
             logger.debug("  {} (shared={}, score={}) <- {}", n.noun(), n.sharedCount(),
-                String.format("%.1f", n.similarityScore()), String.join(", ", n.sharedCollocates().keySet())));
+                String.format("%.1f", n.sharedCollocateScore()), String.join(", ", n.sharedCollocates().keySet())));
 
         logger.debug("\nCore {} (define the class):", relationName);
         coreCollocates.stream().limit(10).forEach(a ->
@@ -246,10 +246,10 @@ public class SemanticFieldExplorer {
             Map<String, Double> collocScores = entry.getValue();
             int sharedCount = collocScores.size();
             if (sharedCount < minShared) continue;
-            double cumulativeScore = collocScores.values().stream().mapToDouble(Double::doubleValue).sum();
-            double avgLogDice = cumulativeScore / sharedCount;
+            double combinedRelevanceScore = collocScores.values().stream().mapToDouble(Double::doubleValue).sum();
+            double avgLogDice = combinedRelevanceScore / sharedCount;
             discoveredNouns.add(new DiscoveredNoun(
-                noun, collocScores, sharedCount, cumulativeScore, avgLogDice, sharedCount * avgLogDice));
+                noun, collocScores, sharedCount, combinedRelevanceScore, avgLogDice, sharedCount * avgLogDice));
         }
         return discoveredNouns;
     }
