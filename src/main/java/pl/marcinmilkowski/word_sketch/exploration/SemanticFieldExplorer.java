@@ -14,6 +14,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import pl.marcinmilkowski.word_sketch.model.ComparisonResult;
 import pl.marcinmilkowski.word_sketch.model.CoreCollocate;
 import pl.marcinmilkowski.word_sketch.model.DiscoveredNoun;
 import pl.marcinmilkowski.word_sketch.model.ExploreOptions;
@@ -54,7 +55,7 @@ import pl.marcinmilkowski.word_sketch.model.ExplorationResult;
  * <h2>Comparison Mode (multi-seed)</h2>
  * <p>Given multiple seed words, compares their collocate profiles to reveal
  * which collocates are shared across all seeds (the semantic core) and which
- * are distinctive to individual seeds. See {@link CollocateProfileComparator#compareCollocateProfiles}.</p>
+ * are distinctive to individual seeds. See {@link AdjectiveCollocateComparator#compareCollocateProfiles}.</p>
  *
  * <h2>Result classes</h2>
  * <p>Result DTOs ({@code ExplorationResult}, {@code DiscoveredNoun},
@@ -74,7 +75,7 @@ public class SemanticFieldExplorer {
     private static final Logger logger = LoggerFactory.getLogger(SemanticFieldExplorer.class);
 
     private final QueryExecutor executor;
-    private final CollocateProfileComparator comparator;
+    private final AdjectiveCollocateComparator comparator;
 
     // Patterns for finding collocates by POS (using xpos field from CoNLL-U index)
     private static final String NOUN_PATTERN = "[xpos=\"NN.*\"]";
@@ -83,7 +84,7 @@ public class SemanticFieldExplorer {
     // Constructor for testing with mock executor
     public SemanticFieldExplorer(QueryExecutor executor) {
         this.executor = executor;
-        this.comparator = new CollocateProfileComparator(executor);
+        this.comparator = new AdjectiveCollocateComparator(executor);
     }
 
     // ==================== EXPLORATION MODE ====================
@@ -123,7 +124,7 @@ public class SemanticFieldExplorer {
             ExploreOptions opts) throws IOException {
 
         int topPredicates = opts.topCollocates();
-        int nounsPerPredicate = opts.nounsPerCollocate();
+        int nounsPerPredicate = opts.nounsPerSeed();
         double minLogDice = opts.minLogDice();
         int minShared = opts.minShared();
 
@@ -164,13 +165,13 @@ public class SemanticFieldExplorer {
 
         // Step 2: For each collocate, find nouns it collocates with
         logger.debug("\nStep 2: Finding nouns for each collocate...");
-        Map<String, Map<String, Double>> nounProfiles = buildCollocateIndex(
+        Map<String, Map<String, Double>> nounProfiles = buildNounCollocateMap(
             seedCollocScores, seed, minLogDice, nounsPerPredicate);
         logger.debug("  Total candidate nouns: {}", nounProfiles.size());
 
         // Step 3: Score nouns by shared collocate count
         logger.debug("\nStep 3: Scoring nouns by shared {}...", relationName);
-        List<DiscoveredNoun> discoveredNouns = rankByLogDice(nounProfiles, minShared);
+        List<DiscoveredNoun> discoveredNouns = scoreAndFilterCandidates(nounProfiles, minShared);
         discoveredNouns.sort((a, b) -> Double.compare(b.similarityScore(), a.similarityScore()));
         logger.debug("  Nouns with {}+ shared: {}", minShared, discoveredNouns.size());
 
@@ -215,19 +216,19 @@ public class SemanticFieldExplorer {
      * Phase 2: For each collocate, find nouns it collocates with (reverse lookup).
      * Returns a map of noun → {collocate → logDice}.
      */
-    private Map<String, Map<String, Double>> buildCollocateIndex(
+    private Map<String, Map<String, Double>> buildNounCollocateMap(
             Map<String, Double> seedCollocScores, String seed,
             double minLogDice, int nounsPerPredicate) throws IOException {
         Map<String, Map<String, Double>> nounProfiles = new LinkedHashMap<>();
-        for (String colloc : seedCollocScores.keySet()) {
+        for (String collocate : seedCollocScores.keySet()) {
             List<QueryResults.WordSketchResult> nouns = executor.findCollocations(
-                colloc, NOUN_PATTERN, minLogDice, nounsPerPredicate);
-            logger.debug("  {}: {} nouns", colloc, nouns.size());
+                collocate, NOUN_PATTERN, minLogDice, nounsPerPredicate);
+            logger.debug("  {}: {} nouns", collocate, nouns.size());
             for (QueryResults.WordSketchResult r : nouns) {
                 String noun = r.lemma().toLowerCase();
                 if (noun.equals(seed)) continue;
                 nounProfiles.computeIfAbsent(noun, k -> new LinkedHashMap<>())
-                    .put(colloc, r.logDice());
+                    .put(collocate, r.logDice());
             }
         }
         return nounProfiles;
@@ -237,7 +238,7 @@ public class SemanticFieldExplorer {
      * Phase 3: Score candidate nouns by how many shared collocates they have.
      * Nouns below {@code minShared} are filtered out.
      */
-    private List<DiscoveredNoun> rankByLogDice(
+    private List<DiscoveredNoun> scoreAndFilterCandidates(
             Map<String, Map<String, Double>> nounProfiles, int minShared) {
         List<DiscoveredNoun> discoveredNouns = new ArrayList<>();
         for (Map.Entry<String, Map<String, Double>> entry : nounProfiles.entrySet()) {
@@ -261,20 +262,20 @@ public class SemanticFieldExplorer {
         Map<String, Integer> collocFrequency = new LinkedHashMap<>();
         Map<String, Double> collocTotalScore = new LinkedHashMap<>();
         for (DiscoveredNoun dn : discoveredNouns) {
-            for (Map.Entry<String, Double> colloc : dn.sharedCollocates().entrySet()) {
-                collocFrequency.merge(colloc.getKey(), 1, Integer::sum);
-                collocTotalScore.merge(colloc.getKey(), colloc.getValue(), Double::sum);
+            for (Map.Entry<String, Double> collocate : dn.sharedCollocates().entrySet()) {
+                collocFrequency.merge(collocate.getKey(), 1, Integer::sum);
+                collocTotalScore.merge(collocate.getKey(), collocate.getValue(), Double::sum);
             }
         }
         int minNounsForCore = Math.max(2, discoveredNouns.size() / 3);
         List<CoreCollocate> coreCollocates = new ArrayList<>();
-        for (String colloc : seedCollocScores.keySet()) {
-            int freq = collocFrequency.getOrDefault(colloc, 0);
+        for (String collocate : seedCollocScores.keySet()) {
+            int freq = collocFrequency.getOrDefault(collocate, 0);
             if (freq >= minNounsForCore) {
-                double totalScore = collocTotalScore.getOrDefault(colloc, 0.0);
-                double seedScore = seedCollocScores.get(colloc);
+                double totalScore = collocTotalScore.getOrDefault(collocate, 0.0);
+                double seedScore = seedCollocScores.get(collocate);
                 coreCollocates.add(new CoreCollocate(
-                    colloc, freq, discoveredNouns.size(), seedScore, totalScore / Math.max(1, freq)));
+                    collocate, freq, discoveredNouns.size(), seedScore, totalScore / Math.max(1, freq)));
             }
         }
         coreCollocates.sort((a, b) -> {
@@ -286,8 +287,17 @@ public class SemanticFieldExplorer {
 
     // ==================== COMPARISON MODE ====================
 
-    public CollocateProfileComparator getComparator() {
-        return comparator;
+    /**
+     * Compare collocate profiles of the given nouns using logDice scores.
+     *
+     * @param nouns        nouns to compare
+     * @param minLogDice   minimum logDice threshold
+     * @param maxPerNoun   maximum collocates per noun
+     * @return comparison result
+     */
+    public ComparisonResult compareCollocateProfiles(Set<String> nouns, double minLogDice, int maxPerNoun)
+            throws IOException {
+        return comparator.compareCollocateProfiles(nouns, minLogDice, maxPerNoun);
     }
 
     /**

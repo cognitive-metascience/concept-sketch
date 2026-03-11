@@ -80,12 +80,12 @@ public record RelationConfig(
      */
     private static String mergeLemmaConstraint(String existingConstraint, String headword) {
         // Parse existing constraint to extract xpos/pos tags
-        String xposPattern = extractConstraintAttribute(existingConstraint, "xpos");
-        String posPattern = extractConstraintAttribute(existingConstraint, "tag");
+        String xposPattern = CqlUtils.extractConstraintAttribute(existingConstraint, "xpos");
+        String posPattern = CqlUtils.extractConstraintAttribute(existingConstraint, "tag");
 
         // Build new constraint with lemma
         StringBuilder sb = new StringBuilder();
-        sb.append("[lemma=\"").append(escapeForRegex(headword)).append("\"");
+        sb.append("[lemma=\"").append(CqlUtils.escapeForRegex(headword)).append("\"");
 
         if (xposPattern != null) {
             sb.append(" & ").append(xposPattern);
@@ -98,19 +98,7 @@ public record RelationConfig(
         return sb.toString();
     }
 
-    private static String extractConstraintAttribute(String constraint, String attrName) {
-        if (constraint == null) return null;
-        Pattern p = Pattern.compile(attrName + "=\"([^\"]*)\"");
-        Matcher m = p.matcher(constraint);
-        if (m.find()) {
-            return attrName + "=\"" + m.group(1) + "\"";
-        }
-        return null;
-    }
 
-    private static String escapeForRegex(String s) {
-        return CqlUtils.escapeForRegex(s);
-    }
 
     /**
      * Returns the CQL pattern used for reverse collocate lookup, derived from the collocate POS group.

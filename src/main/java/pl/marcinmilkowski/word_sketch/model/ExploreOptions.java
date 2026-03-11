@@ -6,7 +6,7 @@ package pl.marcinmilkowski.word_sketch.model;
  */
 public record ExploreOptions(
         int topCollocates,
-        int nounsPerCollocate,
+        int nounsPerSeed,
         double minLogDice,
         int minShared,
         boolean includeExamples) {}

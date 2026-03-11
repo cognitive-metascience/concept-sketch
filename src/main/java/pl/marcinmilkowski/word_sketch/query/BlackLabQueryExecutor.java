@@ -56,15 +56,7 @@ public class BlackLabQueryExecutor implements QueryExecutor {
             return Collections.emptyList();
         }
 
-        String bcql;
-        if (cqlPattern.contains("%s")) {
-            bcql = String.format(cqlPattern, lemma.toLowerCase());
-        } else if (cqlPattern.startsWith("[")) {
-            bcql = String.format("\"%s\" %s", lemma.toLowerCase(), cqlPattern);
-        } else {
-            throw new IllegalArgumentException(
-                "Unrecognized CQL pattern format: " + cqlPattern);
-        }
+        String bcql = buildBcqlFromPattern(cqlPattern, lemma);
 
         CollocateQueryHelper.CollocateSearch cs = helper.executeCollocateSearch(bcql, lemma, true);
         long headwordFreq = cs.headwordFreq();
@@ -239,5 +231,19 @@ public class BlackLabQueryExecutor implements QueryExecutor {
     @Override
     public void close() throws IOException {
         blackLabIndex.close();
+    }
+
+    /**
+     * Builds a BCQL pattern string from a CQL template and lemma.
+     * Supports {@code %s}-style substitution templates and {@code [constraint]}-prefix patterns.
+     */
+    private static String buildBcqlFromPattern(String cqlPattern, String lemma) {
+        if (cqlPattern.contains("%s")) {
+            return String.format(cqlPattern, lemma.toLowerCase());
+        } else if (cqlPattern.startsWith("[")) {
+            return String.format("\"%s\" %s", lemma.toLowerCase(), cqlPattern);
+        } else {
+            throw new IllegalArgumentException("Unrecognized CQL pattern format: " + cqlPattern);
+        }
     }
 }

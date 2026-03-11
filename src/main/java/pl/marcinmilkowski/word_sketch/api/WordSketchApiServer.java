@@ -10,6 +10,7 @@ import java.io.IOException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.util.Collections;
+import java.util.Objects;
 
 /**
  * REST API server for word sketch queries using BlackLab backend.
@@ -41,11 +42,7 @@ public class WordSketchApiServer {
 
     public WordSketchApiServer(QueryExecutor executor, int port, GrammarConfigLoader grammarConfig) {
         this.port = port;
-        this.grammarConfig = grammarConfig;
-        if (grammarConfig == null) {
-            logger.warn("WordSketchApiServer initialized without grammar configuration; " +
-                "relation-based sketch/relations endpoints will return 500");
-        }
+        this.grammarConfig = Objects.requireNonNull(grammarConfig, "grammarConfig must not be null");
         SemanticFieldExplorer semanticFieldExplorer = new SemanticFieldExplorer(executor);
         this.sketchHandlers = new SketchHandlers(executor, grammarConfig);
         this.explorationHandlers = new ExplorationHandlers(grammarConfig, semanticFieldExplorer);

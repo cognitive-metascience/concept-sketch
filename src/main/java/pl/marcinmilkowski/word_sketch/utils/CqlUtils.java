@@ -2,6 +2,8 @@ package pl.marcinmilkowski.word_sketch.utils;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * Shared utility for parsing CQL (Corpus Query Language) token syntax.
@@ -18,6 +20,30 @@ import java.util.List;
 public final class CqlUtils {
 
     private CqlUtils() {}
+
+    /**
+     * Extracts a CQL attribute assignment of the form {@code attrName="value"} from a
+     * constraint string (typically the interior of a {@code [...]} token block).
+     *
+     * <p>Examples:
+     * <pre>
+     *   extractConstraintAttribute("[xpos=\"NN.*\" & lemma=\"dog\"]", "xpos")  → "xpos=\"NN.*\""
+     *   extractConstraintAttribute("[lemma=\"cat\"]", "xpos")                  → null
+     * </pre>
+     *
+     * @param constraint a CQL constraint string, or {@code null}
+     * @param attrName   the attribute name to look up (e.g. {@code "xpos"}, {@code "tag"})
+     * @return the full {@code attrName="value"} fragment, or {@code null} if not found
+     */
+    public static String extractConstraintAttribute(String constraint, String attrName) {
+        if (constraint == null) return null;
+        Pattern p = Pattern.compile(Pattern.quote(attrName) + "=\"([^\"]*)\"");
+        Matcher m = p.matcher(constraint);
+        if (m.find()) {
+            return attrName + "=\"" + m.group(1) + "\"";
+        }
+        return null;
+    }
 
     /**
      * Escapes a string for embedding as a literal value inside a CQL regex attribute,

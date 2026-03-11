@@ -28,7 +28,10 @@ public class PatternSubstitution {
         // Replace the constraint at collocatePosition with lemma constraint for the collocate
         String originalConstraint = patternPositions.get(collocatePosition - 1);
         // Extract xpos/tag from original and merge with lemma
-        String xposPattern = extractXposFromConstraint(originalConstraint);
+        String xposPattern = CqlUtils.extractConstraintAttribute(originalConstraint, "xpos");
+        if (xposPattern == null) {
+            xposPattern = CqlUtils.extractConstraintAttribute(originalConstraint, "tag");
+        }
         StringBuilder newConstraint = new StringBuilder();
         newConstraint.append("[lemma=\"").append(CqlUtils.escapeForRegex(collocate)).append("\"");
         if (xposPattern != null) {
@@ -40,26 +43,5 @@ public class PatternSubstitution {
         return String.join(" ", patternPositions);
     }
 
-    public static String extractXposFromConstraint(String constraint) {
-        if (constraint == null) return null;
-        // Look for xpos="..." pattern
-        int xposStart = constraint.indexOf("xpos=\"");
-        if (xposStart >= 0) {
-            int end = constraint.indexOf("\"", xposStart + 6);
-            // end >= 0 guards against indexOf returning -1 (closing quote not found)
-            if (end >= 0) {
-                return constraint.substring(xposStart, end + 1);
-            }
-        }
-        // Also check for tag="..."
-        int tagStart = constraint.indexOf("tag=\"");
-        if (tagStart >= 0) {
-            int end = constraint.indexOf("\"", tagStart + 5);
-            // end >= 0 guards against indexOf returning -1 (closing quote not found)
-            if (end >= 0) {
-                return constraint.substring(tagStart, end + 1);
-            }
-        }
-        return null;
-    }
+
 }

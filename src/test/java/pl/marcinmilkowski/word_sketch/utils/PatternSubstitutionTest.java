@@ -3,6 +3,7 @@ package pl.marcinmilkowski.word_sketch.utils;
 import org.junit.jupiter.api.Test;
 
 import pl.marcinmilkowski.word_sketch.api.PatternSubstitution;
+import pl.marcinmilkowski.word_sketch.utils.CqlUtils;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -62,7 +63,7 @@ class PatternSubstitutionTest {
     @Test
     void testExtractXposFromConstraintWithXpos() {
         String constraint = "[xpos=\"NN.*\"]";
-        String xpos = PatternSubstitution.extractXposFromConstraint(constraint);
+        String xpos = CqlUtils.extractConstraintAttribute(constraint, "xpos");
         assertNotNull(xpos);
         assertTrue(xpos.contains("xpos=\"NN.*\""), "Should extract xpos attribute");
     }
@@ -70,14 +71,14 @@ class PatternSubstitutionTest {
     @Test
     void testExtractXposFromConstraintWithTag() {
         String constraint = "[tag=\"VBZ\"]";
-        String tag = PatternSubstitution.extractXposFromConstraint(constraint);
+        String tag = CqlUtils.extractConstraintAttribute(constraint, "tag");
         assertNotNull(tag);
         assertTrue(tag.contains("tag=\"VBZ\""), "Should extract tag attribute");
     }
 
     @Test
     void testExtractXposFromConstraintNull() {
-        assertNull(PatternSubstitution.extractXposFromConstraint(null));
+        assertNull(CqlUtils.extractConstraintAttribute(null, "xpos"));
     }
 
     @Test

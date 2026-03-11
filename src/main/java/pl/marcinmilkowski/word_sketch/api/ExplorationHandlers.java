@@ -5,7 +5,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import pl.marcinmilkowski.word_sketch.config.GrammarConfigLoader;
 import pl.marcinmilkowski.word_sketch.config.RelationConfig;
-import pl.marcinmilkowski.word_sketch.exploration.CollocateProfileComparator;
 import pl.marcinmilkowski.word_sketch.exploration.SemanticFieldExplorer;
 import pl.marcinmilkowski.word_sketch.model.AdjectiveProfile;
 import pl.marcinmilkowski.word_sketch.model.ComparisonResult;
@@ -62,10 +61,10 @@ class ExplorationHandlers {
         int topCollocates = exploreParams.topCollocates();
         int minShared = exploreParams.minShared();
         double minLogDice = exploreParams.minLogDice();
-        int nounsPerCollocate = exploreParams.nounsPerSeed();
+        int nounsPerSeed = exploreParams.nounsPerSeed();
 
         ExploreOptions opts = new ExploreOptions(
-            topCollocates, nounsPerCollocate, minLogDice, minShared, false);
+            topCollocates, nounsPerSeed, minLogDice, minShared, false);
 
         ExplorationResult result;
         try {
@@ -79,7 +78,7 @@ class ExplorationHandlers {
         }
 
         Map<String, Object> extraParams = new HashMap<>();
-        extraParams.put("nouns_per", nounsPerCollocate);
+        extraParams.put("nouns_per", nounsPerSeed);
         Map<String, Object> response = buildBaseExploreResponse(relationType, topCollocates, minShared, minLogDice, extraParams);
         response.put("seed", result.getSeed());
         buildExploreResponseBody(response, result);
@@ -120,7 +119,7 @@ class ExplorationHandlers {
         ExploreParams exploreParams = parseExploreParams(exchange, params);
         if (exploreParams == null) return;
         int topCollocates = exploreParams.topCollocates();
-        int minShared = exploreParams.minShared();
+        int minShared = Math.min(exploreParams.minShared(), seeds.size());
         double minLogDice = exploreParams.minLogDice();
         // nouns_per intentionally not supported in multi-seed mode — seeds parameter is required instead
 
@@ -174,7 +173,7 @@ class ExplorationHandlers {
 
         ComparisonResult result;
         try {
-            result = semanticFieldExplorer.getComparator().compareCollocateProfiles(nouns, minLogDice, maxPerNoun);
+            result = semanticFieldExplorer.compareCollocateProfiles(nouns, minLogDice, maxPerNoun);
         } catch (IOException e) {
             HttpApiUtils.sendError(exchange, 500, "Comparison failed: " + e.getMessage());
             return;

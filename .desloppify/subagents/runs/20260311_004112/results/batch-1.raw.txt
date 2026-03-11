@@ -1,0 +1,107 @@
+{
+  "batch": "cross_module_architecture",
+  "batch_index": 1,
+  "assessments": {
+    "cross_module_architecture": 72.0
+  },
+  "dimension_notes": {
+    "cross_module_architecture": {
+      "evidence": [
+        "Dependency direction is consistently top-down: utils ← config/query ← exploration ← api ← Main; no reverse imports found.",
+        "QueryExecutor is a proper interface in the query package; BlackLabQueryExecutor implements it and api/exploration only see the interface.",
+        "model and viz packages are pure leaf nodes with zero internal imports, functioning correctly as shared DTOs.",
+        "indexer.blacklab is fully isolated — no imports from query, api, config, or exploration; communicates only via filesystem artifacts.",
+        "RelationConfig.mergeLemmaConstraint + extractConstraintAttribute (config package) duplicates the pattern of PatternSubstitution.substituteCollocate + extractXposFromConstraint (api package): both parse a CQL bracket constraint, extract xpos/tag, and reconstruct a lemma-merged constraint. The logic cannot be unified without a boundary violation (config importing api), revealing a missing shared utility in utils/.",
+        "WordSketchApiServer instantiates SemanticFieldExplorer directly in its constructor (new SemanticFieldExplorer(executor)) rather than accepting it as a dependency, coupling server construction to the exploration layer's concrete class.",
+        "RelationUtils (api package) holds the canonical short-alias map for relation IDs — knowledge that logically belongs in config (where RelationConfig and RelationType live) but is placed in api to avoid upward coupling, creating a conceptual split in relation resolution logic."
+      ],
+      "impact_scope": "module",
+      "fix_scope": "multi_file_refactor",
+      "confidence": "high"
+    }
+  },
+  "dimension_judgment": {
+    "cross_module_architecture": {
+      "strengths": [
+        "Strict top-down layer ordering with zero detected cycle pressure: utils → config/query → exploration → api → Main.",
+        "QueryExecutor interface properly abstracts the BlackLab backend; all callers depend on the interface, not the concrete class.",
+        "model package is a clean shared-DTO layer imported by both exploration and api without owning any logic.",
+        "indexer is fully decoupled from the rest of the runtime stack — no cross-wiring with query, api, or config at runtime.",
+        "CqlUtils in utils/ is already used as a shared primitive by both config and api, showing intent to keep low-level parsing unified."
+      ],
+      "issue_character": "Issues are localised duplication-of-boundary artefacts rather than structural violations: the layering is correct, but two places independently implement the same CQL-constraint merging logic because the natural home (utils/) was not extended when the second use-case emerged.",
+      "score_rationale": "The codebase has a clear, consistently respected layered architecture with a proper interface boundary at the query layer and no import cycles — this places it well above the 60-point 'significant drag' anchor. Two issues pull the score below 80: (1) CQL constraint-building logic is duplicated across config.RelationConfig and api.PatternSubstitution, indicating a missing shared boundary that would require a small multi-file refactor to resolve; (2) WordSketchApiServer constructs SemanticFieldExplorer directly rather than accepting it by injection, hardwiring the composition seam. Together these represent bounded but real boundary blurring in an otherwise healthy architecture, landing at 72."
+    }
+  },
+  "issues": [
+    {
+      "dimension": "cross_module_architecture",
+      "identifier": "cql_constraint_build_duplication",
+      "summary": "CQL constraint-merging logic is duplicated across config.RelationConfig and api.PatternSubstitution, revealing a missing shared boundary in utils/",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/config/RelationConfig.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/api/PatternSubstitution.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/utils/CqlUtils.java"
+      ],
+      "evidence": [
+        "RelationConfig.mergeLemmaConstraint (line ~81) and RelationConfig.extractConstraintAttribute (line ~101) parse a CQL bracket, extract xpos/tag attributes, and rebuild a lemma-merged constraint.",
+        "PatternSubstitution.substituteCollocate (line ~16) and PatternSubstitution.extractXposFromConstraint (line ~43) do the same: parse a CQL bracket, extract xpos/tag, and rebuild a lemma-merged constraint.",
+        "Both implementations already share CqlUtils.splitCqlTokens as the token-splitting primitive, but the higher-level 'merge lemma into constraint' step was re-implemented rather than promoted to CqlUtils."
+      ],
+      "suggestion": "Add a static CqlUtils.mergeLemmaIntoConstraint(String constraint, String lemma) method that extracts all attribute constraints (xpos, tag, deprel, etc.) and returns a reconstructed bracket with the lemma prepended. Replace both RelationConfig.mergeLemmaConstraint and PatternSubstitution's inline reconstruction with calls to this shared utility. This closes the boundary gap without any layer-direction change.",
+      "confidence": "high",
+      "impact_scope": "module",
+      "fix_scope": "multi_file_refactor",
+      "root_cause_cluster": "missing_shared_utility"
+    },
+    {
+      "dimension": "cross_module_architecture",
+      "identifier": "semantic_explorer_direct_construction",
+      "summary": "WordSketchApiServer instantiates SemanticFieldExplorer directly instead of accepting it via injection, coupling server construction to the exploration layer's concrete class",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/api/WordSketchApiServer.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/exploration/SemanticFieldExplorer.java"
+      ],
+      "evidence": [
+        "WordSketchApiServer constructor (line ~43): 'SemanticFieldExplorer semanticFieldExplorer = new SemanticFieldExplorer(executor);' — the concrete class is directly instantiated inside the api layer.",
+        "The instance is immediately passed to ExplorationHandlers, which already accepts it as a constructor parameter — so the injection pattern exists one level down but is bypassed at the top level.",
+        "Main.java constructs WordSketchApiServer with (executor, port, grammarConfig) — there is no opportunity to substitute a different SemanticFieldExplorer implementation without editing the server constructor."
+      ],
+      "suggestion": "Add a SemanticFieldExplorer parameter to the WordSketchApiServer constructor and move the 'new SemanticFieldExplorer(executor)' call to Main.java. This shifts object composition to the wiring layer (Main) and lets the api package depend only on the already-injected instance, consistent with how SketchHandlers and ExplorationHandlers are already wired.",
+      "confidence": "high",
+      "impact_scope": "module",
+      "fix_scope": "multi_file_refactor",
+      "root_cause_cluster": "composition_seam_bypass"
+    },
+    {
+      "dimension": "cross_module_architecture",
+      "identifier": "relation_alias_misplaced_in_api",
+      "summary": "Canonical relation-alias map lives in api.RelationUtils instead of config, splitting relation resolution knowledge across two packages",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/api/RelationUtils.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/config/GrammarConfigLoader.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/config/RelationType.java"
+      ],
+      "evidence": [
+        "RelationUtils.RELATION_ALIASES maps short names ('adj_predicate', 'subject_of', etc.) to grammar-config IDs ('noun_adj_predicates', 'noun_verbs', etc.) — these IDs are defined by GrammarConfigLoader in the config package.",
+        "Any component outside the api layer (e.g., a CLI tool or a future gRPC layer) that needs alias resolution must either duplicate the map or take a dependency on the api package.",
+        "The placement is a deliberate workaround to avoid config importing api, but the correct fix is moving the map to config, not keeping it in the presentation layer."
+      ],
+      "suggestion": "Move RELATION_ALIASES and resolveRelationAlias() into GrammarConfigLoader or a new config.RelationAliasRegistry class. api.RelationUtils can then either be removed or reduced to a thin delegation call. This keeps all relation-ID knowledge within the config boundary.",
+      "confidence": "medium",
+      "impact_scope": "module",
+      "fix_scope": "multi_file_refactor",
+      "root_cause_cluster": "missing_shared_utility"
+    }
+  ],
+  "retrospective": {
+    "root_causes": [
+      "The utils/ package was seeded with low-level primitives (CqlUtils.splitCqlTokens, LongIntHashMap) but was not extended as higher-level shared operations (lemma merging, constraint extraction) emerged in both config and api — leading to duplication.",
+      "Object composition is concentrated in Main.java for the indexer path but partially delegated to WordSketchApiServer for the server path, creating an inconsistent wiring boundary."
+    ],
+    "likely_symptoms": [
+      "semantic_explorer_direct_construction is symptom-level — the real boundary question is whether exploration services should be wired in Main or in the api server constructor."
+    ],
+    "possible_false_positives": []
+  }
+}

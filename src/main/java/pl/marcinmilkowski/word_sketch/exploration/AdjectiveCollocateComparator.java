@@ -19,15 +19,15 @@ import pl.marcinmilkowski.word_sketch.query.QueryExecutor;
  * and distinctive collocates.  Extracted from {@link SemanticFieldExplorer} to keep
  * that class below the 400-line threshold.
  */
-public class CollocateProfileComparator {
+public class AdjectiveCollocateComparator {
 
-    private static final Logger logger = LoggerFactory.getLogger(CollocateProfileComparator.class);
+    private static final Logger logger = LoggerFactory.getLogger(AdjectiveCollocateComparator.class);
 
     private static final String ADJECTIVE_PATTERN = "[xpos=\"JJ.*\"]";
 
     private final QueryExecutor executor;
 
-    public CollocateProfileComparator(QueryExecutor executor) {
+    public AdjectiveCollocateComparator(QueryExecutor executor) {
         this.executor = executor;
     }
 

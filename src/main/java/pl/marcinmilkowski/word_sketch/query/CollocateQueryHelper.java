@@ -72,8 +72,6 @@ class CollocateQueryHelper {
             AnnotationSensitivity sensitivity = annotation.sensitivity(MatchSensitivity.INSENSITIVE);
             TermFrequencyList tfl = index.termFrequencies(sensitivity, null, Set.of(lemma.toLowerCase()));
             return tfl.frequency(lemma.toLowerCase());
-        } catch (RuntimeException e) {
-            throw e;
         } catch (Exception e) {
             throw new IOException("Unexpected failure retrieving frequency for lemma '" + lemma + "'", e);
         }

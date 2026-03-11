@@ -1,26 +1,26 @@
 {
   "command": "resolve",
   "patterns": [
-    "structural::src/main/java/pl/marcinmilkowski/word_sketch/query/BlackLabQueryExecutor.java"
+    "review::.::holistic::design_coherence::find_collocations_mixed_concerns::c24672e0"
   ],
   "status": "fixed",
   "resolved": [
-    "structural::src/main/java/pl/marcinmilkowski/word_sketch/query/BlackLabQueryExecutor.java"
+    "review::.::holistic::design_coherence::find_collocations_mixed_concerns::c24672e0"
   ],
   "count": 1,
   "next_command": "desloppify next",
-  "overall_score": 73.8,
+  "overall_score": 73.7,
   "objective_score": 99.4,
-  "strict_score": 73.8,
-  "verified_strict_score": 98.2,
-  "prev_overall_score": 73.3,
-  "prev_objective_score": 98.2,
-  "prev_strict_score": 73.3,
-  "prev_verified_strict_score": 98.2,
-  "attestation": "I have actually Split BlackLabQueryExecutor (510 LOC) into BlackLabQueryExecutor (243 LOC) and CollocateQueryHelper (289 LOC). Extracted collocate search, scoring, and ranking logic into CollocateQueryHelper; executor now delegates. and I am not gaming the score.",
+  "strict_score": 73.7,
+  "verified_strict_score": 99.4,
+  "prev_overall_score": 73.7,
+  "prev_objective_score": 99.4,
+  "prev_strict_score": 73.7,
+  "prev_verified_strict_score": 99.4,
+  "attestation": "I have actually Extracted buildBcqlFromPattern(cqlPattern, lemma) private static method from findCollocations in BlackLabQueryExecutor; findCollocations now calls it and focuses solely on search execution and result aggregation and I am not gaming the score.",
   "narrative": {
-    "phase": "middle_grind",
-    "headline": "All T1 and T2 items cleared!",
+    "phase": "stagnation",
+    "headline": "Score plateaued at 73.7 for 5 scans. Type Discipline (43.6%) is where the breakthrough is. 42 wontfix items may also be worth revisiting. (3 review issues \u2014 run `desloppify show review --status open`)",
     "dimensions": {
       "lowest_dimensions": [
         {
@@ -32,16 +32,16 @@
           "impact_description": "re-review to improve"
         },
         {
-          "name": "API coherence",
-          "strict": 45.1,
+          "name": "Type safety",
+          "strict": 47.3,
           "failing": 0,
           "impact": 0.0,
           "subjective": true,
           "impact_description": "re-review to improve"
         },
         {
-          "name": "Type safety",
-          "strict": 47.3,
+          "name": "Test strategy",
+          "strict": 48.8,
           "failing": 0,
           "impact": 0.0,
           "subjective": true,
@@ -149,6 +149,17 @@
     },
     "actions": [
       {
+        "type": "refactor",
+        "detector": "review",
+        "count": 3,
+        "description": "3 review issues need investigation \u2014 run `desloppify show review --status open` to see them",
+        "command": "desloppify show review --status open",
+        "impact": 0.0,
+        "dimension": "Unknown",
+        "priority": 1,
+        "lane": "refactor_0"
+      },
+      {
         "type": "manual_fix",
         "detector": "stale_exclude",
         "count": 5,
@@ -156,22 +167,31 @@
         "command": "desloppify show stale_exclude --status open",
         "impact": 0.0,
         "dimension": "Code quality",
-        "priority": 1,
-        "lane": "refactor"
+        "priority": 2,
+        "lane": "refactor_1"
       }
     ],
     "strategy": {
       "fixer_leverage": {
         "auto_fixable_count": 0,
-        "total_count": 5,
+        "total_count": 14,
         "coverage": 0.0,
         "impact_ratio": 0.0,
         "recommendation": "none"
       },
       "lanes": {
-        "refactor": {
+        "refactor_0": {
           "actions": [
             1
+          ],
+          "file_count": 1,
+          "total_impact": 0.0,
+          "automation": "manual",
+          "run_first": false
+        },
+        "refactor_1": {
+          "actions": [
+            2
           ],
           "file_count": 5,
           "total_impact": 0.0,
@@ -180,7 +200,7 @@
         }
       },
       "can_parallelize": false,
-      "hint": "Work through actions in priority order. Rescan after each fix to track progress."
+      "hint": "Try a different dimension to break the plateau. Review: 3 issue(s) \u2014 `desloppify show review --status open`."
     },
     "tools": {
       "fixers": [],
@@ -203,17 +223,17 @@
     },
     "debt": {
       "overall_gap": 0.0,
-      "wontfix_count": 36,
+      "wontfix_count": 42,
       "worst_dimension": null,
       "worst_gap": 0.0,
       "trend": "stable"
     },
-    "milestone": "All T1 and T2 items cleared!",
+    "milestone": null,
     "primary_action": {
-      "command": "desloppify show stale_exclude --status open",
-      "description": "5 stale_exclude issues \u2014 remove stale exclusion or verify it's still needed"
+      "command": "desloppify show review --status open",
+      "description": "3 review issues need investigation \u2014 run `desloppify show review --status open` to see them"
     },
-    "why_now": "Work through actions in priority order. Rescan after each fix to track progress.",
+    "why_now": "Try a different dimension to break the plateau. Review: 3 issue(s) \u2014 `desloppify show review --status open`.",
     "verification_step": {
       "command": "desloppify scan",
       "reason": "revalidate after changes"
@@ -222,13 +242,13 @@
       {
         "type": "wontfix_gap",
         "severity": "medium",
-        "message": "Strict/lenient gap is 0.0 pts with 36 wontfix issues"
+        "message": "Strict/lenient gap is 0.0 pts with 42 wontfix issues"
       }
     ],
     "strict_target": {
       "target": 95.0,
-      "current": 73.8,
-      "gap": 21.2,
+      "current": 73.7,
+      "gap": 21.3,
       "state": "below",
       "warning": null
     },
