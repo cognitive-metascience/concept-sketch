@@ -94,20 +94,7 @@ public class WordSketchApiServer {
     public void start() {
         server.setExecutor(null);
         server.start();
-        logger.info("API server started on port {}", port);
-        logger.info("Server started on http://localhost:{}", port);
-        logger.info("Endpoints:");
-        logger.info("  GET  /health - Health check");
-        logger.info("  GET  /api/sketch/{lemma} - Get full word sketch (surface patterns)");
-        logger.info("  GET  /api/sketch/{lemma}/{relation} - Get specific surface relation");
-        logger.info("  GET  /api/sketch/{lemma}/dep - Get full dependency sketch");
-        logger.info("  GET  /api/sketch/{lemma}/dep/{relationId} - Get specific dependency relation");
-        logger.info("  GET  /api/relations - List available surface relations");
-        logger.info("  GET  /api/relations/dep - List available dependency relations");
-        logger.info("  GET  /api/concordance/examples - Get concordance examples for word pair");
-        logger.info("  GET  /api/visual/radial - Get radial plot SVG");
-        logger.info("  POST /api/bcql - Execute BCQL query");
-        logger.info("");
+        logger.info("API server started on port {} — see class Javadoc for endpoint listing", port);
         logger.info("Press Ctrl+C to stop.");
     }
 
@@ -117,14 +104,7 @@ public class WordSketchApiServer {
      */
     private void registerGetHandler(com.sun.net.httpserver.HttpServer httpServer, String path,
                                     com.sun.net.httpserver.HttpHandler handler) {
-        httpServer.createContext(path, exchange -> {
-            if ("OPTIONS".equalsIgnoreCase(exchange.getRequestMethod())) {
-                HttpApiUtils.sendOptionsResponse(exchange, "GET");
-                return;
-            }
-            if (!HttpApiUtils.requireMethod(exchange, "GET")) return;
-            handler.handle(exchange);
-        });
+        registerHandler(httpServer, path, "GET", handler);
     }
 
     /**
@@ -134,12 +114,20 @@ public class WordSketchApiServer {
      */
     private void registerPostHandler(com.sun.net.httpserver.HttpServer httpServer, String path,
                                      com.sun.net.httpserver.HttpHandler handler) {
+        registerHandler(httpServer, path, "POST", handler);
+    }
+
+    /**
+     * Shared endpoint registration: handles CORS preflight and method enforcement.
+     */
+    private void registerHandler(com.sun.net.httpserver.HttpServer httpServer, String path,
+                                  String method, com.sun.net.httpserver.HttpHandler handler) {
         httpServer.createContext(path, exchange -> {
             if ("OPTIONS".equalsIgnoreCase(exchange.getRequestMethod())) {
-                HttpApiUtils.sendOptionsResponse(exchange, "POST");
+                HttpApiUtils.sendOptionsResponse(exchange, method);
                 return;
             }
-            if (!HttpApiUtils.requireMethod(exchange, "POST")) return;
+            if (!HttpApiUtils.requireMethod(exchange, method)) return;
             handler.handle(exchange);
         });
     }

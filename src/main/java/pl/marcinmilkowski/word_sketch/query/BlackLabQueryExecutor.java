@@ -19,6 +19,8 @@ import nl.inl.blacklab.search.textpattern.CompleteQuery;
 import nl.inl.blacklab.queryParser.contextql.ContextualQueryLanguageParser;
 import nl.inl.blacklab.exceptions.InvalidQuery;
 
+import pl.marcinmilkowski.word_sketch.utils.CqlUtils;
+
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -144,7 +146,7 @@ public class BlackLabQueryExecutor implements QueryExecutor {
             return Collections.emptyList();
         }
 
-        String bcql = String.format("\"%s\" -%s-> _", lemma.toLowerCase(), deprel);
+        String bcql = String.format("\"%s\" -%s-> _", CqlUtils.escapeForRegex(lemma.toLowerCase()), deprel);
         return runDependencyQuery(bcql, lemma, minLogDice, maxResults);
     }
 
@@ -165,7 +167,7 @@ public class BlackLabQueryExecutor implements QueryExecutor {
         }
 
         String bcql = String.format("[lemma=\"%s\" & xpos=\"%s\"] -%s-> _",
-                                    lemma.toLowerCase(), headPosConstraint, deprel);
+                                    CqlUtils.escapeForRegex(lemma.toLowerCase()), headPosConstraint, deprel);
         return runDependencyQuery(bcql, lemma, minLogDice, maxResults);
     }
 
@@ -262,7 +264,7 @@ public class BlackLabQueryExecutor implements QueryExecutor {
      */
     private static String buildBcqlWithLemmaSubstitution(String cqlPattern, String lemma) {
         if (cqlPattern.startsWith("[")) {
-            return String.format("\"%s\" %s", lemma.toLowerCase(), cqlPattern);
+            return String.format("\"%s\" %s", CqlUtils.escapeForRegex(lemma.toLowerCase()), cqlPattern);
         } else {
             throw new IllegalArgumentException("Unrecognized CQL pattern format: " + cqlPattern);
         }
