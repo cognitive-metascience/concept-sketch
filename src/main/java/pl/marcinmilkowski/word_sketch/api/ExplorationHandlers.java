@@ -9,7 +9,10 @@ import pl.marcinmilkowski.word_sketch.config.RelationUtils;
 import pl.marcinmilkowski.word_sketch.model.ComparisonResult;
 import pl.marcinmilkowski.word_sketch.model.ExplorationResult;
 import pl.marcinmilkowski.word_sketch.exploration.ExploreOptions;
+import pl.marcinmilkowski.word_sketch.exploration.SingleSeedExploreOptions;
 import pl.marcinmilkowski.word_sketch.exploration.SemanticFieldExplorer;
+
+import java.util.Objects;
 
 import org.jspecify.annotations.Nullable;
 
@@ -32,10 +35,8 @@ class ExplorationHandlers {
     private final SemanticFieldExplorer semanticFieldExplorer;
 
     ExplorationHandlers(GrammarConfig grammarConfig, SemanticFieldExplorer semanticFieldExplorer) {
-        if (grammarConfig == null) {
-            throw new IllegalArgumentException("grammarConfig must not be null; exploration endpoints require a loaded grammar configuration");
-        }
-        this.grammarConfig = grammarConfig;
+        this.grammarConfig = Objects.requireNonNull(grammarConfig,
+            "grammarConfig must not be null; exploration endpoints require a loaded grammar configuration");
         this.semanticFieldExplorer = semanticFieldExplorer;
     }
 
@@ -65,8 +66,7 @@ class ExplorationHandlers {
         RelationConfig resolvedConfig = resolveRelationConfig(exchange, params);
         if (resolvedConfig == null) return null;
 
-        ExploreParams exploreParams = resolveExploreParams(exchange, params);
-        if (exploreParams == null) return null;
+        ExploreParams exploreParams = resolveExploreParams(params);
 
         return new ValidatedExploreRequest(params, seedsRaw, resolvedConfig, exploreParams);
     }
@@ -87,13 +87,16 @@ class ExplorationHandlers {
 
         String seed = req.seedsRaw();
         RelationConfig resolvedConfig = req.relationConfig();
-        String relationType = resolvedConfig.relationType().get().name();
+        String relationType = resolvedConfig.relationType()
+            .orElseThrow(() -> new IllegalStateException(
+                "relationType absent after validation for relation: " + resolvedConfig.id()))
+            .name();
         int topCollocates = req.exploreParams().topCollocates();
         int minShared = req.exploreParams().minShared();
         double minLogDice = req.exploreParams().minLogDice();
         int nounsPerCollocate = req.exploreParams().nounsPerCollocate();
 
-        ExploreOptions opts = new ExploreOptions(
+        SingleSeedExploreOptions opts = new SingleSeedExploreOptions(
             topCollocates, nounsPerCollocate, minLogDice, minShared);
 
         ExplorationResult result = semanticFieldExplorer.exploreByPattern(seed, resolvedConfig, opts);
@@ -102,7 +105,7 @@ class ExplorationHandlers {
         extraParams.put("nouns_per", nounsPerCollocate);
         Map<String, Object> response = buildBaseExploreResponse(relationType, topCollocates, minShared, minLogDice, extraParams);
         response.put("seed", result.getSeed());
-        ExploreResponseBuilder.populateExploreResponse(response, result);
+        ExploreResponseAssembler.populateExploreResponse(response, result);
 
         HttpApiUtils.sendJsonResponse(exchange, response);
     }
@@ -123,7 +126,10 @@ class ExplorationHandlers {
         }
 
         RelationConfig resolvedConfig = req.relationConfig();
-        String relationType = resolvedConfig.relationType().get().name();
+        String relationType = resolvedConfig.relationType()
+            .orElseThrow(() -> new IllegalStateException(
+                "relationType absent after validation for relation: " + resolvedConfig.id()))
+            .name();
 
         if (req.params().containsKey("nouns_per")) {
             HttpApiUtils.sendError(exchange, 400, "nouns_per is not supported for multi-seed exploration");
@@ -134,14 +140,14 @@ class ExplorationHandlers {
         int minShared = req.exploreParams().minShared();
         double minLogDice = req.exploreParams().minLogDice();
 
-        ExploreOptions opts = ExploreOptions.forMultiSeed(topCollocates, minLogDice, minShared);
+        ExploreOptions opts = new ExploreOptions(topCollocates, minLogDice, minShared);
         ExplorationResult result = semanticFieldExplorer.exploreMultiSeed(seeds, resolvedConfig, opts);
 
         Map<String, Object> response = buildBaseExploreResponse(relationType, topCollocates, minShared, minLogDice, Map.of());
         response.put("seeds", new ArrayList<>(seeds));
         response.put("seed_count", seeds.size());
 
-        ExploreResponseBuilder.populateExploreResponse(response, result);
+        ExploreResponseAssembler.populateExploreResponse(response, result);
 
         HttpApiUtils.sendJsonResponse(exchange, response);
     }
@@ -158,15 +164,15 @@ class ExplorationHandlers {
 
         Set<String> seeds = parseSeedSet(seedsParam);
 
-        ExploreParams exploreParams = resolveExploreParams(exchange, params);
-        if (exploreParams == null) return;
+        ExploreParams exploreParams = resolveExploreParams(params);
         int topCollocates = exploreParams.topCollocates();
         double minLogDice = exploreParams.minLogDice();
 
-        ComparisonResult result = semanticFieldExplorer.compareCollocateProfiles(seeds, minLogDice, topCollocates);
+        ExploreOptions opts = new ExploreOptions(topCollocates, minLogDice, exploreParams.minShared());
+        ComparisonResult result = semanticFieldExplorer.compareCollocateProfiles(seeds, opts);
 
         Map<String, Object> response = new HashMap<>();
-        ExploreResponseBuilder.populateComparisonResponse(response, result, seeds, topCollocates, minLogDice);
+        ExploreResponseAssembler.populateComparisonResponse(response, result, seeds, topCollocates, minLogDice);
 
         HttpApiUtils.sendJsonResponse(exchange, response);
     }
@@ -183,8 +189,7 @@ class ExplorationHandlers {
         String noun = HttpApiUtils.requireParam(exchange, params, "noun");
         if (noun == null) return;
 
-        int maxExamples = parseIntParam(exchange, params, "top", 10);
-        if (maxExamples < 0) return;
+        int maxExamples = HttpApiUtils.parseIntParam(params, "top", 10);
 
         RelationConfig resolvedConfig = resolveRelationConfig(exchange, params);
         if (resolvedConfig == null) return;
@@ -259,39 +264,11 @@ class ExplorationHandlers {
         return relationConfig.get();
     }
 
-    private @Nullable ExploreParams resolveExploreParams(HttpExchange exchange, Map<String, String> params) throws IOException {
-        int top = parseIntParam(exchange, params, "top", 10);
-        if (top < 0) return null;
-        int minShared = parseIntParam(exchange, params, "min_shared", 2);
-        if (minShared < 0) return null;
-        double minLogDice = parseDoubleParam(exchange, params, "min_logdice", 3.0);
-        if (minLogDice < 0) return null;
-        int nounsPerCollocate = parseIntParam(exchange, params, "nouns_per", 30);
-        if (nounsPerCollocate < 0) return null;
+    private ExploreParams resolveExploreParams(Map<String, String> params) {
+        int top = HttpApiUtils.parseIntParam(params, "top", 10);
+        int minShared = HttpApiUtils.parseIntParam(params, "min_shared", 2);
+        double minLogDice = HttpApiUtils.parseDoubleParam(params, "min_logdice", 3.0);
+        int nounsPerCollocate = HttpApiUtils.parseIntParam(params, "nouns_per", 30);
         return new ExploreParams(top, minShared, minLogDice, nounsPerCollocate);
-    }
-
-    /** Parses an int parameter by name; sends 400 and returns -1 on parse failure. */
-    private int parseIntParam(HttpExchange exchange, Map<String, String> params,
-                              String name, int defaultValue) throws IOException {
-        String raw = params.getOrDefault(name, String.valueOf(defaultValue));
-        try {
-            return Integer.parseInt(raw);
-        } catch (NumberFormatException e) {
-            HttpApiUtils.sendError(exchange, 400, "Invalid numeric parameter '" + name + "': expected integer, got: '" + raw + "'");
-            return -1;
-        }
-    }
-
-    /** Parses a double parameter by name; sends 400 and returns -1 on parse failure. */
-    private double parseDoubleParam(HttpExchange exchange, Map<String, String> params,
-                                    String name, double defaultValue) throws IOException {
-        String raw = params.getOrDefault(name, String.valueOf(defaultValue));
-        try {
-            return Double.parseDouble(raw);
-        } catch (NumberFormatException e) {
-            HttpApiUtils.sendError(exchange, 400, "Invalid numeric parameter '" + name + "': expected decimal, got: '" + raw + "'");
-            return -1;
-        }
     }
 }

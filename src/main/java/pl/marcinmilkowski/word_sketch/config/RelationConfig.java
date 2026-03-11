@@ -63,6 +63,12 @@ public record RelationConfig(
      * Build the BCQL pattern with headword substituted.
      * For BCQL format: replaces the constraint at head_position with [lemma="headword" & original_constraint]
      *
+     * <p><strong>Null/blank passthrough:</strong> when {@code headword} is {@code null} or blank,
+     * the original pattern is returned unchanged — substitution is silently skipped.
+     * This is intentional for contexts where an unsubstituted pattern is acceptable (e.g.
+     * building a template for later injection), but callers that always require substitution
+     * should validate the headword before calling this method.</p>
+     *
      * @param headword the lemma to substitute at the head position; if {@code null} or blank,
      *                 the unmodified pattern is returned unchanged
      * @return the substituted pattern, or the original pattern when headword is null/blank
@@ -87,7 +93,7 @@ public record RelationConfig(
      * @throws IllegalStateException if {@code relationType()} is empty or the collocate POS
      *         group cannot be mapped to a unique pattern.
      */
-    public String collocateReversePattern() {
+    public String buildCollocateReversePattern() {
         if (relationType().isEmpty()) {
             throw new IllegalStateException(
                 "Cannot determine collocate reverse pattern: relationType is absent for relation '" + id + "'");
@@ -172,14 +178,14 @@ public record RelationConfig(
     }
 
     /**
-     * Extract the dependency relation (deprel) from the pattern.
+     * Extracts and computes the dependency relation (deprel) from the pattern.
      * For DEP relations, looks for deprel="xxx" attribute constraint in the pattern.
      * If not found, extracts from the relation ID (e.g., "dep_amod" -> "amod").
      *
      * @return the deprel string (e.g. {@code "amod"}), or {@code null} when the relation
      *         type is not {@link RelationType#DEP} or no deprel can be derived
      */
-    public @org.jspecify.annotations.Nullable String getDeprel() {
+    public @org.jspecify.annotations.Nullable String computeDeprel() {
         if (pattern == null || !RelationType.DEP.equals(relationType().orElse(null))) {
             return null;
         }

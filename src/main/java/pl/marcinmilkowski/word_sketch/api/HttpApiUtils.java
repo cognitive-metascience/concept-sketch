@@ -142,7 +142,36 @@ class HttpApiUtils {
     }
 
     /**
-     * Parses query string key-value pairs, URL-decoding both keys and values.
+     * Parses an integer query parameter by name; uses {@code defaultValue} when the key is absent.
+     * Throws {@link IllegalArgumentException} on parse failure so {@link #wrapWithErrorHandling}
+     * catches it and sends a 400 Bad Request response.
+     */
+    static int parseIntParam(Map<String, String> params, String name, int defaultValue) {
+        String raw = params.getOrDefault(name, String.valueOf(defaultValue));
+        try {
+            return Integer.parseInt(raw);
+        } catch (NumberFormatException e) {
+            throw new IllegalArgumentException(
+                "Invalid numeric parameter '" + name + "': expected integer, got: '" + raw + "'");
+        }
+    }
+
+    /**
+     * Parses a double query parameter by name; uses {@code defaultValue} when the key is absent.
+     * Throws {@link IllegalArgumentException} on parse failure so {@link #wrapWithErrorHandling}
+     * catches it and sends a 400 Bad Request response.
+     */
+    static double parseDoubleParam(Map<String, String> params, String name, double defaultValue) {
+        String raw = params.getOrDefault(name, String.valueOf(defaultValue));
+        try {
+            return Double.parseDouble(raw);
+        } catch (NumberFormatException e) {
+            throw new IllegalArgumentException(
+                "Invalid numeric parameter '" + name + "': expected decimal, got: '" + raw + "'");
+        }
+    }
+
+    /**
      *
      * @throws IllegalArgumentException if any key or value cannot be URL-decoded, so
      *         callers and {@code wrapHandler} can return a 400 Bad Request response rather than

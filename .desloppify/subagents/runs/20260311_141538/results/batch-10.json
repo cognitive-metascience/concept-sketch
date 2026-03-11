@@ -1,0 +1,98 @@
+{
+  "batch": "contract_coherence",
+  "batch_index": 10,
+  "assessments": {"contract_coherence": 75.0},
+  "dimension_notes": {
+    "contract_coherence": {
+      "evidence": [
+        "QueryExecutor interface Javadoc specifies pre/post conditions for all 6 methods with precision (pattern format constraints, null behavior, logDice semantics). The implementation honors them.",
+        "HttpApiUtils.requireParam is annotated @Nullable and documented: 'Caller must check for null return.' This is honored by all callers (pattern: 'if (x == null) return;').",
+        "parseDoubleParam returns -1.0 on parse failure; resolveExploreParams checks 'if (minLogDice < 0) return null'. The contract works for logDice (which is 0-14) but is implicit: there is no documented precondition that minLogDice must be non-negative, and a caller passing -1.0 deliberately would silently get a 400.",
+        "GrammarConfigLoader.createDefaultEnglish() wraps all IOExceptions (including FileNotFoundException for config-not-found, malformed JSON, etc.) in a single IllegalStateException — callers cannot distinguish missing file from corrupt config without parsing the message string.",
+        "RelationConfig.buildFullPattern(String headword) returns the unmodified pattern silently when headword is null or blank — callers may not realize the substitution was skipped, leading to unsubstituted patterns in queries.",
+        "SemanticFieldExplorer.compareCollocateProfiles public wrapper checks 'seedNouns == null || seedNouns.size() < 2' and throws IllegalArgumentException. The private CollocateProfileComparator.compareCollocateProfiles checks 'seedNouns == null || seedNouns.isEmpty()' — the guards are slightly different (isEmpty vs size < 2), though the public layer ensures the weaker guard is always covered first.",
+        "ExplorationResult.empty(String seed) contract: '@param seed must not be null' and throws NPE via Objects.requireNonNull — honored.",
+        "handleConcordanceExamples returns early via explicit 'return' after error sends — consistent null-return-after-error-send pattern used throughout all handlers."
+      ],
+      "impact_scope": "subsystem",
+      "fix_scope": "multi_file_refactor",
+      "confidence": "high"
+    }
+  },
+  "dimension_judgment": {
+    "contract_coherence": {
+      "strengths": [
+        "QueryExecutor interface Javadoc is thorough and accurate — all method contracts are explicitly stated and honored by BlackLabQueryExecutor.",
+        "HttpApiUtils.requireParam @Nullable annotation and documented null-return contract is consistently honored by all 5 callers.",
+        "ExplorationResult.empty() has an explicit non-null precondition enforced by Objects.requireNonNull.",
+        "Handler early-return pattern after sendError is consistent across all handler classes — predictable failure mode."
+      ],
+      "issue_character": "The contract issues are concentrated in three places: a sentinel-overloaded return value (parseDoubleParam), a silent pass-through on substitution failure (buildFullPattern), and a loss of IOException subtype information (createDefaultEnglish). These are genuine contract imprecisions rather than widespread violations.",
+      "score_rationale": "The core interfaces and domain types have precise, honored contracts. The issues are in the parameter-parsing and config-loading layers where contract precision was traded for brevity. parseDoubleParam's -1.0 sentinel is the most actionable — it conflates two meanings on a single return type. The buildFullPattern silent pass-through is a hazard for callers who don't read the source. These are moderate contract defects in specific code paths, not systemic failures."
+    }
+  },
+  "issues": [
+    {
+      "dimension": "contract_coherence",
+      "identifier": "parsedoubleparam-sentinel-contract",
+      "summary": "parseDoubleParam returns -1.0 as error sentinel, conflating error state with potentially valid negative input",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/api/ExplorationHandlers.java"
+      ],
+      "evidence": [
+        "parseDoubleParam Javadoc: 'sends 400 and returns -1 on parse failure.'",
+        "resolveExploreParams: 'double minLogDice = parseDoubleParam(..., \"min_logdice\", 3.0); if (minLogDice < 0) return null;'",
+        "A caller passing min_logdice=-0.5 (a valid, if unusual, threshold for unrestricted results) would get a 400 response claiming the parameter was invalid, when it was not.",
+        "The method name says 'parse failure' but the sentinel -1.0 is a domain-invalid value, not a type-level indicator."
+      ],
+      "suggestion": "Throw IllegalArgumentException from parseDoubleParam on NumberFormatException (caught by wrapWithErrorHandling which sends 400). Remove the if-negative guard in resolveExploreParams. The exception contract is then explicit and there is no sentinel.",
+      "confidence": "high",
+      "impact_scope": "module",
+      "fix_scope": "single_edit"
+    },
+    {
+      "dimension": "contract_coherence",
+      "identifier": "buildfullpattern-silent-passthrough",
+      "summary": "RelationConfig.buildFullPattern returns the unmodified pattern when headword is null/blank without indicating that substitution was skipped",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/config/RelationConfig.java"
+      ],
+      "evidence": [
+        "buildFullPattern(String headword): 'if (headword == null || headword.isBlank()) return pattern;'",
+        "If a caller passes a blank headword, the returned pattern still contains the labeled token (e.g. '1:[xpos=\"NN.*\"]' without a lemma constraint).",
+        "This unsubstituted pattern will be sent to the corpus query engine, which may match all nouns rather than the intended headword. The caller receives no signal that substitution was skipped.",
+        "Callers in SketchHandlers and ExplorationHandlers always pass a non-blank lemma, but the silent pass-through is a latent hazard for future callers."
+      ],
+      "suggestion": "Change the guard to throw IllegalArgumentException('headword must not be blank for relation ''' + id + '''') rather than returning the unmodified pattern. Alternatively, document the silent pass-through behavior explicitly as a deliberate design choice in the Javadoc.",
+      "confidence": "medium",
+      "impact_scope": "module",
+      "fix_scope": "single_edit"
+    },
+    {
+      "dimension": "contract_coherence",
+      "identifier": "createdefaultenglish-exception-erasure",
+      "summary": "createDefaultEnglish() erases all IOException subtypes into a single IllegalStateException, preventing callers from distinguishing config-not-found from malformed-JSON",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/config/GrammarConfigLoader.java"
+      ],
+      "evidence": [
+        "createDefaultEnglish() catches IOException and rethrows as IllegalStateException('Cannot load default grammar config from ...').",
+        "The original IOException may be FileNotFoundException (config missing), IOException (disk error), or a parse IOException (invalid JSON) — all become the same IllegalStateException.",
+        "A caller that wants to provide a friendly startup error message ('config file not found — check -Dgrammar.config') cannot distinguish these cases without parsing the message string.",
+        "Main.java handles the IOException case when using load(Path) directly — but createDefaultEnglish() callers lose this precision."
+      ],
+      "suggestion": "Consider re-throwing as separate RuntimeException subtypes (ConfigNotFoundException extends IllegalStateException, ConfigParseException extends IllegalStateException) that callers can catch distinctly. At minimum, document in the Javadoc that IOException subtypes are erased.",
+      "confidence": "medium",
+      "impact_scope": "module",
+      "fix_scope": "single_edit"
+    }
+  ],
+  "retrospective": {
+    "root_causes": [
+      "parseDoubleParam sentinel and buildFullPattern silent pass-through were designed for brevity at the cost of contract precision",
+      "createDefaultEnglish exception erasure follows a common but imprecise Java startup pattern"
+    ],
+    "likely_symptoms": [],
+    "possible_false_positives": []
+  }
+}

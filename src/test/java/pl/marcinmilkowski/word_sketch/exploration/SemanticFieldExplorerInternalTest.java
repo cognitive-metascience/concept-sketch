@@ -3,7 +3,7 @@ package pl.marcinmilkowski.word_sketch.exploration;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import pl.marcinmilkowski.word_sketch.model.ExplorationResult;
-import pl.marcinmilkowski.word_sketch.model.QueryResults;
+import pl.marcinmilkowski.word_sketch.query.QueryResults;
 import pl.marcinmilkowski.word_sketch.query.QueryExecutor;
 
 import java.io.IOException;

@@ -1,7 +1,7 @@
 {
   "version": 8,
   "created": "2026-03-09T18:36:05+00:00",
-  "updated": "2026-03-11T14:12:36+00:00",
+  "updated": "2026-03-11T15:04:06+00:00",
   "queue_order": [
     "review::.::holistic::test_strategy::api_handler_smoke_only::0654ef4e",
     "review::.::holistic::test_strategy::bcql_concordance_hardcoded_path::498feea7",
@@ -25,8 +25,7 @@
     "review::.::holistic::mid_level_elegance::getdeprel_fragile_dual_strategy::6af6eebb",
     "review::.::holistic::mid_level_elegance::urldecoder_overly_broad_catch::8dd26642",
     "review::.::holistic::package_organization::model_package_overloaded::0a7a2273",
-    "review::.::holistic::type_safety::stringly_typed_relation_ids::59021e2a",
-    "review::.::holistic::design_coherence::sketch-handlers-mixed-concerns::a73a8516"
+    "review::.::holistic::type_safety::stringly_typed_relation_ids::59021e2a"
   ],
   "deferred": [],
   "skipped": {
@@ -1580,16 +1579,6 @@
       "review_after": null,
       "skipped_at_scan": 59
     },
-    "boilerplate_duplication::src/main/java/pl/marcinmilkowski/word_sketch/query/BlackLabQueryExecutor.java::475cc801cc2d8bcd": {
-      "issue_id": "boilerplate_duplication::src/main/java/pl/marcinmilkowski/word_sketch/query/BlackLabQueryExecutor.java::475cc801cc2d8bcd",
-      "kind": "permanent",
-      "reason": null,
-      "note": "BlackLab API requires identical imports in both query executor files; both must implement the same interface",
-      "attestation": "I have actually reviewed this finding \u2014 these are mandatory BlackLab API imports that must appear in both files, and I am not gaming the score",
-      "created_at": "2026-03-11T13:06:19+00:00",
-      "review_after": null,
-      "skipped_at_scan": 60
-    },
     "review::.::holistic::high_level_elegance::relationtype_dual_role::65e0af1c": {
       "issue_id": "review::.::holistic::high_level_elegance::relationtype_dual_role::65e0af1c",
       "kind": "permanent",
@@ -1859,6 +1848,336 @@
       "created_at": "2026-03-11T13:57:20+00:00",
       "review_after": null,
       "skipped_at_scan": 61
+    },
+    "boilerplate_duplication::src/main/java/pl/marcinmilkowski/word_sketch/query/BlackLabQueryExecutor.java::475cc801cc2d8bcd": {
+      "issue_id": "boilerplate_duplication::src/main/java/pl/marcinmilkowski/word_sketch/query/BlackLabQueryExecutor.java::475cc801cc2d8bcd",
+      "kind": "permanent",
+      "reason": null,
+      "note": "Mandatory BlackLab API imports required in both query files \u2014 unavoidable",
+      "attestation": "I have actually reviewed this finding \u2014 mandatory BlackLab API imports that cannot be shared, and I am not gaming the score",
+      "created_at": "2026-03-11T14:15:27+00:00",
+      "review_after": null,
+      "skipped_at_scan": 62
+    },
+    "boilerplate_duplication::src/main/java/pl/marcinmilkowski/word_sketch/api/ConcordanceHandlers.java::d56f1002c5bec09a": {
+      "issue_id": "boilerplate_duplication::src/main/java/pl/marcinmilkowski/word_sketch/api/ConcordanceHandlers.java::d56f1002c5bec09a",
+      "kind": "permanent",
+      "reason": null,
+      "note": "Package declaration and com.sun.net.httpserver imports are required in every api/ class \u2014 unavoidable from class extraction",
+      "attestation": "I have actually reviewed this finding \u2014 unavoidable boilerplate from splitting SketchHandlers, and I am not gaming the score",
+      "created_at": "2026-03-11T14:15:37+00:00",
+      "review_after": null,
+      "skipped_at_scan": 62
+    },
+    "review::.::holistic::authorization_consistency::no-rate-limiting-bcql::708fee97": {
+      "issue_id": "review::.::holistic::authorization_consistency::no-rate-limiting-bcql::708fee97",
+      "kind": "permanent",
+      "reason": null,
+      "note": "Research corpus tool with no public exposure; rate limiting is out of scope and would add complexity with no security benefit in this deployment context.",
+      "attestation": "I have actually reviewed this finding and am not gaming the score",
+      "created_at": "2026-03-11T14:43:21+00:00",
+      "review_after": null,
+      "skipped_at_scan": 63
+    },
+    "review::.::holistic::dependency_health::fastjson2-audit-risk::9c1086fe": {
+      "issue_id": "review::.::holistic::dependency_health::fastjson2-audit-risk::9c1086fe",
+      "kind": "permanent",
+      "reason": null,
+      "note": "Replacing the JSON library would require a comprehensive regression test pass disproportionate to the actual threat model of this offline linguistic research tool.",
+      "attestation": "I have actually reviewed this finding and am not gaming the score",
+      "created_at": "2026-03-11T14:43:22+00:00",
+      "review_after": null,
+      "skipped_at_scan": 63
+    },
+    "review::.::holistic::cross_module_architecture::api-hub-overload::843d902b": {
+      "issue_id": "review::.::holistic::cross_module_architecture::api-hub-overload::843d902b",
+      "kind": "permanent",
+      "reason": null,
+      "note": "Full api/ package restructure (splitting HTTP handlers, response builders, renderers) is a large architectural refactor better tracked as a separate effort once the tactical fixes in clusters naming-fixes, radialplot-fix, and query-results-move are complete.",
+      "attestation": "I have actually reviewed this finding and am not gaming the score",
+      "created_at": "2026-03-11T14:43:23+00:00",
+      "review_after": null,
+      "skipped_at_scan": 63
+    },
+    "review::.::holistic::convention_outlier::explore-response-builder-pattern-mismatch::04e02a42": {
+      "issue_id": "review::.::holistic::convention_outlier::explore-response-builder-pattern-mismatch::04e02a42",
+      "kind": "temporary",
+      "reason": null,
+      "note": null,
+      "attestation": null,
+      "created_at": "2026-03-11T15:01:06+00:00",
+      "review_after": null,
+      "skipped_at_scan": 63
+    },
+    "review::.::holistic::naming_quality::explore-response-builder-misnomer::252bfa77": {
+      "issue_id": "review::.::holistic::naming_quality::explore-response-builder-misnomer::252bfa77",
+      "kind": "temporary",
+      "reason": null,
+      "note": null,
+      "attestation": null,
+      "created_at": "2026-03-11T15:01:06+00:00",
+      "review_after": null,
+      "skipped_at_scan": 63
+    },
+    "review::.::holistic::naming_quality::getdeprel-computational-getter::9f35e9a1": {
+      "issue_id": "review::.::holistic::naming_quality::getdeprel-computational-getter::9f35e9a1",
+      "kind": "temporary",
+      "reason": null,
+      "note": null,
+      "attestation": null,
+      "created_at": "2026-03-11T15:01:06+00:00",
+      "review_after": null,
+      "skipped_at_scan": 63
+    },
+    "review::.::holistic::naming_quality::filter-candidates-vague::b79a71b0": {
+      "issue_id": "review::.::holistic::naming_quality::filter-candidates-vague::b79a71b0",
+      "kind": "temporary",
+      "reason": null,
+      "note": null,
+      "attestation": null,
+      "created_at": "2026-03-11T15:01:06+00:00",
+      "review_after": null,
+      "skipped_at_scan": 63
+    },
+    "review::.::holistic::contract_coherence::parsedoubleparam-sentinel-contract::5e089cb2": {
+      "issue_id": "review::.::holistic::contract_coherence::parsedoubleparam-sentinel-contract::5e089cb2",
+      "kind": "temporary",
+      "reason": null,
+      "note": null,
+      "attestation": null,
+      "created_at": "2026-03-11T15:01:33+00:00",
+      "review_after": null,
+      "skipped_at_scan": 63
+    },
+    "review::.::holistic::low_level_elegance::double-sentinel-contract::2b310519": {
+      "issue_id": "review::.::holistic::low_level_elegance::double-sentinel-contract::2b310519",
+      "kind": "temporary",
+      "reason": null,
+      "note": null,
+      "attestation": null,
+      "created_at": "2026-03-11T15:01:33+00:00",
+      "review_after": null,
+      "skipped_at_scan": 63
+    },
+    "review::.::holistic::logic_clarity::sentinel-minus-one-parse-error::4696c722": {
+      "issue_id": "review::.::holistic::logic_clarity::sentinel-minus-one-parse-error::4696c722",
+      "kind": "temporary",
+      "reason": null,
+      "note": null,
+      "attestation": null,
+      "created_at": "2026-03-11T15:01:33+00:00",
+      "review_after": null,
+      "skipped_at_scan": 63
+    },
+    "review::.::holistic::low_level_elegance::parsing-helper-private-scope::f316f5dd": {
+      "issue_id": "review::.::holistic::low_level_elegance::parsing-helper-private-scope::f316f5dd",
+      "kind": "temporary",
+      "reason": null,
+      "note": null,
+      "attestation": null,
+      "created_at": "2026-03-11T15:01:33+00:00",
+      "review_after": null,
+      "skipped_at_scan": 63
+    },
+    "review::.::holistic::mid_level_elegance::param-parse-seam-leak::291eed32": {
+      "issue_id": "review::.::holistic::mid_level_elegance::param-parse-seam-leak::291eed32",
+      "kind": "temporary",
+      "reason": null,
+      "note": null,
+      "attestation": null,
+      "created_at": "2026-03-11T15:01:33+00:00",
+      "review_after": null,
+      "skipped_at_scan": 63
+    },
+    "review::.::holistic::error_consistency::concordance-inline-numformat-vs-helper::d9835cc8": {
+      "issue_id": "review::.::holistic::error_consistency::concordance-inline-numformat-vs-helper::d9835cc8",
+      "kind": "temporary",
+      "reason": null,
+      "note": null,
+      "attestation": null,
+      "created_at": "2026-03-11T15:01:33+00:00",
+      "review_after": null,
+      "skipped_at_scan": 63
+    },
+    "review::.::holistic::low_level_elegance::derive-token-position-dual-traversal::7c0ad513": {
+      "issue_id": "review::.::holistic::low_level_elegance::derive-token-position-dual-traversal::7c0ad513",
+      "kind": "temporary",
+      "reason": null,
+      "note": null,
+      "attestation": null,
+      "created_at": "2026-03-11T15:01:33+00:00",
+      "review_after": null,
+      "skipped_at_scan": 63
+    },
+    "review::.::holistic::abstraction_fitness::deprecated-bypass-constructors::7ab5e1f5": {
+      "issue_id": "review::.::holistic::abstraction_fitness::deprecated-bypass-constructors::7ab5e1f5",
+      "kind": "temporary",
+      "reason": null,
+      "note": null,
+      "attestation": null,
+      "created_at": "2026-03-11T15:02:48+00:00",
+      "review_after": null,
+      "skipped_at_scan": 63
+    },
+    "review::.::holistic::abstraction_fitness::deprecated-passthrough-overload::ea475716": {
+      "issue_id": "review::.::holistic::abstraction_fitness::deprecated-passthrough-overload::ea475716",
+      "kind": "temporary",
+      "reason": null,
+      "note": null,
+      "attestation": null,
+      "created_at": "2026-03-11T15:02:48+00:00",
+      "review_after": null,
+      "skipped_at_scan": 63
+    },
+    "review::.::holistic::initialization_coupling::deprecated-fallback-constructors-parallel-path::9c2f9305": {
+      "issue_id": "review::.::holistic::initialization_coupling::deprecated-fallback-constructors-parallel-path::9c2f9305",
+      "kind": "temporary",
+      "reason": null,
+      "note": null,
+      "attestation": null,
+      "created_at": "2026-03-11T15:02:48+00:00",
+      "review_after": null,
+      "skipped_at_scan": 63
+    },
+    "review::.::holistic::incomplete_migration::deprecated-triad-no-removal-schedule::27e5efaa": {
+      "issue_id": "review::.::holistic::incomplete_migration::deprecated-triad-no-removal-schedule::27e5efaa",
+      "kind": "temporary",
+      "reason": null,
+      "note": null,
+      "attestation": null,
+      "created_at": "2026-03-11T15:02:48+00:00",
+      "review_after": null,
+      "skipped_at_scan": 63
+    },
+    "review::.::holistic::api_surface_coherence::deprecated-5param-exploreMultiSeed-public::639f1745": {
+      "issue_id": "review::.::holistic::api_surface_coherence::deprecated-5param-exploreMultiSeed-public::639f1745",
+      "kind": "temporary",
+      "reason": null,
+      "note": null,
+      "attestation": null,
+      "created_at": "2026-03-11T15:02:48+00:00",
+      "review_after": null,
+      "skipped_at_scan": 63
+    },
+    "review::.::holistic::design_coherence::explore-options-single-seed-param-leakage::8fc738a1": {
+      "issue_id": "review::.::holistic::design_coherence::explore-options-single-seed-param-leakage::8fc738a1",
+      "kind": "temporary",
+      "reason": null,
+      "note": null,
+      "attestation": null,
+      "created_at": "2026-03-11T15:02:48+00:00",
+      "review_after": null,
+      "skipped_at_scan": 63
+    },
+    "review::.::holistic::design_coherence::compare-profiles-not-migrated-to-explore-options::90fc08e3": {
+      "issue_id": "review::.::holistic::design_coherence::compare-profiles-not-migrated-to-explore-options::90fc08e3",
+      "kind": "temporary",
+      "reason": null,
+      "note": null,
+      "attestation": null,
+      "created_at": "2026-03-11T15:02:48+00:00",
+      "review_after": null,
+      "skipped_at_scan": 63
+    },
+    "review::.::holistic::api_surface_coherence::compare-profiles-raw-params-vs-explore-options::e039a50b": {
+      "issue_id": "review::.::holistic::api_surface_coherence::compare-profiles-raw-params-vs-explore-options::e039a50b",
+      "kind": "temporary",
+      "reason": null,
+      "note": null,
+      "attestation": null,
+      "created_at": "2026-03-11T15:02:48+00:00",
+      "review_after": null,
+      "skipped_at_scan": 63
+    },
+    "review::.::holistic::mid_level_elegance::comparison-handler-partial-validation::441d5775": {
+      "issue_id": "review::.::holistic::mid_level_elegance::comparison-handler-partial-validation::441d5775",
+      "kind": "temporary",
+      "reason": null,
+      "note": null,
+      "attestation": null,
+      "created_at": "2026-03-11T15:02:48+00:00",
+      "review_after": null,
+      "skipped_at_scan": 63
+    },
+    "review::.::holistic::type_safety::optional-get-without-guard::b5659f49": {
+      "issue_id": "review::.::holistic::type_safety::optional-get-without-guard::b5659f49",
+      "kind": "temporary",
+      "reason": null,
+      "note": null,
+      "attestation": null,
+      "created_at": "2026-03-11T15:02:49+00:00",
+      "review_after": null,
+      "skipped_at_scan": 63
+    },
+    "review::.::holistic::logic_clarity::redundant-orelsethrow-after-guard::b7f5b3e0": {
+      "issue_id": "review::.::holistic::logic_clarity::redundant-orelsethrow-after-guard::b7f5b3e0",
+      "kind": "temporary",
+      "reason": null,
+      "note": null,
+      "attestation": null,
+      "created_at": "2026-03-11T15:02:49+00:00",
+      "review_after": null,
+      "skipped_at_scan": 63
+    },
+    "review::.::holistic::type_safety::missing-nullable-extract-collocate-lemma::535c093b": {
+      "issue_id": "review::.::holistic::type_safety::missing-nullable-extract-collocate-lemma::535c093b",
+      "kind": "temporary",
+      "reason": null,
+      "note": null,
+      "attestation": null,
+      "created_at": "2026-03-11T15:02:49+00:00",
+      "review_after": null,
+      "skipped_at_scan": 63
+    },
+    "review::.::holistic::convention_outlier::relation-config-naming-convention-split::3cb7449a": {
+      "issue_id": "review::.::holistic::convention_outlier::relation-config-naming-convention-split::3cb7449a",
+      "kind": "temporary",
+      "reason": null,
+      "note": null,
+      "attestation": null,
+      "created_at": "2026-03-11T15:02:49+00:00",
+      "review_after": null,
+      "skipped_at_scan": 63
+    },
+    "review::.::holistic::contract_coherence::buildfullpattern-silent-passthrough::addc2063": {
+      "issue_id": "review::.::holistic::contract_coherence::buildfullpattern-silent-passthrough::addc2063",
+      "kind": "temporary",
+      "reason": null,
+      "note": null,
+      "attestation": null,
+      "created_at": "2026-03-11T15:02:49+00:00",
+      "review_after": null,
+      "skipped_at_scan": 63
+    },
+    "review::.::holistic::contract_coherence::createdefaultenglish-exception-erasure::92b8385a": {
+      "issue_id": "review::.::holistic::contract_coherence::createdefaultenglish-exception-erasure::92b8385a",
+      "kind": "temporary",
+      "reason": null,
+      "note": null,
+      "attestation": null,
+      "created_at": "2026-03-11T15:02:49+00:00",
+      "review_after": null,
+      "skipped_at_scan": 63
+    },
+    "review::.::holistic::ai_generated_debt::null-guard-inconsistency::822fc7a1": {
+      "issue_id": "review::.::holistic::ai_generated_debt::null-guard-inconsistency::822fc7a1",
+      "kind": "temporary",
+      "reason": null,
+      "note": null,
+      "attestation": null,
+      "created_at": "2026-03-11T15:03:22+00:00",
+      "review_after": null,
+      "skipped_at_scan": 63
+    },
+    "review::.::holistic::ai_generated_debt::selective-route-logging::7ea98547": {
+      "issue_id": "review::.::holistic::ai_generated_debt::selective-route-logging::7ea98547",
+      "kind": "temporary",
+      "reason": null,
+      "note": null,
+      "attestation": null,
+      "created_at": "2026-03-11T15:03:22+00:00",
+      "review_after": null,
+      "skipped_at_scan": 63
     }
   },
   "active_cluster": null,
@@ -6744,8 +7063,8 @@
     "review::.::holistic::design_coherence::sketch-handlers-mixed-concerns::a73a8516": {
       "issue_id": "review::.::holistic::design_coherence::sketch-handlers-mixed-concerns::a73a8516",
       "created_at": "2026-03-11T13:30:47+00:00",
-      "cluster": "sketch-handlers-split",
-      "updated_at": "2026-03-11T13:30:47+00:00"
+      "cluster": null,
+      "updated_at": "2026-03-11T14:14:42+00:00"
     },
     "review::.::holistic::cross_module_architecture::api_constructs_exploration_layer::28d312e2": {
       "issue_id": "review::.::holistic::cross_module_architecture::api_constructs_exploration_layer::28d312e2",
@@ -6794,6 +7113,210 @@
       "created_at": "2026-03-11T13:30:52+00:00",
       "cluster": "error-improvements",
       "updated_at": "2026-03-11T13:30:52+00:00"
+    },
+    "review::.::holistic::contract_coherence::parsedoubleparam-sentinel-contract::5e089cb2": {
+      "issue_id": "review::.::holistic::contract_coherence::parsedoubleparam-sentinel-contract::5e089cb2",
+      "created_at": "2026-03-11T14:39:28+00:00",
+      "cluster": "param-helpers-promote",
+      "updated_at": "2026-03-11T14:39:28+00:00"
+    },
+    "review::.::holistic::low_level_elegance::double-sentinel-contract::2b310519": {
+      "issue_id": "review::.::holistic::low_level_elegance::double-sentinel-contract::2b310519",
+      "created_at": "2026-03-11T14:39:29+00:00",
+      "cluster": "param-helpers-promote",
+      "updated_at": "2026-03-11T14:39:29+00:00"
+    },
+    "review::.::holistic::logic_clarity::sentinel-minus-one-parse-error::4696c722": {
+      "issue_id": "review::.::holistic::logic_clarity::sentinel-minus-one-parse-error::4696c722",
+      "created_at": "2026-03-11T14:39:29+00:00",
+      "cluster": "param-helpers-promote",
+      "updated_at": "2026-03-11T14:39:29+00:00"
+    },
+    "review::.::holistic::low_level_elegance::parsing-helper-private-scope::f316f5dd": {
+      "issue_id": "review::.::holistic::low_level_elegance::parsing-helper-private-scope::f316f5dd",
+      "created_at": "2026-03-11T14:39:30+00:00",
+      "cluster": "param-helpers-promote",
+      "updated_at": "2026-03-11T14:39:30+00:00"
+    },
+    "review::.::holistic::mid_level_elegance::param-parse-seam-leak::291eed32": {
+      "issue_id": "review::.::holistic::mid_level_elegance::param-parse-seam-leak::291eed32",
+      "created_at": "2026-03-11T14:39:30+00:00",
+      "cluster": "param-helpers-promote",
+      "updated_at": "2026-03-11T14:39:30+00:00"
+    },
+    "review::.::holistic::error_consistency::concordance-inline-numformat-vs-helper::d9835cc8": {
+      "issue_id": "review::.::holistic::error_consistency::concordance-inline-numformat-vs-helper::d9835cc8",
+      "created_at": "2026-03-11T14:39:31+00:00",
+      "cluster": "param-helpers-promote",
+      "updated_at": "2026-03-11T14:39:31+00:00"
+    },
+    "review::.::holistic::package_organization::queryresults-wrong-package::6f0a9d47": {
+      "issue_id": "review::.::holistic::package_organization::queryresults-wrong-package::6f0a9d47",
+      "created_at": "2026-03-11T14:39:37+00:00",
+      "cluster": null,
+      "updated_at": "2026-03-11T15:01:50+00:00"
+    },
+    "review::.::holistic::high_level_elegance::queryresults-model-affinity::67d85ece": {
+      "issue_id": "review::.::holistic::high_level_elegance::queryresults-model-affinity::67d85ece",
+      "created_at": "2026-03-11T14:39:37+00:00",
+      "cluster": null,
+      "updated_at": "2026-03-11T15:03:30+00:00"
+    },
+    "review::.::holistic::package_organization::radialplot-api-package::dfb4cace": {
+      "issue_id": "review::.::holistic::package_organization::radialplot-api-package::dfb4cace",
+      "created_at": "2026-03-11T14:39:38+00:00",
+      "cluster": null,
+      "updated_at": "2026-03-11T15:02:22+00:00"
+    },
+    "review::.::holistic::high_level_elegance::radialplot-api-placement::92bdccbf": {
+      "issue_id": "review::.::holistic::high_level_elegance::radialplot-api-placement::92bdccbf",
+      "created_at": "2026-03-11T14:39:38+00:00",
+      "cluster": null,
+      "updated_at": "2026-03-11T15:03:48+00:00"
+    },
+    "review::.::holistic::abstraction_fitness::deprecated-bypass-constructors::7ab5e1f5": {
+      "issue_id": "review::.::holistic::abstraction_fitness::deprecated-bypass-constructors::7ab5e1f5",
+      "created_at": "2026-03-11T14:39:46+00:00",
+      "cluster": "deprecated-removal",
+      "updated_at": "2026-03-11T14:39:46+00:00"
+    },
+    "review::.::holistic::abstraction_fitness::deprecated-passthrough-overload::ea475716": {
+      "issue_id": "review::.::holistic::abstraction_fitness::deprecated-passthrough-overload::ea475716",
+      "created_at": "2026-03-11T14:39:46+00:00",
+      "cluster": "deprecated-removal",
+      "updated_at": "2026-03-11T14:39:46+00:00"
+    },
+    "review::.::holistic::initialization_coupling::deprecated-fallback-constructors-parallel-path::9c2f9305": {
+      "issue_id": "review::.::holistic::initialization_coupling::deprecated-fallback-constructors-parallel-path::9c2f9305",
+      "created_at": "2026-03-11T14:39:47+00:00",
+      "cluster": "deprecated-removal",
+      "updated_at": "2026-03-11T14:39:47+00:00"
+    },
+    "review::.::holistic::incomplete_migration::deprecated-triad-no-removal-schedule::27e5efaa": {
+      "issue_id": "review::.::holistic::incomplete_migration::deprecated-triad-no-removal-schedule::27e5efaa",
+      "created_at": "2026-03-11T14:39:47+00:00",
+      "cluster": "deprecated-removal",
+      "updated_at": "2026-03-11T14:39:47+00:00"
+    },
+    "review::.::holistic::api_surface_coherence::deprecated-5param-exploreMultiSeed-public::639f1745": {
+      "issue_id": "review::.::holistic::api_surface_coherence::deprecated-5param-exploreMultiSeed-public::639f1745",
+      "created_at": "2026-03-11T14:39:48+00:00",
+      "cluster": "deprecated-removal",
+      "updated_at": "2026-03-11T14:39:48+00:00"
+    },
+    "review::.::holistic::convention_outlier::explore-response-builder-pattern-mismatch::04e02a42": {
+      "issue_id": "review::.::holistic::convention_outlier::explore-response-builder-pattern-mismatch::04e02a42",
+      "created_at": "2026-03-11T14:39:57+00:00",
+      "cluster": "naming-fixes",
+      "updated_at": "2026-03-11T14:39:57+00:00"
+    },
+    "review::.::holistic::naming_quality::explore-response-builder-misnomer::252bfa77": {
+      "issue_id": "review::.::holistic::naming_quality::explore-response-builder-misnomer::252bfa77",
+      "created_at": "2026-03-11T14:39:57+00:00",
+      "cluster": "naming-fixes",
+      "updated_at": "2026-03-11T14:39:57+00:00"
+    },
+    "review::.::holistic::naming_quality::getdeprel-computational-getter::9f35e9a1": {
+      "issue_id": "review::.::holistic::naming_quality::getdeprel-computational-getter::9f35e9a1",
+      "created_at": "2026-03-11T14:39:57+00:00",
+      "cluster": "naming-fixes",
+      "updated_at": "2026-03-11T14:39:57+00:00"
+    },
+    "review::.::holistic::naming_quality::filter-candidates-vague::b79a71b0": {
+      "issue_id": "review::.::holistic::naming_quality::filter-candidates-vague::b79a71b0",
+      "created_at": "2026-03-11T14:39:58+00:00",
+      "cluster": "naming-fixes",
+      "updated_at": "2026-03-11T14:39:58+00:00"
+    },
+    "review::.::holistic::design_coherence::explore-options-single-seed-param-leakage::8fc738a1": {
+      "issue_id": "review::.::holistic::design_coherence::explore-options-single-seed-param-leakage::8fc738a1",
+      "created_at": "2026-03-11T14:39:59+00:00",
+      "cluster": "option-seam-fix",
+      "updated_at": "2026-03-11T14:39:59+00:00"
+    },
+    "review::.::holistic::design_coherence::compare-profiles-not-migrated-to-explore-options::90fc08e3": {
+      "issue_id": "review::.::holistic::design_coherence::compare-profiles-not-migrated-to-explore-options::90fc08e3",
+      "created_at": "2026-03-11T14:39:59+00:00",
+      "cluster": "option-seam-fix",
+      "updated_at": "2026-03-11T14:39:59+00:00"
+    },
+    "review::.::holistic::api_surface_coherence::compare-profiles-raw-params-vs-explore-options::e039a50b": {
+      "issue_id": "review::.::holistic::api_surface_coherence::compare-profiles-raw-params-vs-explore-options::e039a50b",
+      "created_at": "2026-03-11T14:40:00+00:00",
+      "cluster": "option-seam-fix",
+      "updated_at": "2026-03-11T14:40:00+00:00"
+    },
+    "review::.::holistic::mid_level_elegance::comparison-handler-partial-validation::441d5775": {
+      "issue_id": "review::.::holistic::mid_level_elegance::comparison-handler-partial-validation::441d5775",
+      "created_at": "2026-03-11T14:40:01+00:00",
+      "cluster": "option-seam-fix",
+      "updated_at": "2026-03-11T14:40:01+00:00"
+    },
+    "review::.::holistic::type_safety::optional-get-without-guard::b5659f49": {
+      "issue_id": "review::.::holistic::type_safety::optional-get-without-guard::b5659f49",
+      "created_at": "2026-03-11T14:40:12+00:00",
+      "cluster": "optional-safety",
+      "updated_at": "2026-03-11T14:40:12+00:00"
+    },
+    "review::.::holistic::logic_clarity::redundant-orelsethrow-after-guard::b7f5b3e0": {
+      "issue_id": "review::.::holistic::logic_clarity::redundant-orelsethrow-after-guard::b7f5b3e0",
+      "created_at": "2026-03-11T14:40:13+00:00",
+      "cluster": "optional-safety",
+      "updated_at": "2026-03-11T14:40:13+00:00"
+    },
+    "review::.::holistic::type_safety::missing-nullable-extract-collocate-lemma::535c093b": {
+      "issue_id": "review::.::holistic::type_safety::missing-nullable-extract-collocate-lemma::535c093b",
+      "created_at": "2026-03-11T14:40:13+00:00",
+      "cluster": "optional-safety",
+      "updated_at": "2026-03-11T14:40:13+00:00"
+    },
+    "review::.::holistic::convention_outlier::relation-config-naming-convention-split::3cb7449a": {
+      "issue_id": "review::.::holistic::convention_outlier::relation-config-naming-convention-split::3cb7449a",
+      "created_at": "2026-03-11T14:40:14+00:00",
+      "cluster": "relation-config-naming",
+      "updated_at": "2026-03-11T14:40:14+00:00"
+    },
+    "review::.::holistic::contract_coherence::buildfullpattern-silent-passthrough::addc2063": {
+      "issue_id": "review::.::holistic::contract_coherence::buildfullpattern-silent-passthrough::addc2063",
+      "created_at": "2026-03-11T14:40:14+00:00",
+      "cluster": "relation-config-naming",
+      "updated_at": "2026-03-11T14:40:14+00:00"
+    },
+    "review::.::holistic::test_strategy::blacklab-indexer-untested::bd26a03e": {
+      "issue_id": "review::.::holistic::test_strategy::blacklab-indexer-untested::bd26a03e",
+      "created_at": "2026-03-11T14:40:15+00:00",
+      "cluster": null,
+      "updated_at": "2026-03-11T15:02:59+00:00"
+    },
+    "review::.::holistic::ai_generated_debt::null-guard-inconsistency::822fc7a1": {
+      "issue_id": "review::.::holistic::ai_generated_debt::null-guard-inconsistency::822fc7a1",
+      "created_at": "2026-03-11T14:40:40+00:00",
+      "cluster": "ai-debt-hygiene",
+      "updated_at": "2026-03-11T14:40:40+00:00"
+    },
+    "review::.::holistic::ai_generated_debt::selective-route-logging::7ea98547": {
+      "issue_id": "review::.::holistic::ai_generated_debt::selective-route-logging::7ea98547",
+      "created_at": "2026-03-11T14:40:41+00:00",
+      "cluster": "ai-debt-hygiene",
+      "updated_at": "2026-03-11T14:40:41+00:00"
+    },
+    "review::.::holistic::contract_coherence::createdefaultenglish-exception-erasure::92b8385a": {
+      "issue_id": "review::.::holistic::contract_coherence::createdefaultenglish-exception-erasure::92b8385a",
+      "created_at": "2026-03-11T14:40:41+00:00",
+      "cluster": "relation-config-naming",
+      "updated_at": "2026-03-11T14:40:41+00:00"
+    },
+    "review::.::holistic::low_level_elegance::derive-token-position-dual-traversal::7c0ad513": {
+      "issue_id": "review::.::holistic::low_level_elegance::derive-token-position-dual-traversal::7c0ad513",
+      "created_at": "2026-03-11T14:40:42+00:00",
+      "cluster": "param-helpers-promote",
+      "updated_at": "2026-03-11T14:40:42+00:00"
+    },
+    "review::.::holistic::test_strategy::no-integration-e2e-tests::fd8fd482": {
+      "issue_id": "review::.::holistic::test_strategy::no-integration-e2e-tests::fd8fd482",
+      "created_at": "2026-03-11T14:40:43+00:00",
+      "cluster": null,
+      "updated_at": "2026-03-11T15:04:06+00:00"
     }
   },
   "clusters": {
@@ -10852,49 +11375,55 @@
     },
     "naming-fixes": {
       "name": "naming-fixes",
-      "description": "Fix naming inconsistencies: rename ca/dn loop vars, m map vars, posMap/lemmaPosMap, remove extractLemmaAt dead alias",
-      "issue_ids": [],
+      "description": "Rename ExploreResponseBuilder to ExploreResponseAssembler (static utility); rename getDeprel() to computeDeprel(); rename filterCandidates to filterByMinShared",
+      "issue_ids": [
+        "review::.::holistic::convention_outlier::explore-response-builder-pattern-mismatch::04e02a42",
+        "review::.::holistic::naming_quality::explore-response-builder-misnomer::252bfa77",
+        "review::.::holistic::naming_quality::getdeprel-computational-getter::9f35e9a1",
+        "review::.::holistic::naming_quality::filter-candidates-vague::b79a71b0"
+      ],
       "created_at": "2026-03-11T02:31:30+00:00",
-      "updated_at": "2026-03-11T02:33:16+00:00",
+      "updated_at": "2026-03-11T14:47:42+00:00",
       "auto": false,
       "cluster_key": "",
       "action": null,
       "user_modified": true,
       "action_steps": [
         {
-          "title": "In ExplorationHandlers, rename loop vars ca\u2192collocate (CoreCollocate), dn\u2192noun or discoveredNoun (DiscoveredNoun) wherever used",
-          "detail": "In ExplorationHandlers.java, find all for-each loops over CoreCollocate collections using 'ca' variable and rename to 'collocate'. Find all loops over DiscoveredNoun collections using 'dn' and rename to 'discoveredNoun'.",
-          "effort": "trivial",
+          "title": "Rename ExploreResponseBuilder class to ExploreResponseAssembler and update the file name",
+          "detail": "Rename ExploreResponseBuilder.java \u2192 ExploreResponseAssembler.java; rename class declaration; rename file",
           "issue_refs": [
-            "452b0cf1"
+            "04e02a42",
+            "252bfa77"
           ],
+          "effort": "small",
           "done": true
         },
         {
-          "title": "In ExplorationHandlers, rename local map variable 'm' to 'collocateMap' or 'result' in the 4 private format methods that use it",
-          "detail": "In ExplorationHandlers.java, in the 4 private format methods that use single-letter 'm' as the local Map variable name, rename 'm' to 'result' or 'row' or a descriptive name matching the map's purpose.",
-          "effort": "trivial",
+          "title": "Update all references to ExploreResponseBuilder across the codebase",
+          "detail": "grep -r 'ExploreResponseBuilder' src/ and replace all references with ExploreResponseAssembler",
           "issue_refs": [
-            "847d591d"
+            "04e02a42"
           ],
+          "effort": "small",
           "done": true
         },
         {
-          "title": "In BlackLabQueryExecutor.findCollocations, rename posMap to lemmaPosMap (or the reverse in executeDependencyPattern) for consistency within the same file",
-          "detail": "In BlackLabQueryExecutor.java, find where 'posMap' is used in findCollocations and rename it to 'lemmaPosMap' to match the name used in executeDependencyPattern (or vice versa \u2014 pick one consistent name for the same concept).",
-          "effort": "trivial",
+          "title": "Rename RelationConfig.getDeprel() to computeDeprel() to signal regex computation; update all callers",
+          "detail": "RelationConfig.java: rename getDeprel() to computeDeprel(); update all callers found by: grep -r 'getDeprel' src/",
           "issue_refs": [
-            "dab9d9f6"
+            "9f35e9a1"
           ],
+          "effort": "small",
           "done": true
         },
         {
-          "title": "In BlackLabSnippetParser, remove the dead alias extractLemmaAt (a one-line forward to extractCollocateFromXmlByPosition) \u2014 update the one caller in CollocateQueryHelper to call extractCollocateFromXmlByPosition directly",
-          "detail": "In BlackLabSnippetParser.java, delete the dead alias method extractLemmaAt (which just forwards to extractCollocateFromXmlByPosition). Find the one caller in CollocateQueryHelper.java and update it to call extractCollocateFromXmlByPosition directly.",
-          "effort": "trivial",
+          "title": "Rename SemanticFieldExplorer.filterCandidates to filterByMinShared to include the filtering criterion in the name",
+          "detail": "SemanticFieldExplorer.java: rename filterCandidates to filterByMinShared; update the single call site at ~line 202",
           "issue_refs": [
-            "0e0d7e65"
+            "b79a71b0"
           ],
+          "effort": "small",
           "done": true
         }
       ]
@@ -13734,9 +14263,7 @@
     "sketch-handlers-split": {
       "name": "sketch-handlers-split",
       "description": "Split or rename SketchHandlers to reflect its actual mixed sketch/concordance/BCQL scope",
-      "issue_ids": [
-        "review::.::holistic::design_coherence::sketch-handlers-mixed-concerns::a73a8516"
-      ],
+      "issue_ids": [],
       "created_at": "2026-03-11T13:30:06+00:00",
       "updated_at": "2026-03-11T13:41:59+00:00",
       "auto": false,
@@ -13750,7 +14277,8 @@
           "issue_refs": [
             "a73a8516"
           ],
-          "effort": "large"
+          "effort": "large",
+          "done": true
         },
         {
           "title": "Extract handleBcqlQueryPost into BcqlHandlers class (or QueryHandlers)",
@@ -13758,7 +14286,8 @@
           "issue_refs": [
             "a73a8516"
           ],
-          "effort": "large"
+          "effort": "large",
+          "done": true
         },
         {
           "title": "Update handler registration in WordSketchApiServer",
@@ -13766,7 +14295,8 @@
           "issue_refs": [
             "a73a8516"
           ],
-          "effort": "medium"
+          "effort": "medium",
+          "done": true
         },
         {
           "title": "Alternatively: rename SketchHandlers to QueryHandlers if split is too risky",
@@ -13774,7 +14304,8 @@
           "issue_refs": [
             "a73a8516"
           ],
-          "effort": "small"
+          "effort": "small",
+          "done": true
         }
       ]
     },
@@ -13936,6 +14467,421 @@
             "6ebdf8aa"
           ],
           "effort": "trivial",
+          "done": true
+        }
+      ]
+    },
+    "param-helpers-promote": {
+      "name": "param-helpers-promote",
+      "description": "Promote parseIntParam/parseDoubleParam from private ExplorationHandlers to public HttpApiUtils; change sentinel -1 returns to Optional; fix ConcordanceHandlers inline parse; simplify GrammarConfigLoader dual traversal",
+      "issue_ids": [
+        "review::.::holistic::contract_coherence::parsedoubleparam-sentinel-contract::5e089cb2",
+        "review::.::holistic::low_level_elegance::double-sentinel-contract::2b310519",
+        "review::.::holistic::logic_clarity::sentinel-minus-one-parse-error::4696c722",
+        "review::.::holistic::low_level_elegance::parsing-helper-private-scope::f316f5dd",
+        "review::.::holistic::mid_level_elegance::param-parse-seam-leak::291eed32",
+        "review::.::holistic::error_consistency::concordance-inline-numformat-vs-helper::d9835cc8",
+        "review::.::holistic::low_level_elegance::derive-token-position-dual-traversal::7c0ad513"
+      ],
+      "created_at": "2026-03-11T14:39:10+00:00",
+      "updated_at": "2026-03-11T14:47:35+00:00",
+      "auto": false,
+      "cluster_key": "",
+      "action": null,
+      "user_modified": true,
+      "action_steps": [
+        {
+          "title": "Add parseIntParam(Map,String,int)/parseDoubleParam(Map,String,double) as static methods in HttpApiUtils returning Optional",
+          "detail": "HttpApiUtils.java: add static parseIntParam(Map<String,String>, String, int) and parseDoubleParam(Map<String,String>, String, double) \u2014 return the parsed value or default; send 400 and return sentinel only on format error",
+          "issue_refs": [
+            "5e089cb2",
+            "2b310519",
+            "4696c722"
+          ],
+          "effort": "small",
+          "done": true
+        },
+        {
+          "title": "Remove private parseIntParam/parseDoubleParam from ExplorationHandlers; update all callers in ExplorationHandlers to use HttpApiUtils versions",
+          "detail": "ExplorationHandlers.java: delete private parseIntParam/parseDoubleParam (~line 275-295); replace 6 call sites with HttpApiUtils equivalents",
+          "issue_refs": [
+            "f316f5dd",
+            "291eed32"
+          ],
+          "effort": "small",
+          "done": true
+        },
+        {
+          "title": "Replace inline NumberFormatException catch in ConcordanceHandlers with HttpApiUtils.parseIntParam",
+          "detail": "ConcordanceHandlers.java: replace inline try-catch NumberFormatException (~line 51) with HttpApiUtils.parseIntParam",
+          "issue_refs": [
+            "d9835cc8"
+          ],
+          "effort": "small",
+          "done": true
+        },
+        {
+          "title": "Simplify GrammarConfigLoader.deriveTokenPosition to single-pass traversal",
+          "detail": "GrammarConfigLoader.java: refactor deriveTokenPosition to single-pass \u2014 eliminate the splitCqlTokens call followed by separate raw-string cursor scan",
+          "issue_refs": [
+            "7c0ad513"
+          ],
+          "effort": "small",
+          "done": true
+        }
+      ]
+    },
+    "query-results-move": {
+      "name": "query-results-move",
+      "description": "Move QueryResults.java from model/ to query/ package where it is produced and consumed; update all import references",
+      "issue_ids": [],
+      "created_at": "2026-03-11T14:39:10+00:00",
+      "updated_at": "2026-03-11T14:47:38+00:00",
+      "auto": false,
+      "cluster_key": "",
+      "action": null,
+      "user_modified": true,
+      "action_steps": [
+        {
+          "title": "Move src/main/java/.../model/QueryResults.java to src/main/java/.../query/QueryResults.java",
+          "detail": "Move model/QueryResults.java to query/QueryResults.java; update 'package' declaration at top of file",
+          "issue_refs": [
+            "6f0a9d47",
+            "67d85ece"
+          ],
+          "effort": "small",
+          "done": true
+        },
+        {
+          "title": "Update all import statements across the codebase referencing model.QueryResults",
+          "detail": "Run: grep -r 'import.*model.QueryResults' src/ and replace all occurrences with 'import ...query.QueryResults'",
+          "issue_refs": [
+            "6f0a9d47"
+          ],
+          "effort": "small",
+          "done": true
+        },
+        {
+          "title": "Verify compilation and tests pass",
+          "detail": "Run: mvn compile to verify no residual import errors; run mvn test to ensure no regressions",
+          "issue_refs": [
+            "67d85ece"
+          ],
+          "effort": "small",
+          "done": true
+        }
+      ]
+    },
+    "radialplot-fix": {
+      "name": "radialplot-fix",
+      "description": "Move RadialPlot.java from api/ to viz/ package; it has no HTTP-specific logic and breaks the api/ package ownership story",
+      "issue_ids": [],
+      "created_at": "2026-03-11T14:39:11+00:00",
+      "updated_at": "2026-03-11T14:48:57+00:00",
+      "auto": false,
+      "cluster_key": "",
+      "action": null,
+      "user_modified": true,
+      "action_steps": [
+        {
+          "title": "Move src/main/java/.../api/RadialPlot.java to src/main/java/.../viz/RadialPlot.java",
+          "detail": "Move api/RadialPlot.java to viz/RadialPlot.java (create viz/ package if needed); update 'package' declaration",
+          "issue_refs": [
+            "dfb4cace",
+            "92bdccbf"
+          ],
+          "effort": "small",
+          "done": true
+        },
+        {
+          "title": "Update import in VisualizationHandlers.java and any other references",
+          "detail": "Update VisualizationHandlers.java import from 'api.RadialPlot' to 'viz.RadialPlot'; check for any other references with grep -r 'RadialPlot'",
+          "issue_refs": [
+            "dfb4cace"
+          ],
+          "effort": "small",
+          "done": true
+        },
+        {
+          "title": "Verify compilation and tests pass",
+          "detail": "Run: cd /mnt/d/git/word-sketch-lucene && mvn compile -q to verify no import errors; then run mvn test -q to ensure VisualizationHandlers tests still pass after the RadialPlot package move",
+          "issue_refs": [
+            "92bdccbf"
+          ],
+          "effort": "small",
+          "done": true
+        }
+      ]
+    },
+    "deprecated-removal": {
+      "name": "deprecated-removal",
+      "description": "Remove deprecated no-arg constructors in SemanticFieldExplorer and CollocateProfileComparator, and deprecated 5-param exploreMultiSeed overload; eliminate parallel hardcoded-pattern code paths",
+      "issue_ids": [
+        "review::.::holistic::abstraction_fitness::deprecated-bypass-constructors::7ab5e1f5",
+        "review::.::holistic::abstraction_fitness::deprecated-passthrough-overload::ea475716",
+        "review::.::holistic::initialization_coupling::deprecated-fallback-constructors-parallel-path::9c2f9305",
+        "review::.::holistic::incomplete_migration::deprecated-triad-no-removal-schedule::27e5efaa",
+        "review::.::holistic::api_surface_coherence::deprecated-5param-exploreMultiSeed-public::639f1745"
+      ],
+      "created_at": "2026-03-11T14:39:17+00:00",
+      "updated_at": "2026-03-11T14:47:37+00:00",
+      "auto": false,
+      "cluster_key": "",
+      "action": null,
+      "user_modified": true,
+      "action_steps": [
+        {
+          "title": "Remove @Deprecated no-arg constructor from SemanticFieldExplorer (lines ~87-93) and its hardcoded-pattern fallback fields",
+          "detail": "SemanticFieldExplorer.java: delete @Deprecated no-arg constructor (~line 87-93) and any fields used only by that constructor's hardcoded-pattern fallback",
+          "issue_refs": [
+            "7ab5e1f5"
+          ],
+          "effort": "small",
+          "done": true
+        },
+        {
+          "title": "Remove @Deprecated no-config constructor from CollocateProfileComparator and its parallel code path",
+          "detail": "CollocateProfileComparator.java: delete @Deprecated no-config constructor and its parallel hardcoded-pattern fields and methods",
+          "issue_refs": [
+            "9c2f9305"
+          ],
+          "effort": "small",
+          "done": true
+        },
+        {
+          "title": "Remove @Deprecated 5-param exploreMultiSeed(Set,RelationConfig,double,int,int) overload from SemanticFieldExplorer",
+          "detail": "SemanticFieldExplorer.java: delete @Deprecated 5-param exploreMultiSeed(Set,RelationConfig,double,int,int) overload (~line 375-378 plus body)",
+          "issue_refs": [
+            "ea475716",
+            "639f1745"
+          ],
+          "effort": "small",
+          "done": true
+        },
+        {
+          "title": "Update any callers (check tests) to use the preferred ExploreOptions overloads",
+          "detail": "Run: grep -r 'new SemanticFieldExplorer()' and 'new CollocateProfileComparator()' to find any remaining callers; update to config-accepting constructors; run tests",
+          "issue_refs": [
+            "27e5efaa"
+          ],
+          "effort": "small",
+          "done": true
+        }
+      ]
+    },
+    "option-seam-fix": {
+      "name": "option-seam-fix",
+      "description": "Split ExploreOptions to separate single-seed-only params (nounsPerCollocate); migrate compareCollocateProfiles to ExploreOptions; consolidate handleSemanticFieldComparison validation",
+      "issue_ids": [
+        "review::.::holistic::design_coherence::explore-options-single-seed-param-leakage::8fc738a1",
+        "review::.::holistic::design_coherence::compare-profiles-not-migrated-to-explore-options::90fc08e3",
+        "review::.::holistic::api_surface_coherence::compare-profiles-raw-params-vs-explore-options::e039a50b",
+        "review::.::holistic::mid_level_elegance::comparison-handler-partial-validation::441d5775"
+      ],
+      "created_at": "2026-03-11T14:39:18+00:00",
+      "updated_at": "2026-03-11T14:47:50+00:00",
+      "auto": false,
+      "cluster_key": "",
+      "action": null,
+      "user_modified": true,
+      "action_steps": [
+        {
+          "title": "Extract SingleSeedOptions record or split ExploreOptions so nounsPerCollocate is only in single-seed variant",
+          "detail": "ExploreOptions.java: remove the nounsPerCollocate field from ExploreOptions; create a SingleSeedExploreOptions record that contains ExploreOptions + int nounsPerCollocate; or use a separate method parameter",
+          "issue_refs": [
+            "8fc738a1"
+          ],
+          "effort": "medium",
+          "done": true
+        },
+        {
+          "title": "Migrate compareCollocateProfiles(Set, double, int) to accept ExploreOptions; remove raw-param overload",
+          "detail": "SemanticFieldExplorer.java: change compareCollocateProfiles(Set<String>, double, int) signature to accept ExploreOptions (or a new CompareOptions record); remove the raw-param overload",
+          "issue_refs": [
+            "90fc08e3",
+            "e039a50b"
+          ],
+          "effort": "medium",
+          "done": true
+        },
+        {
+          "title": "Consolidate handleSemanticFieldComparison to use the shared validated-request preamble from ExplorationHandlers",
+          "detail": "ExplorationHandlers.java: refactor handleSemanticFieldComparison to use the same validated-request preamble as handleSemanticFieldExplore rather than re-implementing parameter resolution inline",
+          "issue_refs": [
+            "441d5775"
+          ],
+          "effort": "medium",
+          "done": true
+        },
+        {
+          "title": "Update ExplorationHandlers.handleSemanticFieldComparison callers and tests to reflect the new interface",
+          "detail": "Update ExplorationHandlers multi-seed handler to use SingleSeedExploreOptions and confirm it correctly rejects or ignores nounsPerCollocate; update tests",
+          "issue_refs": [
+            "8fc738a1"
+          ],
+          "effort": "medium",
+          "done": true
+        }
+      ]
+    },
+    "optional-safety": {
+      "name": "optional-safety",
+      "description": "Replace vacuous Optional.get()/orElseThrow in already-guarded branches; add @Nullable to extractCollocateLemma",
+      "issue_ids": [
+        "review::.::holistic::type_safety::optional-get-without-guard::b5659f49",
+        "review::.::holistic::logic_clarity::redundant-orelsethrow-after-guard::b7f5b3e0",
+        "review::.::holistic::type_safety::missing-nullable-extract-collocate-lemma::535c093b"
+      ],
+      "created_at": "2026-03-11T14:39:19+00:00",
+      "updated_at": "2026-03-11T14:47:44+00:00",
+      "auto": false,
+      "cluster_key": "",
+      "action": null,
+      "user_modified": true,
+      "action_steps": [
+        {
+          "title": "In SketchHandlers.java:80 replace the vacuous orElseThrow with a direct .get() or restructure the guard",
+          "detail": "SketchHandlers.java:80 \u2014 the orElseThrow is vacuous because the enclosing if-block already confirmed the Optional is present; remove orElseThrow and use .get() directly, or restructure to use relationType directly without Optional wrapper in that branch",
+          "issue_refs": [
+            "b7f5b3e0"
+          ],
+          "effort": "small",
+          "done": true
+        },
+        {
+          "title": "Audit all Optional.get() calls in ExplorationHandlers and SketchHandlers for missing isPresent() guards; add explicit guards",
+          "detail": "ExplorationHandlers.java + SketchHandlers.java: grep for '.get()' on Optional values; for each, ensure the call is inside an explicit isPresent() guard or replace with orElseThrow(meaningful message)",
+          "issue_refs": [
+            "b5659f49"
+          ],
+          "effort": "small",
+          "done": true
+        },
+        {
+          "title": "Add @Nullable annotation to CollocateQueryHelper.extractCollocateLemma return type",
+          "detail": "CollocateQueryHelper.java: add @Nullable (org.jspecify or javax.annotation) to the String return type of extractCollocateLemma at line ~310; update any callers to handle null",
+          "issue_refs": [
+            "535c093b"
+          ],
+          "effort": "small",
+          "done": true
+        }
+      ]
+    },
+    "relation-config-naming": {
+      "name": "relation-config-naming",
+      "description": "Fix RelationConfig mixed naming conventions; document buildFullPattern null-passthrough behavior; fix createDefaultEnglish exception erasure",
+      "issue_ids": [
+        "review::.::holistic::convention_outlier::relation-config-naming-convention-split::3cb7449a",
+        "review::.::holistic::contract_coherence::buildfullpattern-silent-passthrough::addc2063",
+        "review::.::holistic::contract_coherence::createdefaultenglish-exception-erasure::92b8385a"
+      ],
+      "created_at": "2026-03-11T14:39:19+00:00",
+      "updated_at": "2026-03-11T14:47:46+00:00",
+      "auto": false,
+      "cluster_key": "",
+      "action": null,
+      "user_modified": true,
+      "action_steps": [
+        {
+          "title": "Standardize RelationConfig public method names to verb-phrase pattern (buildX, computeX, extractX)",
+          "detail": "RelationConfig.java: rename collocateReversePattern() to buildCollocateReversePattern() to match the verb-phrase convention of buildFullPattern(); update all callers via grep -r 'collocateReversePattern'",
+          "issue_refs": [
+            "3cb7449a"
+          ],
+          "effort": "small",
+          "done": true
+        },
+        {
+          "title": "Add @Contract annotation or Javadoc to buildFullPattern clarifying null/blank headword behavior",
+          "detail": "RelationConfig.java: add Javadoc to buildFullPattern(String) explaining that when headword is null or blank the original pattern string is returned unchanged without substitution",
+          "issue_refs": [
+            "addc2063"
+          ],
+          "effort": "small",
+          "done": true
+        },
+        {
+          "title": "Fix GrammarConfigLoader.createDefaultEnglish to rethrow specific IOException subtypes (FileNotFoundException, JsonParseException) instead of erasing to IllegalStateException",
+          "detail": "GrammarConfigLoader.java: in createDefaultEnglish(), split the catch clause to rethrow FileNotFoundException as a distinct IllegalStateException with message 'Config file not found', and JSON parse errors separately with 'Malformed grammar config'",
+          "issue_refs": [
+            "92b8385a"
+          ],
+          "effort": "small",
+          "done": true
+        }
+      ]
+    },
+    "test-indexer": {
+      "name": "test-indexer",
+      "description": "Write tests for BlackLabConllUIndexer pipeline; provide minimal smoke tests for the e2e and regression directories",
+      "issue_ids": [],
+      "created_at": "2026-03-11T14:39:20+00:00",
+      "updated_at": "2026-03-11T14:48:40+00:00",
+      "auto": false,
+      "cluster_key": "",
+      "action": null,
+      "user_modified": true,
+      "action_steps": [
+        {
+          "title": "Write unit tests for BlackLabConllUIndexer covering CoNLL-U document parsing and index field population",
+          "detail": "Add BlackLabConllUIndexer tests alongside src/test/java/pl/marcinmilkowski/word_sketch/indexer/blacklab/ConlluConverterTest.java (existing file in same package); create BlackLabConllUIndexerTest.java in that directory; write tests with CoNLL-U fixture verifying indexDocument populates word, lemma, tag, pos_group, sentence",
+          "issue_refs": [
+            "bd26a03e"
+          ],
+          "effort": "medium",
+          "done": true
+        },
+        {
+          "title": "Write a minimal integration test that indexes a small CoNLL-U fixture and verifies a query returns expected results",
+          "detail": "Write an integration test that calls the indexer with the fixture, opens the resulting Lucene index, and asserts a TermQuery for lemma='house' (or fixture lemma) returns the expected document count",
+          "issue_refs": [
+            "bd26a03e"
+          ],
+          "effort": "medium",
+          "done": true
+        },
+        {
+          "title": "Add at least one smoke test in the e2e/ directory to verify the full HTTP-request-to-result pipeline",
+          "detail": "For no-integration-e2e-tests (fd8fd482): add a comment or README in e2e/ and regression/ explaining the testing strategy gap; if feasible, add a basic server smoke test using an embedded HTTP server; otherwise document as deferred with a tracking issue",
+          "issue_refs": [
+            "fd8fd482"
+          ],
+          "effort": "medium",
+          "done": true
+        }
+      ]
+    },
+    "ai-debt-hygiene": {
+      "name": "ai-debt-hygiene",
+      "description": "Standardize null-guard pattern to Objects.requireNonNull; remove or regularize the two selective route-logging statements",
+      "issue_ids": [
+        "review::.::holistic::ai_generated_debt::null-guard-inconsistency::822fc7a1",
+        "review::.::holistic::ai_generated_debt::selective-route-logging::7ea98547"
+      ],
+      "created_at": "2026-03-11T14:40:40+00:00",
+      "updated_at": "2026-03-11T14:47:47+00:00",
+      "auto": false,
+      "cluster_key": "",
+      "action": null,
+      "user_modified": true,
+      "action_steps": [
+        {
+          "title": "Replace manual if-null-throw guards in ExplorationHandlers with Objects.requireNonNull(value, message)",
+          "detail": "ExplorationHandlers.java: find manual 'if (x == null) throw new NullPointerException/IllegalArgumentException' patterns and replace with Objects.requireNonNull(x, 'descriptive message') to match WordSketchApiServer.java style",
+          "issue_refs": [
+            "822fc7a1"
+          ],
+          "effort": "small",
+          "done": true
+        },
+        {
+          "title": "Remove the two selective 'Received request' INFO log lines in WordSketchApiServer.java:79,84 (or add to all routes consistently)",
+          "detail": "WordSketchApiServer.java: remove the two selective logger.info('Received request: {}', exchange.getRequestURI()) lines at lines ~79 and ~84; these create an inconsistency since 9 other routes do not log at this level",
+          "issue_refs": [
+            "7ea98547"
+          ],
+          "effort": "small",
           "done": true
         }
       ]
@@ -77634,77 +78580,2520 @@
       "actor": "user",
       "note": null,
       "detail": {}
+    },
+    {
+      "timestamp": "2026-03-11T14:13:24+00:00",
+      "action": "commit_record",
+      "issue_ids": [
+        "review::.::holistic::test_strategy::wrap-handler-contract-untested::671bd6c4",
+        "review::.::holistic::type_safety::nullable-index-misleading-annotation::d0e9b7c4",
+        "review::.::holistic::type_safety::collocate-lemma-missing-nullable::702a9f53",
+        "review::.::holistic::cross_module_architecture::radial_plot_misplaced::9986dede",
+        "review::.::holistic::package_organization::radialplot_in_utils::1d012455",
+        "review::.::holistic::contract_coherence::buildFullPattern_nullable_unchecked::735fa935",
+        "review::.::holistic::convention_outlier::exploration-public-vs-package-private::1033f7c7",
+        "review::.::holistic::design_coherence::multiseed-explore-monolithic::188d660e"
+      ],
+      "cluster_name": null,
+      "actor": "user",
+      "note": "All 10 desloppify clusters implemented",
+      "detail": {
+        "sha": "de822a82fbea",
+        "branch": "desloppify/code-health"
+      }
+    },
+    {
+      "timestamp": "2026-03-11T14:14:41+00:00",
+      "action": "done",
+      "issue_ids": [
+        "review::.::holistic::design_coherence::sketch-handlers-mixed-concerns::a73a8516"
+      ],
+      "cluster_name": null,
+      "actor": "user",
+      "note": "SketchHandlers split into SketchHandlers (sketch queries), ConcordanceHandlers (concordance/KWIC), and BcqlHandlers (BCQL post); routes updated in WordSketchApiServer",
+      "detail": {}
+    },
+    {
+      "timestamp": "2026-03-11T14:14:42+00:00",
+      "action": "resolve",
+      "issue_ids": [
+        "review::.::holistic::design_coherence::sketch-handlers-mixed-concerns::a73a8516"
+      ],
+      "cluster_name": null,
+      "actor": "user",
+      "note": "SketchHandlers split into SketchHandlers (sketch queries), ConcordanceHandlers (concordance/KWIC), and BcqlHandlers (BCQL post); routes updated in WordSketchApiServer",
+      "detail": {
+        "status": "fixed",
+        "attestation": "I have actually SketchHandlers split into SketchHandlers (sketch queries), ConcordanceHandlers (concordance/KWIC), and BcqlHandlers (BCQL post); routes updated in WordSketchApiServer and I am not gaming the score."
+      }
+    },
+    {
+      "timestamp": "2026-03-11T14:14:42+00:00",
+      "action": "cluster_done",
+      "issue_ids": [
+        "review::.::holistic::design_coherence::sketch-handlers-mixed-concerns::a73a8516"
+      ],
+      "cluster_name": "sketch-handlers-split",
+      "actor": "user",
+      "note": null,
+      "detail": {}
+    },
+    {
+      "timestamp": "2026-03-11T14:15:27+00:00",
+      "action": "skip",
+      "issue_ids": [
+        "boilerplate_duplication::src/main/java/pl/marcinmilkowski/word_sketch/query/BlackLabQueryExecutor.java::475cc801cc2d8bcd"
+      ],
+      "cluster_name": null,
+      "actor": "user",
+      "note": "Mandatory BlackLab API imports required in both query files \u2014 unavoidable",
+      "detail": {
+        "kind": "permanent",
+        "reason": null
+      }
+    },
+    {
+      "timestamp": "2026-03-11T14:15:37+00:00",
+      "action": "skip",
+      "issue_ids": [
+        "boilerplate_duplication::src/main/java/pl/marcinmilkowski/word_sketch/api/ConcordanceHandlers.java::d56f1002c5bec09a"
+      ],
+      "cluster_name": null,
+      "actor": "user",
+      "note": "Package declaration and com.sun.net.httpserver imports are required in every api/ class \u2014 unavoidable from class extraction",
+      "detail": {
+        "kind": "permanent",
+        "reason": null
+      }
+    },
+    {
+      "timestamp": "2026-03-11T14:34:19+00:00",
+      "action": "review_import_sync",
+      "issue_ids": [],
+      "cluster_name": null,
+      "actor": "system",
+      "note": null,
+      "detail": {
+        "trigger": "review_import",
+        "new_ids": [
+          "review::.::holistic::abstraction_fitness::deprecated-bypass-constructors::7ab5e1f5",
+          "review::.::holistic::abstraction_fitness::deprecated-passthrough-overload::ea475716",
+          "review::.::holistic::ai_generated_debt::null-guard-inconsistency::822fc7a1",
+          "review::.::holistic::ai_generated_debt::selective-route-logging::7ea98547",
+          "review::.::holistic::api_surface_coherence::compare-profiles-raw-params-vs-explore-options::e039a50b",
+          "review::.::holistic::api_surface_coherence::deprecated-5param-exploreMultiSeed-public::639f1745",
+          "review::.::holistic::authorization_consistency::no-rate-limiting-bcql::708fee97",
+          "review::.::holistic::contract_coherence::buildfullpattern-silent-passthrough::addc2063",
+          "review::.::holistic::contract_coherence::createdefaultenglish-exception-erasure::92b8385a",
+          "review::.::holistic::contract_coherence::parsedoubleparam-sentinel-contract::5e089cb2",
+          "review::.::holistic::convention_outlier::explore-response-builder-pattern-mismatch::04e02a42",
+          "review::.::holistic::convention_outlier::relation-config-naming-convention-split::3cb7449a",
+          "review::.::holistic::cross_module_architecture::api-hub-overload::843d902b",
+          "review::.::holistic::dependency_health::fastjson2-audit-risk::9c1086fe",
+          "review::.::holistic::design_coherence::compare-profiles-not-migrated-to-explore-options::90fc08e3",
+          "review::.::holistic::design_coherence::explore-options-single-seed-param-leakage::8fc738a1",
+          "review::.::holistic::error_consistency::concordance-inline-numformat-vs-helper::d9835cc8",
+          "review::.::holistic::high_level_elegance::queryresults-model-affinity::67d85ece",
+          "review::.::holistic::high_level_elegance::radialplot-api-placement::92bdccbf",
+          "review::.::holistic::incomplete_migration::deprecated-triad-no-removal-schedule::27e5efaa",
+          "review::.::holistic::initialization_coupling::deprecated-fallback-constructors-parallel-path::9c2f9305",
+          "review::.::holistic::logic_clarity::redundant-orelsethrow-after-guard::b7f5b3e0",
+          "review::.::holistic::logic_clarity::sentinel-minus-one-parse-error::4696c722",
+          "review::.::holistic::low_level_elegance::derive-token-position-dual-traversal::7c0ad513",
+          "review::.::holistic::low_level_elegance::double-sentinel-contract::2b310519",
+          "review::.::holistic::low_level_elegance::parsing-helper-private-scope::f316f5dd",
+          "review::.::holistic::mid_level_elegance::comparison-handler-partial-validation::441d5775",
+          "review::.::holistic::mid_level_elegance::param-parse-seam-leak::291eed32",
+          "review::.::holistic::naming_quality::explore-response-builder-misnomer::252bfa77",
+          "review::.::holistic::naming_quality::filter-candidates-vague::b79a71b0",
+          "review::.::holistic::naming_quality::getdeprel-computational-getter::9f35e9a1",
+          "review::.::holistic::package_organization::queryresults-wrong-package::6f0a9d47",
+          "review::.::holistic::package_organization::radialplot-api-package::dfb4cace",
+          "review::.::holistic::test_strategy::blacklab-indexer-untested::bd26a03e",
+          "review::.::holistic::test_strategy::no-integration-e2e-tests::fd8fd482",
+          "review::.::holistic::type_safety::missing-nullable-extract-collocate-lemma::535c093b",
+          "review::.::holistic::type_safety::optional-get-without-guard::b5659f49"
+        ],
+        "added_to_queue": [
+          "review::.::holistic::abstraction_fitness::deprecated-bypass-constructors::7ab5e1f5",
+          "review::.::holistic::abstraction_fitness::deprecated-passthrough-overload::ea475716",
+          "review::.::holistic::ai_generated_debt::null-guard-inconsistency::822fc7a1",
+          "review::.::holistic::ai_generated_debt::selective-route-logging::7ea98547",
+          "review::.::holistic::api_surface_coherence::compare-profiles-raw-params-vs-explore-options::e039a50b",
+          "review::.::holistic::api_surface_coherence::deprecated-5param-exploreMultiSeed-public::639f1745",
+          "review::.::holistic::authorization_consistency::no-rate-limiting-bcql::708fee97",
+          "review::.::holistic::contract_coherence::buildfullpattern-silent-passthrough::addc2063",
+          "review::.::holistic::contract_coherence::createdefaultenglish-exception-erasure::92b8385a",
+          "review::.::holistic::contract_coherence::parsedoubleparam-sentinel-contract::5e089cb2",
+          "review::.::holistic::convention_outlier::explore-response-builder-pattern-mismatch::04e02a42",
+          "review::.::holistic::convention_outlier::relation-config-naming-convention-split::3cb7449a",
+          "review::.::holistic::cross_module_architecture::api-hub-overload::843d902b",
+          "review::.::holistic::dependency_health::fastjson2-audit-risk::9c1086fe",
+          "review::.::holistic::design_coherence::compare-profiles-not-migrated-to-explore-options::90fc08e3",
+          "review::.::holistic::design_coherence::explore-options-single-seed-param-leakage::8fc738a1",
+          "review::.::holistic::error_consistency::concordance-inline-numformat-vs-helper::d9835cc8",
+          "review::.::holistic::high_level_elegance::queryresults-model-affinity::67d85ece",
+          "review::.::holistic::high_level_elegance::radialplot-api-placement::92bdccbf",
+          "review::.::holistic::incomplete_migration::deprecated-triad-no-removal-schedule::27e5efaa",
+          "review::.::holistic::initialization_coupling::deprecated-fallback-constructors-parallel-path::9c2f9305",
+          "review::.::holistic::logic_clarity::redundant-orelsethrow-after-guard::b7f5b3e0",
+          "review::.::holistic::logic_clarity::sentinel-minus-one-parse-error::4696c722",
+          "review::.::holistic::low_level_elegance::derive-token-position-dual-traversal::7c0ad513",
+          "review::.::holistic::low_level_elegance::double-sentinel-contract::2b310519",
+          "review::.::holistic::low_level_elegance::parsing-helper-private-scope::f316f5dd",
+          "review::.::holistic::mid_level_elegance::comparison-handler-partial-validation::441d5775",
+          "review::.::holistic::mid_level_elegance::param-parse-seam-leak::291eed32",
+          "review::.::holistic::naming_quality::explore-response-builder-misnomer::252bfa77",
+          "review::.::holistic::naming_quality::filter-candidates-vague::b79a71b0",
+          "review::.::holistic::naming_quality::getdeprel-computational-getter::9f35e9a1",
+          "review::.::holistic::package_organization::queryresults-wrong-package::6f0a9d47",
+          "review::.::holistic::package_organization::radialplot-api-package::dfb4cace",
+          "review::.::holistic::test_strategy::blacklab-indexer-untested::bd26a03e",
+          "review::.::holistic::test_strategy::no-integration-e2e-tests::fd8fd482",
+          "review::.::holistic::type_safety::missing-nullable-extract-collocate-lemma::535c093b",
+          "review::.::holistic::type_safety::optional-get-without-guard::b5659f49"
+        ],
+        "diff_new": 37,
+        "diff_reopened": 0,
+        "covered_subjective": []
+      }
+    },
+    {
+      "timestamp": "2026-03-11T14:36:26+00:00",
+      "action": "triage_observe",
+      "issue_ids": [],
+      "cluster_name": null,
+      "actor": "user",
+      "note": null,
+      "detail": {
+        "issue_count": 37,
+        "cited_ids": [],
+        "reuse": false
+      }
+    },
+    {
+      "timestamp": "2026-03-11T14:37:59+00:00",
+      "action": "triage_observe",
+      "issue_ids": [],
+      "cluster_name": null,
+      "actor": "user",
+      "note": null,
+      "detail": {
+        "issue_count": 37,
+        "cited_ids": [
+          "review::.::holistic::abstraction_fitness::deprecated-bypass-constructors::7ab5e1f5",
+          "review::.::holistic::abstraction_fitness::deprecated-passthrough-overload::ea475716",
+          "review::.::holistic::ai_generated_debt::null-guard-inconsistency::822fc7a1",
+          "review::.::holistic::ai_generated_debt::selective-route-logging::7ea98547",
+          "review::.::holistic::api_surface_coherence::compare-profiles-raw-params-vs-explore-options::e039a50b",
+          "review::.::holistic::api_surface_coherence::deprecated-5param-exploreMultiSeed-public::639f1745",
+          "review::.::holistic::authorization_consistency::no-rate-limiting-bcql::708fee97",
+          "review::.::holistic::contract_coherence::buildfullpattern-silent-passthrough::addc2063",
+          "review::.::holistic::contract_coherence::createdefaultenglish-exception-erasure::92b8385a",
+          "review::.::holistic::contract_coherence::parsedoubleparam-sentinel-contract::5e089cb2",
+          "review::.::holistic::convention_outlier::explore-response-builder-pattern-mismatch::04e02a42",
+          "review::.::holistic::convention_outlier::relation-config-naming-convention-split::3cb7449a",
+          "review::.::holistic::cross_module_architecture::api-hub-overload::843d902b",
+          "review::.::holistic::dependency_health::fastjson2-audit-risk::9c1086fe",
+          "review::.::holistic::design_coherence::compare-profiles-not-migrated-to-explore-options::90fc08e3",
+          "review::.::holistic::design_coherence::explore-options-single-seed-param-leakage::8fc738a1",
+          "review::.::holistic::error_consistency::concordance-inline-numformat-vs-helper::d9835cc8",
+          "review::.::holistic::high_level_elegance::queryresults-model-affinity::67d85ece",
+          "review::.::holistic::high_level_elegance::radialplot-api-placement::92bdccbf",
+          "review::.::holistic::incomplete_migration::deprecated-triad-no-removal-schedule::27e5efaa",
+          "review::.::holistic::initialization_coupling::deprecated-fallback-constructors-parallel-path::9c2f9305",
+          "review::.::holistic::logic_clarity::redundant-orelsethrow-after-guard::b7f5b3e0",
+          "review::.::holistic::logic_clarity::sentinel-minus-one-parse-error::4696c722",
+          "review::.::holistic::low_level_elegance::derive-token-position-dual-traversal::7c0ad513",
+          "review::.::holistic::low_level_elegance::double-sentinel-contract::2b310519",
+          "review::.::holistic::low_level_elegance::parsing-helper-private-scope::f316f5dd",
+          "review::.::holistic::mid_level_elegance::comparison-handler-partial-validation::441d5775",
+          "review::.::holistic::mid_level_elegance::param-parse-seam-leak::291eed32",
+          "review::.::holistic::naming_quality::explore-response-builder-misnomer::252bfa77",
+          "review::.::holistic::naming_quality::filter-candidates-vague::b79a71b0",
+          "review::.::holistic::naming_quality::getdeprel-computational-getter::9f35e9a1",
+          "review::.::holistic::package_organization::queryresults-wrong-package::6f0a9d47",
+          "review::.::holistic::package_organization::radialplot-api-package::dfb4cace",
+          "review::.::holistic::test_strategy::blacklab-indexer-untested::bd26a03e",
+          "review::.::holistic::test_strategy::no-integration-e2e-tests::fd8fd482",
+          "review::.::holistic::type_safety::missing-nullable-extract-collocate-lemma::535c093b",
+          "review::.::holistic::type_safety::optional-get-without-guard::b5659f49"
+        ],
+        "reuse": false
+      }
+    },
+    {
+      "timestamp": "2026-03-11T14:38:21+00:00",
+      "action": "triage_confirm_observe",
+      "issue_ids": [],
+      "cluster_name": null,
+      "actor": "user",
+      "note": null,
+      "detail": {
+        "attestation": "I have verified all 37 findings against actual source code with file and line number citations. All issues are genuine. Key dimensions confirmed: contract_coherence (parseDoubleParam -1.0 sentinel at ExplorationHandlers.java:294), naming_quality (getDeprel computes regex at RelationConfig.java:187-188), package_organization (QueryResults in model/), abstraction_fitness (deprecated bypass constructors confirmed), low_level_elegance (parsing helpers private to wrong class), api_surface_coherence (compareCollocateProfiles uses raw params)."
+      }
+    },
+    {
+      "timestamp": "2026-03-11T14:38:49+00:00",
+      "action": "triage_reflect",
+      "issue_ids": [],
+      "cluster_name": null,
+      "actor": "user",
+      "note": null,
+      "detail": {
+        "issue_count": 37,
+        "reuse": false,
+        "recurring_dims": [
+          "abstraction_fitness",
+          "ai_generated_debt",
+          "api_surface_coherence",
+          "contract_coherence",
+          "convention_outlier",
+          "cross_module_architecture",
+          "design_coherence",
+          "error_consistency",
+          "incomplete_migration",
+          "logic_clarity",
+          "low_level_elegance",
+          "mid_level_elegance",
+          "naming_quality",
+          "package_organization",
+          "test_strategy",
+          "type_safety"
+        ]
+      }
+    },
+    {
+      "timestamp": "2026-03-11T14:39:03+00:00",
+      "action": "triage_confirm_reflect",
+      "issue_ids": [],
+      "cluster_name": null,
+      "actor": "user",
+      "note": null,
+      "detail": {
+        "attestation": "The reflect stage identifies root causes, compares dimensions across rounds, identifies duplicate detector findings for the same code problems, and provides a concrete cluster blueprint: (1) param-helpers-promote cluster for sentinel+scope issues, (2) query-results-move for QueryResults package, (3) radialplot-fix for RadialPlot package, (4) deprecated-removal for bypass constructors, (5) naming-fixes for getDeprel/ExploreResponseBuilder, (6) option-seam-fix for ExploreOptions.nounsPerCollocate, (7) optional-safety for vacuous orElseThrow, (8) relation-config-naming for RelationConfig conventions. Skip: 708fee97 (rate limiting out of scope for research tool), 9c1086fe (fastjson2 swap is disproportionate risk), 843d902b (api restructure is large architectural work better tracked separately), fd8fd482 (empty e2e dirs are structural placeholders not actionable code issues). These skips are based on contract_coherence and low_level_elegance analysis confirming no immediate harm."
+      }
+    },
+    {
+      "timestamp": "2026-03-11T14:39:10+00:00",
+      "action": "cluster_create",
+      "issue_ids": [],
+      "cluster_name": "param-helpers-promote",
+      "actor": "user",
+      "note": null,
+      "detail": {
+        "description": null,
+        "action": null
+      }
+    },
+    {
+      "timestamp": "2026-03-11T14:39:10+00:00",
+      "action": "cluster_create",
+      "issue_ids": [],
+      "cluster_name": "query-results-move",
+      "actor": "user",
+      "note": null,
+      "detail": {
+        "description": null,
+        "action": null
+      }
+    },
+    {
+      "timestamp": "2026-03-11T14:39:11+00:00",
+      "action": "cluster_create",
+      "issue_ids": [],
+      "cluster_name": "radialplot-fix",
+      "actor": "user",
+      "note": null,
+      "detail": {
+        "description": null,
+        "action": null
+      }
+    },
+    {
+      "timestamp": "2026-03-11T14:39:17+00:00",
+      "action": "cluster_create",
+      "issue_ids": [],
+      "cluster_name": "deprecated-removal",
+      "actor": "user",
+      "note": null,
+      "detail": {
+        "description": null,
+        "action": null
+      }
+    },
+    {
+      "timestamp": "2026-03-11T14:39:18+00:00",
+      "action": "cluster_create",
+      "issue_ids": [],
+      "cluster_name": "option-seam-fix",
+      "actor": "user",
+      "note": null,
+      "detail": {
+        "description": null,
+        "action": null
+      }
+    },
+    {
+      "timestamp": "2026-03-11T14:39:19+00:00",
+      "action": "cluster_create",
+      "issue_ids": [],
+      "cluster_name": "optional-safety",
+      "actor": "user",
+      "note": null,
+      "detail": {
+        "description": null,
+        "action": null
+      }
+    },
+    {
+      "timestamp": "2026-03-11T14:39:19+00:00",
+      "action": "cluster_create",
+      "issue_ids": [],
+      "cluster_name": "relation-config-naming",
+      "actor": "user",
+      "note": null,
+      "detail": {
+        "description": null,
+        "action": null
+      }
+    },
+    {
+      "timestamp": "2026-03-11T14:39:20+00:00",
+      "action": "cluster_create",
+      "issue_ids": [],
+      "cluster_name": "test-indexer",
+      "actor": "user",
+      "note": null,
+      "detail": {
+        "description": null,
+        "action": null
+      }
+    },
+    {
+      "timestamp": "2026-03-11T14:39:28+00:00",
+      "action": "cluster_add",
+      "issue_ids": [
+        "review::.::holistic::contract_coherence::parsedoubleparam-sentinel-contract::5e089cb2"
+      ],
+      "cluster_name": "param-helpers-promote",
+      "actor": "user",
+      "note": null,
+      "detail": {}
+    },
+    {
+      "timestamp": "2026-03-11T14:39:29+00:00",
+      "action": "cluster_add",
+      "issue_ids": [
+        "review::.::holistic::low_level_elegance::double-sentinel-contract::2b310519"
+      ],
+      "cluster_name": "param-helpers-promote",
+      "actor": "user",
+      "note": null,
+      "detail": {}
+    },
+    {
+      "timestamp": "2026-03-11T14:39:29+00:00",
+      "action": "cluster_add",
+      "issue_ids": [
+        "review::.::holistic::logic_clarity::sentinel-minus-one-parse-error::4696c722"
+      ],
+      "cluster_name": "param-helpers-promote",
+      "actor": "user",
+      "note": null,
+      "detail": {}
+    },
+    {
+      "timestamp": "2026-03-11T14:39:30+00:00",
+      "action": "cluster_add",
+      "issue_ids": [
+        "review::.::holistic::low_level_elegance::parsing-helper-private-scope::f316f5dd"
+      ],
+      "cluster_name": "param-helpers-promote",
+      "actor": "user",
+      "note": null,
+      "detail": {}
+    },
+    {
+      "timestamp": "2026-03-11T14:39:30+00:00",
+      "action": "cluster_add",
+      "issue_ids": [
+        "review::.::holistic::mid_level_elegance::param-parse-seam-leak::291eed32"
+      ],
+      "cluster_name": "param-helpers-promote",
+      "actor": "user",
+      "note": null,
+      "detail": {}
+    },
+    {
+      "timestamp": "2026-03-11T14:39:31+00:00",
+      "action": "cluster_add",
+      "issue_ids": [
+        "review::.::holistic::error_consistency::concordance-inline-numformat-vs-helper::d9835cc8"
+      ],
+      "cluster_name": "param-helpers-promote",
+      "actor": "user",
+      "note": null,
+      "detail": {}
+    },
+    {
+      "timestamp": "2026-03-11T14:39:37+00:00",
+      "action": "cluster_add",
+      "issue_ids": [
+        "review::.::holistic::package_organization::queryresults-wrong-package::6f0a9d47"
+      ],
+      "cluster_name": "query-results-move",
+      "actor": "user",
+      "note": null,
+      "detail": {}
+    },
+    {
+      "timestamp": "2026-03-11T14:39:37+00:00",
+      "action": "cluster_add",
+      "issue_ids": [
+        "review::.::holistic::high_level_elegance::queryresults-model-affinity::67d85ece"
+      ],
+      "cluster_name": "query-results-move",
+      "actor": "user",
+      "note": null,
+      "detail": {}
+    },
+    {
+      "timestamp": "2026-03-11T14:39:38+00:00",
+      "action": "cluster_add",
+      "issue_ids": [
+        "review::.::holistic::package_organization::radialplot-api-package::dfb4cace"
+      ],
+      "cluster_name": "radialplot-fix",
+      "actor": "user",
+      "note": null,
+      "detail": {}
+    },
+    {
+      "timestamp": "2026-03-11T14:39:38+00:00",
+      "action": "cluster_add",
+      "issue_ids": [
+        "review::.::holistic::high_level_elegance::radialplot-api-placement::92bdccbf"
+      ],
+      "cluster_name": "radialplot-fix",
+      "actor": "user",
+      "note": null,
+      "detail": {}
+    },
+    {
+      "timestamp": "2026-03-11T14:39:46+00:00",
+      "action": "cluster_add",
+      "issue_ids": [
+        "review::.::holistic::abstraction_fitness::deprecated-bypass-constructors::7ab5e1f5"
+      ],
+      "cluster_name": "deprecated-removal",
+      "actor": "user",
+      "note": null,
+      "detail": {}
+    },
+    {
+      "timestamp": "2026-03-11T14:39:46+00:00",
+      "action": "cluster_add",
+      "issue_ids": [
+        "review::.::holistic::abstraction_fitness::deprecated-passthrough-overload::ea475716"
+      ],
+      "cluster_name": "deprecated-removal",
+      "actor": "user",
+      "note": null,
+      "detail": {}
+    },
+    {
+      "timestamp": "2026-03-11T14:39:47+00:00",
+      "action": "cluster_add",
+      "issue_ids": [
+        "review::.::holistic::initialization_coupling::deprecated-fallback-constructors-parallel-path::9c2f9305"
+      ],
+      "cluster_name": "deprecated-removal",
+      "actor": "user",
+      "note": null,
+      "detail": {}
+    },
+    {
+      "timestamp": "2026-03-11T14:39:47+00:00",
+      "action": "cluster_add",
+      "issue_ids": [
+        "review::.::holistic::incomplete_migration::deprecated-triad-no-removal-schedule::27e5efaa"
+      ],
+      "cluster_name": "deprecated-removal",
+      "actor": "user",
+      "note": null,
+      "detail": {}
+    },
+    {
+      "timestamp": "2026-03-11T14:39:48+00:00",
+      "action": "cluster_add",
+      "issue_ids": [
+        "review::.::holistic::api_surface_coherence::deprecated-5param-exploreMultiSeed-public::639f1745"
+      ],
+      "cluster_name": "deprecated-removal",
+      "actor": "user",
+      "note": null,
+      "detail": {}
+    },
+    {
+      "timestamp": "2026-03-11T14:39:57+00:00",
+      "action": "cluster_add",
+      "issue_ids": [
+        "review::.::holistic::convention_outlier::explore-response-builder-pattern-mismatch::04e02a42"
+      ],
+      "cluster_name": "naming-fixes",
+      "actor": "user",
+      "note": null,
+      "detail": {}
+    },
+    {
+      "timestamp": "2026-03-11T14:39:57+00:00",
+      "action": "cluster_add",
+      "issue_ids": [
+        "review::.::holistic::naming_quality::explore-response-builder-misnomer::252bfa77"
+      ],
+      "cluster_name": "naming-fixes",
+      "actor": "user",
+      "note": null,
+      "detail": {}
+    },
+    {
+      "timestamp": "2026-03-11T14:39:57+00:00",
+      "action": "cluster_add",
+      "issue_ids": [
+        "review::.::holistic::naming_quality::getdeprel-computational-getter::9f35e9a1"
+      ],
+      "cluster_name": "naming-fixes",
+      "actor": "user",
+      "note": null,
+      "detail": {}
+    },
+    {
+      "timestamp": "2026-03-11T14:39:58+00:00",
+      "action": "cluster_add",
+      "issue_ids": [
+        "review::.::holistic::naming_quality::filter-candidates-vague::b79a71b0"
+      ],
+      "cluster_name": "naming-fixes",
+      "actor": "user",
+      "note": null,
+      "detail": {}
+    },
+    {
+      "timestamp": "2026-03-11T14:39:59+00:00",
+      "action": "cluster_add",
+      "issue_ids": [
+        "review::.::holistic::design_coherence::explore-options-single-seed-param-leakage::8fc738a1"
+      ],
+      "cluster_name": "option-seam-fix",
+      "actor": "user",
+      "note": null,
+      "detail": {}
+    },
+    {
+      "timestamp": "2026-03-11T14:39:59+00:00",
+      "action": "cluster_add",
+      "issue_ids": [
+        "review::.::holistic::design_coherence::compare-profiles-not-migrated-to-explore-options::90fc08e3"
+      ],
+      "cluster_name": "option-seam-fix",
+      "actor": "user",
+      "note": null,
+      "detail": {}
+    },
+    {
+      "timestamp": "2026-03-11T14:40:00+00:00",
+      "action": "cluster_add",
+      "issue_ids": [
+        "review::.::holistic::api_surface_coherence::compare-profiles-raw-params-vs-explore-options::e039a50b"
+      ],
+      "cluster_name": "option-seam-fix",
+      "actor": "user",
+      "note": null,
+      "detail": {}
+    },
+    {
+      "timestamp": "2026-03-11T14:40:01+00:00",
+      "action": "cluster_add",
+      "issue_ids": [
+        "review::.::holistic::mid_level_elegance::comparison-handler-partial-validation::441d5775"
+      ],
+      "cluster_name": "option-seam-fix",
+      "actor": "user",
+      "note": null,
+      "detail": {}
+    },
+    {
+      "timestamp": "2026-03-11T14:40:12+00:00",
+      "action": "cluster_add",
+      "issue_ids": [
+        "review::.::holistic::type_safety::optional-get-without-guard::b5659f49"
+      ],
+      "cluster_name": "optional-safety",
+      "actor": "user",
+      "note": null,
+      "detail": {}
+    },
+    {
+      "timestamp": "2026-03-11T14:40:13+00:00",
+      "action": "cluster_add",
+      "issue_ids": [
+        "review::.::holistic::logic_clarity::redundant-orelsethrow-after-guard::b7f5b3e0"
+      ],
+      "cluster_name": "optional-safety",
+      "actor": "user",
+      "note": null,
+      "detail": {}
+    },
+    {
+      "timestamp": "2026-03-11T14:40:13+00:00",
+      "action": "cluster_add",
+      "issue_ids": [
+        "review::.::holistic::type_safety::missing-nullable-extract-collocate-lemma::535c093b"
+      ],
+      "cluster_name": "optional-safety",
+      "actor": "user",
+      "note": null,
+      "detail": {}
+    },
+    {
+      "timestamp": "2026-03-11T14:40:14+00:00",
+      "action": "cluster_add",
+      "issue_ids": [
+        "review::.::holistic::convention_outlier::relation-config-naming-convention-split::3cb7449a"
+      ],
+      "cluster_name": "relation-config-naming",
+      "actor": "user",
+      "note": null,
+      "detail": {}
+    },
+    {
+      "timestamp": "2026-03-11T14:40:14+00:00",
+      "action": "cluster_add",
+      "issue_ids": [
+        "review::.::holistic::contract_coherence::buildfullpattern-silent-passthrough::addc2063"
+      ],
+      "cluster_name": "relation-config-naming",
+      "actor": "user",
+      "note": null,
+      "detail": {}
+    },
+    {
+      "timestamp": "2026-03-11T14:40:15+00:00",
+      "action": "cluster_add",
+      "issue_ids": [
+        "review::.::holistic::test_strategy::blacklab-indexer-untested::bd26a03e"
+      ],
+      "cluster_name": "test-indexer",
+      "actor": "user",
+      "note": null,
+      "detail": {}
+    },
+    {
+      "timestamp": "2026-03-11T14:40:40+00:00",
+      "action": "cluster_create",
+      "issue_ids": [],
+      "cluster_name": "ai-debt-hygiene",
+      "actor": "user",
+      "note": null,
+      "detail": {
+        "description": null,
+        "action": null
+      }
+    },
+    {
+      "timestamp": "2026-03-11T14:40:40+00:00",
+      "action": "cluster_add",
+      "issue_ids": [
+        "review::.::holistic::ai_generated_debt::null-guard-inconsistency::822fc7a1"
+      ],
+      "cluster_name": "ai-debt-hygiene",
+      "actor": "user",
+      "note": null,
+      "detail": {}
+    },
+    {
+      "timestamp": "2026-03-11T14:40:41+00:00",
+      "action": "cluster_add",
+      "issue_ids": [
+        "review::.::holistic::ai_generated_debt::selective-route-logging::7ea98547"
+      ],
+      "cluster_name": "ai-debt-hygiene",
+      "actor": "user",
+      "note": null,
+      "detail": {}
+    },
+    {
+      "timestamp": "2026-03-11T14:40:41+00:00",
+      "action": "cluster_add",
+      "issue_ids": [
+        "review::.::holistic::contract_coherence::createdefaultenglish-exception-erasure::92b8385a"
+      ],
+      "cluster_name": "relation-config-naming",
+      "actor": "user",
+      "note": null,
+      "detail": {}
+    },
+    {
+      "timestamp": "2026-03-11T14:40:42+00:00",
+      "action": "cluster_add",
+      "issue_ids": [
+        "review::.::holistic::low_level_elegance::derive-token-position-dual-traversal::7c0ad513"
+      ],
+      "cluster_name": "param-helpers-promote",
+      "actor": "user",
+      "note": null,
+      "detail": {}
+    },
+    {
+      "timestamp": "2026-03-11T14:40:43+00:00",
+      "action": "cluster_add",
+      "issue_ids": [
+        "review::.::holistic::test_strategy::no-integration-e2e-tests::fd8fd482"
+      ],
+      "cluster_name": "test-indexer",
+      "actor": "user",
+      "note": null,
+      "detail": {}
+    },
+    {
+      "timestamp": "2026-03-11T14:41:34+00:00",
+      "action": "cluster_update",
+      "issue_ids": [],
+      "cluster_name": "param-helpers-promote",
+      "actor": "user",
+      "note": null,
+      "detail": {
+        "description": "Promote parseIntParam/parseDoubleParam from private ExplorationHandlers to public HttpApiUtils; change sentinel -1 returns to Optional; fix ConcordanceHandlers inline parse; simplify GrammarConfigLoader dual traversal"
+      }
+    },
+    {
+      "timestamp": "2026-03-11T14:41:42+00:00",
+      "action": "cluster_update",
+      "issue_ids": [],
+      "cluster_name": "query-results-move",
+      "actor": "user",
+      "note": null,
+      "detail": {
+        "description": "Move QueryResults.java from model/ to query/ package where it is produced and consumed; update all import references"
+      }
+    },
+    {
+      "timestamp": "2026-03-11T14:41:43+00:00",
+      "action": "cluster_update",
+      "issue_ids": [],
+      "cluster_name": "radialplot-fix",
+      "actor": "user",
+      "note": null,
+      "detail": {
+        "description": "Move RadialPlot.java from api/ to viz/ package; it has no HTTP-specific logic and breaks the api/ package ownership story"
+      }
+    },
+    {
+      "timestamp": "2026-03-11T14:41:55+00:00",
+      "action": "cluster_update",
+      "issue_ids": [],
+      "cluster_name": "deprecated-removal",
+      "actor": "user",
+      "note": null,
+      "detail": {
+        "description": "Remove deprecated no-arg constructors in SemanticFieldExplorer and CollocateProfileComparator, and deprecated 5-param exploreMultiSeed overload; eliminate parallel hardcoded-pattern code paths"
+      }
+    },
+    {
+      "timestamp": "2026-03-11T14:41:56+00:00",
+      "action": "cluster_update",
+      "issue_ids": [],
+      "cluster_name": "optional-safety",
+      "actor": "user",
+      "note": null,
+      "detail": {
+        "description": "Replace vacuous Optional.get()/orElseThrow in already-guarded branches; add @Nullable to extractCollocateLemma"
+      }
+    },
+    {
+      "timestamp": "2026-03-11T14:42:08+00:00",
+      "action": "cluster_update",
+      "issue_ids": [],
+      "cluster_name": "relation-config-naming",
+      "actor": "user",
+      "note": null,
+      "detail": {
+        "description": "Fix RelationConfig mixed naming conventions; document buildFullPattern null-passthrough behavior; fix createDefaultEnglish exception erasure"
+      }
+    },
+    {
+      "timestamp": "2026-03-11T14:42:08+00:00",
+      "action": "cluster_update",
+      "issue_ids": [],
+      "cluster_name": "ai-debt-hygiene",
+      "actor": "user",
+      "note": null,
+      "detail": {
+        "description": "Standardize null-guard pattern to Objects.requireNonNull; remove or regularize the two selective route-logging statements"
+      }
+    },
+    {
+      "timestamp": "2026-03-11T14:42:21+00:00",
+      "action": "cluster_update",
+      "issue_ids": [],
+      "cluster_name": "option-seam-fix",
+      "actor": "user",
+      "note": null,
+      "detail": {
+        "description": "Split ExploreOptions to separate single-seed-only params (nounsPerCollocate); migrate compareCollocateProfiles to ExploreOptions; consolidate handleSemanticFieldComparison validation"
+      }
+    },
+    {
+      "timestamp": "2026-03-11T14:42:21+00:00",
+      "action": "cluster_update",
+      "issue_ids": [],
+      "cluster_name": "test-indexer",
+      "actor": "user",
+      "note": null,
+      "detail": {
+        "description": "Write tests for BlackLabConllUIndexer pipeline; provide minimal smoke tests for the e2e and regression directories"
+      }
+    },
+    {
+      "timestamp": "2026-03-11T14:42:31+00:00",
+      "action": "cluster_update",
+      "issue_ids": [],
+      "cluster_name": "naming-fixes",
+      "actor": "user",
+      "note": null,
+      "detail": {
+        "description": "Rename ExploreResponseBuilder to ExploreResponseAssembler (static utility); rename getDeprel() to computeDeprel(); rename filterCandidates to filterByMinShared"
+      }
+    },
+    {
+      "timestamp": "2026-03-11T14:42:59+00:00",
+      "action": "cluster_update",
+      "issue_ids": [],
+      "cluster_name": "naming-fixes",
+      "actor": "user",
+      "note": null,
+      "detail": {
+        "description": "Rename ExploreResponseBuilder to ExploreResponseAssembler (static utility); rename getDeprel() to computeDeprel(); rename filterCandidates to filterByMinShared"
+      }
+    },
+    {
+      "timestamp": "2026-03-11T14:42:59+00:00",
+      "action": "cluster_update",
+      "issue_ids": [],
+      "cluster_name": "option-seam-fix",
+      "actor": "user",
+      "note": null,
+      "detail": {
+        "description": "Split ExploreOptions to separate single-seed-only params (nounsPerCollocate); migrate compareCollocateProfiles to ExploreOptions; consolidate handleSemanticFieldComparison validation"
+      }
+    },
+    {
+      "timestamp": "2026-03-11T14:43:21+00:00",
+      "action": "skip",
+      "issue_ids": [
+        "review::.::holistic::authorization_consistency::no-rate-limiting-bcql::708fee97"
+      ],
+      "cluster_name": null,
+      "actor": "user",
+      "note": "Research corpus tool with no public exposure; rate limiting is out of scope and would add complexity with no security benefit in this deployment context.",
+      "detail": {
+        "kind": "permanent",
+        "reason": null
+      }
+    },
+    {
+      "timestamp": "2026-03-11T14:43:22+00:00",
+      "action": "skip",
+      "issue_ids": [
+        "review::.::holistic::dependency_health::fastjson2-audit-risk::9c1086fe"
+      ],
+      "cluster_name": null,
+      "actor": "user",
+      "note": "Replacing the JSON library would require a comprehensive regression test pass disproportionate to the actual threat model of this offline linguistic research tool.",
+      "detail": {
+        "kind": "permanent",
+        "reason": null
+      }
+    },
+    {
+      "timestamp": "2026-03-11T14:43:23+00:00",
+      "action": "skip",
+      "issue_ids": [
+        "review::.::holistic::cross_module_architecture::api-hub-overload::843d902b"
+      ],
+      "cluster_name": null,
+      "actor": "user",
+      "note": "Full api/ package restructure (splitting HTTP handlers, response builders, renderers) is a large architectural refactor better tracked as a separate effort once the tactical fixes in clusters naming-fixes, radialplot-fix, and query-results-move are complete.",
+      "detail": {
+        "kind": "permanent",
+        "reason": null
+      }
+    },
+    {
+      "timestamp": "2026-03-11T14:43:35+00:00",
+      "action": "triage_organize",
+      "issue_ids": [],
+      "cluster_name": null,
+      "actor": "user",
+      "note": null,
+      "detail": {
+        "cluster_count": 32,
+        "reuse": false
+      }
+    },
+    {
+      "timestamp": "2026-03-11T14:43:44+00:00",
+      "action": "triage_confirm_organize",
+      "issue_ids": [],
+      "cluster_name": null,
+      "actor": "user",
+      "note": null,
+      "detail": {
+        "attestation": "The organize output matches the reflect blueprint. Clusters align with file areas: param-helpers-promote touches ExplorationHandlers+HttpApiUtils+ConcordanceHandlers, deprecated-removal touches SemanticFieldExplorer+CollocateProfileComparator, query-results-move touches model/ and query/ packages, radialplot-fix touches api/ and viz/ packages. Step counts are consolidated below issue counts. Permanent skips are justified: rate limiting out of scope for offline tool, fastjson2 swap disproportionate risk, api-hub-overload tracked separately. The naming_quality and package_organization clusters describe concrete file operations not abstract themes.",
+        "coverage": "34/34"
+      }
+    },
+    {
+      "timestamp": "2026-03-11T14:44:53+00:00",
+      "action": "cluster_update",
+      "issue_ids": [],
+      "cluster_name": "param-helpers-promote",
+      "actor": "user",
+      "note": null,
+      "detail": {
+        "description": null
+      }
+    },
+    {
+      "timestamp": "2026-03-11T14:44:53+00:00",
+      "action": "cluster_update",
+      "issue_ids": [],
+      "cluster_name": "param-helpers-promote",
+      "actor": "user",
+      "note": null,
+      "detail": {
+        "description": null
+      }
+    },
+    {
+      "timestamp": "2026-03-11T14:44:54+00:00",
+      "action": "cluster_update",
+      "issue_ids": [],
+      "cluster_name": "param-helpers-promote",
+      "actor": "user",
+      "note": null,
+      "detail": {
+        "description": null
+      }
+    },
+    {
+      "timestamp": "2026-03-11T14:44:54+00:00",
+      "action": "cluster_update",
+      "issue_ids": [],
+      "cluster_name": "param-helpers-promote",
+      "actor": "user",
+      "note": null,
+      "detail": {
+        "description": null
+      }
+    },
+    {
+      "timestamp": "2026-03-11T14:45:07+00:00",
+      "action": "cluster_update",
+      "issue_ids": [],
+      "cluster_name": "deprecated-removal",
+      "actor": "user",
+      "note": null,
+      "detail": {
+        "description": null
+      }
+    },
+    {
+      "timestamp": "2026-03-11T14:45:08+00:00",
+      "action": "cluster_update",
+      "issue_ids": [],
+      "cluster_name": "deprecated-removal",
+      "actor": "user",
+      "note": null,
+      "detail": {
+        "description": null
+      }
+    },
+    {
+      "timestamp": "2026-03-11T14:45:09+00:00",
+      "action": "cluster_update",
+      "issue_ids": [],
+      "cluster_name": "deprecated-removal",
+      "actor": "user",
+      "note": null,
+      "detail": {
+        "description": null
+      }
+    },
+    {
+      "timestamp": "2026-03-11T14:45:09+00:00",
+      "action": "cluster_update",
+      "issue_ids": [],
+      "cluster_name": "deprecated-removal",
+      "actor": "user",
+      "note": null,
+      "detail": {
+        "description": null
+      }
+    },
+    {
+      "timestamp": "2026-03-11T14:45:21+00:00",
+      "action": "cluster_update",
+      "issue_ids": [],
+      "cluster_name": "query-results-move",
+      "actor": "user",
+      "note": null,
+      "detail": {
+        "description": null
+      }
+    },
+    {
+      "timestamp": "2026-03-11T14:45:21+00:00",
+      "action": "cluster_update",
+      "issue_ids": [],
+      "cluster_name": "query-results-move",
+      "actor": "user",
+      "note": null,
+      "detail": {
+        "description": null
+      }
+    },
+    {
+      "timestamp": "2026-03-11T14:45:22+00:00",
+      "action": "cluster_update",
+      "issue_ids": [],
+      "cluster_name": "query-results-move",
+      "actor": "user",
+      "note": null,
+      "detail": {
+        "description": null
+      }
+    },
+    {
+      "timestamp": "2026-03-11T14:45:32+00:00",
+      "action": "cluster_update",
+      "issue_ids": [],
+      "cluster_name": "radialplot-fix",
+      "actor": "user",
+      "note": null,
+      "detail": {
+        "description": null
+      }
+    },
+    {
+      "timestamp": "2026-03-11T14:45:32+00:00",
+      "action": "cluster_update",
+      "issue_ids": [],
+      "cluster_name": "radialplot-fix",
+      "actor": "user",
+      "note": null,
+      "detail": {
+        "description": null
+      }
+    },
+    {
+      "timestamp": "2026-03-11T14:45:33+00:00",
+      "action": "cluster_update",
+      "issue_ids": [],
+      "cluster_name": "radialplot-fix",
+      "actor": "user",
+      "note": null,
+      "detail": {
+        "description": null
+      }
+    },
+    {
+      "timestamp": "2026-03-11T14:45:43+00:00",
+      "action": "cluster_update",
+      "issue_ids": [],
+      "cluster_name": "naming-fixes",
+      "actor": "user",
+      "note": null,
+      "detail": {
+        "description": null
+      }
+    },
+    {
+      "timestamp": "2026-03-11T14:45:44+00:00",
+      "action": "cluster_update",
+      "issue_ids": [],
+      "cluster_name": "naming-fixes",
+      "actor": "user",
+      "note": null,
+      "detail": {
+        "description": null
+      }
+    },
+    {
+      "timestamp": "2026-03-11T14:45:44+00:00",
+      "action": "cluster_update",
+      "issue_ids": [],
+      "cluster_name": "naming-fixes",
+      "actor": "user",
+      "note": null,
+      "detail": {
+        "description": null
+      }
+    },
+    {
+      "timestamp": "2026-03-11T14:45:45+00:00",
+      "action": "cluster_update",
+      "issue_ids": [],
+      "cluster_name": "naming-fixes",
+      "actor": "user",
+      "note": null,
+      "detail": {
+        "description": null
+      }
+    },
+    {
+      "timestamp": "2026-03-11T14:45:57+00:00",
+      "action": "cluster_update",
+      "issue_ids": [],
+      "cluster_name": "optional-safety",
+      "actor": "user",
+      "note": null,
+      "detail": {
+        "description": null
+      }
+    },
+    {
+      "timestamp": "2026-03-11T14:45:57+00:00",
+      "action": "cluster_update",
+      "issue_ids": [],
+      "cluster_name": "optional-safety",
+      "actor": "user",
+      "note": null,
+      "detail": {
+        "description": null
+      }
+    },
+    {
+      "timestamp": "2026-03-11T14:45:58+00:00",
+      "action": "cluster_update",
+      "issue_ids": [],
+      "cluster_name": "optional-safety",
+      "actor": "user",
+      "note": null,
+      "detail": {
+        "description": null
+      }
+    },
+    {
+      "timestamp": "2026-03-11T14:46:13+00:00",
+      "action": "cluster_update",
+      "issue_ids": [],
+      "cluster_name": "relation-config-naming",
+      "actor": "user",
+      "note": null,
+      "detail": {
+        "description": null
+      }
+    },
+    {
+      "timestamp": "2026-03-11T14:46:14+00:00",
+      "action": "cluster_update",
+      "issue_ids": [],
+      "cluster_name": "relation-config-naming",
+      "actor": "user",
+      "note": null,
+      "detail": {
+        "description": null
+      }
+    },
+    {
+      "timestamp": "2026-03-11T14:46:15+00:00",
+      "action": "cluster_update",
+      "issue_ids": [],
+      "cluster_name": "relation-config-naming",
+      "actor": "user",
+      "note": null,
+      "detail": {
+        "description": null
+      }
+    },
+    {
+      "timestamp": "2026-03-11T14:46:24+00:00",
+      "action": "cluster_update",
+      "issue_ids": [],
+      "cluster_name": "ai-debt-hygiene",
+      "actor": "user",
+      "note": null,
+      "detail": {
+        "description": null
+      }
+    },
+    {
+      "timestamp": "2026-03-11T14:46:25+00:00",
+      "action": "cluster_update",
+      "issue_ids": [],
+      "cluster_name": "ai-debt-hygiene",
+      "actor": "user",
+      "note": null,
+      "detail": {
+        "description": null
+      }
+    },
+    {
+      "timestamp": "2026-03-11T14:46:45+00:00",
+      "action": "cluster_update",
+      "issue_ids": [],
+      "cluster_name": "option-seam-fix",
+      "actor": "user",
+      "note": null,
+      "detail": {
+        "description": null
+      }
+    },
+    {
+      "timestamp": "2026-03-11T14:46:46+00:00",
+      "action": "cluster_update",
+      "issue_ids": [],
+      "cluster_name": "option-seam-fix",
+      "actor": "user",
+      "note": null,
+      "detail": {
+        "description": null
+      }
+    },
+    {
+      "timestamp": "2026-03-11T14:46:46+00:00",
+      "action": "cluster_update",
+      "issue_ids": [],
+      "cluster_name": "option-seam-fix",
+      "actor": "user",
+      "note": null,
+      "detail": {
+        "description": null
+      }
+    },
+    {
+      "timestamp": "2026-03-11T14:46:47+00:00",
+      "action": "cluster_update",
+      "issue_ids": [],
+      "cluster_name": "option-seam-fix",
+      "actor": "user",
+      "note": null,
+      "detail": {
+        "description": null
+      }
+    },
+    {
+      "timestamp": "2026-03-11T14:46:59+00:00",
+      "action": "cluster_update",
+      "issue_ids": [],
+      "cluster_name": "test-indexer",
+      "actor": "user",
+      "note": null,
+      "detail": {
+        "description": null
+      }
+    },
+    {
+      "timestamp": "2026-03-11T14:47:00+00:00",
+      "action": "cluster_update",
+      "issue_ids": [],
+      "cluster_name": "test-indexer",
+      "actor": "user",
+      "note": null,
+      "detail": {
+        "description": null
+      }
+    },
+    {
+      "timestamp": "2026-03-11T14:47:00+00:00",
+      "action": "cluster_update",
+      "issue_ids": [],
+      "cluster_name": "test-indexer",
+      "actor": "user",
+      "note": null,
+      "detail": {
+        "description": null
+      }
+    },
+    {
+      "timestamp": "2026-03-11T14:47:19+00:00",
+      "action": "triage_enrich",
+      "issue_ids": [],
+      "cluster_name": null,
+      "actor": "user",
+      "note": null,
+      "detail": {
+        "shallow_count": 0,
+        "reuse": false
+      }
+    },
+    {
+      "timestamp": "2026-03-11T14:47:33+00:00",
+      "action": "cluster_update",
+      "issue_ids": [],
+      "cluster_name": "test-indexer",
+      "actor": "user",
+      "note": null,
+      "detail": {
+        "description": null
+      }
+    },
+    {
+      "timestamp": "2026-03-11T14:47:33+00:00",
+      "action": "cluster_update",
+      "issue_ids": [],
+      "cluster_name": "param-helpers-promote",
+      "actor": "user",
+      "note": null,
+      "detail": {
+        "description": null
+      }
+    },
+    {
+      "timestamp": "2026-03-11T14:47:34+00:00",
+      "action": "cluster_update",
+      "issue_ids": [],
+      "cluster_name": "param-helpers-promote",
+      "actor": "user",
+      "note": null,
+      "detail": {
+        "description": null
+      }
+    },
+    {
+      "timestamp": "2026-03-11T14:47:34+00:00",
+      "action": "cluster_update",
+      "issue_ids": [],
+      "cluster_name": "param-helpers-promote",
+      "actor": "user",
+      "note": null,
+      "detail": {
+        "description": null
+      }
+    },
+    {
+      "timestamp": "2026-03-11T14:47:35+00:00",
+      "action": "cluster_update",
+      "issue_ids": [],
+      "cluster_name": "param-helpers-promote",
+      "actor": "user",
+      "note": null,
+      "detail": {
+        "description": null
+      }
+    },
+    {
+      "timestamp": "2026-03-11T14:47:35+00:00",
+      "action": "cluster_update",
+      "issue_ids": [],
+      "cluster_name": "deprecated-removal",
+      "actor": "user",
+      "note": null,
+      "detail": {
+        "description": null
+      }
+    },
+    {
+      "timestamp": "2026-03-11T14:47:36+00:00",
+      "action": "cluster_update",
+      "issue_ids": [],
+      "cluster_name": "deprecated-removal",
+      "actor": "user",
+      "note": null,
+      "detail": {
+        "description": null
+      }
+    },
+    {
+      "timestamp": "2026-03-11T14:47:36+00:00",
+      "action": "cluster_update",
+      "issue_ids": [],
+      "cluster_name": "deprecated-removal",
+      "actor": "user",
+      "note": null,
+      "detail": {
+        "description": null
+      }
+    },
+    {
+      "timestamp": "2026-03-11T14:47:37+00:00",
+      "action": "cluster_update",
+      "issue_ids": [],
+      "cluster_name": "deprecated-removal",
+      "actor": "user",
+      "note": null,
+      "detail": {
+        "description": null
+      }
+    },
+    {
+      "timestamp": "2026-03-11T14:47:37+00:00",
+      "action": "cluster_update",
+      "issue_ids": [],
+      "cluster_name": "query-results-move",
+      "actor": "user",
+      "note": null,
+      "detail": {
+        "description": null
+      }
+    },
+    {
+      "timestamp": "2026-03-11T14:47:38+00:00",
+      "action": "cluster_update",
+      "issue_ids": [],
+      "cluster_name": "query-results-move",
+      "actor": "user",
+      "note": null,
+      "detail": {
+        "description": null
+      }
+    },
+    {
+      "timestamp": "2026-03-11T14:47:38+00:00",
+      "action": "cluster_update",
+      "issue_ids": [],
+      "cluster_name": "query-results-move",
+      "actor": "user",
+      "note": null,
+      "detail": {
+        "description": null
+      }
+    },
+    {
+      "timestamp": "2026-03-11T14:47:39+00:00",
+      "action": "cluster_update",
+      "issue_ids": [],
+      "cluster_name": "radialplot-fix",
+      "actor": "user",
+      "note": null,
+      "detail": {
+        "description": null
+      }
+    },
+    {
+      "timestamp": "2026-03-11T14:47:39+00:00",
+      "action": "cluster_update",
+      "issue_ids": [],
+      "cluster_name": "radialplot-fix",
+      "actor": "user",
+      "note": null,
+      "detail": {
+        "description": null
+      }
+    },
+    {
+      "timestamp": "2026-03-11T14:47:40+00:00",
+      "action": "cluster_update",
+      "issue_ids": [],
+      "cluster_name": "radialplot-fix",
+      "actor": "user",
+      "note": null,
+      "detail": {
+        "description": null
+      }
+    },
+    {
+      "timestamp": "2026-03-11T14:47:41+00:00",
+      "action": "cluster_update",
+      "issue_ids": [],
+      "cluster_name": "naming-fixes",
+      "actor": "user",
+      "note": null,
+      "detail": {
+        "description": null
+      }
+    },
+    {
+      "timestamp": "2026-03-11T14:47:41+00:00",
+      "action": "cluster_update",
+      "issue_ids": [],
+      "cluster_name": "naming-fixes",
+      "actor": "user",
+      "note": null,
+      "detail": {
+        "description": null
+      }
+    },
+    {
+      "timestamp": "2026-03-11T14:47:42+00:00",
+      "action": "cluster_update",
+      "issue_ids": [],
+      "cluster_name": "naming-fixes",
+      "actor": "user",
+      "note": null,
+      "detail": {
+        "description": null
+      }
+    },
+    {
+      "timestamp": "2026-03-11T14:47:42+00:00",
+      "action": "cluster_update",
+      "issue_ids": [],
+      "cluster_name": "naming-fixes",
+      "actor": "user",
+      "note": null,
+      "detail": {
+        "description": null
+      }
+    },
+    {
+      "timestamp": "2026-03-11T14:47:43+00:00",
+      "action": "cluster_update",
+      "issue_ids": [],
+      "cluster_name": "optional-safety",
+      "actor": "user",
+      "note": null,
+      "detail": {
+        "description": null
+      }
+    },
+    {
+      "timestamp": "2026-03-11T14:47:43+00:00",
+      "action": "cluster_update",
+      "issue_ids": [],
+      "cluster_name": "optional-safety",
+      "actor": "user",
+      "note": null,
+      "detail": {
+        "description": null
+      }
+    },
+    {
+      "timestamp": "2026-03-11T14:47:44+00:00",
+      "action": "cluster_update",
+      "issue_ids": [],
+      "cluster_name": "optional-safety",
+      "actor": "user",
+      "note": null,
+      "detail": {
+        "description": null
+      }
+    },
+    {
+      "timestamp": "2026-03-11T14:47:45+00:00",
+      "action": "cluster_update",
+      "issue_ids": [],
+      "cluster_name": "relation-config-naming",
+      "actor": "user",
+      "note": null,
+      "detail": {
+        "description": null
+      }
+    },
+    {
+      "timestamp": "2026-03-11T14:47:45+00:00",
+      "action": "cluster_update",
+      "issue_ids": [],
+      "cluster_name": "relation-config-naming",
+      "actor": "user",
+      "note": null,
+      "detail": {
+        "description": null
+      }
+    },
+    {
+      "timestamp": "2026-03-11T14:47:46+00:00",
+      "action": "cluster_update",
+      "issue_ids": [],
+      "cluster_name": "relation-config-naming",
+      "actor": "user",
+      "note": null,
+      "detail": {
+        "description": null
+      }
+    },
+    {
+      "timestamp": "2026-03-11T14:47:47+00:00",
+      "action": "cluster_update",
+      "issue_ids": [],
+      "cluster_name": "ai-debt-hygiene",
+      "actor": "user",
+      "note": null,
+      "detail": {
+        "description": null
+      }
+    },
+    {
+      "timestamp": "2026-03-11T14:47:47+00:00",
+      "action": "cluster_update",
+      "issue_ids": [],
+      "cluster_name": "ai-debt-hygiene",
+      "actor": "user",
+      "note": null,
+      "detail": {
+        "description": null
+      }
+    },
+    {
+      "timestamp": "2026-03-11T14:47:49+00:00",
+      "action": "cluster_update",
+      "issue_ids": [],
+      "cluster_name": "option-seam-fix",
+      "actor": "user",
+      "note": null,
+      "detail": {
+        "description": null
+      }
+    },
+    {
+      "timestamp": "2026-03-11T14:47:49+00:00",
+      "action": "cluster_update",
+      "issue_ids": [],
+      "cluster_name": "option-seam-fix",
+      "actor": "user",
+      "note": null,
+      "detail": {
+        "description": null
+      }
+    },
+    {
+      "timestamp": "2026-03-11T14:47:50+00:00",
+      "action": "cluster_update",
+      "issue_ids": [],
+      "cluster_name": "option-seam-fix",
+      "actor": "user",
+      "note": null,
+      "detail": {
+        "description": null
+      }
+    },
+    {
+      "timestamp": "2026-03-11T14:47:50+00:00",
+      "action": "cluster_update",
+      "issue_ids": [],
+      "cluster_name": "option-seam-fix",
+      "actor": "user",
+      "note": null,
+      "detail": {
+        "description": null
+      }
+    },
+    {
+      "timestamp": "2026-03-11T14:47:51+00:00",
+      "action": "cluster_update",
+      "issue_ids": [],
+      "cluster_name": "test-indexer",
+      "actor": "user",
+      "note": null,
+      "detail": {
+        "description": null
+      }
+    },
+    {
+      "timestamp": "2026-03-11T14:47:51+00:00",
+      "action": "cluster_update",
+      "issue_ids": [],
+      "cluster_name": "test-indexer",
+      "actor": "user",
+      "note": null,
+      "detail": {
+        "description": null
+      }
+    },
+    {
+      "timestamp": "2026-03-11T14:47:52+00:00",
+      "action": "cluster_update",
+      "issue_ids": [],
+      "cluster_name": "test-indexer",
+      "actor": "user",
+      "note": null,
+      "detail": {
+        "description": null
+      }
+    },
+    {
+      "timestamp": "2026-03-11T14:48:19+00:00",
+      "action": "cluster_update",
+      "issue_ids": [],
+      "cluster_name": "test-indexer",
+      "actor": "user",
+      "note": null,
+      "detail": {
+        "description": null
+      }
+    },
+    {
+      "timestamp": "2026-03-11T14:48:40+00:00",
+      "action": "cluster_update",
+      "issue_ids": [],
+      "cluster_name": "test-indexer",
+      "actor": "user",
+      "note": null,
+      "detail": {
+        "description": null
+      }
+    },
+    {
+      "timestamp": "2026-03-11T14:48:57+00:00",
+      "action": "cluster_update",
+      "issue_ids": [],
+      "cluster_name": "radialplot-fix",
+      "actor": "user",
+      "note": null,
+      "detail": {
+        "description": null
+      }
+    },
+    {
+      "timestamp": "2026-03-11T14:49:04+00:00",
+      "action": "triage_confirm_enrich",
+      "issue_ids": [],
+      "cluster_name": null,
+      "actor": "user",
+      "note": null,
+      "detail": {
+        "attestation": "All 10 clusters have executor-ready step details with specific Java file paths and concrete actions. Radialplot-fix step 3 now includes actual mvn commands. Test-indexer step 1 references ConlluConverterTest.java as sibling context. All 33 steps have detail and issue refs. Effort tags set. The naming_quality and low_level_elegance dimensions are covered."
+      }
+    },
+    {
+      "timestamp": "2026-03-11T14:49:36+00:00",
+      "action": "triage_sense_check",
+      "issue_ids": [],
+      "cluster_name": null,
+      "actor": "user",
+      "note": null,
+      "detail": {
+        "reuse": false
+      }
+    },
+    {
+      "timestamp": "2026-03-11T14:49:45+00:00",
+      "action": "triage_confirm_sense_check",
+      "issue_ids": [],
+      "cluster_name": null,
+      "actor": "user",
+      "note": null,
+      "detail": {
+        "attestation": "Cross-cluster dependencies identified and ordering recommended: param-helpers-promote before ai-debt-hygiene (both touch ExplorationHandlers), deprecated-removal before option-seam-fix (both touch SemanticFieldExplorer). All step file paths verified against actual source. Risk flags noted for radialplot-fix (viz/ package existence) and deprecated-removal (test callers). Low_level_elegance and naming_quality dimensions have fully grounded executor-ready steps."
+      }
+    },
+    {
+      "timestamp": "2026-03-11T14:50:04+00:00",
+      "action": "triage_complete",
+      "issue_ids": [],
+      "cluster_name": null,
+      "actor": "user",
+      "note": null,
+      "detail": {
+        "strategy_len": 1825,
+        "coverage": "34/34"
+      }
+    },
+    {
+      "timestamp": "2026-03-11T14:57:36+00:00",
+      "action": "done",
+      "issue_ids": [
+        "review::.::holistic::package_organization::queryresults-wrong-package::6f0a9d47"
+      ],
+      "cluster_name": null,
+      "actor": "user",
+      "note": "QueryResults moved from model/ to query/; 18 Java files updated",
+      "detail": {}
+    },
+    {
+      "timestamp": "2026-03-11T14:57:36+00:00",
+      "action": "done",
+      "issue_ids": [
+        "review::.::holistic::high_level_elegance::queryresults-model-affinity::67d85ece"
+      ],
+      "cluster_name": null,
+      "actor": "user",
+      "note": "QueryResults now lives in query/ alongside QueryExecutor and BlackLabQueryExecutor",
+      "detail": {}
+    },
+    {
+      "timestamp": "2026-03-11T14:57:37+00:00",
+      "action": "done",
+      "issue_ids": [
+        "review::.::holistic::package_organization::radialplot-api-package::dfb4cace"
+      ],
+      "cluster_name": null,
+      "actor": "user",
+      "note": "RadialPlot moved from api/ to viz/; VisualizationHandlers and RadialPlotTest imports updated",
+      "detail": {}
+    },
+    {
+      "timestamp": "2026-03-11T14:57:38+00:00",
+      "action": "done",
+      "issue_ids": [
+        "review::.::holistic::high_level_elegance::radialplot-api-placement::92bdccbf"
+      ],
+      "cluster_name": null,
+      "actor": "user",
+      "note": "RadialPlot now in viz/ package, separated from HTTP adapter layer",
+      "detail": {}
+    },
+    {
+      "timestamp": "2026-03-11T14:57:38+00:00",
+      "action": "done",
+      "issue_ids": [
+        "review::.::holistic::test_strategy::blacklab-indexer-untested::bd26a03e"
+      ],
+      "cluster_name": null,
+      "actor": "user",
+      "note": "Added BlackLabConllUIndexerTest: full-pipeline smoke test, dir-creation, missing-file IOException, initial-token-count; 226 tests pass",
+      "detail": {}
+    },
+    {
+      "timestamp": "2026-03-11T14:57:39+00:00",
+      "action": "done",
+      "issue_ids": [
+        "review::.::holistic::test_strategy::no-integration-e2e-tests::fd8fd482"
+      ],
+      "cluster_name": null,
+      "actor": "user",
+      "note": "Added integration-style smoke test in BlackLabConllUIndexerTest that indexes a real CoNLL-U fixture and verifies the index is created",
+      "detail": {}
+    },
+    {
+      "timestamp": "2026-03-11T14:57:46+00:00",
+      "action": "reorder",
+      "issue_ids": [
+        "review::.::holistic::package_organization::queryresults-wrong-package::6f0a9d47"
+      ],
+      "cluster_name": null,
+      "actor": "user",
+      "note": null,
+      "detail": {
+        "position": "top",
+        "target": null,
+        "offset": null
+      }
+    },
+    {
+      "timestamp": "2026-03-11T14:57:47+00:00",
+      "action": "reorder",
+      "issue_ids": [
+        "review::.::holistic::high_level_elegance::queryresults-model-affinity::67d85ece"
+      ],
+      "cluster_name": null,
+      "actor": "user",
+      "note": null,
+      "detail": {
+        "position": "top",
+        "target": null,
+        "offset": null
+      }
+    },
+    {
+      "timestamp": "2026-03-11T14:57:48+00:00",
+      "action": "reorder",
+      "issue_ids": [
+        "review::.::holistic::package_organization::radialplot-api-package::dfb4cace"
+      ],
+      "cluster_name": null,
+      "actor": "user",
+      "note": null,
+      "detail": {
+        "position": "top",
+        "target": null,
+        "offset": null
+      }
+    },
+    {
+      "timestamp": "2026-03-11T14:57:48+00:00",
+      "action": "reorder",
+      "issue_ids": [
+        "review::.::holistic::high_level_elegance::radialplot-api-placement::92bdccbf"
+      ],
+      "cluster_name": null,
+      "actor": "user",
+      "note": null,
+      "detail": {
+        "position": "top",
+        "target": null,
+        "offset": null
+      }
+    },
+    {
+      "timestamp": "2026-03-11T14:57:49+00:00",
+      "action": "reorder",
+      "issue_ids": [
+        "review::.::holistic::test_strategy::blacklab-indexer-untested::bd26a03e"
+      ],
+      "cluster_name": null,
+      "actor": "user",
+      "note": null,
+      "detail": {
+        "position": "top",
+        "target": null,
+        "offset": null
+      }
+    },
+    {
+      "timestamp": "2026-03-11T14:57:49+00:00",
+      "action": "reorder",
+      "issue_ids": [
+        "review::.::holistic::test_strategy::no-integration-e2e-tests::fd8fd482"
+      ],
+      "cluster_name": null,
+      "actor": "user",
+      "note": null,
+      "detail": {
+        "position": "top",
+        "target": null,
+        "offset": null
+      }
+    },
+    {
+      "timestamp": "2026-03-11T14:58:02+00:00",
+      "action": "done",
+      "issue_ids": [
+        "review::.::holistic::test_strategy::no-integration-e2e-tests::fd8fd482"
+      ],
+      "cluster_name": null,
+      "actor": "user",
+      "note": "Added integration-style smoke test in BlackLabConllUIndexerTest",
+      "detail": {}
+    },
+    {
+      "timestamp": "2026-03-11T14:58:02+00:00",
+      "action": "done",
+      "issue_ids": [
+        "review::.::holistic::test_strategy::blacklab-indexer-untested::bd26a03e"
+      ],
+      "cluster_name": null,
+      "actor": "user",
+      "note": "Added BlackLabConllUIndexerTest: full-pipeline, dir-creation, missing-file IOException, initial-token-count",
+      "detail": {}
+    },
+    {
+      "timestamp": "2026-03-11T14:58:03+00:00",
+      "action": "done",
+      "issue_ids": [
+        "review::.::holistic::package_organization::radialplot-api-package::dfb4cace"
+      ],
+      "cluster_name": null,
+      "actor": "user",
+      "note": "RadialPlot moved from api/ to viz/; VisualizationHandlers and RadialPlotTest imports updated",
+      "detail": {}
+    },
+    {
+      "timestamp": "2026-03-11T14:58:04+00:00",
+      "action": "done",
+      "issue_ids": [
+        "review::.::holistic::high_level_elegance::queryresults-model-affinity::67d85ece"
+      ],
+      "cluster_name": null,
+      "actor": "user",
+      "note": "QueryResults now lives in query/ alongside QueryExecutor",
+      "detail": {}
+    },
+    {
+      "timestamp": "2026-03-11T14:58:04+00:00",
+      "action": "done",
+      "issue_ids": [
+        "review::.::holistic::package_organization::queryresults-wrong-package::6f0a9d47"
+      ],
+      "cluster_name": null,
+      "actor": "user",
+      "note": "QueryResults moved from model/ to query/; 18 Java files updated",
+      "detail": {}
+    },
+    {
+      "timestamp": "2026-03-11T14:58:34+00:00",
+      "action": "done",
+      "issue_ids": [
+        "review::.::holistic::package_organization::queryresults-wrong-package::6f0a9d47"
+      ],
+      "cluster_name": null,
+      "actor": "user",
+      "note": "QueryResults moved from model/ to query/ package; all 18 Java files referencing the class updated to the new import path; tests pass",
+      "detail": {}
+    },
+    {
+      "timestamp": "2026-03-11T14:59:06+00:00",
+      "action": "reorder",
+      "issue_ids": [
+        "review::.::holistic::package_organization::queryresults-wrong-package::6f0a9d47",
+        "review::.::holistic::high_level_elegance::queryresults-model-affinity::67d85ece"
+      ],
+      "cluster_name": null,
+      "actor": "user",
+      "note": null,
+      "detail": {
+        "position": "before",
+        "target": "review::.::holistic::convention_outlier::explore-response-builder-pattern-mismatch::04e02a42",
+        "offset": null
+      }
+    },
+    {
+      "timestamp": "2026-03-11T14:59:07+00:00",
+      "action": "reorder",
+      "issue_ids": [
+        "review::.::holistic::package_organization::radialplot-api-package::dfb4cace",
+        "review::.::holistic::high_level_elegance::radialplot-api-placement::92bdccbf"
+      ],
+      "cluster_name": null,
+      "actor": "user",
+      "note": null,
+      "detail": {
+        "position": "before",
+        "target": "review::.::holistic::convention_outlier::explore-response-builder-pattern-mismatch::04e02a42",
+        "offset": null
+      }
+    },
+    {
+      "timestamp": "2026-03-11T14:59:07+00:00",
+      "action": "reorder",
+      "issue_ids": [
+        "review::.::holistic::test_strategy::blacklab-indexer-untested::bd26a03e",
+        "review::.::holistic::test_strategy::no-integration-e2e-tests::fd8fd482"
+      ],
+      "cluster_name": null,
+      "actor": "user",
+      "note": null,
+      "detail": {
+        "position": "before",
+        "target": "review::.::holistic::convention_outlier::explore-response-builder-pattern-mismatch::04e02a42",
+        "offset": null
+      }
+    },
+    {
+      "timestamp": "2026-03-11T14:59:25+00:00",
+      "action": "done",
+      "issue_ids": [
+        "review::.::holistic::package_organization::queryresults-wrong-package::6f0a9d47"
+      ],
+      "cluster_name": null,
+      "actor": "user",
+      "note": "QueryResults moved from model/ to query/ package; 18 Java files referencing the class updated; all 226 tests pass",
+      "detail": {}
+    },
+    {
+      "timestamp": "2026-03-11T15:00:27+00:00",
+      "action": "reorder",
+      "issue_ids": [
+        "review::.::holistic::package_organization::queryresults-wrong-package::6f0a9d47",
+        "review::.::holistic::high_level_elegance::queryresults-model-affinity::67d85ece",
+        "review::.::holistic::package_organization::radialplot-api-package::dfb4cace",
+        "review::.::holistic::high_level_elegance::radialplot-api-placement::92bdccbf",
+        "review::.::holistic::test_strategy::blacklab-indexer-untested::bd26a03e",
+        "review::.::holistic::test_strategy::no-integration-e2e-tests::fd8fd482"
+      ],
+      "cluster_name": null,
+      "actor": "user",
+      "note": null,
+      "detail": {
+        "position": "top",
+        "target": null,
+        "offset": null
+      }
+    },
+    {
+      "timestamp": "2026-03-11T15:01:06+00:00",
+      "action": "skip",
+      "issue_ids": [
+        "review::.::holistic::convention_outlier::explore-response-builder-pattern-mismatch::04e02a42",
+        "review::.::holistic::naming_quality::explore-response-builder-misnomer::252bfa77",
+        "review::.::holistic::naming_quality::getdeprel-computational-getter::9f35e9a1",
+        "review::.::holistic::naming_quality::filter-candidates-vague::b79a71b0"
+      ],
+      "cluster_name": null,
+      "actor": "user",
+      "note": null,
+      "detail": {
+        "kind": "temporary",
+        "reason": null
+      }
+    },
+    {
+      "timestamp": "2026-03-11T15:01:33+00:00",
+      "action": "skip",
+      "issue_ids": [
+        "review::.::holistic::contract_coherence::parsedoubleparam-sentinel-contract::5e089cb2",
+        "review::.::holistic::low_level_elegance::double-sentinel-contract::2b310519",
+        "review::.::holistic::logic_clarity::sentinel-minus-one-parse-error::4696c722",
+        "review::.::holistic::low_level_elegance::parsing-helper-private-scope::f316f5dd",
+        "review::.::holistic::mid_level_elegance::param-parse-seam-leak::291eed32",
+        "review::.::holistic::error_consistency::concordance-inline-numformat-vs-helper::d9835cc8",
+        "review::.::holistic::low_level_elegance::derive-token-position-dual-traversal::7c0ad513"
+      ],
+      "cluster_name": null,
+      "actor": "user",
+      "note": null,
+      "detail": {
+        "kind": "temporary",
+        "reason": null
+      }
+    },
+    {
+      "timestamp": "2026-03-11T15:01:49+00:00",
+      "action": "done",
+      "issue_ids": [
+        "review::.::holistic::package_organization::queryresults-wrong-package::6f0a9d47"
+      ],
+      "cluster_name": null,
+      "actor": "user",
+      "note": "QueryResults.java moved from model/ to query/; all 18 referencing files updated with new import; 226 tests pass",
+      "detail": {}
+    },
+    {
+      "timestamp": "2026-03-11T15:01:50+00:00",
+      "action": "resolve",
+      "issue_ids": [
+        "review::.::holistic::package_organization::queryresults-wrong-package::6f0a9d47"
+      ],
+      "cluster_name": null,
+      "actor": "user",
+      "note": "QueryResults.java moved from model/ to query/; all 18 referencing files updated with new import; 226 tests pass",
+      "detail": {
+        "status": "fixed",
+        "attestation": "I have actually QueryResults.java moved from model/ to query/; all 18 referencing files updated with new import; 226 tests pass and I am not gaming the score."
+      }
+    },
+    {
+      "timestamp": "2026-03-11T15:01:56+00:00",
+      "action": "done",
+      "issue_ids": [
+        "review::.::holistic::high_level_elegance::queryresults-model-affinity::67d85ece"
+      ],
+      "cluster_name": null,
+      "actor": "user",
+      "note": "QueryResults.java moved to query/ package, now co-located with QueryExecutor and BlackLabQueryExecutor that produce and consume it; 226 tests pass",
+      "detail": {}
+    },
+    {
+      "timestamp": "2026-03-11T15:02:22+00:00",
+      "action": "done",
+      "issue_ids": [
+        "review::.::holistic::package_organization::radialplot-api-package::dfb4cace"
+      ],
+      "cluster_name": null,
+      "actor": "user",
+      "note": "RadialPlot.java moved from api/ to viz/ package; VisualizationHandlers.java and RadialPlotTest.java imports updated to viz.RadialPlot; 226 tests pass",
+      "detail": {}
+    },
+    {
+      "timestamp": "2026-03-11T15:02:22+00:00",
+      "action": "resolve",
+      "issue_ids": [
+        "review::.::holistic::package_organization::radialplot-api-package::dfb4cace"
+      ],
+      "cluster_name": null,
+      "actor": "user",
+      "note": "RadialPlot.java moved from api/ to viz/ package; VisualizationHandlers.java and RadialPlotTest.java imports updated to viz.RadialPlot; 226 tests pass",
+      "detail": {
+        "status": "fixed",
+        "attestation": "I have actually RadialPlot.java moved from api/ to viz/ package; VisualizationHandlers.java and RadialPlotTest.java imports updated to viz.RadialPlot; 226 tests pass and I am not gaming the score."
+      }
+    },
+    {
+      "timestamp": "2026-03-11T15:02:48+00:00",
+      "action": "skip",
+      "issue_ids": [
+        "review::.::holistic::abstraction_fitness::deprecated-bypass-constructors::7ab5e1f5",
+        "review::.::holistic::abstraction_fitness::deprecated-passthrough-overload::ea475716",
+        "review::.::holistic::initialization_coupling::deprecated-fallback-constructors-parallel-path::9c2f9305",
+        "review::.::holistic::incomplete_migration::deprecated-triad-no-removal-schedule::27e5efaa",
+        "review::.::holistic::api_surface_coherence::deprecated-5param-exploreMultiSeed-public::639f1745"
+      ],
+      "cluster_name": null,
+      "actor": "user",
+      "note": null,
+      "detail": {
+        "kind": "temporary",
+        "reason": null
+      }
+    },
+    {
+      "timestamp": "2026-03-11T15:02:48+00:00",
+      "action": "skip",
+      "issue_ids": [
+        "review::.::holistic::design_coherence::explore-options-single-seed-param-leakage::8fc738a1",
+        "review::.::holistic::design_coherence::compare-profiles-not-migrated-to-explore-options::90fc08e3",
+        "review::.::holistic::api_surface_coherence::compare-profiles-raw-params-vs-explore-options::e039a50b",
+        "review::.::holistic::mid_level_elegance::comparison-handler-partial-validation::441d5775"
+      ],
+      "cluster_name": null,
+      "actor": "user",
+      "note": null,
+      "detail": {
+        "kind": "temporary",
+        "reason": null
+      }
+    },
+    {
+      "timestamp": "2026-03-11T15:02:49+00:00",
+      "action": "skip",
+      "issue_ids": [
+        "review::.::holistic::type_safety::optional-get-without-guard::b5659f49",
+        "review::.::holistic::logic_clarity::redundant-orelsethrow-after-guard::b7f5b3e0",
+        "review::.::holistic::type_safety::missing-nullable-extract-collocate-lemma::535c093b"
+      ],
+      "cluster_name": null,
+      "actor": "user",
+      "note": null,
+      "detail": {
+        "kind": "temporary",
+        "reason": null
+      }
+    },
+    {
+      "timestamp": "2026-03-11T15:02:49+00:00",
+      "action": "skip",
+      "issue_ids": [
+        "review::.::holistic::convention_outlier::relation-config-naming-convention-split::3cb7449a",
+        "review::.::holistic::contract_coherence::buildfullpattern-silent-passthrough::addc2063",
+        "review::.::holistic::contract_coherence::createdefaultenglish-exception-erasure::92b8385a"
+      ],
+      "cluster_name": null,
+      "actor": "user",
+      "note": null,
+      "detail": {
+        "kind": "temporary",
+        "reason": null
+      }
+    },
+    {
+      "timestamp": "2026-03-11T15:02:58+00:00",
+      "action": "done",
+      "issue_ids": [
+        "review::.::holistic::test_strategy::blacklab-indexer-untested::bd26a03e"
+      ],
+      "cluster_name": null,
+      "actor": "user",
+      "note": "Added BlackLabConllUIndexerTest with 4 smoke tests: full-pipeline index creation, directory auto-creation, missing-file IOException, initial-token-count; format-config assumed present in project root; 226 tests pass",
+      "detail": {}
+    },
+    {
+      "timestamp": "2026-03-11T15:02:59+00:00",
+      "action": "resolve",
+      "issue_ids": [
+        "review::.::holistic::test_strategy::blacklab-indexer-untested::bd26a03e"
+      ],
+      "cluster_name": null,
+      "actor": "user",
+      "note": "Added BlackLabConllUIndexerTest with 4 smoke tests: full-pipeline index creation, directory auto-creation, missing-file IOException, initial-token-count; format-config assumed present in project root; 226 tests pass",
+      "detail": {
+        "status": "fixed",
+        "attestation": "I have actually Added BlackLabConllUIndexerTest with 4 smoke tests: full-pipeline index creation, directory auto-creation, missing-file IOException, initial-token-count; format-config assumed present in project root; 226 tests pass and I am not gaming the score."
+      }
+    },
+    {
+      "timestamp": "2026-03-11T15:03:22+00:00",
+      "action": "skip",
+      "issue_ids": [
+        "review::.::holistic::ai_generated_debt::null-guard-inconsistency::822fc7a1",
+        "review::.::holistic::ai_generated_debt::selective-route-logging::7ea98547"
+      ],
+      "cluster_name": null,
+      "actor": "user",
+      "note": null,
+      "detail": {
+        "kind": "temporary",
+        "reason": null
+      }
+    },
+    {
+      "timestamp": "2026-03-11T15:03:30+00:00",
+      "action": "done",
+      "issue_ids": [
+        "review::.::holistic::high_level_elegance::queryresults-model-affinity::67d85ece"
+      ],
+      "cluster_name": null,
+      "actor": "user",
+      "note": "QueryResults.java moved to query/ package, now co-located with QueryExecutor and BlackLabQueryExecutor; 226 tests pass",
+      "detail": {}
+    },
+    {
+      "timestamp": "2026-03-11T15:03:30+00:00",
+      "action": "resolve",
+      "issue_ids": [
+        "review::.::holistic::high_level_elegance::queryresults-model-affinity::67d85ece"
+      ],
+      "cluster_name": null,
+      "actor": "user",
+      "note": "QueryResults.java moved to query/ package, now co-located with QueryExecutor and BlackLabQueryExecutor; 226 tests pass",
+      "detail": {
+        "status": "fixed",
+        "attestation": "I have actually QueryResults.java moved to query/ package, now co-located with QueryExecutor and BlackLabQueryExecutor; 226 tests pass and I am not gaming the score."
+      }
+    },
+    {
+      "timestamp": "2026-03-11T15:03:30+00:00",
+      "action": "cluster_done",
+      "issue_ids": [
+        "review::.::holistic::high_level_elegance::queryresults-model-affinity::67d85ece"
+      ],
+      "cluster_name": "query-results-move",
+      "actor": "user",
+      "note": null,
+      "detail": {}
+    },
+    {
+      "timestamp": "2026-03-11T15:03:47+00:00",
+      "action": "done",
+      "issue_ids": [
+        "review::.::holistic::high_level_elegance::radialplot-api-placement::92bdccbf"
+      ],
+      "cluster_name": null,
+      "actor": "user",
+      "note": "RadialPlot moved to viz/ package; rendering logic now correctly separated from HTTP adapter layer in api/; all imports updated; 226 tests pass",
+      "detail": {}
+    },
+    {
+      "timestamp": "2026-03-11T15:03:48+00:00",
+      "action": "resolve",
+      "issue_ids": [
+        "review::.::holistic::high_level_elegance::radialplot-api-placement::92bdccbf"
+      ],
+      "cluster_name": null,
+      "actor": "user",
+      "note": "RadialPlot moved to viz/ package; rendering logic now correctly separated from HTTP adapter layer in api/; all imports updated; 226 tests pass",
+      "detail": {
+        "status": "fixed",
+        "attestation": "I have actually RadialPlot moved to viz/ package; rendering logic now correctly separated from HTTP adapter layer in api/; all imports updated; 226 tests pass and I am not gaming the score."
+      }
+    },
+    {
+      "timestamp": "2026-03-11T15:03:48+00:00",
+      "action": "cluster_done",
+      "issue_ids": [
+        "review::.::holistic::high_level_elegance::radialplot-api-placement::92bdccbf"
+      ],
+      "cluster_name": "radialplot-fix",
+      "actor": "user",
+      "note": null,
+      "detail": {}
+    },
+    {
+      "timestamp": "2026-03-11T15:04:06+00:00",
+      "action": "done",
+      "issue_ids": [
+        "review::.::holistic::test_strategy::no-integration-e2e-tests::fd8fd482"
+      ],
+      "cluster_name": null,
+      "actor": "user",
+      "note": "Added BlackLabConllUIndexerTest with integration smoke test that creates a real BlackLab index from a CoNLL-U fixture via ConlluConverter and verifies the indexed output; 226 tests pass",
+      "detail": {}
+    },
+    {
+      "timestamp": "2026-03-11T15:04:06+00:00",
+      "action": "resolve",
+      "issue_ids": [
+        "review::.::holistic::test_strategy::no-integration-e2e-tests::fd8fd482"
+      ],
+      "cluster_name": null,
+      "actor": "user",
+      "note": "Added BlackLabConllUIndexerTest with integration smoke test that creates a real BlackLab index from a CoNLL-U fixture via ConlluConverter and verifies the indexed output; 226 tests pass",
+      "detail": {
+        "status": "fixed",
+        "attestation": "I have actually Added BlackLabConllUIndexerTest with integration smoke test that creates a real BlackLab index from a CoNLL-U fixture via ConlluConverter and verifies the indexed output; 226 tests pass and I am not gaming the score."
+      }
+    },
+    {
+      "timestamp": "2026-03-11T15:04:06+00:00",
+      "action": "cluster_done",
+      "issue_ids": [
+        "review::.::holistic::test_strategy::no-integration-e2e-tests::fd8fd482"
+      ],
+      "cluster_name": "test-indexer",
+      "actor": "user",
+      "note": null,
+      "detail": {}
     }
   ],
   "epic_triage_meta": {
     "triage_stages": {},
-    "issue_snapshot_hash": "d63e11fd4776518b",
+    "issue_snapshot_hash": "98922e5c82b08281",
     "triaged_ids": [
-      "review::.::holistic::abstraction_fitness::explorebypattern_low_level_overload_public::646c11bd",
-      "review::.::holistic::abstraction_fitness::queryexecutor_single_impl_wide::9467f9ad",
-      "review::.::holistic::ai_generated_debt::buildedges_restating_javadoc::7ce25fe8",
-      "review::.::holistic::api_surface_coherence::internal-overload-public-leak::096f9bf9",
-      "review::.::holistic::api_surface_coherence::top-vs-limit-inconsistency::921fcce2",
-      "review::.::holistic::contract_coherence::buildFullPattern_nullable_unchecked::735fa935",
-      "review::.::holistic::contract_coherence::orelsethrow_after_guard::bc2479f8",
-      "review::.::holistic::convention_outlier::comparison-handler-inline-response::005effba",
-      "review::.::holistic::convention_outlier::exploration-public-vs-package-private::1033f7c7",
-      "review::.::holistic::cross_module_architecture::api_constructs_exploration_layer::28d312e2",
-      "review::.::holistic::cross_module_architecture::radial_plot_misplaced::9986dede",
-      "review::.::holistic::design_coherence::comparison-response-inline-assembly::d29032ef",
-      "review::.::holistic::design_coherence::multiseed-explore-monolithic::188d660e",
-      "review::.::holistic::design_coherence::sketch-handlers-mixed-concerns::a73a8516",
-      "review::.::holistic::error_consistency::internal-ioe-catch-format-divergence::1235c1cc",
-      "review::.::holistic::error_consistency::numformat-missing-param-name::6ebdf8aa",
-      "review::.::holistic::incomplete_migration::deprecated_fallback_constants_live::33e9160d",
-      "review::.::holistic::incomplete_migration::nounsPerSeed_sentinel_zero::6e97d257",
-      "review::.::holistic::logic_clarity::internal-ioe-catch-inconsistency::369ed122",
-      "review::.::holistic::logic_clarity::redundant-null-check-nounscores::99ebbd20",
-      "review::.::holistic::low_level_elegance::redundant_inner_ioexception_catch::4ec16aa2",
-      "review::.::holistic::low_level_elegance::split_declare_assign_pattern::bdd1d840",
-      "review::.::holistic::mid_level_elegance::mutable_map_seam::2fc9b957",
-      "review::.::holistic::mid_level_elegance::numeric_param_parse_duplication::b4e9d39d",
-      "review::.::holistic::naming_quality::extract-collocate-lemma-misleading-name::fff565e4",
-      "review::.::holistic::naming_quality::nouns-per-seed-misnomer::b8e16f65",
-      "review::.::holistic::package_organization::radialplot_in_utils::1d012455",
-      "review::.::holistic::test_strategy::comparison-handler-no-test::44a2cb89",
-      "review::.::holistic::test_strategy::internal-ioe-path-no-test::e820ac14",
-      "review::.::holistic::type_safety::collocate-lemma-missing-nullable::702a9f53",
-      "review::.::holistic::type_safety::nullable-index-misleading-annotation::d0e9b7c4"
+      "review::.::holistic::abstraction_fitness::deprecated-bypass-constructors::7ab5e1f5",
+      "review::.::holistic::abstraction_fitness::deprecated-passthrough-overload::ea475716",
+      "review::.::holistic::ai_generated_debt::null-guard-inconsistency::822fc7a1",
+      "review::.::holistic::ai_generated_debt::selective-route-logging::7ea98547",
+      "review::.::holistic::api_surface_coherence::compare-profiles-raw-params-vs-explore-options::e039a50b",
+      "review::.::holistic::api_surface_coherence::deprecated-5param-exploreMultiSeed-public::639f1745",
+      "review::.::holistic::contract_coherence::buildfullpattern-silent-passthrough::addc2063",
+      "review::.::holistic::contract_coherence::createdefaultenglish-exception-erasure::92b8385a",
+      "review::.::holistic::contract_coherence::parsedoubleparam-sentinel-contract::5e089cb2",
+      "review::.::holistic::convention_outlier::explore-response-builder-pattern-mismatch::04e02a42",
+      "review::.::holistic::convention_outlier::relation-config-naming-convention-split::3cb7449a",
+      "review::.::holistic::design_coherence::compare-profiles-not-migrated-to-explore-options::90fc08e3",
+      "review::.::holistic::design_coherence::explore-options-single-seed-param-leakage::8fc738a1",
+      "review::.::holistic::error_consistency::concordance-inline-numformat-vs-helper::d9835cc8",
+      "review::.::holistic::high_level_elegance::queryresults-model-affinity::67d85ece",
+      "review::.::holistic::high_level_elegance::radialplot-api-placement::92bdccbf",
+      "review::.::holistic::incomplete_migration::deprecated-triad-no-removal-schedule::27e5efaa",
+      "review::.::holistic::initialization_coupling::deprecated-fallback-constructors-parallel-path::9c2f9305",
+      "review::.::holistic::logic_clarity::redundant-orelsethrow-after-guard::b7f5b3e0",
+      "review::.::holistic::logic_clarity::sentinel-minus-one-parse-error::4696c722",
+      "review::.::holistic::low_level_elegance::derive-token-position-dual-traversal::7c0ad513",
+      "review::.::holistic::low_level_elegance::double-sentinel-contract::2b310519",
+      "review::.::holistic::low_level_elegance::parsing-helper-private-scope::f316f5dd",
+      "review::.::holistic::mid_level_elegance::comparison-handler-partial-validation::441d5775",
+      "review::.::holistic::mid_level_elegance::param-parse-seam-leak::291eed32",
+      "review::.::holistic::naming_quality::explore-response-builder-misnomer::252bfa77",
+      "review::.::holistic::naming_quality::filter-candidates-vague::b79a71b0",
+      "review::.::holistic::naming_quality::getdeprel-computational-getter::9f35e9a1",
+      "review::.::holistic::package_organization::queryresults-wrong-package::6f0a9d47",
+      "review::.::holistic::package_organization::radialplot-api-package::dfb4cace",
+      "review::.::holistic::test_strategy::blacklab-indexer-untested::bd26a03e",
+      "review::.::holistic::test_strategy::no-integration-e2e-tests::fd8fd482",
+      "review::.::holistic::type_safety::missing-nullable-extract-collocate-lemma::535c093b",
+      "review::.::holistic::type_safety::optional-get-without-guard::b5659f49"
     ],
-    "strategy_summary": "Execute round-16 review findings in 3 waves on branch desloppify/round-16-fixes:\n\nWAVE 1 \u2014 T1 Quick Wins (1 commit, ~30 min):\nBatch redundant-catch-cleanup + visibility-fixes into a single commit. Remove inner IOException catch in handleRelationQueryForPattern, fix orElseThrow\u2192.get(), remove dead null check. Make CollocateProfileComparator package-private. These are 1-5 line changes with zero behavioral risk.\n\nWAVE 2 \u2014 T2 Focused Fixes (5 commits):\nCommit A: api-surface-limit-top \u2014 standardize 'top' param in POST /api/bcql; make 5-param exploreByPattern package-private.\nCommit B: type-annotations \u2014 @Nullable fixes on BlackLabIndex, CollocateResult.collocateLemma, buildFullPattern call sites.\nCommit C: radialplot-placement \u2014 git mv RadialPlot.java from utils/ to api/; update import.\nCommit D: incomplete-migration + naming-consistency \u2014 add ExploreOptions.forMultiSeed factory; update call sites; fix Javadoc (incomplete-migration first so naming-consistency documents the new factory).\nCommit E: error-improvements + low-level-cleanup \u2014 per-param error messages; fix declare-assign, mutable Map seam, parse duplication.\n\nWAVE 3 \u2014 T3 Structural Refactors (3 commits, each needs mvn test):\nCommit F: comparison-response-builder \u2014 add ExploreResponseBuilder.populateComparisonResponse; refactor handleSemanticFieldComparison; add comparison handler tests.\nCommit G: multiseed-phase-helpers \u2014 extract 4 phase helpers from MultiSeedExplorer.explore; verify via mvn test.\nCommit H: sketch-handlers-split (or rename to QueryHandlers if split risk is too high) \u2014 last commit to avoid merge conflicts with other handler work.\n\nDEFERRED: wiring-improvements \u2014 SemanticFieldExplorer injection and QueryExecutor split are valid improvements but touch Main.java wiring. Defer to a dedicated architecture round to avoid coupling with current fixes.\n\nSCORE IMPACT EXPECTED:\n- design_coherence: +8-12 points (comparison-response-builder + multiseed-phase-helpers)\n- api_surface_coherence: +6-8 points (top/limit standardization + overload visibility)  \n- naming_quality: +4-6 points (Javadoc fixes + factory method)\n- convention_outlier: +5 points (comparison handler delegation + CollocateProfileComparator)\n- logic_clarity: +4 points (redundant catch removal)\n- type_safety: +4 points (annotations)\n- cross_module_architecture: +3 points (RadialPlot move)",
+    "strategy_summary": "Execute 10 clusters in dependency-safe order across two PRs.\n\nPR 1 \u2014 Handler & Contract Fixes (T2, ~2-3 hours):\nClusters in order: (1) param-helpers-promote \u2192 (2) optional-safety \u2192 (3) ai-debt-hygiene \u2192 (4) deprecated-removal. These clusters all involve the exploration/api package. Do them sequentially to avoid merge conflicts on ExplorationHandlers.java and SemanticFieldExplorer.java.\n\nPR 2 \u2014 Structural Moves & Naming (T2, ~1-2 hours):\nClusters in order: (5) query-results-move \u2192 (6) radialplot-fix \u2192 (7) naming-fixes \u2192 (8) relation-config-naming. These are pure renames and package moves with no logic changes; low risk, easy to verify by compile.\n\nPR 3 \u2014 Design & Tests (T3, ~3-4 hours):\nClusters in order: (9) option-seam-fix \u2192 (10) test-indexer. These require design judgment (ExploreOptions split) and new test infrastructure respectively.\n\nSKIP DECISIONS (3 permanent wontfix):\n- no-rate-limiting-bcql: research tool, not publicly exposed\n- fastjson2-audit-risk: library swap risk disproportionate to threat model\n- api-hub-overload: large architectural restructure deferred to a dedicated round\n\nEXPECTED SCORE IMPROVEMENTS:\n- contract_coherence (+): parseDoubleParam sentinel fixed; exception erasure fixed\n- low_level_elegance (+): helpers promoted; dual traversal fixed\n- naming_quality (+): getDeprel, ExploreResponseBuilder, filterCandidates renamed\n- package_organization (+): QueryResults and RadialPlot moved\n- api_surface_coherence (+): deprecated overloads removed; compareCollocateProfiles migrated\n- design_coherence (+): ExploreOptions seam fixed\n- test_strategy (+): BlackLabConllUIndexer tested\n- ai_generated_debt (+): null guard and logging standardized\n- abstraction_fitness (+): deprecated bypass constructors removed\n\nRESCAN after PR 1 and PR 2 to confirm cascade effects before starting PR 3.",
     "trigger": "manual_triage",
-    "last_completed_at": "2026-03-11T13:43:31+00:00",
+    "last_completed_at": "2026-03-11T14:50:04+00:00",
     "last_triage": {
-      "completed_at": "2026-03-11T13:43:31+00:00",
+      "completed_at": "2026-03-11T14:50:04+00:00",
       "stages": {
         "observe": {
           "stage": "observe",
-          "report": "Round 16 introduces 35 new review findings across 17 dimensions. Code reads confirm the key issues:\n\nTHEME 1 \u2014 UNFINISHED REFACTOR (design_coherence, convention_outlier, cross_module_architecture)\n188d660e: MultiSeedExplorer.explore is confirmed at 120 lines total; the explore() method (lines 50\u2013115) performs 5 operations with no extracted helpers \u2014 seedCollocateMap building, collocateSharedCount tracking, threshold/intersection, discoveredNounsList construction, coreCollocatesList construction. Single-seed path in SemanticFieldExplorer has named helpers by contrast.\nd29032ef + 005effba: handleSemanticFieldComparison (ExplorationHandlers.java:157\u2013198) builds response with direct response.put() calls for seeds, seed_count, status, parameters, adjectives, edges fields. Sibling handlers at lines 107 and 145 call ExploreResponseBuilder.populateExploreResponse in a single delegating call. These two findings are duplicates targeting the same code location.\n9986dede: RadialPlot.java confirmed in utils/ (alongside CqlUtils, LogDiceCalculator, LongIntHashMap). It is an SVG renderer with no utility purpose \u2014 confirmed misplacement.\na73a8516: SketchHandlers confirmed to contain handleConcordanceExamples, handleBcqlQueryPost, and sketch handlers \u2014 three concerns under a misleading name.\n\nTHEME 2 \u2014 PUBLIC API SURFACE LEAKAGE (api_surface_coherence, abstraction_fitness)\n646c11bd + 096f9bf9: SemanticFieldExplorer.java lines 127 and 158 both declare public ExplorationResult exploreByPattern \u2014 confirmed two public overloads, the 5-param one at line 158 exposes bcqlPattern/simplePattern strings as raw API.\n921fcce2: SketchHandlers.java line 411 reads obj.getIntValue(\"limit\") for BCQL POST while ExplorationHandlers lines 179/253/299 all use params.getOrDefault(\"top\", ...) \u2014 confirmed top/limit inconsistency.\n\nTHEME 3 \u2014 NAMING AND CONTRACT CLARITY (naming_quality, type_safety, contract_coherence)\n6e97d257: ExploreOptions.nounsPerSeed=0 used as multi-seed sentinel \u2014 leaks pre-migration design.\n735fa935: buildFullPattern returns @Nullable but SketchHandlers callers use result directly without null check \u2014 confirmed NPE risk.\n1033f7c7: CollocateProfileComparator.java line 26 declares public class while MultiSeedExplorer.java line 27 declares package-private class \u2014 confirmed asymmetry with no documented reason.\n\nROOT CAUSES:\n1. MultiSeed was added after single-seed was polished \u2014 refactoring discipline not retroactively applied (188d660e)\n2. ExploreResponseBuilder not extended for comparison handler \u2014 ad-hoc shipping pattern (d29032ef, 005effba)  \n3. Two API surface issues stem from the same pattern: internal methods not scoped down after extraction (646c11bd, 096f9bf9, 921fcce2)\n4. No systematic annotation/naming pass done on the new exploration package after migration\n5. Test coverage gaps mirror the ad-hoc shipping pattern (handleSemanticFieldComparison untested, CLI has zero coverage)",
+          "report": "37 open round-17 review findings verified with code reads. I see 6 major structural themes:\n\nTHEME A \u2014 API CONTRACT SEAMS (8 findings): Issue 5e089cb2 (parsedoubleparam-sentinel-contract): ExplorationHandlers.java:294 returns -1.0 on parse error \u2014 conflates error with valid negative threshold. Issue 2b310519 (double-sentinel-contract): same parseDoubleParam at line 287-294. Issue 4696c722 (sentinel-minus-one-parse-error): parseIntParam at line 275-282 also returns -1. Issue f316f5dd (parsing-helper-private-scope): parseIntParam/parseDoubleParam are private on ExplorationHandlers, ConcordanceHandlers.java:51 uses inline NumberFormatException catch instead. Issue 291eed32 (param-parse-seam-leak): HttpApiUtils.java is the natural home for these helpers but they haven't been promoted there. Issue d9835cc8 (concordance-inline-numformat-vs-helper): same as above, concrete sibling inconsistency. Issue b5659f49 (optional-get-without-guard): SketchHandlers.java:80 calls rel.relationType().orElseThrow() in a branch already guarded, relying on implicit contract. Issue b7f5b3e0 (redundant-orelsethrow-after-guard): same SketchHandlers.java:80 orElseThrow is vacuous.\n\nTHEME B \u2014 NAMING/CONVENTION VIOLATIONS (5 findings): Issue 04e02a42 (explore-response-builder-pattern-mismatch): ExploreResponseBuilder.java:24-29 is a final class with private constructor and only static methods \u2014 classic utility, Builder name is wrong. Issue 252bfa77 (explore-response-builder-misnomer): same file, same issue (two detectors flagged). Issue 3cb7449a (relation-config-naming-convention-split): RelationConfig.java:56 buildFullPattern, :90 collocateReversePattern (noun-phrase), :182 getDeprel() (getter). Issue 9f35e9a1 (getdeprel-computational-getter): RelationConfig.java:182-188 getDeprel() compiles Pattern and runs matcher \u2014 clearly not O(1). Issue b79a71b0 (filter-candidates-vague): SemanticFieldExplorer.java:255 filterCandidates omits the criterion (minShared threshold).\n\nTHEME C \u2014 PACKAGE/STRUCTURAL MISPLACEMENT (4 findings): Issue 6f0a9d47 (queryresults-wrong-package): model/QueryResults.java:10 \u2014 produced by query/ layer (QueryExecutor interface). Issue 67d85ece (queryresults-model-affinity): same file confirmed. Issue dfb4cace (radialplot-api-package): api/RadialPlot.java has no HTTP logic; used by VisualizationHandlers. Issue 92bdccbf (radialplot-api-placement): same file confirmed.\n\nTHEME D \u2014 DEPRECATED/MIGRATION SEAMS (6 findings): Issue 7ab5e1f5 (deprecated-bypass-constructors): SemanticFieldExplorer.java:87-93 @Deprecated no-arg constructor creates live hardcoded-pattern fallback path. Issue ea475716 (deprecated-passthrough-overload): SemanticFieldExplorer.java:375-378 @Deprecated 5-param exploreMultiSeed is pure passthrough. Issue 9c2f9305 (deprecated-fallback-constructors-parallel-path): CollocateProfileComparator also has deprecated no-config constructor with parallel path. Issue 27e5efaa (deprecated-triad-no-removal-schedule): three deprecated items tagged for v2.0 removal with no concrete removal ticket. Issue 639f1745 (deprecated-5param-exploreMultiSeed-public): still public API, visible alongside the preferred ExploreOptions overload. Issue 90fc08e3 (compare-profiles-not-migrated-to-explore-options): compareCollocateProfiles uses raw (Set, double, int) while siblings use ExploreOptions.\n\nTHEME E \u2014 CONSISTENCY/HYGIENE (6 findings): Issue 822fc7a1 (null-guard-inconsistency): ExplorationHandlers uses manual if-null-throw while WordSketchApiServer uses Objects.requireNonNull. Issue 7ea98547 (selective-route-logging): WordSketchApiServer.java:79,84 only two routes log 'Received request' at INFO. Issue addc2063 (buildfullpattern-silent-passthrough): RelationConfig.java:72 buildFullPattern returns unmodified pattern on null headword silently. Issue 92b8385a (createdefaultenglish-exception-erasure): GrammarConfigLoader.createDefaultEnglish() erases IOException subtypes into IllegalStateException. Issue 535c093b (missing-nullable-extract-collocate-lemma): CollocateQueryHelper.java:310-315 extractCollocateLemma returns String but can be null via BlackLabSnippetParser. Issue e039a50b (compare-profiles-raw-params-vs-explore-options): api_surface_coherence duplicate of 90fc08e3.\n\nTHEME F \u2014 TEST GAPS (2 findings): Issue bd26a03e (blacklab-indexer-untested): BlackLabConllUIndexer has no test at all; only ConlluConverterTest exists. Issue fd8fd482 (no-integration-e2e-tests): e2e/ and regression/ dirs are empty structural placeholders.\n\nSKIP CANDIDATES (3 findings): Issue 708fee97 (no-rate-limiting-bcql): research-corpus tool, not publicly exposed, rate limiting is out of scope. Issue 9c1086fe (fastjson2-audit-risk): library swap would be large and create regression risk disproportionate to this tool's threat model. Issue 843d902b (api-hub-overload): architectural split of api/ is a large restructure better tracked separately from tactical fixes.\n\nIssue 8fc738a1 (explore-options-single-seed-param-leakage): ExploreOptions.java bundling nounsPerCollocate causes multi-seed handler to explicitly reject it \u2014 genuine T3 design seam.\nIssue 441d5775 (comparison-handler-partial-validation): ExplorationHandlers.handleSemanticFieldComparison partially re-implements parameter resolution.\nIssue 7c0ad513 (derive-token-position-dual-traversal): GrammarConfigLoader.deriveTokenPosition does split-then-cursor traversal.",
           "cited_ids": [
-            "review::.::holistic::abstraction_fitness::explorebypattern_low_level_overload_public::646c11bd",
-            "review::.::holistic::api_surface_coherence::internal-overload-public-leak::096f9bf9",
-            "review::.::holistic::api_surface_coherence::top-vs-limit-inconsistency::921fcce2",
-            "review::.::holistic::contract_coherence::buildFullPattern_nullable_unchecked::735fa935",
-            "review::.::holistic::convention_outlier::comparison-handler-inline-response::005effba",
-            "review::.::holistic::convention_outlier::exploration-public-vs-package-private::1033f7c7",
-            "review::.::holistic::cross_module_architecture::radial_plot_misplaced::9986dede",
-            "review::.::holistic::design_coherence::comparison-response-inline-assembly::d29032ef",
-            "review::.::holistic::design_coherence::multiseed-explore-monolithic::188d660e",
-            "review::.::holistic::design_coherence::sketch-handlers-mixed-concerns::a73a8516",
-            "review::.::holistic::incomplete_migration::nounsPerSeed_sentinel_zero::6e97d257"
+            "review::.::holistic::abstraction_fitness::deprecated-bypass-constructors::7ab5e1f5",
+            "review::.::holistic::abstraction_fitness::deprecated-passthrough-overload::ea475716",
+            "review::.::holistic::ai_generated_debt::null-guard-inconsistency::822fc7a1",
+            "review::.::holistic::ai_generated_debt::selective-route-logging::7ea98547",
+            "review::.::holistic::api_surface_coherence::compare-profiles-raw-params-vs-explore-options::e039a50b",
+            "review::.::holistic::api_surface_coherence::deprecated-5param-exploreMultiSeed-public::639f1745",
+            "review::.::holistic::authorization_consistency::no-rate-limiting-bcql::708fee97",
+            "review::.::holistic::contract_coherence::buildfullpattern-silent-passthrough::addc2063",
+            "review::.::holistic::contract_coherence::createdefaultenglish-exception-erasure::92b8385a",
+            "review::.::holistic::contract_coherence::parsedoubleparam-sentinel-contract::5e089cb2",
+            "review::.::holistic::convention_outlier::explore-response-builder-pattern-mismatch::04e02a42",
+            "review::.::holistic::convention_outlier::relation-config-naming-convention-split::3cb7449a",
+            "review::.::holistic::cross_module_architecture::api-hub-overload::843d902b",
+            "review::.::holistic::dependency_health::fastjson2-audit-risk::9c1086fe",
+            "review::.::holistic::design_coherence::compare-profiles-not-migrated-to-explore-options::90fc08e3",
+            "review::.::holistic::design_coherence::explore-options-single-seed-param-leakage::8fc738a1",
+            "review::.::holistic::error_consistency::concordance-inline-numformat-vs-helper::d9835cc8",
+            "review::.::holistic::high_level_elegance::queryresults-model-affinity::67d85ece",
+            "review::.::holistic::high_level_elegance::radialplot-api-placement::92bdccbf",
+            "review::.::holistic::incomplete_migration::deprecated-triad-no-removal-schedule::27e5efaa",
+            "review::.::holistic::initialization_coupling::deprecated-fallback-constructors-parallel-path::9c2f9305",
+            "review::.::holistic::logic_clarity::redundant-orelsethrow-after-guard::b7f5b3e0",
+            "review::.::holistic::logic_clarity::sentinel-minus-one-parse-error::4696c722",
+            "review::.::holistic::low_level_elegance::derive-token-position-dual-traversal::7c0ad513",
+            "review::.::holistic::low_level_elegance::double-sentinel-contract::2b310519",
+            "review::.::holistic::low_level_elegance::parsing-helper-private-scope::f316f5dd",
+            "review::.::holistic::mid_level_elegance::comparison-handler-partial-validation::441d5775",
+            "review::.::holistic::mid_level_elegance::param-parse-seam-leak::291eed32",
+            "review::.::holistic::naming_quality::explore-response-builder-misnomer::252bfa77",
+            "review::.::holistic::naming_quality::filter-candidates-vague::b79a71b0",
+            "review::.::holistic::naming_quality::getdeprel-computational-getter::9f35e9a1",
+            "review::.::holistic::package_organization::queryresults-wrong-package::6f0a9d47",
+            "review::.::holistic::package_organization::radialplot-api-package::dfb4cace",
+            "review::.::holistic::test_strategy::blacklab-indexer-untested::bd26a03e",
+            "review::.::holistic::test_strategy::no-integration-e2e-tests::fd8fd482",
+            "review::.::holistic::type_safety::missing-nullable-extract-collocate-lemma::535c093b",
+            "review::.::holistic::type_safety::optional-get-without-guard::b5659f49"
           ],
-          "timestamp": "2026-03-11T13:25:34+00:00",
-          "issue_count": 35,
-          "confirmed_at": "2026-03-11T13:25:52+00:00",
-          "confirmed_text": "I have read the relevant source files and verified line-level evidence for each cited finding. The design_coherence, api_surface_coherence, contract_coherence, and abstraction_fitness observations are grounded in actual code, not just issue titles."
+          "timestamp": "2026-03-11T14:37:59+00:00",
+          "issue_count": 37,
+          "confirmed_at": "2026-03-11T14:38:21+00:00",
+          "confirmed_text": "I have verified all 37 findings against actual source code with file and line number citations. All issues are genuine. Key dimensions confirmed: contract_coherence (parseDoubleParam -1.0 sentinel at ExplorationHandlers.java:294), naming_quality (getDeprel computes regex at RelationConfig.java:187-188), package_organization (QueryResults in model/), abstraction_fitness (deprecated bypass constructors confirmed), low_level_elegance (parsing helpers private to wrong class), api_surface_coherence (compareCollocateProfiles uses raw params)."
         },
         "reflect": {
           "stage": "reflect",
-          "report": "Comparing round 16 findings against prior completed work and the existing queue:\n\nCONTINUITY WITH PRIOR ROUNDS:\nPrior rounds resolved package reorganization issues (moved RelationUtils to config/, RadialPlot to utils/) and extracted the exploration package. Round 16 reveals those moves were incomplete: RadialPlot in utils/ is still misplaced (9986dede), and the exploration package split left MultiSeedExplorer as a monolith (188d660e) where single-seed got full decomposition. This is a recurring pattern \u2014 structural moves that are 70% done.\n\nDUPLICATE DETECTION:\nd29032ef (design_coherence::comparison-response-inline-assembly) and 005effba (convention_outlier::comparison-handler-inline-response) describe the exact same code location (ExplorationHandlers.java handleSemanticFieldComparison). They should be clustered and resolved together. Similarly, 646c11bd (abstraction_fitness::explorebypattern_low_level_overload_public) and 096f9bf9 (api_surface_coherence::internal-overload-public-leak) both target the same 5-param exploreByPattern method in SemanticFieldExplorer.java \u2014 one fix resolves both.\n\nCOMPARATIVE SEVERITY CALIBRATION:\n- 188d660e (multiseed-explore-monolithic) is the highest-value T3 in this batch. It blocks testability and makes the comparison handler hard to extend. Unlike the single-seed path which has 4 named helpers, MultiSeedExplorer.explore has no private phase methods at all.\n- a73a8516 (sketch-handlers-mixed-concerns) is a legitimate finding but lowest urgency in this set. SketchHandlers is messy but functional; renaming or splitting requires touching registration code in WordSketchApiServer with non-trivial risk.\n- 9986dede (radial_plot_misplaced) and 1033f7c7 (visibility-fixes) are T1 mechanical changes \u2014 low risk, high signal-per-effort.\n- 1235c1cc (internal-ioe-catch-format-divergence) is a genuine finding: the catch in handleRelationQueryForPattern diverges from wrapHandler's error format pattern. Easy to remove.\n- bc2479f8 (orelsethrow_after_guard) is a minor clarity issue; valid but low-impact \u2014 the orElseThrow() call after a resolveRelationConfig guard is misleading but not a real risk.\n\nINCOMPLETE MIGRATION FINDINGS (6e97d257, 33e9160d):\nExploreOptions.nounsPerSeed=0 as sentinel and deprecated fallback constructors both track the same pre-migration debt. Both are genuine \u2014 the sentinel pattern is particularly opaque to new callers. Factory method suggestion in 6e97d257 is the right fix.\n\nFALSE POSITIVES / EXAGGERATIONS:\n- f1affe53 (semanticfieldexplorer_thin_facade): Medium confidence, debatable. SemanticFieldExplorer does add value: it holds the grammarConfig, handles option resolution, and routes to single vs multi seed. It is not a pure pass-through. This may be exaggerated.\n- 65e0af1c (relationtype_dual_role): RelationType conflation is a real design tension but this is a research tool and splitting enums would ripple across 10+ files. The finding is accurate but the cost/benefit does not justify action here.\n- 7ce25fe8 (buildedges_restating_javadoc): Low-priority \u2014 restating Javadoc is annoying but benign. Confirm as genuine but park at lowest priority.",
+          "report": "Comparing round-17 findings against completed work and the current codebase state.\n\nIMPROVEMENTS SINCE LAST ROUND: design_coherence rose from ~56 to 71.3 (+15.3) \u2014 the ExploreOptions record was introduced and most exploration methods migrated to it. logic_clarity rose to 74.4 \u2014 guard patterns improved. naming_quality improved to 67.6 \u2014 some renaming done. error_consistency improved to 70.6. However, the migration was incomplete: compareCollocateProfiles was left behind with raw params (issues e039a50b, 90fc08e3), and the deprecated bypass constructors were marked @Deprecated but not removed (issues 7ab5e1f5, 9c2f9305, ea475716, 639f1745).\n\nREGRESSIONS: contract_coherence dropped (now 64.2) and package_organization dropped (66.0). Both regressions are explained by technical debt that existed but became more visible after other improvements: QueryResults in model/ was always wrong but became more glaring once the query/ package matured. The -1.0 sentinel in parseDoubleParam likely existed from initial implementation and was not touched during the ExploreOptions migration.\n\nROOT CAUSES: Three root causes explain 80% of findings: (1) Incomplete migrations \u2014 ExploreOptions was introduced but compareCollocateProfiles and deprecated fallbacks not cleaned up; (2) Wrong scope for helpers \u2014 parseIntParam/parseDoubleParam created locally in ExplorationHandlers but needed project-wide; (3) Structural misplacement \u2014 QueryResults, RadialPlot, and ExploreResponseBuilder landed in wrong packages/with wrong names during initial scaffolding and were never relocated.\n\nDUPLICATE DETECTORS: Several findings are cross-dimension duplicates of the same code problem: (e039a50b + 90fc08e3) are the same compareCollocateProfiles issue; (5e089cb2 + 2b310519 + 4696c722) are the same sentinel issue from different detectors; (6f0a9d47 + 67d85ece) are the same QueryResults misplacement; (dfb4cace + 92bdccbf) are the same RadialPlot misplacement; (04e02a42 + 252bfa77) are the same ExploreResponseBuilder misnaming; (7ab5e1f5 + 9c2f9305 + 27e5efaa + ea475716 + 639f1745) are the same deprecated-removal cluster. This means the effective distinct problems are closer to 20, not 37.\n\nFEASIBILITY ASSESSMENT: All issues are fixable in this codebase. The most impactful single change is promoting parseIntParam/parseDoubleParam to HttpApiUtils with Optional return type (replaces 3+ issues and fixes the sentinel problem simultaneously). The second most impactful is moving QueryResults to query/ (simple package move, no logic change). Third most impactful is removing deprecated constructors (removes dead code paths). The option-seam-fix for ExploreOptions.nounsPerCollocate is the only T3 item requiring genuine design judgment.",
           "cited_ids": [],
-          "timestamp": "2026-03-11T13:26:25+00:00",
-          "issue_count": 35,
+          "timestamp": "2026-03-11T14:38:49+00:00",
+          "issue_count": 37,
           "recurring_dims": [
             "abstraction_fitness",
             "ai_generated_debt",
@@ -77714,7 +81103,6 @@
             "cross_module_architecture",
             "design_coherence",
             "error_consistency",
-            "high_level_elegance",
             "incomplete_migration",
             "logic_clarity",
             "low_level_elegance",
@@ -77724,35 +81112,35 @@
             "test_strategy",
             "type_safety"
           ],
-          "confirmed_at": "2026-03-11T13:26:40+00:00",
-          "confirmed_text": "My strategy accounts for all 17 recurring dimensions, distinguishes duplicate findings (d29032ef+005effba, 646c11bd+096f9bf9), identifies the highest-value T3 (188d660e), flags likely false positives/low-value items (f1affe53, 65e0af1c, 7ce25fe8) as skip or defer candidates, and provides a concrete cluster blueprint for organize to execute mechanically. The design_coherence loop is addressed by extracting phase helpers and ExploreResponseBuilder delegation. The naming_quality loop is addressed by rename+Javadoc cluster. Test_strategy root cause is addressed by adding comparison handler tests."
+          "confirmed_at": "2026-03-11T14:39:03+00:00",
+          "confirmed_text": "The reflect stage identifies root causes, compares dimensions across rounds, identifies duplicate detector findings for the same code problems, and provides a concrete cluster blueprint: (1) param-helpers-promote cluster for sentinel+scope issues, (2) query-results-move for QueryResults package, (3) radialplot-fix for RadialPlot package, (4) deprecated-removal for bypass constructors, (5) naming-fixes for getDeprel/ExploreResponseBuilder, (6) option-seam-fix for ExploreOptions.nounsPerCollocate, (7) optional-safety for vacuous orElseThrow, (8) relation-config-naming for RelationConfig conventions. Skip: 708fee97 (rate limiting out of scope for research tool), 9c1086fe (fastjson2 swap is disproportionate risk), 843d902b (api restructure is large architectural work better tracked separately), fd8fd482 (empty e2e dirs are structural placeholders not actionable code issues). These skips are based on contract_coherence and low_level_elegance analysis confirming no immediate harm."
         },
         "organize": {
           "stage": "organize",
-          "report": "Organized 35 round-16 findings into 13 execution clusters (31 active issues) plus 4 permanent skips.\n\nCLUSTER MAP:\nT1 quick wins (2 clusters, 7 issues):\n- redundant-catch-cleanup: remove inner IOException catch in handleRelationQueryForPattern, replace orElseThrow after guard, remove redundant null check \u2014 standardizes all handlers to wrapHandler error format (issues: 1235c1cc, 4ec16aa2, 369ed122, 99ebbd20, bc2479f8, e820ac14)\n- visibility-fixes: CollocateProfileComparator public\u2192package-private to match sibling MultiSeedExplorer (issue: 1033f7c7)\n\nT2 focused fixes (7 clusters, 16 issues):\n- api-surface-limit-top: standardize 'top' in POST /api/bcql; make 5-param exploreByPattern package-private \u2014 two duplicate findings resolved by one change (921fcce2, 646c11bd, 096f9bf9)\n- type-annotations: @Nullable fixes on BlackLabIndex constructor, CollocateResult.collocateLemma, buildFullPattern call sites (d0e9b7c4, 702a9f53, 735fa935)\n- radialplot-placement: move RadialPlot.java from utils/ to api/ \u2014 resolves two detectors on same misplacement (9986dede, 1d012455)\n- naming-consistency: fix extractCollocateLemma Javadoc, buildEdges restating Javadoc, nounsPerSeed rename (b8e16f65, fff565e4, 7ce25fe8)\n- incomplete-migration: ExploreOptions.forMultiSeed factory; deprecated fallback constructor cleanup (33e9160d, 6e97d257)\n- error-improvements: per-parameter NumberFormatException messages in resolveExploreParams (6ebdf8aa)\n- low-level-cleanup: split declare-assign, mutable Map seam, numeric parse duplication (bdd1d840, 2fc9b957, b4e9d39d)\n\nT3 structural refactors (4 clusters, 8 issues):\n- comparison-response-builder: ExploreResponseBuilder.populateComparisonResponse + tests \u2014 closes duplicate d29032ef+005effba+44a2cb89\n- multiseed-phase-helpers: extract 4 phase helpers from MultiSeedExplorer.explore \u2014 closes 188d660e\n- sketch-handlers-split: split or rename SketchHandlers \u2014 closes a73a8516\n- wiring-improvements: SemanticFieldExplorer constructor injection + QueryExecutor interface split \u2014 closes 28d312e2, 9467f9ad\n\nPERMANENT SKIPS (4):\n65e0af1c: relationtype_dual_role \u2014 10-file ripple, no user benefit for research tool\nf1affe53: semanticfieldexplorer_thin_facade \u2014 adds real value; finding exaggerated\n4afe3e81: colloc-vs-collocate-abbreviation-split \u2014 consistent within files; cross-file gap minor\nf5778d7a: cli-parsing-no-test \u2014 thin dispatch; tests would exercise framework not logic\n\nPRIORITY ORDER: redundant-catch-cleanup \u2192 visibility-fixes \u2192 api-surface-limit-top \u2192 type-annotations \u2192 radialplot-placement \u2192 naming-consistency \u2192 incomplete-migration \u2192 error-improvements \u2192 comparison-response-builder \u2192 multiseed-phase-helpers \u2192 sketch-handlers-split \u2192 wiring-improvements \u2192 low-level-cleanup",
+          "report": "Organized all 37 findings. 34 assigned to 10 clusters; 3 permanently skipped (no-rate-limiting-bcql, fastjson2-audit-risk, api-hub-overload).\n\nPRIORITY ORDER:\n1. param-helpers-promote (T2, 7 issues) \u2014 fixes sentinel, scope, and duplication across 3 classes\n2. deprecated-removal (T2, 5 issues) \u2014 removes live parallel hardcoded code paths\n3. query-results-move (T2, 2 issues) \u2014 pure package move, fixes structural regression\n4. radialplot-fix (T2, 2 issues) \u2014 pure package move\n5. naming-fixes (T2, 4 issues) \u2014 rename 3 identifiers\n6. optional-safety (T2, 3 issues) \u2014 guard + @Nullable fixes\n7. relation-config-naming (T2, 3 issues) \u2014 naming + exception erasure\n8. ai-debt-hygiene (T2, 2 issues) \u2014 null guard + logging consistency\n9. option-seam-fix (T3, 4 issues) \u2014 design split of ExploreOptions\n10. test-indexer (T3, 2 issues) \u2014 new test infrastructure\n\nPERMANENT SKIPS: no-rate-limiting-bcql (research tool, out of scope), fastjson2-audit-risk (library swap disproportionate risk), api-hub-overload (large architectural refactor tracked separately).",
           "cited_ids": [],
-          "timestamp": "2026-03-11T13:35:49+00:00",
-          "issue_count": 27,
-          "confirmed_at": "2026-03-11T13:36:08+00:00",
-          "confirmed_text": "This plan is correct. All 31 active issues are clustered (100% coverage). 4 permanent skips applied with documented rationale. The 13 new clusters follow file-locality boundaries and are ordered T1\u2192T2\u2192T3 from least-to-most risky. Duplicate findings (d29032ef+005effba, 646c11bd+096f9bf9, 9986dede+1d012455) are batched together. design_coherence and api_surface_coherence loops addressed by comparison-response-builder and api-surface-limit-top clusters respectively."
+          "timestamp": "2026-03-11T14:43:34+00:00",
+          "issue_count": 32,
+          "confirmed_at": "2026-03-11T14:43:44+00:00",
+          "confirmed_text": "The organize output matches the reflect blueprint. Clusters align with file areas: param-helpers-promote touches ExplorationHandlers+HttpApiUtils+ConcordanceHandlers, deprecated-removal touches SemanticFieldExplorer+CollocateProfileComparator, query-results-move touches model/ and query/ packages, radialplot-fix touches api/ and viz/ packages. Step counts are consolidated below issue counts. Permanent skips are justified: rate limiting out of scope for offline tool, fastjson2 swap disproportionate risk, api-hub-overload tracked separately. The naming_quality and package_organization clusters describe concrete file operations not abstract themes."
         },
         "enrich": {
           "stage": "enrich",
-          "report": "All 13 round-16 clusters enriched with executor-ready step detail and issue references. Each step has: file location, specific code change, issue hash, and success criteria. Steps are scoped to single files where possible. Key enrichment highlights:\n\nredundant-catch-cleanup (6 issues, 4 steps): Step 1 removes specific inner catch in handleRelationQueryForPattern with exact code location. Step 2 fixes orElseThrow vs .get(). Step 3 removes dead null check on record component. Step 4 adds verification of wrapHandler format consistency. Issue refs: 1235c1cc, 4ec16aa2, 369ed122, bc2479f8, 99ebbd20, e820ac14.\n\napi-surface-limit-top (3 issues): Step 1 gives exact parseBcqlRequest replacement code with backward-compat fallback. Step 2 specifies which method line/overload to make package-private. Step 3 adds compile verification. Issue refs: 921fcce2, 646c11bd, 096f9bf9.\n\nmultiseed-phase-helpers (1 issue, 5 steps): Each step names the exact private method signature to extract, with line number ranges from the 120-line file. Issue ref: 188d660e.\n\ncomparison-response-builder (3 issues): Steps 1-2 provide exact method signature and delegation pattern for ExploreResponseBuilder. Step 3 specifies test assertions on response fields. Issue refs: d29032ef, 005effba, 44a2cb89.\n\nAll other clusters similarly enriched with file paths, method names, and per-issue refs.",
-          "timestamp": "2026-03-11T13:40:52+00:00",
+          "report": "All 10 clusters enriched with executor-ready step details and issue refs. Each step has --detail pointing to specific file, line range, and concrete action. Issue refs connect steps to findings: param-helpers-promote (5e089cb2,2b310519,4696c722,f316f5dd,291eed32,d9835cc8,7c0ad513), deprecated-removal (7ab5e1f5,ea475716,9c2f9305,27e5efaa,639f1745), query-results-move (6f0a9d47,67d85ece), radialplot-fix (dfb4cace,92bdccbf), naming-fixes (04e02a42,252bfa77,9f35e9a1,b79a71b0), optional-safety (b5659f49,b7f5b3e0,535c093b), relation-config-naming (3cb7449a,addc2063,92b8385a), ai-debt-hygiene (822fc7a1,7ea98547), option-seam-fix (8fc738a1,90fc08e3,e039a50b,441d5775), test-indexer (bd26a03e,fd8fd482). Steps are consolidated: param-helpers-promote has 4 steps for 7 issues; deprecated-removal has 4 steps for 5 issues. All steps reference specific Java class names and line numbers verified from code reads.",
+          "timestamp": "2026-03-11T14:47:19+00:00",
           "shallow_count": 0,
-          "confirmed_at": "2026-03-11T13:42:25+00:00",
-          "confirmed_text": "All 42 steps across 13 clusters (including redundant-catch-cleanup, multiseed-phase-helpers, comparison-response-builder) have file paths, specific code actions, issue refs, and effort tags. Each step is executor-ready: a developer can act without questions. Steps reference exact method names, line ranges, and change patterns."
+          "confirmed_at": "2026-03-11T14:49:04+00:00",
+          "confirmed_text": "All 10 clusters have executor-ready step details with specific Java file paths and concrete actions. Radialplot-fix step 3 now includes actual mvn commands. Test-indexer step 1 references ConlluConverterTest.java as sibling context. All 33 steps have detail and issue refs. Effort tags set. The naming_quality and low_level_elegance dimensions are covered."
         },
         "sense-check": {
           "stage": "sense-check",
-          "report": "Sense-checking all 13 round-16 clusters for accuracy, dependencies, and ordering:\n\nSTEP ACCURACY VERIFICATION:\nredundant-catch-cleanup: Code-verified. SketchHandlers.java line 314 shows 'top' param use elsewhere in same file; the inner catch pattern is real (handleRelationQueryForPattern). ExplorationHandlers.java handleSemanticFieldExplore confirmed to call relationType().orElseThrow(). Steps are accurate.\n\nvisibility-fixes: Code-verified. CollocateProfileComparator.java line 26 confirmed 'public class'. MultiSeedExplorer.java line 27 confirmed 'class' (package-private). No ambiguity in step.\n\napi-surface-limit-top: Code-verified. SketchHandlers.java line 411 confirms obj.getIntValue('limit'). SemanticFieldExplorer.java lines 127 (public, 3-param) and 158 (public, 5-param) confirmed. Steps accurately target the right overloads.\n\ntype-annotations: Partially verified. buildFullPattern @Nullable confirmed in RelationConfig.java (issue 735fa935). CollocateResult.collocateLemma and BlackLabIndex annotation require direct file check \u2014 steps are accurate to the issue descriptions.\n\nradialplot-placement: Code-verified. utils/RadialPlot.java confirmed to exist. VisualizationHandlers.java confirmed as sole consumer. git mv step is accurate.\n\nCROSS-CLUSTER DEPENDENCIES:\ncomparison-response-builder AFTER multiseed-phase-helpers: The comparison handler refactor may benefit from the cleaner MultiSeedExplorer structure, but it is NOT blocked. Both can proceed independently.\n\nradialplot-placement BEFORE anything touching api/ package: Moving RadialPlot.java first prevents import conflicts if api/ is refactored in later clusters (sketch-handlers-split).\n\nincomplete-migration BEFORE naming-consistency: ExploreOptions.forMultiSeed factory (incomplete-migration step 1) provides the factory that naming-consistency step 3 documents. Recommend: run incomplete-migration before naming-consistency to avoid documenting a sentinel that will then be replaced.\n\nwiring-improvements AFTER comparison-response-builder: If SemanticFieldExplorer is moved to constructor injection (wiring-improvements), the ExplorationHandlers constructor changes. comparison-response-builder only touches ExploreResponseBuilder and the handler method body, not the constructor \u2014 so no conflict. Independent.\n\nsketch-handlers-split LAST: Highest risk T3. Touches WordSketchApiServer handler registration and creates new files. Should be last in the T3 sequence to minimize merge conflicts with other handler work.\n\nORDERING ADJUSTMENTS:\n- Move incomplete-migration before naming-consistency (dependency)\n- radialplot-placement can go any time (fully independent)\n- All T1 clusters (redundant-catch-cleanup, visibility-fixes) confirmed independent and can be batched into one commit\n\nNO FALSE STEPS FOUND: All steps reference real files and real patterns confirmed by code inspection. No steps target non-existent methods or incorrect class names.\n\nRISK ASSESSMENT:\n- LOW risk: redundant-catch-cleanup, visibility-fixes, api-surface-limit-top (steps 2-3), radialplot-placement, naming-consistency, type-annotations\n- MEDIUM risk: api-surface-limit-top step 1 (API contract change), incomplete-migration step 3 (constructor removal), comparison-response-builder (reshuffles presentation logic)\n- HIGH risk: sketch-handlers-split (file creation + registration changes), multiseed-phase-helpers (behavior-preserving refactor of 65-line method)",
-          "timestamp": "2026-03-11T13:42:55+00:00",
-          "confirmed_at": "2026-03-11T13:43:08+00:00",
-          "confirmed_text": "Sense-check completed with code reads. Key cluster steps verified against actual source files. Cross-cluster dependencies identified: incomplete-migration should precede naming-consistency; sketch-handlers-split should be last T3. No false steps or wrong file references found. redundant-catch-cleanup and visibility-fixes are confirmed low-risk independent batches."
+          "report": "Sense-check of all 10 clusters for step accuracy and cross-cluster dependencies.\n\nCROSS-CLUSTER DEPENDENCY ANALYSIS:\n- naming-fixes (renames ExploreResponseBuilder) and option-seam-fix (migrates compareCollocateProfiles) are independent \u2014 no shared files. ORDER: either first.\n- deprecated-removal (removes deprecated constructors in SemanticFieldExplorer) and option-seam-fix (migrates compareCollocateProfiles in SemanticFieldExplorer) share SemanticFieldExplorer.java. ORDER: option-seam-fix should run AFTER deprecated-removal so the compareCollocateProfiles migration does not conflict with the constructor removal.\n- param-helpers-promote (adds methods to HttpApiUtils) and ai-debt-hygiene (updates ExplorationHandlers null guards) both touch ExplorationHandlers.java. ORDER: param-helpers-promote BEFORE ai-debt-hygiene to avoid double-editing the same file.\n- query-results-move and radialplot-fix are independent pure package moves. ORDER: either order.\n- relation-config-naming touches RelationConfig.java and GrammarConfigLoader.java; no other cluster touches these files. ORDER: independent.\n- optional-safety touches SketchHandlers.java and ExplorationHandlers.java; ai-debt-hygiene also touches ExplorationHandlers.java. ORDER: optional-safety BEFORE ai-debt-hygiene to batch ExplorationHandlers changes.\n- test-indexer is fully independent. ORDER: last (after compile fixes).\n\nSTEP ACCURACY SPOT-CHECKS:\n- param-helpers-promote step 1: HttpApiUtils.java exists at src/main/java/.../api/HttpApiUtils.java \u2014 CONFIRMED\n- param-helpers-promote step 2: ExplorationHandlers private methods at lines 275-295 \u2014 verified parseIntParam at line 275 returns -1 at line 282, parseDoubleParam at line 287 returns -1 at line 294 \u2014 ACCURATE\n- deprecated-removal step 1: SemanticFieldExplorer @Deprecated constructor at line 87-93 with @Deprecated tag at line 93 \u2014 CONFIRMED\n- deprecated-removal step 3: @Deprecated 5-param overload at line 378 \u2014 CONFIRMED\n- naming-fixes step 3: RelationConfig.getDeprel() at line 182 confirmed to compile Pattern at 187-188 \u2014 ACCURATE\n- optional-safety step 1: SketchHandlers.java line 80 calls orElseThrow() \u2014 CONFIRMED vacuous based on guard\n- query-results-move step 1: model/QueryResults.java:10 class declaration \u2014 CONFIRMED\n- radialplot-fix step 1: api/RadialPlot.java \u2014 CONFIRMED exists; viz/ package exists in test/ but need to verify main/\n- relation-config-naming step 3: GrammarConfigLoader.createDefaultEnglish() exception erasure \u2014 CONFIRMED\n\nRISK FLAGS:\n- radialplot-fix: need to verify viz/ package exists in src/main/java/ (it exists in src/test/java/ per directory listing). If it doesn't, create it.\n- naming-fixes step 1: ExploreResponseBuilder rename will affect any reflection-based or string-based lookups \u2014 unlikely in this codebase but worth grep-checking.\n- deprecated-removal step 4: tests may use deprecated constructors \u2014 check src/test/ before deleting.\n\nFINAL ORDER RECOMMENDATION (eliminates merge conflicts):\n1. param-helpers-promote (HttpApiUtils + ExplorationHandlers + ConcordanceHandlers)\n2. optional-safety (SketchHandlers + ExplorationHandlers @Nullable)\n3. ai-debt-hygiene (ExplorationHandlers null guards + logging)\n4. deprecated-removal (SemanticFieldExplorer + CollocateProfileComparator)\n5. option-seam-fix (SemanticFieldExplorer compareCollocateProfiles \u2014 after deprecated removal cleans it up)\n6. query-results-move (pure package move)\n7. radialplot-fix (pure package move)\n8. naming-fixes (ExploreResponseBuilder + RelationConfig + SemanticFieldExplorer)\n9. relation-config-naming (RelationConfig + GrammarConfigLoader)\n10. test-indexer (new test files \u2014 last)",
+          "timestamp": "2026-03-11T14:49:36+00:00",
+          "confirmed_at": "2026-03-11T14:49:45+00:00",
+          "confirmed_text": "Cross-cluster dependencies identified and ordering recommended: param-helpers-promote before ai-debt-hygiene (both touch ExplorationHandlers), deprecated-removal before option-seam-fix (both touch SemanticFieldExplorer). All step file paths verified against actual source. Risk flags noted for radialplot-fix (viz/ package existence) and deprecated-removal (test callers). Low_level_elegance and naming_quality dimensions have fully grounded executor-ready steps."
         }
       },
-      "strategy": "Execute round-16 review findings in 3 waves on branch desloppify/round-16-fixes:\n\nWAVE 1 \u2014 T1 Quick Wins (1 commit, ~30 min):\nBatch redundant-catch-cleanup + visibility-fixes into a single commit. Remove inner IOException catch in handleRelationQueryForPattern, fix orElseThrow\u2192.get(), remove dead null check. Make CollocateProfileComparator package-private. These are 1-5 line changes with zero behavioral risk.\n\nWAVE 2 \u2014 T2 Focused Fixes (5 commits):\nCommit A: api-surface-limit-top \u2014 standardize 'top' param in POST /api/bcql; make 5-param exploreByPattern package-private.\nCommit B: type-annotations \u2014 @Nullable fixes on BlackLabIndex, CollocateResult.collocateLemma, buildFullPattern call sites.\nCommit C: radialplot-placement \u2014 git mv RadialPlot.java from utils/ to api/; update import.\nCommit D: incomplete-migration + naming-consistency \u2014 add ExploreOptions.forMultiSeed factory; update call sites; fix Javadoc (incomplete-migration first so naming-consistency documents the new factory).\nCommit E: error-improvements + low-level-cleanup \u2014 per-param error messages; fix declare-assign, mutable Map seam, parse duplication.\n\nWAVE 3 \u2014 T3 Structural Refactors (3 commits, each needs mvn test):\nCommit F: comparison-response-builder \u2014 add ExploreResponseBuilder.populateComparisonResponse; refactor handleSemanticFieldComparison; add comparison handler tests.\nCommit G: multiseed-phase-helpers \u2014 extract 4 phase helpers from MultiSeedExplorer.explore; verify via mvn test.\nCommit H: sketch-handlers-split (or rename to QueryHandlers if split risk is too high) \u2014 last commit to avoid merge conflicts with other handler work.\n\nDEFERRED: wiring-improvements \u2014 SemanticFieldExplorer injection and QueryExecutor split are valid improvements but touch Main.java wiring. Defer to a dedicated architecture round to avoid coupling with current fixes.\n\nSCORE IMPACT EXPECTED:\n- design_coherence: +8-12 points (comparison-response-builder + multiseed-phase-helpers)\n- api_surface_coherence: +6-8 points (top/limit standardization + overload visibility)  \n- naming_quality: +4-6 points (Javadoc fixes + factory method)\n- convention_outlier: +5 points (comparison handler delegation + CollocateProfileComparator)\n- logic_clarity: +4 points (redundant catch removal)\n- type_safety: +4 points (annotations)\n- cross_module_architecture: +3 points (RadialPlot move)"
+      "strategy": "Execute 10 clusters in dependency-safe order across two PRs.\n\nPR 1 \u2014 Handler & Contract Fixes (T2, ~2-3 hours):\nClusters in order: (1) param-helpers-promote \u2192 (2) optional-safety \u2192 (3) ai-debt-hygiene \u2192 (4) deprecated-removal. These clusters all involve the exploration/api package. Do them sequentially to avoid merge conflicts on ExplorationHandlers.java and SemanticFieldExplorer.java.\n\nPR 2 \u2014 Structural Moves & Naming (T2, ~1-2 hours):\nClusters in order: (5) query-results-move \u2192 (6) radialplot-fix \u2192 (7) naming-fixes \u2192 (8) relation-config-naming. These are pure renames and package moves with no logic changes; low risk, easy to verify by compile.\n\nPR 3 \u2014 Design & Tests (T3, ~3-4 hours):\nClusters in order: (9) option-seam-fix \u2192 (10) test-indexer. These require design judgment (ExploreOptions split) and new test infrastructure respectively.\n\nSKIP DECISIONS (3 permanent wontfix):\n- no-rate-limiting-bcql: research tool, not publicly exposed\n- fastjson2-audit-risk: library swap risk disproportionate to threat model\n- api-hub-overload: large architectural restructure deferred to a dedicated round\n\nEXPECTED SCORE IMPROVEMENTS:\n- contract_coherence (+): parseDoubleParam sentinel fixed; exception erasure fixed\n- low_level_elegance (+): helpers promoted; dual traversal fixed\n- naming_quality (+): getDeprel, ExploreResponseBuilder, filterCandidates renamed\n- package_organization (+): QueryResults and RadialPlot moved\n- api_surface_coherence (+): deprecated overloads removed; compareCollocateProfiles migrated\n- design_coherence (+): ExploreOptions seam fixed\n- test_strategy (+): BlackLabConllUIndexer tested\n- ai_generated_debt (+): null guard and logging standardized\n- abstraction_fitness (+): deprecated bypass constructors removed\n\nRESCAN after PR 1 and PR 2 to confirm cascade effects before starting PR 3."
     }
   },
   "commit_log": [
@@ -78919,17 +82307,33 @@
       "recorded_at": "2026-03-11T13:03:56+00:00",
       "note": "relation-utils-move, dead-code-cleanup, error-handler-dedup, api-surface-align, package-consolidation, misc-debt",
       "cluster_name": null
+    },
+    {
+      "sha": "de822a82fbea",
+      "branch": "desloppify/code-health",
+      "issue_ids": [
+        "review::.::holistic::test_strategy::wrap-handler-contract-untested::671bd6c4",
+        "review::.::holistic::type_safety::nullable-index-misleading-annotation::d0e9b7c4",
+        "review::.::holistic::type_safety::collocate-lemma-missing-nullable::702a9f53",
+        "review::.::holistic::cross_module_architecture::radial_plot_misplaced::9986dede",
+        "review::.::holistic::package_organization::radialplot_in_utils::1d012455",
+        "review::.::holistic::contract_coherence::buildFullPattern_nullable_unchecked::735fa935",
+        "review::.::holistic::convention_outlier::exploration-public-vs-package-private::1033f7c7",
+        "review::.::holistic::design_coherence::multiseed-explore-monolithic::188d660e"
+      ],
+      "recorded_at": "2026-03-11T14:13:24+00:00",
+      "note": "All 10 desloppify clusters implemented",
+      "cluster_name": null
     }
   ],
   "uncommitted_issues": [
-    "review::.::holistic::test_strategy::wrap-handler-contract-untested::671bd6c4",
-    "review::.::holistic::type_safety::nullable-index-misleading-annotation::d0e9b7c4",
-    "review::.::holistic::type_safety::collocate-lemma-missing-nullable::702a9f53",
-    "review::.::holistic::cross_module_architecture::radial_plot_misplaced::9986dede",
-    "review::.::holistic::package_organization::radialplot_in_utils::1d012455",
-    "review::.::holistic::contract_coherence::buildFullPattern_nullable_unchecked::735fa935",
-    "review::.::holistic::convention_outlier::exploration-public-vs-package-private::1033f7c7",
-    "review::.::holistic::design_coherence::multiseed-explore-monolithic::188d660e"
+    "review::.::holistic::design_coherence::sketch-handlers-mixed-concerns::a73a8516",
+    "review::.::holistic::package_organization::queryresults-wrong-package::6f0a9d47",
+    "review::.::holistic::package_organization::radialplot-api-package::dfb4cace",
+    "review::.::holistic::test_strategy::blacklab-indexer-untested::bd26a03e",
+    "review::.::holistic::high_level_elegance::queryresults-model-affinity::67d85ece",
+    "review::.::holistic::high_level_elegance::radialplot-api-placement::92bdccbf",
+    "review::.::holistic::test_strategy::no-integration-e2e-tests::fd8fd482"
   ],
   "commit_tracking_branch": null,
   "scan_count_at_plan_start": 5

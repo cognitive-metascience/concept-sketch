@@ -1,0 +1,78 @@
+{
+  "batch": "mid_level_elegance",
+  "batch_index": 6,
+  "assessments": {"mid_level_elegance": 77.0},
+  "dimension_notes": {
+    "mid_level_elegance": {
+      "evidence": [
+        "ExplorationHandlers → ExploreResponseBuilder seam is clean: handlers deal only with HttpExchange + params; ExploreResponseBuilder handles all model-to-JSON translation. No scattered mapping code.",
+        "ValidatedExploreRequest record bundles pre-validated state (seedsRaw, relationConfig, exploreParams) so handler methods don't re-extract parameters inline.",
+        "GrammarConfigLoader → GrammarConfig seam is clean: loader owns I/O and parsing; config owns querying. Handlers accept GrammarConfig — no loader reference escapes the startup wiring.",
+        "handleSemanticFieldComparison does not use validateExploreRequest (it doesn't need a RelationConfig) but reimplements ExploreParams resolution by calling parseIntParam('top') and parseDoubleParam('min_logdice') directly — minor seam inconsistency.",
+        "parseIntParam and parseDoubleParam are private to ExplorationHandlers but ConcordanceHandlers needs the same pattern, causing it to re-implement inline parsing with its own try/catch. The parameter-parsing seam is not properly bounded.",
+        "ExploreOptions record is the parameter carrier across the api→exploration boundary — clean, minimal, named fields.",
+        "SemanticFieldExplorer is a clean injection point: ExplorationHandlers accepts SemanticFieldExplorer (not BlackLabQueryExecutor directly), so test doubles can be injected without standing up BlackLab.",
+        "Model-layer types (ExplorationResult, ComparisonResult) are plain data objects with no HTTP concerns — the boundary is clean in both directions."
+      ],
+      "impact_scope": "subsystem",
+      "fix_scope": "multi_file_refactor",
+      "confidence": "high"
+    }
+  },
+  "dimension_judgment": {
+    "mid_level_elegance": {
+      "strengths": [
+        "ExploreResponseBuilder centralises all model-to-JSON translation for exploration endpoints — zero scattered mapping code.",
+        "ValidatedExploreRequest record makes the 'parse + validate' phase explicit and reusable across three handlers.",
+        "GrammarConfigLoader / GrammarConfig separation keeps I/O concerns out of the handlers completely.",
+        "SemanticFieldExplorer injection seam supports testing without a live corpus index.",
+        "ExploreOptions carries the api→exploration parameter boundary cleanly with named components."
+      ],
+      "issue_character": "The mid-level issues are localized to the parameter-parsing seam: numeric param helpers are private to one handler class but needed by siblings, and one handler partially re-implements validation inline rather than using the shared preamble.",
+      "score_rationale": "The major handoffs (api↔exploration, api↔config, exploration↔query) are well-choreographed with clear translation points. The score is held below 85 by the parameter-parsing seam leak: parseIntParam/parseDoubleParam are private to ExplorationHandlers but semantically belong at the HttpApiUtils boundary, causing ConcordanceHandlers to re-implement inline and handleSemanticFieldComparison to partially bypass the validated-request preamble."
+    }
+  },
+  "issues": [
+    {
+      "dimension": "mid_level_elegance",
+      "identifier": "param-parse-seam-leak",
+      "summary": "Numeric param parsing helpers are scoped to ExplorationHandlers but leaked as inline duplicates into sibling handler classes",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/api/ExplorationHandlers.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/api/ConcordanceHandlers.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/api/HttpApiUtils.java"
+      ],
+      "evidence": [
+        "ExplorationHandlers.parseIntParam and parseDoubleParam are private methods.",
+        "ConcordanceHandlers.handleConcordanceExamples contains: 'try { top = Integer.parseInt(params.getOrDefault(\"top\", \"10\")); } catch (NumberFormatException e) { sendError(400, ...) }' — identical logic, different error message.",
+        "The natural home for these helpers is HttpApiUtils, which is already the shared HTTP utility boundary used by all handlers."
+      ],
+      "suggestion": "Add static parseIntParam(HttpExchange, Map<String,String>, String, int) and parseDoubleParam variants to HttpApiUtils (package-visible). Remove private versions from ExplorationHandlers. ConcordanceHandlers replaces inline try/catch with the shared helper.",
+      "confidence": "high",
+      "impact_scope": "module",
+      "fix_scope": "multi_file_refactor"
+    },
+    {
+      "dimension": "mid_level_elegance",
+      "identifier": "comparison-handler-partial-validation",
+      "summary": "handleSemanticFieldComparison partially re-implements parameter resolution rather than using the shared validated-request preamble",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/api/ExplorationHandlers.java"
+      ],
+      "evidence": [
+        "handleSemanticFieldExplore and handleSemanticFieldExploreMulti both call validateExploreRequest() which bundles seeds, relation, and params.",
+        "handleSemanticFieldComparison calls parseBaseExploreRequest() + requireParam('seeds') + resolveExploreParams() separately — it cannot use validateExploreRequest because it doesn't need a RelationConfig.",
+        "The resulting inline code is structurally similar but not identical to the validated-request path, creating slight divergence in error responses."
+      ],
+      "suggestion": "Introduce a lighter-weight ValidatedComparisonRequest record (seeds, exploreParams) and a corresponding validateComparisonRequest() method that handles the comparison-specific preamble. This gives handleSemanticFieldComparison its own clean preamble without forcing it to reuse the full exploration flow.",
+      "confidence": "medium",
+      "impact_scope": "module",
+      "fix_scope": "single_edit"
+    }
+  ],
+  "retrospective": {
+    "root_causes": ["parseIntParam/parseDoubleParam were added to ExplorationHandlers when they should have been added to HttpApiUtils from the start"],
+    "likely_symptoms": ["param-parse-seam-leak is the same root cause as double-sentinel-contract in batch 5"],
+    "possible_false_positives": []
+  }
+}

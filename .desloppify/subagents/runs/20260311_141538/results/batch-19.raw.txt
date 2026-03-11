@@ -1,0 +1,58 @@
+{
+  "batch": "authorization_consistency",
+  "batch_index": 19,
+  "assessments": {"authorization_consistency": 85.5},
+  "dimension_notes": {
+    "authorization_consistency": {
+      "evidence": [
+        "The server has no authentication mechanism — all endpoints are publicly accessible; this is a consistent design choice for a local read-only research tool bound to loopback (InetAddress.getLoopbackAddress())",
+        "The server binds exclusively to the loopback address: `new InetSocketAddress(InetAddress.getLoopbackAddress(), port)` — the network-level isolation replaces application-level auth for the stated use case",
+        "Input validation is applied consistently across all endpoints: required parameters are checked via HttpApiUtils.requireParam, numeric parameters are parsed with error responses, and unknown relations receive 400 errors",
+        "BcqlHandlers applies additional input validation compared to other endpoints: MAX_BCQL_PATTERN_LENGTH=1024, MAX_BCQL_BRACKET_DEPTH=20, MAX_REQUEST_BODY_BYTES=65536 — appropriately stricter for an endpoint that accepts arbitrary query syntax",
+        "CQL injection is mitigated: lemma substitution uses CqlUtils.escapeForRegex which escapes backslashes and double-quotes before embedding user input in CQL patterns",
+        "CORS headers are applied uniformly via HttpApiUtils.setCorsHeader on every response-sending method (sendJsonResponse, sendError, sendOptionsResponse, sendBinaryResponse) — no endpoint can accidentally omit CORS headers",
+        "The cors.allow.origin system property defaults to http://localhost:3000 and is documented; production deployments can override it — this is the only access-control mechanism, appropriate for the single-origin use case",
+        "No session management, no user identity, no RLS — N/A for this read-only corpus analysis tool",
+        "All endpoints treat the corpus index as read-only; no write endpoints exist except the indexer CLI which runs as a separate process"
+      ],
+      "impact_scope": "codebase",
+      "fix_scope": "single_edit",
+      "confidence": "high",
+      "issues_preventing_higher_score": "The absence of any rate limiting or request throttling means the BCQL endpoint could be used to execute expensive corpus queries at high frequency from any process on the same machine; the loopback binding provides no protection against local denial-of-service"
+    }
+  },
+  "dimension_judgment": {
+    "authorization_consistency": {
+      "strengths": [
+        "Loopback-only binding (InetAddress.getLoopbackAddress()) provides network-level isolation without any application-level auth overhead — appropriate for a local tool",
+        "CQL injection is consistently mitigated: all user-provided lemmas pass through CqlUtils.escapeForRegex before being embedded in queries",
+        "CORS enforcement is centralized in HttpApiUtils.setCorsHeader and called by every response method — no endpoint can accidentally miss it",
+        "The BCQL endpoint has the most generous attack surface and correctly applies the strictest input validation (length, complexity, body size limits)"
+      ],
+      "issue_character": "There are no inconsistent authorization patterns because there is no authorization system — this is a consistently unauthenticated local service, which is an appropriate design for its stated deployment context.",
+      "score_rationale": "This is a read-only local research server that intentionally has no authentication. The dimension rubric asks for consistency, not for the presence of auth. Within that context, the server is highly consistent: all endpoints have the same (absent) auth model, input validation is uniformly applied, CORS is centrally enforced, and the BCQL endpoint correctly receives extra validation commensurate with its risk. The one gap that keeps the score from 90+ is the absence of rate limiting on the BCQL endpoint, which could be expensive against large corpora."
+    }
+  },
+  "issues": [
+    {
+      "dimension": "authorization_consistency",
+      "identifier": "no-rate-limiting-bcql",
+      "summary": "The BCQL endpoint accepts arbitrary corpus queries with no rate limiting or concurrency throttling; expensive patterns could degrade service for other clients on the same machine",
+      "related_files": ["src/main/java/pl/marcinmilkowski/word_sketch/api/BcqlHandlers.java"],
+      "evidence": [
+        "BcqlHandlers validates pattern length and bracket depth but not query cost (e.g., a pattern with many wildcards and wide span constraints can be expensive regardless of bracket count)",
+        "The server uses `server.setExecutor(null)` — a single-threaded executor — so a slow BCQL query blocks all other requests",
+        "No timeout is applied to the BlackLab search call"
+      ],
+      "suggestion": "Add a simple query timeout via ExecutorService with a fixed deadline (e.g., 30s), and consider switching server.setExecutor to a bounded thread pool; alternatively document the single-threaded nature explicitly so operators understand the concurrency model",
+      "confidence": "medium",
+      "impact_scope": "module",
+      "fix_scope": "single_edit"
+    }
+  ],
+  "retrospective": {
+    "root_causes": ["Intended use case: the server was designed for single-user local research; the loopback binding and absent auth are deliberate, not accidental omissions"],
+    "likely_symptoms": [],
+    "possible_false_positives": ["Any finding about missing auth middleware should be treated as out-of-scope for a loopback-bound local tool"]
+  }
+}

@@ -4,7 +4,7 @@ import com.sun.net.httpserver.HttpExchange;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import pl.marcinmilkowski.word_sketch.config.GrammarConfig;
-import pl.marcinmilkowski.word_sketch.model.QueryResults;
+import pl.marcinmilkowski.word_sketch.query.QueryResults;
 import pl.marcinmilkowski.word_sketch.query.QueryExecutor;
 import pl.marcinmilkowski.word_sketch.utils.CqlUtils;
 
@@ -45,13 +45,7 @@ class ConcordanceHandlers {
         if (adjective == null) return;
         String relation = params.getOrDefault("relation", "noun_adj_predicates");
 
-        int top;
-        try {
-            top = Integer.parseInt(params.getOrDefault("top", "10"));
-        } catch (NumberFormatException e) {
-            HttpApiUtils.sendError(exchange, 400, "Invalid numeric parameter: top");
-            return;
-        }
+        int top = HttpApiUtils.parseIntParam(params, "top", 10);
 
         String bcqlQuery = null;
         var rel = grammarConfig.getRelation(relation);

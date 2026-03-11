@@ -14,7 +14,7 @@ import pl.marcinmilkowski.word_sketch.config.RelationConfig;
 import pl.marcinmilkowski.word_sketch.model.AdjectiveProfile;
 import pl.marcinmilkowski.word_sketch.model.ComparisonResult;
 import pl.marcinmilkowski.word_sketch.model.PosGroup;
-import pl.marcinmilkowski.word_sketch.model.QueryResults;
+import pl.marcinmilkowski.word_sketch.query.QueryResults;
 import pl.marcinmilkowski.word_sketch.model.RelationType;
 import pl.marcinmilkowski.word_sketch.query.QueryExecutor;
 
@@ -32,18 +32,6 @@ class CollocateProfileComparator {
     private final QueryExecutor executor;
     private final String adjectivePattern;
 
-    /**
-     * @deprecated Prefer {@link #CollocateProfileComparator(QueryExecutor, GrammarConfig)} so
-     *             the adjective pattern is config-driven and not hard-coded in a fallback constant.
-     *             This overload falls back to {@code FALLBACK_ADJECTIVE_PATTERN}, bypassing
-     *             GrammarConfig and creating a parallel code path.
-     *             Scheduled for removal in v2.0.
-     */
-    @Deprecated
-    CollocateProfileComparator(QueryExecutor executor) {
-        this(executor, null);
-    }
-
     CollocateProfileComparator(QueryExecutor executor, GrammarConfig grammarConfig) {
         this.executor = executor;
         this.adjectivePattern = deriveAdjectivePattern(grammarConfig);
@@ -57,11 +45,11 @@ class CollocateProfileComparator {
             .filter(r -> r.relationType().map(rt -> rt == RelationType.ADJ_MODIFIER || rt == RelationType.ADJ_PREDICATE).orElse(false)
                 && r.collocatePosGroup() == PosGroup.ADJ)
             .findFirst()
-            .map(RelationConfig::collocateReversePattern)
+            .map(RelationConfig::buildCollocateReversePattern)
             .orElseGet(() -> grammarConfig.getRelations().stream()
                 .filter(r -> r.collocatePosGroup() == PosGroup.ADJ && r.relationType().isPresent())
                 .findFirst()
-                .map(RelationConfig::collocateReversePattern)
+                .map(RelationConfig::buildCollocateReversePattern)
                 .orElse(FALLBACK_ADJECTIVE_PATTERN));
     }
 

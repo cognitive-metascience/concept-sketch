@@ -1,0 +1,79 @@
+{
+  "batch": "ai_generated_debt",
+  "batch_index": 7,
+  "assessments": {"ai_generated_debt": 82.0},
+  "dimension_notes": {
+    "ai_generated_debt": {
+      "evidence": [
+        "Comments throughout explain WHY, not what. Example: 'Use explicit relation_type filter rather than findFirst() to avoid implicit ordering dependency.' (CollocateProfileComparator). Example: 'Over-fetch factor: request 3x as many hits as needed to compensate for scoring discards.' (CollocateQueryHelper).",
+        "No entry/exit logging on every function. Logging is targeted: debug-level for algorithm state, warn-level for fallback paths, info-level for startup.",
+        "Two of the 11 routes in WordSketchApiServer.registerRoutes() have an inline logger.info('Received request: {}', exchange.getRequestURI()) — the other 9 routes have no such log. This is inconsistent low-value logging rather than systematic noise.",
+        "ExplorationHandlers constructor: 'if (grammarConfig == null) { throw new IllegalArgumentException(\"grammarConfig must not be null; ...\") }' — verbose null-guard with a long message. WordSketchApiServer uses Objects.requireNonNull for the same purpose. Minor inconsistency.",
+        "Deprecated constructors (SemanticFieldExplorer, CollocateProfileComparator) have clear, purposeful @Deprecated + migration notes — not boilerplate.",
+        "No restating comments found (e.g., '// iterate over relations' above a for loop).",
+        "No pass-through wrapper functions with no added logic (SemanticFieldExplorer.exploreMultiSeed is deprecated + documented as a migration artifact).",
+        "No generic domain names (handleData, processItem) — domain terms used throughout (seed, collocate, lemma, logDice, concordance).",
+        "RadialPlot has many named constants (SPIRAL_START_RADIUS, SPIRAL_RADIUS_STEP, etc.) — these are legitimate documentation of magic layout values, not AI-debt."
+      ],
+      "impact_scope": "local",
+      "fix_scope": "single_edit",
+      "confidence": "high"
+    }
+  },
+  "dimension_judgment": {
+    "ai_generated_debt": {
+      "strengths": [
+        "Comments throughout explain non-obvious constraints and design decisions (why algorithm choices were made, not just what the code does).",
+        "Logging is targeted and graduated (debug for hot paths, warn for fallbacks, info for startup) — no entry/exit logging on every method.",
+        "Deprecated constructors carry clear migration rationale rather than generic 'use X instead' boilerplate.",
+        "Domain vocabulary is used consistently (seed, collocate, logDice, concordance, lemma) — no generic handleData or processItem names.",
+        "Named constants in RadialPlot document layout parameters rather than hiding magic numbers."
+      ],
+      "issue_character": "The two identified issues are isolated inconsistencies (two out of eleven routes log at info vs. nine that don't; one constructor uses manual null check vs. Objects.requireNonNull elsewhere) rather than a systematic AI-debt pattern.",
+      "score_rationale": "The codebase shows clear authorship intent: comments explain why, not what; logging is disciplined; naming is domain-specific. The score stays below 90 due to two minor inconsistencies — the selective per-route info logging (two routes out of eleven) and the manual null-guard inconsistency — which are easily fixed cosmetic issues rather than substantive debt."
+    }
+  },
+  "issues": [
+    {
+      "dimension": "ai_generated_debt",
+      "identifier": "selective-route-logging",
+      "summary": "Two exploration routes log 'Received request' at INFO but nine other routes do not — inconsistent low-value logging",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/api/WordSketchApiServer.java"
+      ],
+      "evidence": [
+        "registerRoutes() contains: 'registerGetHandler(server, \"/api/semantic-field/explore\", wrapHandler(exchange -> { logger.info(\"Received request: {}\", exchange.getRequestURI()); explorationHandlers.handleSemanticFieldExplore(exchange); }, ...))'",
+        "The identical pattern appears for /api/semantic-field/explore-multi.",
+        "All other 9 routes (sketch, relations, comparison, concordance, bcql, radial, health) have no per-request info log.",
+        "This selective logging provides no diagnostic advantage and pollutes prod logs when these endpoints are called frequently."
+      ],
+      "suggestion": "Remove the two inline logger.info lines. If per-request logging is needed, add it uniformly in wrapWithErrorHandling (which touches every handler), or use an access log filter.",
+      "confidence": "high",
+      "impact_scope": "local",
+      "fix_scope": "single_edit"
+    },
+    {
+      "dimension": "ai_generated_debt",
+      "identifier": "null-guard-inconsistency",
+      "summary": "ExplorationHandlers uses manual if-null-throw while WordSketchApiServer uses Objects.requireNonNull for equivalent guards",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/api/ExplorationHandlers.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/api/WordSketchApiServer.java"
+      ],
+      "evidence": [
+        "ExplorationHandlers constructor: 'if (grammarConfig == null) { throw new IllegalArgumentException(\"grammarConfig must not be null; exploration endpoints require a loaded grammar configuration\"); }'",
+        "WordSketchApiServer constructor: 'this.grammarConfig = Objects.requireNonNull(grammarConfig, \"grammarConfig must not be null\");'",
+        "Both guard the same type of precondition; the manual form is more verbose and inconsistent."
+      ],
+      "suggestion": "Replace the manual if-null-throw in ExplorationHandlers with Objects.requireNonNull(grammarConfig, \"...\") to match the established pattern.",
+      "confidence": "high",
+      "impact_scope": "local",
+      "fix_scope": "single_edit"
+    }
+  ],
+  "retrospective": {
+    "root_causes": ["Selective route logging was likely added during debugging and not removed"],
+    "likely_symptoms": [],
+    "possible_false_positives": []
+  }
+}

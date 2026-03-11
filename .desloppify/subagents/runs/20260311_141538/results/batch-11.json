@@ -1,0 +1,68 @@
+{
+  "batch": "logic_clarity",
+  "batch_index": 11,
+  "assessments": {"logic_clarity": 80.0},
+  "dimension_notes": {
+    "logic_clarity": {
+      "evidence": [
+        "SketchHandlers.handleRelationsForType: the if-guard `rel.relationType().orElse(null) == relationType` already confirms the Optional is non-empty, yet the immediately following `rel.relationType().orElseThrow(...)` can never actually throw — the orElseThrow is vacuously safe and introduces unnecessary verbosity",
+        "ExplorationHandlers.parseIntParam and parseDoubleParam use -1 as error sentinel; callers check `< 0` to detect failure, conflating 'parse error' with 'negative value'. A caller passing `top=0` passes validation silently with value 0, which will produce no results without an error response",
+        "ExplorationHandlers.resolveExploreParams: parseDoubleParam returns -1 (int literal promoted to double) on failure; `if (minLogDice < 0) return null` catches it correctly, but a user who genuinely passes min_logdice=-0.1 (nonsensical but not outright malformed) would receive a null result treated identically to a parse error, without a distinct error message",
+        "SemanticFieldExplorer.exploreByPattern: the null/empty check `if (seed == null || seed.isEmpty())` correctly guards before the `seed.toLowerCase()` reassignment — no dead-code or logic inversion issue",
+        "WordSketchApiServer.registerRoutes: the `/api/semantic-field/explore` and `/api/semantic-field/explore-multi` handler lambdas add a logger.info call inline before delegating, while the other handlers use plain method references — minor inconsistency in dispatch style but no logic defect",
+        "Main.handleBlackLabQueryCommand: `executor.findCollocations(lemma, \"[]\", minLogDice, limit)` passes `[]` as the CQL pattern; buildBcqlWithLemmaSubstitution checks `cqlPattern.startsWith(\"[\")` which is satisfied, producing `\"lemma\" []`, which is a syntactically valid 'match any token' query — logic is correct but the pattern is semantically opaque"
+      ],
+      "impact_scope": "local",
+      "fix_scope": "single_edit",
+      "confidence": "high"
+    }
+  },
+  "dimension_judgment": {
+    "logic_clarity": {
+      "strengths": [
+        "Early-return guard clauses used consistently throughout handlers: `if (req == null) return` and `if (v == null) return` patterns prevent deep nesting",
+        "Phase-helper decomposition in SemanticFieldExplorer and MultiSeedExplorer makes multi-step algorithms readable as named sequential steps",
+        "Boolean expressions are simple and direct: no `if x: return True` anti-patterns; conditions are short and one-directional",
+        "The fetchSeedCollocates fallback path is clearly structured: try BCQL first, log if empty, fall back to simple pattern — the control flow matches the documentation",
+        "Null/empty guards on lemma parameters in BlackLabQueryExecutor log the skip reason and return emptyList, avoiding silent failures"
+      ],
+      "issue_character": "Issues are isolated micro-level logic annoyances — one redundant Optional orElseThrow and a sentinel-value conflation — rather than systemic control-flow defects.",
+      "score_rationale": "The codebase is logically clean at the macro level: phase decomposition is clear, guard clauses are consistent, and control flow matches the documented intent across all explored files. The two identified issues (vacuous orElseThrow in handleRelationsForType, -1 sentinel conflation in param parsing) are genuine but local clarity regressions rather than correctness bugs. Against a global anchor where 80 represents 'solid but with a few rough edges', this codebase lands comfortably at 80 — a developer can follow the logic throughout with only minor head-scratching moments."
+    }
+  },
+  "issues": [
+    {
+      "dimension": "logic_clarity",
+      "identifier": "redundant-orelsethrow-after-guard",
+      "summary": "orElseThrow in handleRelationsForType is unreachable because the enclosing if-guard already confirms the Optional is present",
+      "related_files": ["src/main/java/pl/marcinmilkowski/word_sketch/api/SketchHandlers.java"],
+      "evidence": [
+        "if (rel.relationType().orElse(null) == relationType) { ... obj.put(\"relation_type\", rel.relationType().orElseThrow(() -> ...).name()); }",
+        "The if-guard already ensures relationType() is non-empty when control reaches the orElseThrow, making the lambda unreachable"
+      ],
+      "suggestion": "Extract the Optional value at the if-guard: `var rt = rel.relationType().orElse(null); if (rt == relationType) { ... obj.put(\"relation_type\", rt.name()); }`, eliminating the second lookup and the dead exception branch",
+      "confidence": "high",
+      "impact_scope": "local",
+      "fix_scope": "single_edit"
+    },
+    {
+      "dimension": "logic_clarity",
+      "identifier": "sentinel-minus-one-parse-error",
+      "summary": "parseIntParam/parseDoubleParam use -1 as error sentinel, conflating parse failure with invalid-range values in ExplorationHandlers",
+      "related_files": ["src/main/java/pl/marcinmilkowski/word_sketch/api/ExplorationHandlers.java"],
+      "evidence": [
+        "parseIntParam returns -1 on NumberFormatException; callers check `< 0` which also rejects valid negative inputs",
+        "parseDoubleParam returns -1 (int literal) on failure; a user passing min_logdice=-0.5 gets silently rejected as a parse error rather than a semantic error"
+      ],
+      "suggestion": "Use a sentinel object or Optional return type: `Optional<Integer> parseIntParam(...)` returning `Optional.empty()` on failure; or validate range separately after successful parse so parse errors and range errors yield distinct messages",
+      "confidence": "medium",
+      "impact_scope": "local",
+      "fix_scope": "single_edit"
+    }
+  ],
+  "retrospective": {
+    "root_causes": ["Sentinel value reuse: using -1 for both 'parse failed' and 'value is negative' compresses two distinct states into one"],
+    "likely_symptoms": ["redundant-orelsethrow-after-guard"],
+    "possible_false_positives": []
+  }
+}

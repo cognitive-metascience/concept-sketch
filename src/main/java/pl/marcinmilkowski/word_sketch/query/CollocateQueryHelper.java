@@ -6,7 +6,7 @@ import nl.inl.blacklab.exceptions.InvalidQuery;
 import nl.inl.blacklab.resultproperty.HitProperty;
 import nl.inl.blacklab.resultproperty.HitPropertyHitText;
 
-import pl.marcinmilkowski.word_sketch.model.QueryResults;
+import pl.marcinmilkowski.word_sketch.query.QueryResults;
 import nl.inl.blacklab.search.BlackLabIndex;
 import nl.inl.blacklab.search.ConcordanceType;
 import nl.inl.blacklab.search.lucene.BLSpanQuery;
@@ -307,7 +307,7 @@ class CollocateQueryHelper {
      * Extract collocate lemma from match XML using the labeled position.
      * Falls back to the last lemma in the match XML when no labeled position is available.
      */
-    static String extractCollocateLemma(String matchXml, int collocatePos) {
+    static @Nullable String extractCollocateLemma(String matchXml, int collocatePos) {
         if (collocatePos > 0) {
             String extracted = BlackLabSnippetParser.extractCollocateFromXmlByPosition(matchXml, collocatePos);
             if (extracted != null && !extracted.isEmpty()) return extracted;

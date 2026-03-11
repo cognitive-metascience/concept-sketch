@@ -1,0 +1,62 @@
+{
+  "batch": "cross_module_architecture",
+  "batch_index": 1,
+  "assessments": {"cross_module_architecture": 82.0},
+  "dimension_notes": {
+    "cross_module_architecture": {
+      "evidence": [
+        "Package hierarchy follows a clean top-down direction: api → exploration/query → config → model → utils. No reverse imports observed.",
+        "LongIntHashMap (utils) is a self-contained leaf; it imports only java.util.Arrays — zero coupling outward.",
+        "The api package imports from exploration, query, config, and model — all downstream. No upstream pull.",
+        "exploration imports from query, config, and model but never from api — direction is maintained.",
+        "CollocateQueryHelper is package-private inside query/, functioning as an internal helper without leaking out.",
+        "WordSketchApiServer is the wiring hub for all handler classes; changes to HttpApiUtils or a shared handler pattern have blast radius across the entire api/ package (10 classes).",
+        "RadialPlot (rendering) and ExploreResponseBuilder (presentation translation) coexist with HTTP handlers in api/ — three distinct concerns in one flat package, all importing from each other's layer.",
+        "No import cycles detected across packages."
+      ],
+      "impact_scope": "subsystem",
+      "fix_scope": "multi_file_refactor",
+      "confidence": "high"
+    }
+  },
+  "dimension_judgment": {
+    "cross_module_architecture": {
+      "strengths": [
+        "Strict top-down import discipline: no reverse dependencies between packages (api never imported by exploration/query/config).",
+        "CollocateQueryHelper is correctly scoped package-private so the boundary does not leak.",
+        "LongIntHashMap is a cleanly isolated leaf component with no outward coupling.",
+        "exploration/ and query/ are separate packages with no coupling between them, cleanly separating semantic algorithm from corpus access.",
+        "The single-root Main.java wires everything at startup and is the only caller of both api and query layers together — an intentionally narrow coupling point."
+      ],
+      "issue_character": "The main structural concern is the api/ package acting as a flat hub that mixes HTTP transport, presentation translation, and rendering — this is a concentration issue rather than a direction violation.",
+      "score_rationale": "The codebase has no dependency cycles and enforces a clean top-down direction throughout all packages. The only architectural concern is the api/ package growing to 10 files with three loosely related concerns (HTTP handlers, ExploreResponseBuilder, RadialPlot) sharing the same namespace, widening blast radius for common changes. This is a moderate concentration problem rather than a boundary violation, placing the score in the solid-but-uneven range."
+    }
+  },
+  "issues": [
+    {
+      "dimension": "cross_module_architecture",
+      "identifier": "api-hub-overload",
+      "summary": "api/ package mixes HTTP handlers, response translation, and rendering in one flat namespace",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/api/ExploreResponseBuilder.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/api/RadialPlot.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/api/VisualizationHandlers.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/api/HttpApiUtils.java"
+      ],
+      "evidence": [
+        "api/ holds 10 files: 5 HTTP handlers (Sketch, Concordance, Bcql, Exploration, Visualization), 1 server (WordSketchApiServer), 1 HTTP utility (HttpApiUtils), 1 response builder (ExploreResponseBuilder), 1 rendering class (RadialPlot), 1 route-wiring seam.",
+        "RadialPlot generates SVG output and has no HTTP-specific logic; it is a rendering component.",
+        "ExploreResponseBuilder translates model objects to JSON maps — presentation logic, not transport."
+      ],
+      "suggestion": "Extract a presentation/ or response/ sub-package for ExploreResponseBuilder and RadialPlot. HTTP handler classes remain in api/. This separates transport from presentation and reduces blast radius for changes to either concern.",
+      "confidence": "medium",
+      "impact_scope": "subsystem",
+      "fix_scope": "multi_file_refactor"
+    }
+  ],
+  "retrospective": {
+    "root_causes": ["api/ package has absorbed all new classes added during feature work without sub-package extraction"],
+    "likely_symptoms": ["api-hub-overload shows as a package flat_dir_issues signal"],
+    "possible_false_positives": []
+  }
+}

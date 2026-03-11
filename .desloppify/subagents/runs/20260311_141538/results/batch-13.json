@@ -1,0 +1,85 @@
+{
+  "batch": "naming_quality",
+  "batch_index": 13,
+  "assessments": {"naming_quality": 77.5},
+  "dimension_notes": {
+    "naming_quality": {
+      "evidence": [
+        "RelationConfig.getDeprel() uses a 'get' prefix but performs non-trivial computation: compiles a regex, runs a Matcher, and falls back to substring parsing of the relation ID — the 'get' prefix implies O(1) field access, misleading callers",
+        "SemanticFieldExplorer.filterCandidates — 'candidates' is vague; the method filters DiscoveredNoun candidates by minShared threshold; a name like filterByMinShared or scoreAndFilterNouns would communicate the criterion",
+        "CollocateQueryHelper.CollocateSearch — the record holds a headword frequency and HitGroups result, but 'Search' suggests the in-progress action, not the result; CollocateSearchResult or CollocateHitData would be clearer",
+        "VisualizationHandlers.handleVisualRadial — 'Visual' is redundant in a class already named VisualizationHandlers; handleRadialPlot or handleRadial would be more concise",
+        "ExploreResponseBuilder — the '*Builder' suffix in Java strongly implies a fluent builder pattern (returning this); this class is a static utility formatter (private constructor, all-static methods); ExploreResponseFormatter or ExploreResponseSerializer would better match the Java convention",
+        "ExplorationHandlers.buildBaseExploreResponse — 'Base' is accurate (it builds shared structure), but the distinction between 'base' and 'full' response is only apparent after reading the method body; buildSharedExploreResponseFrame would be slightly more informative",
+        "SemanticFieldExplorer.exploreByPattern — the 5-param package-private overload and the 3-param public overload share a name; the 5-param overload is an implementation detail exposed as a package-private method, creating a minor vocabulary ambiguity",
+        "ExploreOptions.forMultiSeed — good factory name; the asymmetry in 'Explore' vs 'Exploration' (ExplorationResult) is acknowledged in Javadoc as intentional"
+      ],
+      "impact_scope": "module",
+      "fix_scope": "single_edit",
+      "confidence": "high"
+    }
+  },
+  "dimension_judgment": {
+    "naming_quality": {
+      "strengths": [
+        "Phase helper methods in MultiSeedExplorer and SemanticFieldExplorer have precise verb-noun names that match their algorithmic role (fetchCollocatesPerSeed, identifyCommonCollocates, buildDiscoveredNouns, buildCoreCollocates)",
+        "Handler classes follow a consistent *Handlers plural convention (SketchHandlers, ConcordanceHandlers, BcqlHandlers, ExplorationHandlers, VisualizationHandlers)",
+        "Record field names in model types are precise domain vocabulary: collocateLemma, seedCollocates, combinedRelevanceScore, commonalityScore, distinctivenessScore",
+        "ExploreOptions.nounsPerCollocate is well-named after the recent rename from nounsPerSeed — it correctly describes the reverse-lookup phase count"
+      ],
+      "issue_character": "Issues are naming-behavior mismatches concentrated in utility and builder classes: methods that compute non-trivially but carry accessor naming, and a class name that invokes a Java design pattern (Builder) that the class does not implement.",
+      "score_rationale": "The codebase's domain vocabulary is rich and consistent — exploration concepts (seed, collocate, logDice, discovery, core) are named uniformly throughout. The identified issues are real: RelationConfig.getDeprel() violates the getter convention by performing regex computation, and ExploreResponseBuilder misrepresents its pattern. These are not isolated to one file but affect multiple callers who must understand the naming gap. Against a 80-anchor of 'solid but uneven', a score of 77.5 reflects a codebase with strong domain naming but a cluster of class and method names that violate Java naming conventions."
+    }
+  },
+  "issues": [
+    {
+      "dimension": "naming_quality",
+      "identifier": "getdeprel-computational-getter",
+      "summary": "RelationConfig.getDeprel() performs regex compilation and pattern matching but names itself as a simple getter",
+      "related_files": ["src/main/java/pl/marcinmilkowski/word_sketch/config/RelationConfig.java"],
+      "evidence": [
+        "getDeprel() compiles `Pattern.compile(\"deprel=[\\\"']([^\\\"']+)[\\\"']\")` and calls `m.find()` on each invocation",
+        "Falls back to `id.substring(4)` string manipulation when the regex does not match",
+        "Java getter convention implies O(1) field access with no side effects"
+      ],
+      "suggestion": "Rename to extractDeprel() or deriveDeprel() to communicate the non-trivial computation, or pre-compute the deprel in GrammarConfigLoader and cache it as a record component (like collocatePosGroup)",
+      "confidence": "high",
+      "impact_scope": "module",
+      "fix_scope": "single_edit"
+    },
+    {
+      "dimension": "naming_quality",
+      "identifier": "explore-response-builder-misnomer",
+      "summary": "ExploreResponseBuilder uses the Java Builder naming convention but is a static utility class with no builder pattern",
+      "related_files": ["src/main/java/pl/marcinmilkowski/word_sketch/api/ExploreResponseBuilder.java"],
+      "evidence": [
+        "Class has `private ExploreResponseBuilder() {}` constructor — not instantiable",
+        "All methods are static: populateExploreResponse, populateComparisonResponse, buildEdges, formatSeedCollocates, etc.",
+        "Java convention: '*Builder' classes return `this` and call `.build()` — this class does neither"
+      ],
+      "suggestion": "Rename to ExploreResponseFormatter or ExploreResponsePopulator to accurately describe the static-utility role and avoid the Builder pattern false implication",
+      "confidence": "high",
+      "impact_scope": "local",
+      "fix_scope": "single_edit"
+    },
+    {
+      "dimension": "naming_quality",
+      "identifier": "filter-candidates-vague",
+      "summary": "SemanticFieldExplorer.filterCandidates uses a generic name that omits the filtering criterion (minShared threshold)",
+      "related_files": ["src/main/java/pl/marcinmilkowski/word_sketch/exploration/SemanticFieldExplorer.java"],
+      "evidence": [
+        "private List<DiscoveredNoun> filterCandidates(Map<String, Map<String, Double>> nounProfiles, int minShared)",
+        "The method filters noun profiles by `if (sharedCount < minShared) continue` — the criterion is the parameter name but not the method name"
+      ],
+      "suggestion": "Rename to filterNounsByMinShared or scoreAndFilterDiscoveredNouns to communicate both the operation (scoring + filtering) and the criterion",
+      "confidence": "medium",
+      "impact_scope": "local",
+      "fix_scope": "single_edit"
+    }
+  ],
+  "retrospective": {
+    "root_causes": ["Pattern naming drift: Java's conventional naming signals (get*, *Builder) applied to types that don't follow those conventions"],
+    "likely_symptoms": ["explore-response-builder-misnomer"],
+    "possible_false_positives": []
+  }
+}

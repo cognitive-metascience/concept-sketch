@@ -1,0 +1,62 @@
+{
+  "batch": "incomplete_migration",
+  "batch_index": 8,
+  "assessments": {"incomplete_migration": 83.0},
+  "dimension_notes": {
+    "incomplete_migration": {
+      "evidence": [
+        "Three deprecated items exist with 'Scheduled for removal in v2.0': SemanticFieldExplorer(QueryExecutor) constructor, CollocateProfileComparator(QueryExecutor) constructor, SemanticFieldExplorer.exploreMultiSeed(Set, RelationConfig, double, int, int) 5-param overload.",
+        "The deprecated constructors are documented with clear migration paths (use the 2-param GrammarConfig-accepting constructor).",
+        "The deprecated 5-param exploreMultiSeed is documented: 'Prefer exploreMultiSeed(Set, RelationConfig, ExploreOptions)' — migration target is clear.",
+        "BcqlHandlers: 'The deprecated limit field is also accepted for backward-compat alias' — documented single-field deprecated alias in the POST body. The canonical field is 'top'.",
+        "No mixed language migrations (pure Java codebase).",
+        "No stale migration TODOs referencing 'legacy', 'old api', or 'remove after X date' found in source.",
+        "No evidence of external consumers requiring backward-compat preservation — this is an internal API.",
+        "ExploreOptions.forMultiSeed() factory was added in r17 as the target; all call sites updated per the r17 changelog — migration is tracked in changelog."
+      ],
+      "impact_scope": "module",
+      "fix_scope": "multi_file_refactor",
+      "confidence": "high"
+    }
+  },
+  "dimension_judgment": {
+    "incomplete_migration": {
+      "strengths": [
+        "Every deprecated item has a clear migration path documented in its @Deprecated Javadoc.",
+        "Migration targets are concrete and already implemented (forMultiSeed factory, GrammarConfig-accepting constructors).",
+        "The BcqlHandlers 'limit' alias is documented inline and proxies to the canonical 'top' parameter without a code-path split.",
+        "No stale TODO/FIXME referencing migration found.",
+        "ExploreOptions factory migration tracked in changelog — evidence of active migration management."
+      ],
+      "issue_character": "The three deprecated items are all in the exploration subsystem, following the same pattern (old signature bypasses config), and are intentional rather than forgotten — the migration is in progress, not stalled.",
+      "score_rationale": "The migration hygiene is good: deprecations are documented, have clear targets, and the r17 changelog shows active tracking. The score is held below 90 because three deprecated items are simultaneously active with no firm removal schedule beyond 'v2.0', which has no committed date. The coexistence of the old 5-param overload alongside the ExploreOptions overload is the clearest incompleteness — the migration target exists and is fully functional."
+    }
+  },
+  "issues": [
+    {
+      "dimension": "incomplete_migration",
+      "identifier": "deprecated-triad-no-removal-schedule",
+      "summary": "Three deprecated items in the exploration subsystem are scheduled for 'v2.0' removal with no concrete timeline",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/exploration/SemanticFieldExplorer.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/exploration/CollocateProfileComparator.java"
+      ],
+      "evidence": [
+        "@Deprecated on SemanticFieldExplorer(QueryExecutor): 'Scheduled for removal in v2.0.'",
+        "@Deprecated on CollocateProfileComparator(QueryExecutor): 'Scheduled for removal in v2.0.'",
+        "@Deprecated on exploreMultiSeed(Set, RelationConfig, double, int, int): 'Scheduled for removal in v2.0.'",
+        "v2.0 has no committed release date in visible source or changelog — the deprecations may persist indefinitely.",
+        "No production call sites for the deprecated items are visible in the source tree (they appear to be test-only or unused), which means they could be deleted now."
+      ],
+      "suggestion": "Grep for callers of the three deprecated methods/constructors. If none exist outside test code, delete them now rather than waiting for v2.0. If test-only, mark @VisibleForTesting and restrict to test scope or replace tests with the new API.",
+      "confidence": "high",
+      "impact_scope": "module",
+      "fix_scope": "multi_file_refactor"
+    }
+  ],
+  "retrospective": {
+    "root_causes": ["Deprecation used as a deferral mechanism when immediate deletion was feasible"],
+    "likely_symptoms": [],
+    "possible_false_positives": []
+  }
+}

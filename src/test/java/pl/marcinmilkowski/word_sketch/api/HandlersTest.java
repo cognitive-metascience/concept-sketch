@@ -11,7 +11,7 @@ import pl.marcinmilkowski.word_sketch.config.GrammarConfigHelper;
 import pl.marcinmilkowski.word_sketch.model.Edge;
 import pl.marcinmilkowski.word_sketch.exploration.SemanticFieldExplorer;
 import pl.marcinmilkowski.word_sketch.model.ComparisonResult;
-import pl.marcinmilkowski.word_sketch.model.QueryResults;
+import pl.marcinmilkowski.word_sketch.query.QueryResults;
 import pl.marcinmilkowski.word_sketch.query.QueryExecutor;
 
 import java.io.*;
@@ -317,7 +317,7 @@ class HandlersTest {
         ComparisonResult result =
             explorer.compareCollocateProfiles(java.util.Set.of("theory", "model"), 0.0, 50);
 
-        List<Edge> edges = ExploreResponseBuilder.buildEdges(result);
+        List<Edge> edges = ExploreResponseAssembler.buildEdges(result);
         assertFalse(edges.isEmpty(), "Should have edges");
 
         Edge theoryEdge = edges.stream()

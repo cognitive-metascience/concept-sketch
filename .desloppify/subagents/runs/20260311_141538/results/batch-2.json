@@ -1,0 +1,77 @@
+{
+  "batch": "high_level_elegance",
+  "batch_index": 2,
+  "assessments": {"high_level_elegance": 79.0},
+  "dimension_notes": {
+    "high_level_elegance": {
+      "evidence": [
+        "Package decomposition maps to domain capabilities: config/ for grammar loading, model/ for domain types, api/ for HTTP, exploration/ for semantic algorithms, query/ for corpus access, utils/ for shared primitives.",
+        "GrammarConfig and GrammarConfigLoader are cleanly separated — the loader owns file I/O, the config owns the data. Callers accept GrammarConfig directly without needing the loader.",
+        "model/ package is self-contained: it has no imports from api/ or exploration/. It is a pure domain package.",
+        "The handler split (SketchHandlers, ConcordanceHandlers, BcqlHandlers, ExplorationHandlers, VisualizationHandlers) correctly separates endpoint concerns so each file owns a coherent surface.",
+        "RadialPlot in api/ was moved in r17 to co-locate with VisualizationHandlers, but RadialPlot generates SVG and has no HTTP-specific logic — its ownership story blurs the 'api/' contract for a new engineer.",
+        "QueryResults resides in model/ but is produced by query/ and consumed most heavily by api/ and exploration/ — the package signal (model/) says 'domain data' but the production origin is 'query output'.",
+        "exploration/ and query/ are separate packages with no coupling between them: exploration consumes query results but doesn't directly invoke query logic."
+      ],
+      "impact_scope": "subsystem",
+      "fix_scope": "multi_file_refactor",
+      "confidence": "high"
+    }
+  },
+  "dimension_judgment": {
+    "high_level_elegance": {
+      "strengths": [
+        "Top-level package names map to domain capabilities rather than historical accidents (exploration/, query/, config/ are self-explanatory).",
+        "GrammarConfig / GrammarConfigLoader separation is a textbook loader/data split — callers hold only what they need.",
+        "model/ is a stable, import-free domain package that any module can depend on without pulling in higher-layer concerns.",
+        "The handler decomposition in api/ makes it immediately clear which HTTP surface each class owns.",
+        "exploration/ and query/ are decoupled — the semantic algorithm does not know about corpus internals."
+      ],
+      "issue_character": "The two placement issues (RadialPlot in api/, QueryResults in model/) both blur the ownership story for a new engineer — they are isolated misplacements rather than a systemic decomposition problem.",
+      "score_rationale": "The codebase has a coherent, intentional top-level structure that maps cleanly to domain capabilities. A new engineer can understand why each package exists and roughly predict what it contains. The score is held below 85 by two placement anomalies: RadialPlot (a rendering component) in api/ and QueryResults (a query-layer output type) in model/. These are navigability friction points rather than deep structural failures."
+    }
+  },
+  "issues": [
+    {
+      "dimension": "high_level_elegance",
+      "identifier": "radialplot-api-placement",
+      "summary": "RadialPlot (SVG renderer) lives in api/ but has no HTTP-specific logic",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/api/RadialPlot.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/api/VisualizationHandlers.java"
+      ],
+      "evidence": [
+        "RadialPlot.java contains only SVG generation logic with no HttpExchange, no headers, no status codes.",
+        "VisualizationHandlers.java is the HTTP adapter that calls RadialPlot.renderFromItems(...) and sends the response — a clean two-level split exists but both live in api/.",
+        "A new engineer reading api/ would expect HTTP handlers; finding an SVG layout class with spiral constants breaks that expectation."
+      ],
+      "suggestion": "Move RadialPlot to a visualization/ package (or api/viz/). VisualizationHandlers stays in api/. The rendering logic is then correctly separated from the HTTP adapter.",
+      "confidence": "medium",
+      "impact_scope": "module",
+      "fix_scope": "multi_file_refactor"
+    },
+    {
+      "dimension": "high_level_elegance",
+      "identifier": "queryresults-model-affinity",
+      "summary": "QueryResults lives in model/ but belongs conceptually to the query/ package",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/model/QueryResults.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/query/QueryExecutor.java"
+      ],
+      "evidence": [
+        "QueryResults is returned by all QueryExecutor methods; it is the output type of the query layer.",
+        "model/ is documented as a 'domain model' package, but QueryResults (WordSketchResult, CollocateResult, SnippetResult) are corpus-query output structures, not domain concepts.",
+        "Moving QueryResults to query/ would make the QueryExecutor interface self-contained and would clarify that model/ holds only semantic-domain types."
+      ],
+      "suggestion": "Move QueryResults.java to the query/ package alongside QueryExecutor. Update imports in api/ and exploration/. This aligns production origin with package membership.",
+      "confidence": "medium",
+      "impact_scope": "subsystem",
+      "fix_scope": "multi_file_refactor"
+    }
+  ],
+  "retrospective": {
+    "root_causes": ["Incremental file additions to existing packages without periodic placement review"],
+    "likely_symptoms": [],
+    "possible_false_positives": []
+  }
+}

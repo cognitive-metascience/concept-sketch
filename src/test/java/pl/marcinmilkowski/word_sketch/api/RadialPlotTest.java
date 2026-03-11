@@ -1,6 +1,7 @@
 package pl.marcinmilkowski.word_sketch.api;
 
 import org.junit.jupiter.api.Test;
+import pl.marcinmilkowski.word_sketch.viz.RadialPlot;
 
 import java.util.List;
 

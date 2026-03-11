@@ -13,7 +13,7 @@ import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-class ExploreResponseBuilderTest {
+class ExploreResponseAssemblerTest {
 
     private static ExplorationResult resultWith(
             String seed,
@@ -29,7 +29,7 @@ class ExploreResponseBuilderTest {
         Map<String, Double> collocates = Map.of("important", 8.5, "novel", 6.0);
         ExplorationResult result = resultWith("theory", collocates, Map.of(), List.of(), List.of());
 
-        List<Edge> edges = ExploreResponseBuilder.buildEdges(result);
+        List<Edge> edges = ExploreResponseAssembler.buildEdges(result);
 
         assertEquals(2, edges.size());
         assertTrue(edges.stream().allMatch(e -> e.source().equals("theory")));
@@ -44,7 +44,7 @@ class ExploreResponseBuilderTest {
         DiscoveredNoun noun = new DiscoveredNoun("model", Map.of("abstract", 7.0), 1, 7.0, 7.0);
         ExplorationResult result = resultWith("theory", Map.of(), Map.of(), List.of(noun), List.of());
 
-        List<Edge> edges = ExploreResponseBuilder.buildEdges(result);
+        List<Edge> edges = ExploreResponseAssembler.buildEdges(result);
 
         assertEquals(1, edges.size());
         assertEquals("model", edges.get(0).source());
@@ -55,7 +55,7 @@ class ExploreResponseBuilderTest {
     @Test
     void buildEdges_emptyResult_returnsEmptyList() {
         ExplorationResult result = ExplorationResult.empty("theory");
-        List<Edge> edges = ExploreResponseBuilder.buildEdges(result);
+        List<Edge> edges = ExploreResponseAssembler.buildEdges(result);
         assertTrue(edges.isEmpty());
     }
 
@@ -69,7 +69,7 @@ class ExploreResponseBuilderTest {
         ExplorationResult result = resultWith("theory", collocates, freqs, nouns, core);
 
         Map<String, Object> response = new HashMap<>();
-        ExploreResponseBuilder.populateExploreResponse(response, result);
+        ExploreResponseAssembler.populateExploreResponse(response, result);
 
         assertTrue(response.containsKey("seed_collocates"), "should have seed_collocates");
         assertTrue(response.containsKey("seed_collocates_count"), "should have seed_collocates_count");
@@ -86,7 +86,7 @@ class ExploreResponseBuilderTest {
         ExplorationResult result = resultWith("theory", collocates, Map.of(), List.of(), List.of());
 
         Map<String, Object> response = new HashMap<>();
-        ExploreResponseBuilder.populateExploreResponse(response, result);
+        ExploreResponseAssembler.populateExploreResponse(response, result);
 
         @SuppressWarnings("unchecked")
         List<?> seedCollocs = (List<?>) response.get("seed_collocates");
@@ -100,7 +100,7 @@ class ExploreResponseBuilderTest {
         Map<String, Long> freqs = Map.of("important", 100L);
         ExplorationResult result = resultWith("theory", collocates, freqs, List.of(), List.of());
 
-        List<Map<String, Object>> formatted = ExploreResponseBuilder.formatSeedCollocates(result);
+        List<Map<String, Object>> formatted = ExploreResponseAssembler.formatSeedCollocates(result);
 
         assertEquals(1, formatted.size());
         Map<String, Object> entry = formatted.get(0);
@@ -114,7 +114,7 @@ class ExploreResponseBuilderTest {
         DiscoveredNoun noun = new DiscoveredNoun("model", Map.of("abstract", 7.0), 1, 14.0, 7.0);
         ExplorationResult result = resultWith("theory", Map.of(), Map.of(), List.of(noun), List.of());
 
-        List<Map<String, Object>> formatted = ExploreResponseBuilder.formatDiscoveredNouns(result);
+        List<Map<String, Object>> formatted = ExploreResponseAssembler.formatDiscoveredNouns(result);
 
         assertEquals(1, formatted.size());
         Map<String, Object> entry = formatted.get(0);
@@ -127,8 +127,8 @@ class ExploreResponseBuilderTest {
 
     @Test
     void round2dp_roundsCorrectly() {
-        assertEquals(3.14, ExploreResponseBuilder.round2dp(3.14159), 0.001);
-        assertEquals(0.0, ExploreResponseBuilder.round2dp(0.0), 0.001);
-        assertEquals(14.0, ExploreResponseBuilder.round2dp(14.0), 0.001);
+        assertEquals(3.14, ExploreResponseAssembler.round2dp(3.14159), 0.001);
+        assertEquals(0.0, ExploreResponseAssembler.round2dp(0.0), 0.001);
+        assertEquals(14.0, ExploreResponseAssembler.round2dp(14.0), 0.001);
     }
 }

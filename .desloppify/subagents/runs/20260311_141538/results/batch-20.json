@@ -1,0 +1,79 @@
+{
+  "batch": "design_coherence",
+  "batch_index": 20,
+  "assessments": {"design_coherence": 79.0},
+  "dimension_notes": {
+    "design_coherence": {
+      "evidence": [
+        "MultiSeedExplorer.explore is cleanly decomposed into 4 named phase helpers (fetchCollocatesPerSeed, identifyCommonCollocates, buildDiscoveredNouns, buildCoreCollocates) each with a focused responsibility and clear name",
+        "SemanticFieldExplorer is a facade delegating to MultiSeedExplorer and CollocateProfileComparator — the single-responsibility split is explicit and documented in the class Javadoc",
+        "ExplorationHandlers.validateExploreRequest bundles the three-step validation preamble (parse, require seeds, resolve relation, resolve numeric params) into a single ValidatedExploreRequest record — reduces the per-handler setup boilerplate from ~10 lines to 3",
+        "SketchHandlers.executeRelationQueries extracts the shared iteration/execution loop shared by handleFullSketchForType and handleDepSketchForType, eliminating duplication via a BiFunction builder callback — good structural refactoring",
+        "compareCollocateProfiles is not covered by ExploreOptions — the single exploration class has two different calling conventions (ExploreOptions for explore/multi, raw params for comparison), requiring callers to remember which method takes which form",
+        "ExplorationHandlers.resolveExploreParams extracts nounsPerCollocate (only applicable to single-seed) alongside the shared params (top, minShared, minLogDice, nounsPerCollocate), then the multi-seed handler explicitly rejects 'nouns_per' if provided — the shared params object bundles a param that is not shared",
+        "WordSketchApiServer.registerRoutes contains 11 registerGet/registerPost calls — the route table is data that could be expressed more compactly but is not complex enough to warrant a data-driven route registry; acceptable at current scale",
+        "CollocateQueryHelper.collectHits and scoreHits represent a two-phase pipeline within the BCQL query path; the pipeline is clearly named and the record type HitRecord carries exactly what phase 2 needs from phase 1 — good design",
+        "SemanticFieldExplorer.deriveNounCqlConstraint has nested stream+orElseGet logic (find OBJECT_OF/SUBJECT_OF → fallback to any NOUN collocate → fallback to constant) — the nesting is justified by the 3-level priority chain but is harder to read than the named-phase pattern used elsewhere",
+        "ExploreResponseBuilder (static utility) holds all response-building logic for three different caller paths (explore, multi-seed, comparison) — the consolidation is correct but the class is growing; if a fourth response type is added it may need splitting"
+      ],
+      "impact_scope": "module",
+      "fix_scope": "single_edit",
+      "confidence": "high"
+    }
+  },
+  "dimension_judgment": {
+    "design_coherence": {
+      "strengths": [
+        "Phase decomposition pattern is consistently applied in the most complex algorithms: SemanticFieldExplorer's 4-phase exploration and MultiSeedExplorer's 4-phase multi-seed both use named private helpers with clear, bounded responsibilities",
+        "Facade delegation pattern in SemanticFieldExplorer is clean and explicitly documented — the class does not mix algorithmic concerns with the objects it delegates to",
+        "Value objects (ExploreOptions, ValidatedExploreRequest, ExploreParams) reduce parameter list length and prevent positional argument confusion at the three most call-heavy code paths",
+        "SketchHandlers.executeRelationQueries successfully eliminates duplicated relation-iteration loops that existed before the BiFunction callback refactoring"
+      ],
+      "issue_character": "Design issues are not systemic but rather two localized cross-cutting concerns: ExploreOptions bundles a single-seed-only parameter (nounsPerCollocate) alongside shared params, and compareCollocateProfiles was not included in the ExploreOptions migration, creating a split calling convention within one class.",
+      "score_rationale": "The codebase demonstrates solid structural thinking: phase decomposition, facade delegation, and value-object parameter bundling are all applied consistently where they matter most. The identified design gaps are real but localized: the ExploreOptions/raw-params split in SemanticFieldExplorer and the nounsPerCollocate leakage into the shared options object. These affect a moderately important code path but do not represent a systemic design failure. Against a 80-anchor for 'solid but uneven', the codebase sits just below at 79 — the good design decisions outweigh the rough edges by a meaningful margin."
+    }
+  },
+  "issues": [
+    {
+      "dimension": "design_coherence",
+      "identifier": "explore-options-single-seed-param-leakage",
+      "summary": "ExploreOptions.nounsPerCollocate is a single-seed-only parameter bundled into the shared options record, causing the multi-seed handler to explicitly reject it",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/exploration/ExploreOptions.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/api/ExplorationHandlers.java"
+      ],
+      "evidence": [
+        "ExploreOptions record contains nounsPerCollocate annotated 'Applies to single-seed exploration only; pass 0 (via forMultiSeed) for multi-seed'",
+        "ExplorationHandlers.handleSemanticFieldExploreMulti: `if (req.params().containsKey(\"nouns_per\")) { sendError(..., \"nouns_per is not supported for multi-seed\"); return; }` — rejecting a param that the shared validation already parsed",
+        "resolveExploreParams always parses nounsPerCollocate even for the multi-seed path where it will be discarded and replaced by ExploreOptions.forMultiSeed()"
+      ],
+      "suggestion": "Split ExploreOptions into SharedExploreOptions (top, minLogDice, minShared) and SingleSeedExploreOptions extends SharedExploreOptions (adds nounsPerCollocate); or keep ExploreOptions as-is but stop validating nouns_per in the shared preamble for multi-seed — validate it only in the single-seed handler",
+      "confidence": "high",
+      "impact_scope": "module",
+      "fix_scope": "single_edit"
+    },
+    {
+      "dimension": "design_coherence",
+      "identifier": "compare-profiles-not-migrated-to-explore-options",
+      "summary": "compareCollocateProfiles accepts raw (Set, double, int) parameters while sibling methods on SemanticFieldExplorer use ExploreOptions, creating a split calling convention within the same class",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/exploration/SemanticFieldExplorer.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/api/ExplorationHandlers.java"
+      ],
+      "evidence": [
+        "exploreByPattern(String, RelationConfig, ExploreOptions) and exploreMultiSeed(Set, RelationConfig, ExploreOptions) both use ExploreOptions",
+        "compareCollocateProfiles(Set<String> seedNouns, double minLogDice, int maxPerNoun) uses positional raw params",
+        "ExplorationHandlers.handleSemanticFieldComparison must manually unpack exploreParams.topCollocates() and exploreParams.minLogDice() to pass to compareCollocateProfiles, while the explore handlers pass ExploreOptions directly"
+      ],
+      "suggestion": "Add a compareCollocateProfiles(Set<String>, ExploreOptions) overload that delegates to the existing method; update handleSemanticFieldComparison to pass ExploreOptions for design coherence across the SemanticFieldExplorer public API",
+      "confidence": "high",
+      "impact_scope": "module",
+      "fix_scope": "single_edit"
+    }
+  ],
+  "retrospective": {
+    "root_causes": ["Incremental ExploreOptions migration: the value-object refactoring was applied to explore paths but not backfilled to compareCollocateProfiles; nounsPerCollocate was included in ExploreOptions because it was added at the same time rather than being evaluated for scope"],
+    "likely_symptoms": ["compare-profiles-not-migrated-to-explore-options"],
+    "possible_false_positives": []
+  }
+}

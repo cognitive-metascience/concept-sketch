@@ -13,7 +13,7 @@ import pl.marcinmilkowski.word_sketch.config.RelationConfig;
 import pl.marcinmilkowski.word_sketch.model.CoreCollocate;
 import pl.marcinmilkowski.word_sketch.model.DiscoveredNoun;
 import pl.marcinmilkowski.word_sketch.model.ExplorationResult;
-import pl.marcinmilkowski.word_sketch.model.QueryResults;
+import pl.marcinmilkowski.word_sketch.query.QueryResults;
 import pl.marcinmilkowski.word_sketch.query.QueryExecutor;
 
 /**

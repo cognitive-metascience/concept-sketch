@@ -7,7 +7,7 @@ import org.slf4j.LoggerFactory;
 import pl.marcinmilkowski.word_sketch.config.GrammarConfig;
 import pl.marcinmilkowski.word_sketch.model.RelationType;
 import pl.marcinmilkowski.word_sketch.query.QueryExecutor;
-import pl.marcinmilkowski.word_sketch.model.QueryResults;
+import pl.marcinmilkowski.word_sketch.query.QueryResults;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -72,16 +72,16 @@ class SketchHandlers {
     private void handleRelationsForType(HttpExchange exchange, RelationType relationType) throws IOException {
         JSONArray relationsArray = new JSONArray();
         for (var rel : grammarConfig.getRelations()) {
-            if (rel.relationType().orElse(null) == relationType) {
+            var rt = rel.relationType().orElse(null);
+            if (rt == relationType) {
                 Map<String, Object> obj = new HashMap<>();
                 obj.put("id", rel.id());
                 obj.put("name", rel.name());
                 obj.put("description", rel.description());
-                obj.put("relation_type", rel.relationType().orElseThrow(
-                        () -> new java.util.NoSuchElementException("relationType absent for relation: " + rel.id())).name());
+                obj.put("relation_type", rt.name());
                 obj.put("pattern", rel.pattern());
                 if (relationType == RelationType.DEP) {
-                    obj.put("deprel", rel.getDeprel());
+                    obj.put("deprel", rel.computeDeprel());
                 }
                 relationsArray.add(obj);
             }
@@ -141,7 +141,7 @@ class SketchHandlers {
         Map<String, Object> byRelation = new HashMap<>();
         List<String> relationErrors = new ArrayList<>();
 
-        executeRelationQueries(RelationType.DEP, rel -> rel.getDeprel() != null, lemma, byRelation, relationErrors,
+        executeRelationQueries(RelationType.DEP, rel -> rel.computeDeprel() != null, lemma, byRelation, relationErrors,
             (rel, sketch) -> buildRelationResponse(rel, sketch.results(), sketch.collocations()));
 
         Map<String, Object> response = new HashMap<>();
@@ -162,7 +162,7 @@ class SketchHandlers {
      * {@code relationErrors} rather than propagated.
      *
      * @param relationType    the type of relations to process
-     * @param extraFilter     additional per-relation predicate (e.g. {@code rel -> rel.getDeprel() != null})
+     * @param extraFilter     additional per-relation predicate (e.g. {@code rel -> rel.computeDeprel() != null})
      * @param lemma           the head lemma being sketched
      * @param byRelation      accumulator map from relation-id to response map
      * @param relationErrors  accumulator list for error strings
@@ -265,7 +265,7 @@ class SketchHandlers {
         relData.put("id", rel.id());
         relData.put("name", rel.name());
         relData.put("description", rel.description());
-        relData.put("deprel", rel.getDeprel());
+        relData.put("deprel", rel.computeDeprel());
         relData.put("total_matches", results.stream().mapToLong(QueryResults.WordSketchResult::frequency).sum());
         relData.put("collocations", collocations);
         return relData;

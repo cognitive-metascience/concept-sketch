@@ -21,9 +21,9 @@ import java.util.Set;
  * and {@link ComparisonResult} stay free of presentation concerns. All response-body assembly
  * for exploration endpoints is centralised here.</p>
  */
-final class ExploreResponseBuilder {
+final class ExploreResponseAssembler {
 
-    private ExploreResponseBuilder() {}
+    private ExploreResponseAssembler() {}
 
     /** Builds {@link RelationEdgeType#SEED_ADJ} edges from seed collocates and {@link RelationEdgeType#DISCOVERED_ADJ} edges from each discovered noun's shared collocates. */
     static List<Edge> buildEdges(ExplorationResult result) {
