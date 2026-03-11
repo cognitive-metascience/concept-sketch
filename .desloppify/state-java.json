@@ -11,15 +11,15 @@
     "total": 712,
     "auto_resolved": 114,
     "false_positive": 0,
-    "fixed": 471,
-    "open": 47,
+    "fixed": 474,
+    "open": 44,
     "wontfix": 80,
     "by_tier": {
       "1": {
         "auto_resolved": 57,
         "false_positive": 0,
-        "fixed": 372,
-        "open": 31,
+        "fixed": 375,
+        "open": 28,
         "wontfix": 55
       },
       "2": {
@@ -28133,16 +28133,22 @@
         "suggestion": "Add response.put(\"status\", \"ok\") as the first statement in handleBcqlQueryPost's success path, mirroring every other handler.",
         "reasoning": ""
       },
-      "status": "open",
-      "note": null,
+      "status": "fixed",
+      "note": "Added response.put('status', 'ok') to handleBcqlQueryPost success path",
       "first_seen": "2026-03-11T03:28:26+00:00",
       "last_seen": "2026-03-11T03:28:26+00:00",
-      "resolved_at": null,
+      "resolved_at": "2026-03-11T03:56:23+00:00",
       "reopen_count": 0,
       "lang": "java",
       "suppressed": false,
       "suppressed_at": null,
-      "suppression_pattern": null
+      "suppression_pattern": null,
+      "resolution_attestation": {
+        "kind": "manual",
+        "text": "I have actually Added response.put('status', 'ok') to handleBcqlQueryPost success path and I am not gaming the score.",
+        "attested_at": "2026-03-11T03:56:23+00:00",
+        "scan_verified": false
+      }
     },
     "review::.::holistic::api_surface_coherence::semantic_field_comparison_inconsistent_envelope::3ade7874": {
       "id": "review::.::holistic::api_surface_coherence::semantic_field_comparison_inconsistent_envelope::3ade7874",
@@ -28165,16 +28171,22 @@
         "suggestion": "Add 'relation_type' and a 'parameters' map to the comparison response, or document the explicit reason the comparison endpoint has a different envelope shape (e.g., it supports all relations simultaneously). If not applicable, note it as intentional with a code comment.",
         "reasoning": ""
       },
-      "status": "open",
-      "note": null,
+      "status": "fixed",
+      "note": "Aligned comparison response: parameters sub-map, seed_count, *_count field naming to match explore endpoints",
       "first_seen": "2026-03-11T03:28:26+00:00",
       "last_seen": "2026-03-11T03:28:26+00:00",
-      "resolved_at": null,
+      "resolved_at": "2026-03-11T03:56:29+00:00",
       "reopen_count": 0,
       "lang": "java",
       "suppressed": false,
       "suppressed_at": null,
-      "suppression_pattern": null
+      "suppression_pattern": null,
+      "resolution_attestation": {
+        "kind": "manual",
+        "text": "I have actually Aligned comparison response: parameters sub-map, seed_count, *_count field naming to match explore endpoints and I am not gaming the score.",
+        "attested_at": "2026-03-11T03:56:29+00:00",
+        "scan_verified": false
+      }
     },
     "review::.::holistic::api_surface_coherence::comparison_handler_inline_param_parsing::e880172d": {
       "id": "review::.::holistic::api_surface_coherence::comparison_handler_inline_param_parsing::e880172d",
@@ -28197,16 +28209,22 @@
         "suggestion": "Route handleSemanticFieldComparison through resolveExploreParams (or an overload of it) to share the same defaults and error-handling. If the comparison endpoint intentionally needs top=50, document this with a constant or a dedicated resolver.",
         "reasoning": ""
       },
-      "status": "open",
-      "note": null,
+      "status": "fixed",
+      "note": "Replaced inline try/catch numeric parsing with resolveExploreParams() call",
       "first_seen": "2026-03-11T03:28:26+00:00",
       "last_seen": "2026-03-11T03:28:26+00:00",
-      "resolved_at": null,
+      "resolved_at": "2026-03-11T03:56:28+00:00",
       "reopen_count": 0,
       "lang": "java",
       "suppressed": false,
       "suppressed_at": null,
-      "suppression_pattern": null
+      "suppression_pattern": null,
+      "resolution_attestation": {
+        "kind": "manual",
+        "text": "I have actually Replaced inline try/catch numeric parsing with resolveExploreParams() call and I am not gaming the score.",
+        "attested_at": "2026-03-11T03:56:28+00:00",
+        "scan_verified": false
+      }
     },
     "review::.::holistic::api_surface_coherence::concordance_silent_fallback::674fd70d": {
       "id": "review::.::holistic::api_surface_coherence::concordance_silent_fallback::674fd70d",
@@ -28691,8 +28709,8 @@
       "source": "holistic",
       "assessed_at": "2026-03-11T03:28:26+00:00",
       "needs_review_refresh": true,
-      "refresh_reason": "review_issue_wontfix",
-      "stale_since": "2026-03-11T03:36:43+00:00"
+      "refresh_reason": "review_issue_fixed",
+      "stale_since": "2026-03-11T03:56:29+00:00"
     },
     "authorization_consistency": {
       "score": 57.3,
@@ -31978,13 +31996,13 @@
       "strict": 33.3,
       "verified_strict_score": 33.3,
       "checks": 10,
-      "failing": 3,
+      "failing": 0,
       "tier": 4,
       "detectors": {
         "subjective_assessment": {
           "potential": 10,
           "pass_rate": 0.333,
-          "failing": 3,
+          "failing": 0,
           "weighted_failures": 6.67,
           "assessment_score": 33.3,
           "placeholder": false,

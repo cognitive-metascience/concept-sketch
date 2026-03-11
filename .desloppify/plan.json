@@ -1,7 +1,7 @@
 {
   "version": 8,
   "created": "2026-03-09T18:36:05+00:00",
-  "updated": "2026-03-11T03:52:50+00:00",
+  "updated": "2026-03-11T03:56:30+00:00",
   "queue_order": [
     "review::.::holistic::test_strategy::api_handler_smoke_only::0654ef4e",
     "review::.::holistic::test_strategy::bcql_concordance_hardcoded_path::498feea7",
@@ -13,9 +13,6 @@
     "review::.::holistic::ai_generated_debt::hallucinated_extract_lemma_at_reference::f250cba7",
     "review::.::holistic::ai_generated_debt::relation_config_unused_logger::f2490218",
     "review::.::holistic::ai_generated_debt::restating_inline_comments_pos_extraction::8e3c5288",
-    "review::.::holistic::api_surface_coherence::bcql_response_missing_status::db983239",
-    "review::.::holistic::api_surface_coherence::comparison_handler_inline_param_parsing::e880172d",
-    "review::.::holistic::api_surface_coherence::semantic_field_comparison_inconsistent_envelope::3ade7874",
     "review::.::holistic::authorization_consistency::cors_origin_repeated_literal::072cc9c4",
     "review::.::holistic::contract_coherence::execute_surface_pattern_silent_empty_on_missing_label::3805cc22",
     "review::.::holistic::contract_coherence::get_edges_hidden_computation::02f5969b",
@@ -4107,20 +4104,20 @@
     "review::.::holistic::api_surface_coherence::bcql_response_missing_status::db983239": {
       "issue_id": "review::.::holistic::api_surface_coherence::bcql_response_missing_status::db983239",
       "created_at": "2026-03-11T03:29:29+00:00",
-      "cluster": "api-consistency",
-      "updated_at": "2026-03-11T03:29:29+00:00"
+      "cluster": null,
+      "updated_at": "2026-03-11T03:56:23+00:00"
     },
     "review::.::holistic::api_surface_coherence::comparison_handler_inline_param_parsing::e880172d": {
       "issue_id": "review::.::holistic::api_surface_coherence::comparison_handler_inline_param_parsing::e880172d",
       "created_at": "2026-03-11T03:29:30+00:00",
-      "cluster": "api-consistency",
-      "updated_at": "2026-03-11T03:29:30+00:00"
+      "cluster": null,
+      "updated_at": "2026-03-11T03:56:28+00:00"
     },
     "review::.::holistic::api_surface_coherence::semantic_field_comparison_inconsistent_envelope::3ade7874": {
       "issue_id": "review::.::holistic::api_surface_coherence::semantic_field_comparison_inconsistent_envelope::3ade7874",
       "created_at": "2026-03-11T03:29:30+00:00",
-      "cluster": "api-consistency",
-      "updated_at": "2026-03-11T03:29:30+00:00"
+      "cluster": null,
+      "updated_at": "2026-03-11T03:56:30+00:00"
     },
     "review::.::holistic::abstraction_fitness::passthrough_compare_delegation::cd002154": {
       "issue_id": "review::.::holistic::abstraction_fitness::passthrough_compare_delegation::cd002154",
@@ -7887,16 +7884,13 @@
       "name": "api-consistency",
       "description": "API surface consistency: status envelope, count naming, WordSketchResult to record, preamble dedup",
       "issue_ids": [
-        "review::.::holistic::api_surface_coherence::bcql_response_missing_status::db983239",
-        "review::.::holistic::api_surface_coherence::comparison_handler_inline_param_parsing::e880172d",
-        "review::.::holistic::api_surface_coherence::semantic_field_comparison_inconsistent_envelope::3ade7874",
         "review::.::holistic::contract_coherence::execute_surface_pattern_silent_empty_on_missing_label::3805cc22",
         "review::.::holistic::authorization_consistency::cors_origin_repeated_literal::072cc9c4",
         "review::.::holistic::mid_level_elegance::cors_origin_repeated::b9b9e357",
         "review::.::holistic::convention_outlier::surface_dep_response_shape_asymmetry::a33ca3ff"
       ],
       "created_at": "2026-03-10T23:45:23+00:00",
-      "updated_at": "2026-03-11T03:43:07+00:00",
+      "updated_at": "2026-03-11T03:56:12+00:00",
       "auto": false,
       "cluster_key": "",
       "action": null,
@@ -7944,7 +7938,8 @@
           "effort": "trivial",
           "issue_refs": [
             "db983239"
-          ]
+          ],
+          "done": true
         },
         {
           "title": "Refactor handleSemanticFieldComparison to use resolveExploreParams helper",
@@ -7952,7 +7947,8 @@
           "effort": "small",
           "issue_refs": [
             "e880172d"
-          ]
+          ],
+          "done": true
         },
         {
           "title": "Align semantic-field comparison endpoint response shape with sibling explore endpoints",
@@ -7960,7 +7956,8 @@
           "effort": "small",
           "issue_refs": [
             "3ade7874"
-          ]
+          ],
+          "done": true
         }
       ]
     },
@@ -52771,6 +52768,146 @@
       "actor": "user",
       "note": null,
       "detail": {}
+    },
+    {
+      "timestamp": "2026-03-11T03:53:22+00:00",
+      "action": "commit_record",
+      "issue_ids": [
+        "review::.::holistic::contract_coherence::main_false_defaults_message::4e750f81",
+        "review::.::holistic::error_consistency::ec_main_null_grammar_config::8318e233",
+        "review::.::holistic::error_consistency::ec_readconfig_unchecked_throw::a041e4a6",
+        "review::.::holistic::error_consistency::ec_indexer_silent_error_continue::a9d63fcb",
+        "review::.::holistic::error_consistency::ec_parseparams_swallows_decode_failure::565df827",
+        "review::.::holistic::cross_module_architecture::null_grammarconfig_contract_violation::334ed752",
+        "review::.::holistic::low_level_elegance::null_grammarconfig_control_flow_crash::0b2b39c9",
+        "review::.::holistic::contract_coherence::explore_by_pattern_undeclared_illegal_state::514158cb",
+        "review::.::holistic::initialization_coupling::ic_executor_leaked_on_server_construction_failure::c967f2a4",
+        "review::.::holistic::error_consistency::ec_silent_relation_failure::c4672d58",
+        "review::.::holistic::incomplete_migration::dual_bcql_template_formats::1aac733e",
+        "review::.::holistic::incomplete_migration::legacy_tag_pos_attribute_support::344623e4",
+        "review::.::holistic::incomplete_migration::server_constructor_init_todo::29ea40cd",
+        "review::.::holistic::type_safety::ts_edge_type_raw_string::893ce534",
+        "review::.::holistic::type_safety::ts_getintvalue_zero_ambiguity::6c11be87",
+        "review::.::holistic::type_safety::ts_nullable_collocate_lemma_undocumented::2d5a66d3",
+        "review::.::holistic::type_safety::ts_relation_alias_raw_strings::e0d992d0",
+        "review::.::holistic::dependency_health::blacklab_nonstandard_repo::a54ab5c4",
+        "review::.::holistic::dependency_health::jdk_internal_http_server::0dff64a3"
+      ],
+      "cluster_name": null,
+      "actor": "user",
+      "note": null,
+      "detail": {
+        "sha": "b432eb32d43c",
+        "branch": "desloppify/code-health"
+      }
+    },
+    {
+      "timestamp": "2026-03-11T03:56:11+00:00",
+      "action": "cluster_update",
+      "issue_ids": [],
+      "cluster_name": "api-consistency",
+      "actor": "user",
+      "note": null,
+      "detail": {
+        "description": null
+      }
+    },
+    {
+      "timestamp": "2026-03-11T03:56:11+00:00",
+      "action": "cluster_update",
+      "issue_ids": [],
+      "cluster_name": "api-consistency",
+      "actor": "user",
+      "note": null,
+      "detail": {
+        "description": null
+      }
+    },
+    {
+      "timestamp": "2026-03-11T03:56:12+00:00",
+      "action": "cluster_update",
+      "issue_ids": [],
+      "cluster_name": "api-consistency",
+      "actor": "user",
+      "note": null,
+      "detail": {
+        "description": null
+      }
+    },
+    {
+      "timestamp": "2026-03-11T03:56:23+00:00",
+      "action": "done",
+      "issue_ids": [
+        "db983239"
+      ],
+      "cluster_name": null,
+      "actor": "user",
+      "note": "Added response.put('status', 'ok') to handleBcqlQueryPost success path",
+      "detail": {}
+    },
+    {
+      "timestamp": "2026-03-11T03:56:23+00:00",
+      "action": "resolve",
+      "issue_ids": [
+        "review::.::holistic::api_surface_coherence::bcql_response_missing_status::db983239"
+      ],
+      "cluster_name": null,
+      "actor": "user",
+      "note": "Added response.put('status', 'ok') to handleBcqlQueryPost success path",
+      "detail": {
+        "status": "fixed",
+        "attestation": "I have actually Added response.put('status', 'ok') to handleBcqlQueryPost success path and I am not gaming the score."
+      }
+    },
+    {
+      "timestamp": "2026-03-11T03:56:28+00:00",
+      "action": "done",
+      "issue_ids": [
+        "e880172d"
+      ],
+      "cluster_name": null,
+      "actor": "user",
+      "note": "Replaced inline try/catch numeric parsing with resolveExploreParams() call",
+      "detail": {}
+    },
+    {
+      "timestamp": "2026-03-11T03:56:28+00:00",
+      "action": "resolve",
+      "issue_ids": [
+        "review::.::holistic::api_surface_coherence::comparison_handler_inline_param_parsing::e880172d"
+      ],
+      "cluster_name": null,
+      "actor": "user",
+      "note": "Replaced inline try/catch numeric parsing with resolveExploreParams() call",
+      "detail": {
+        "status": "fixed",
+        "attestation": "I have actually Replaced inline try/catch numeric parsing with resolveExploreParams() call and I am not gaming the score."
+      }
+    },
+    {
+      "timestamp": "2026-03-11T03:56:29+00:00",
+      "action": "done",
+      "issue_ids": [
+        "3ade7874"
+      ],
+      "cluster_name": null,
+      "actor": "user",
+      "note": "Aligned comparison response: parameters sub-map, seed_count, *_count field naming to match explore endpoints",
+      "detail": {}
+    },
+    {
+      "timestamp": "2026-03-11T03:56:30+00:00",
+      "action": "resolve",
+      "issue_ids": [
+        "review::.::holistic::api_surface_coherence::semantic_field_comparison_inconsistent_envelope::3ade7874"
+      ],
+      "cluster_name": null,
+      "actor": "user",
+      "note": "Aligned comparison response: parameters sub-map, seed_count, *_count field naming to match explore endpoints",
+      "detail": {
+        "status": "fixed",
+        "attestation": "I have actually Aligned comparison response: parameters sub-map, seed_count, *_count field naming to match explore endpoints and I am not gaming the score."
+      }
     }
   ],
   "epic_triage_meta": {
@@ -53713,28 +53850,40 @@
       "recorded_at": "2026-03-11T03:14:38+00:00",
       "note": null,
       "cluster_name": null
+    },
+    {
+      "sha": "b432eb32d43c",
+      "branch": "desloppify/code-health",
+      "issue_ids": [
+        "review::.::holistic::contract_coherence::main_false_defaults_message::4e750f81",
+        "review::.::holistic::error_consistency::ec_main_null_grammar_config::8318e233",
+        "review::.::holistic::error_consistency::ec_readconfig_unchecked_throw::a041e4a6",
+        "review::.::holistic::error_consistency::ec_indexer_silent_error_continue::a9d63fcb",
+        "review::.::holistic::error_consistency::ec_parseparams_swallows_decode_failure::565df827",
+        "review::.::holistic::cross_module_architecture::null_grammarconfig_contract_violation::334ed752",
+        "review::.::holistic::low_level_elegance::null_grammarconfig_control_flow_crash::0b2b39c9",
+        "review::.::holistic::contract_coherence::explore_by_pattern_undeclared_illegal_state::514158cb",
+        "review::.::holistic::initialization_coupling::ic_executor_leaked_on_server_construction_failure::c967f2a4",
+        "review::.::holistic::error_consistency::ec_silent_relation_failure::c4672d58",
+        "review::.::holistic::incomplete_migration::dual_bcql_template_formats::1aac733e",
+        "review::.::holistic::incomplete_migration::legacy_tag_pos_attribute_support::344623e4",
+        "review::.::holistic::incomplete_migration::server_constructor_init_todo::29ea40cd",
+        "review::.::holistic::type_safety::ts_edge_type_raw_string::893ce534",
+        "review::.::holistic::type_safety::ts_getintvalue_zero_ambiguity::6c11be87",
+        "review::.::holistic::type_safety::ts_nullable_collocate_lemma_undocumented::2d5a66d3",
+        "review::.::holistic::type_safety::ts_relation_alias_raw_strings::e0d992d0",
+        "review::.::holistic::dependency_health::blacklab_nonstandard_repo::a54ab5c4",
+        "review::.::holistic::dependency_health::jdk_internal_http_server::0dff64a3"
+      ],
+      "recorded_at": "2026-03-11T03:53:22+00:00",
+      "note": null,
+      "cluster_name": null
     }
   ],
   "uncommitted_issues": [
-    "review::.::holistic::contract_coherence::main_false_defaults_message::4e750f81",
-    "review::.::holistic::error_consistency::ec_main_null_grammar_config::8318e233",
-    "review::.::holistic::error_consistency::ec_readconfig_unchecked_throw::a041e4a6",
-    "review::.::holistic::error_consistency::ec_indexer_silent_error_continue::a9d63fcb",
-    "review::.::holistic::error_consistency::ec_parseparams_swallows_decode_failure::565df827",
-    "review::.::holistic::cross_module_architecture::null_grammarconfig_contract_violation::334ed752",
-    "review::.::holistic::low_level_elegance::null_grammarconfig_control_flow_crash::0b2b39c9",
-    "review::.::holistic::contract_coherence::explore_by_pattern_undeclared_illegal_state::514158cb",
-    "review::.::holistic::initialization_coupling::ic_executor_leaked_on_server_construction_failure::c967f2a4",
-    "review::.::holistic::error_consistency::ec_silent_relation_failure::c4672d58",
-    "review::.::holistic::incomplete_migration::dual_bcql_template_formats::1aac733e",
-    "review::.::holistic::incomplete_migration::legacy_tag_pos_attribute_support::344623e4",
-    "review::.::holistic::incomplete_migration::server_constructor_init_todo::29ea40cd",
-    "review::.::holistic::type_safety::ts_edge_type_raw_string::893ce534",
-    "review::.::holistic::type_safety::ts_getintvalue_zero_ambiguity::6c11be87",
-    "review::.::holistic::type_safety::ts_nullable_collocate_lemma_undocumented::2d5a66d3",
-    "review::.::holistic::type_safety::ts_relation_alias_raw_strings::e0d992d0",
-    "review::.::holistic::dependency_health::blacklab_nonstandard_repo::a54ab5c4",
-    "review::.::holistic::dependency_health::jdk_internal_http_server::0dff64a3"
+    "review::.::holistic::api_surface_coherence::bcql_response_missing_status::db983239",
+    "review::.::holistic::api_surface_coherence::comparison_handler_inline_param_parsing::e880172d",
+    "review::.::holistic::api_surface_coherence::semantic_field_comparison_inconsistent_envelope::3ade7874"
   ],
   "commit_tracking_branch": null,
   "scan_count_at_plan_start": 5

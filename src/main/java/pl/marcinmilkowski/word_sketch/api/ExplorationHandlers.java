@@ -150,15 +150,10 @@ class ExplorationHandlers {
 
         Set<String> seeds = parseSeedSet(nounsParam);
 
-        double minLogDice;
-        int topCollocates;
-        try {
-            minLogDice = Double.parseDouble(params.getOrDefault("min_logdice", "3.0"));
-            topCollocates = Integer.parseInt(params.getOrDefault("top", "50"));
-        } catch (NumberFormatException e) {
-            HttpApiUtils.sendError(exchange, 400, "Invalid numeric parameter: " + e.getMessage());
-            return;
-        }
+        ExploreParams exploreParams = resolveExploreParams(exchange, params);
+        if (exploreParams == null) return;
+        int topCollocates = exploreParams.topCollocates();
+        double minLogDice = exploreParams.minLogDice();
 
         ComparisonResult result;
         try {
@@ -174,17 +169,22 @@ class ExplorationHandlers {
         Map<String, Object> response = new HashMap<>();
         response.put("status", "ok");
         response.put("seeds", new ArrayList<>(result.getNouns()));
-        response.put("min_logdice", minLogDice);
+        response.put("seed_count", seeds.size());
+
+        Map<String, Object> paramsUsed = new HashMap<>();
+        paramsUsed.put("top", topCollocates);
+        paramsUsed.put("min_logdice", minLogDice);
+        response.put("parameters", paramsUsed);
 
         List<Map<String, Object>> adjectives = new ArrayList<>();
         for (AdjectiveProfile adj : result.getAllAdjectives()) {
             adjectives.add(formatAdjectiveProfile(adj));
         }
         response.put("adjectives", adjectives);
-        response.put("total_adjectives", result.getAllAdjectives().size());
-        response.put("fully_shared", result.getFullyShared().size());
-        response.put("partially_shared", result.getPartiallyShared().size());
-        response.put("specific", result.getSpecific().size());
+        response.put("adjectives_count", result.getAllAdjectives().size());
+        response.put("fully_shared_count", result.getFullyShared().size());
+        response.put("partially_shared_count", result.getPartiallyShared().size());
+        response.put("specific_count", result.getSpecific().size());
 
         List<Map<String, Object>> edges = new ArrayList<>();
         if (result.getEdges() != null) {
@@ -193,7 +193,7 @@ class ExplorationHandlers {
             }
         }
         response.put("edges", edges);
-        response.put("total_edges", edges.size());
+        response.put("edges_count", edges.size());
 
         HttpApiUtils.sendJsonResponse(exchange, response);
     }

@@ -371,6 +371,7 @@ class SketchHandlers {
             List<QueryResults.CollocateResult> results = executor.executeBcqlQuery(bcqlQuery, limit);
 
             Map<String, Object> response = new HashMap<>();
+            response.put("status", "ok");
             response.put("query", bcqlQuery);
             response.put("total_results", results.size());
             response.put("limit", limit);
