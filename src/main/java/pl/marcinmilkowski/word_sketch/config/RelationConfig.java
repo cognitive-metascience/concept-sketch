@@ -172,8 +172,11 @@ public record RelationConfig(
      * Extract the dependency relation (deprel) from the pattern.
      * For DEP relations, looks for deprel="xxx" attribute constraint in the pattern.
      * If not found, extracts from the relation ID (e.g., "dep_amod" -> "amod").
+     *
+     * @return the deprel string (e.g. {@code "amod"}), or {@code null} when the relation
+     *         type is not {@link RelationType#DEP} or no deprel can be derived
      */
-    public String getDeprel() {
+    public @org.jspecify.annotations.Nullable String getDeprel() {
         if (pattern == null || !RelationType.DEP.equals(relationType().orElse(null))) {
             return null;
         }

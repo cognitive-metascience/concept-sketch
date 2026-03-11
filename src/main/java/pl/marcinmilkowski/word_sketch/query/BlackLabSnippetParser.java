@@ -1,5 +1,6 @@
 package pl.marcinmilkowski.word_sketch.query;
 
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -27,7 +28,7 @@ class BlackLabSnippetParser {
      *
      * @return the lowercased lemma, or {@code null} if none found
      */
-    /* @Nullable */
+    @Nullable
     static String extractLemmaFromMatch(String matchText) {
         String lemma = extractLastLemma(matchText);
         return lemma != null ? lemma.toLowerCase() : null;
@@ -58,7 +59,7 @@ class BlackLabSnippetParser {
      *
      * @return the POS tag string, or {@code null} if not found
      */
-    /* @Nullable */
+    @Nullable
     static String extractPosFromMatch(String matchText) {
         if (matchText == null || matchText.isEmpty()) {
             return null;
@@ -142,7 +143,7 @@ class BlackLabSnippetParser {
      * @param position The 1-based position of the token to extract (from findLabelPosition)
      * @return the lemma at the given position, or {@code null} if not found
      */
-    /* @Nullable */
+    @Nullable
     static String extractCollocateFromXmlByPosition(String xmlSnippet, int position) {
         if (xmlSnippet == null || xmlSnippet.isEmpty() || position < 1) {
             return null;
@@ -158,7 +159,7 @@ class BlackLabSnippetParser {
         return null;
     }
 
-    /* @Nullable */
+    @Nullable
     static String extractHeadword(String bcqlPattern) {
         java.util.regex.Matcher m = LEMMA_ATTR_ANY.matcher(bcqlPattern);
         if (m.find()) {
@@ -174,7 +175,7 @@ class BlackLabSnippetParser {
      * @param position  1-based position of the word to extract
      * @return the word at that position, or {@code null} if out of range
      */
-    /* @Nullable */
+    @Nullable
     static String extractPlainTextTokenAt(String text, int position) {
         if (text == null || text.isEmpty() || position < 1) return null;
         String[] words = text.trim().split("\\s+");
@@ -224,7 +225,7 @@ class BlackLabSnippetParser {
      * @param matchXml The match XML (parts[1] from a concordance)
      * @return The collocate lemma (original case), or {@code null}
      */
-    /* @Nullable */
+    @Nullable
     static String extractCollocateLemma(String matchXml) {
         return extractLastLemma(matchXml);
     }

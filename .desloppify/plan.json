@@ -1,7 +1,7 @@
 {
   "version": 8,
   "created": "2026-03-09T18:36:05+00:00",
-  "updated": "2026-03-11T07:45:05+00:00",
+  "updated": "2026-03-11T07:46:59+00:00",
   "queue_order": [
     "review::.::holistic::contract_coherence::create_default_english_hides_ioexception::c33963db",
     "review::.::holistic::contract_coherence::require_next_arg_exits_jvm::53331dd0",
@@ -15,10 +15,6 @@
     "review::.::holistic::naming_quality::run_dependency_query_generic_verb::34fb3756",
     "review::.::holistic::convention_outlier::fqn_function_param::b09dd1e9",
     "review::.::holistic::convention_outlier::mixed_lambda_methodref_same_callsite::27a0fc3a",
-    "review::.::holistic::contract_coherence::nullable_comment_not_annotation::cf7780e9",
-    "review::.::holistic::convention_outlier::pseudo_nullable_annotation::da3f0a6e",
-    "review::.::holistic::type_safety::informal_nullable_annotations::162811a0",
-    "review::.::holistic::contract_coherence::getdeprel_undocumented_null::b21e54f1",
     "review::.::holistic::test_strategy::api_handler_smoke_only::0654ef4e",
     "review::.::holistic::test_strategy::bcql_concordance_hardcoded_path::498feea7",
     "review::.::holistic::test_strategy::indexer_zero_coverage::4329ef90",
@@ -5171,26 +5167,26 @@
     "review::.::holistic::contract_coherence::nullable_comment_not_annotation::cf7780e9": {
       "issue_id": "review::.::holistic::contract_coherence::nullable_comment_not_annotation::cf7780e9",
       "created_at": "2026-03-11T07:32:29+00:00",
-      "cluster": "null-annotations",
-      "updated_at": "2026-03-11T07:32:29+00:00"
+      "cluster": null,
+      "updated_at": "2026-03-11T07:46:52+00:00"
     },
     "review::.::holistic::convention_outlier::pseudo_nullable_annotation::da3f0a6e": {
       "issue_id": "review::.::holistic::convention_outlier::pseudo_nullable_annotation::da3f0a6e",
       "created_at": "2026-03-11T07:32:29+00:00",
-      "cluster": "null-annotations",
-      "updated_at": "2026-03-11T07:32:29+00:00"
+      "cluster": null,
+      "updated_at": "2026-03-11T07:46:55+00:00"
     },
     "review::.::holistic::type_safety::informal_nullable_annotations::162811a0": {
       "issue_id": "review::.::holistic::type_safety::informal_nullable_annotations::162811a0",
       "created_at": "2026-03-11T07:32:30+00:00",
-      "cluster": "null-annotations",
-      "updated_at": "2026-03-11T07:32:30+00:00"
+      "cluster": null,
+      "updated_at": "2026-03-11T07:46:58+00:00"
     },
     "review::.::holistic::contract_coherence::getdeprel_undocumented_null::b21e54f1": {
       "issue_id": "review::.::holistic::contract_coherence::getdeprel_undocumented_null::b21e54f1",
       "created_at": "2026-03-11T07:32:30+00:00",
-      "cluster": "null-annotations",
-      "updated_at": "2026-03-11T07:32:30+00:00"
+      "cluster": null,
+      "updated_at": "2026-03-11T07:46:58+00:00"
     },
     "review::.::holistic::authorization_consistency::bcql_query_no_input_limits::e4a25d09": {
       "issue_id": "review::.::holistic::authorization_consistency::bcql_query_no_input_limits::e4a25d09",
@@ -10253,12 +10249,7 @@
     "null-annotations": {
       "name": "null-annotations",
       "description": "Replace comment-only @Nullable annotations with real JSR-305/JSpecify annotations and document undocumented null returns",
-      "issue_ids": [
-        "review::.::holistic::contract_coherence::nullable_comment_not_annotation::cf7780e9",
-        "review::.::holistic::convention_outlier::pseudo_nullable_annotation::da3f0a6e",
-        "review::.::holistic::type_safety::informal_nullable_annotations::162811a0",
-        "review::.::holistic::contract_coherence::getdeprel_undocumented_null::b21e54f1"
-      ],
+      "issue_ids": [],
       "created_at": "2026-03-11T07:32:02+00:00",
       "updated_at": "2026-03-11T07:38:34+00:00",
       "auto": false,
@@ -10299,7 +10290,8 @@
           "issue_refs": [
             "b21e54f1"
           ],
-          "effort": "small"
+          "effort": "small",
+          "done": true
         },
         {
           "title": "In RelationConfig.getDeprel(): add @return @Nullable note to Javadoc explaining when null is returned",
@@ -10307,7 +10299,8 @@
           "issue_refs": [
             "b21e54f1"
           ],
-          "effort": "small"
+          "effort": "small",
+          "done": true
         }
       ]
     },
@@ -15351,10 +15344,6 @@
     }
   },
   "promoted_ids": [
-    "review::.::holistic::contract_coherence::nullable_comment_not_annotation::cf7780e9",
-    "review::.::holistic::convention_outlier::pseudo_nullable_annotation::da3f0a6e",
-    "review::.::holistic::type_safety::informal_nullable_annotations::162811a0",
-    "review::.::holistic::contract_coherence::getdeprel_undocumented_null::b21e54f1",
     "review::.::holistic::api_surface_coherence::word1_word2_vs_adjective_noun_param_naming::97d0b8f0",
     "review::.::holistic::naming_quality::collocate_label_pos_redundant::f0a2c664",
     "review::.::holistic::naming_quality::run_dependency_query_generic_verb::34fb3756",
@@ -60431,6 +60420,117 @@
       "actor": "user",
       "note": null,
       "detail": {}
+    },
+    {
+      "timestamp": "2026-03-11T07:46:51+00:00",
+      "action": "done",
+      "issue_ids": [
+        "nullable_comment_not_annotation"
+      ],
+      "cluster_name": null,
+      "actor": "user",
+      "note": "Replaced all comment-only @Nullable annotations with real @Nullable from org.jspecify in BlackLabSnippetParser",
+      "detail": {}
+    },
+    {
+      "timestamp": "2026-03-11T07:46:52+00:00",
+      "action": "resolve",
+      "issue_ids": [
+        "review::.::holistic::contract_coherence::nullable_comment_not_annotation::cf7780e9"
+      ],
+      "cluster_name": null,
+      "actor": "user",
+      "note": "Replaced all comment-only @Nullable annotations with real @Nullable from org.jspecify in BlackLabSnippetParser",
+      "detail": {
+        "status": "fixed",
+        "attestation": "I have actually Replaced all comment-only @Nullable annotations with real @Nullable from org.jspecify in BlackLabSnippetParser and I am not gaming the score."
+      }
+    },
+    {
+      "timestamp": "2026-03-11T07:46:52+00:00",
+      "action": "done",
+      "issue_ids": [
+        "pseudo_nullable_annotation"
+      ],
+      "cluster_name": null,
+      "actor": "user",
+      "note": "Standardized to real @Nullable annotations from jspecify; added jspecify dependency to pom.xml",
+      "detail": {}
+    },
+    {
+      "timestamp": "2026-03-11T07:46:55+00:00",
+      "action": "resolve",
+      "issue_ids": [
+        "review::.::holistic::convention_outlier::pseudo_nullable_annotation::da3f0a6e"
+      ],
+      "cluster_name": null,
+      "actor": "user",
+      "note": "Standardized to real @Nullable annotations from jspecify; added jspecify dependency to pom.xml",
+      "detail": {
+        "status": "fixed",
+        "attestation": "I have actually Standardized to real @Nullable annotations from jspecify; added jspecify dependency to pom.xml and I am not gaming the score."
+      }
+    },
+    {
+      "timestamp": "2026-03-11T07:46:57+00:00",
+      "action": "done",
+      "issue_ids": [
+        "informal_nullable_annotations"
+      ],
+      "cluster_name": null,
+      "actor": "user",
+      "note": "Used real org.jspecify @Nullable annotations in BlackLabSnippetParser, replacing comment-only markers",
+      "detail": {}
+    },
+    {
+      "timestamp": "2026-03-11T07:46:58+00:00",
+      "action": "resolve",
+      "issue_ids": [
+        "review::.::holistic::type_safety::informal_nullable_annotations::162811a0"
+      ],
+      "cluster_name": null,
+      "actor": "user",
+      "note": "Used real org.jspecify @Nullable annotations in BlackLabSnippetParser, replacing comment-only markers",
+      "detail": {
+        "status": "fixed",
+        "attestation": "I have actually Used real org.jspecify @Nullable annotations in BlackLabSnippetParser, replacing comment-only markers and I am not gaming the score."
+      }
+    },
+    {
+      "timestamp": "2026-03-11T07:46:58+00:00",
+      "action": "done",
+      "issue_ids": [
+        "getdeprel_undocumented_null"
+      ],
+      "cluster_name": null,
+      "actor": "user",
+      "note": "Added @Nullable annotation and Javadoc to getDeprel() in RelationConfig explaining null return cases",
+      "detail": {}
+    },
+    {
+      "timestamp": "2026-03-11T07:46:58+00:00",
+      "action": "resolve",
+      "issue_ids": [
+        "review::.::holistic::contract_coherence::getdeprel_undocumented_null::b21e54f1"
+      ],
+      "cluster_name": null,
+      "actor": "user",
+      "note": "Added @Nullable annotation and Javadoc to getDeprel() in RelationConfig explaining null return cases",
+      "detail": {
+        "status": "fixed",
+        "attestation": "I have actually Added @Nullable annotation and Javadoc to getDeprel() in RelationConfig explaining null return cases and I am not gaming the score."
+      }
+    },
+    {
+      "timestamp": "2026-03-11T07:46:59+00:00",
+      "action": "cluster_done",
+      "issue_ids": [
+        "review::.::holistic::contract_coherence::getdeprel_undocumented_null::b21e54f1"
+      ],
+      "cluster_name": "null-annotations",
+      "actor": "user",
+      "note": null,
+      "detail": {}
     }
   ],
   "epic_triage_meta": {
@@ -61493,7 +61593,11 @@
     "review::.::holistic::low_level_elegance::repeated_rounding_idiom::5a3b4c4c",
     "review::.::holistic::logic_clarity::double_min_shared_clamp::9de067f0",
     "review::.::holistic::incomplete_migration::cqlutils_doc_both_both::0a75ecd3",
-    "review::.::holistic::package_organization::empty_tools_directory::f92aa9f7"
+    "review::.::holistic::package_organization::empty_tools_directory::f92aa9f7",
+    "review::.::holistic::contract_coherence::nullable_comment_not_annotation::cf7780e9",
+    "review::.::holistic::convention_outlier::pseudo_nullable_annotation::da3f0a6e",
+    "review::.::holistic::type_safety::informal_nullable_annotations::162811a0",
+    "review::.::holistic::contract_coherence::getdeprel_undocumented_null::b21e54f1"
   ],
   "commit_tracking_branch": null,
   "scan_count_at_plan_start": 5

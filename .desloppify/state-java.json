@@ -11,22 +11,22 @@
     "total": 826,
     "auto_resolved": 122,
     "false_positive": 0,
-    "fixed": 539,
-    "open": 42,
+    "fixed": 543,
+    "open": 38,
     "wontfix": 123,
     "by_tier": {
       "1": {
         "auto_resolved": 62,
         "false_positive": 0,
-        "fixed": 423,
-        "open": 13,
+        "fixed": 426,
+        "open": 10,
         "wontfix": 82
       },
       "2": {
         "auto_resolved": 32,
         "false_positive": 0,
-        "fixed": 112,
-        "open": 20,
+        "fixed": 113,
+        "open": 19,
         "wontfix": 39
       },
       "3": {
@@ -32141,16 +32141,22 @@
         "suggestion": "Either add a real null-annotation dependency (e.g. org.jetbrains:annotations or jakarta.annotation) and replace the comments with real @Nullable, or remove the comments and rely on Javadoc @return descriptions to convey nullability.",
         "reasoning": ""
       },
-      "status": "open",
-      "note": null,
+      "status": "fixed",
+      "note": "Standardized to real @Nullable annotations from jspecify; added jspecify dependency to pom.xml",
       "first_seen": "2026-03-11T07:24:51+00:00",
       "last_seen": "2026-03-11T07:24:51+00:00",
-      "resolved_at": null,
+      "resolved_at": "2026-03-11T07:46:52+00:00",
       "reopen_count": 0,
       "lang": "java",
       "suppressed": false,
       "suppressed_at": null,
-      "suppression_pattern": null
+      "suppression_pattern": null,
+      "resolution_attestation": {
+        "kind": "manual",
+        "text": "I have actually Standardized to real @Nullable annotations from jspecify; added jspecify dependency to pom.xml and I am not gaming the score.",
+        "attested_at": "2026-03-11T07:46:52+00:00",
+        "scan_verified": false
+      }
     },
     "review::.::holistic::error_consistency::silent_null_guard_no_log::e49aac50": {
       "id": "review::.::holistic::error_consistency::silent_null_guard_no_log::e49aac50",
@@ -33007,16 +33013,22 @@
         "suggestion": "Add a dependency on JSR-305 (com.google.code.findbugs:jsr305) or JetBrains annotations, then replace '/* @Nullable */' comments with '@Nullable' annotations. Alternatively, return Optional<String> for the public surface (extractHeadword is already package-private). This enables null-analysis tools (SpotBugs, IntelliJ) to enforce the contract automatically.",
         "reasoning": ""
       },
-      "status": "open",
-      "note": null,
+      "status": "fixed",
+      "note": "Replaced all comment-only @Nullable annotations with real @Nullable from org.jspecify in BlackLabSnippetParser",
       "first_seen": "2026-03-11T07:24:51+00:00",
       "last_seen": "2026-03-11T07:24:51+00:00",
-      "resolved_at": null,
+      "resolved_at": "2026-03-11T07:46:51+00:00",
       "reopen_count": 0,
       "lang": "java",
       "suppressed": false,
       "suppressed_at": null,
-      "suppression_pattern": null
+      "suppression_pattern": null,
+      "resolution_attestation": {
+        "kind": "manual",
+        "text": "I have actually Replaced all comment-only @Nullable annotations with real @Nullable from org.jspecify in BlackLabSnippetParser and I am not gaming the score.",
+        "attested_at": "2026-03-11T07:46:51+00:00",
+        "scan_verified": false
+      }
     },
     "review::.::holistic::contract_coherence::create_default_english_hides_ioexception::c33963db": {
       "id": "review::.::holistic::contract_coherence::create_default_english_hides_ioexception::c33963db",
@@ -33104,16 +33116,22 @@
         "suggestion": "Add '@return the deprel string, or {@code null} when the relation is not of type DEP, the pattern is null, or no deprel can be derived from the id' to the getDeprel() Javadoc. Optionally return Optional<String> to make null-avoidance compositional.",
         "reasoning": ""
       },
-      "status": "open",
-      "note": null,
+      "status": "fixed",
+      "note": "Added @Nullable annotation and Javadoc to getDeprel() in RelationConfig explaining null return cases",
       "first_seen": "2026-03-11T07:24:51+00:00",
       "last_seen": "2026-03-11T07:24:51+00:00",
-      "resolved_at": null,
+      "resolved_at": "2026-03-11T07:46:58+00:00",
       "reopen_count": 0,
       "lang": "java",
       "suppressed": false,
       "suppressed_at": null,
-      "suppression_pattern": null
+      "suppression_pattern": null,
+      "resolution_attestation": {
+        "kind": "manual",
+        "text": "I have actually Added @Nullable annotation and Javadoc to getDeprel() in RelationConfig explaining null return cases and I am not gaming the score.",
+        "attested_at": "2026-03-11T07:46:58+00:00",
+        "scan_verified": false
+      }
     },
     "review::.::holistic::logic_clarity::double_min_shared_clamp::9de067f0": {
       "id": "review::.::holistic::logic_clarity::double_min_shared_clamp::9de067f0",
@@ -33209,16 +33227,22 @@
         "suggestion": "Add org.jetbrains:annotations or com.google.code.findbugs:jsr305 to pom.xml dependencies, then replace '/* @Nullable */' with '@Nullable'. For methods only used internally (package-private), using Optional<String> is a viable alternative: 'static Optional<String> extractLemmaFromMatch(String text)' \u2014 callers would use .orElse(null) only when needed.",
         "reasoning": ""
       },
-      "status": "open",
-      "note": null,
+      "status": "fixed",
+      "note": "Used real org.jspecify @Nullable annotations in BlackLabSnippetParser, replacing comment-only markers",
       "first_seen": "2026-03-11T07:24:51+00:00",
       "last_seen": "2026-03-11T07:24:51+00:00",
-      "resolved_at": null,
+      "resolved_at": "2026-03-11T07:46:57+00:00",
       "reopen_count": 0,
       "lang": "java",
       "suppressed": false,
       "suppressed_at": null,
-      "suppression_pattern": null
+      "suppression_pattern": null,
+      "resolution_attestation": {
+        "kind": "manual",
+        "text": "I have actually Used real org.jspecify @Nullable annotations in BlackLabSnippetParser, replacing comment-only markers and I am not gaming the score.",
+        "attested_at": "2026-03-11T07:46:57+00:00",
+        "scan_verified": false
+      }
     },
     "review::.::holistic::type_safety::stringly_typed_relation_ids::59021e2a": {
       "id": "review::.::holistic::type_safety::stringly_typed_relation_ids::59021e2a",
@@ -33963,7 +33987,10 @@
     "contract_coherence": {
       "score": 61.7,
       "source": "holistic",
-      "assessed_at": "2026-03-11T07:24:51+00:00"
+      "assessed_at": "2026-03-11T07:24:51+00:00",
+      "needs_review_refresh": true,
+      "refresh_reason": "review_issue_fixed",
+      "stale_since": "2026-03-11T07:46:58+00:00"
     },
     "logic_clarity": {
       "score": 74.9,
@@ -33978,8 +34005,8 @@
       "source": "holistic",
       "assessed_at": "2026-03-11T07:24:51+00:00",
       "needs_review_refresh": true,
-      "refresh_reason": "review_issue_wontfix",
-      "stale_since": "2026-03-11T07:31:21+00:00"
+      "refresh_reason": "review_issue_fixed",
+      "stale_since": "2026-03-11T07:46:57+00:00"
     },
     "api_surface_coherence": {
       "score": 62.4,
@@ -34013,7 +34040,10 @@
     "convention_outlier": {
       "score": 71.4,
       "source": "holistic",
-      "assessed_at": "2026-03-11T07:24:51+00:00"
+      "assessed_at": "2026-03-11T07:24:51+00:00",
+      "needs_review_refresh": true,
+      "refresh_reason": "review_issue_fixed",
+      "stale_since": "2026-03-11T07:46:52+00:00"
     },
     "error_consistency": {
       "score": 63.1,
@@ -36973,13 +37003,13 @@
       "strict": 54.5,
       "verified_strict_score": 54.5,
       "checks": 10,
-      "failing": 2,
+      "failing": 1,
       "tier": 4,
       "detectors": {
         "subjective_assessment": {
           "potential": 10,
           "pass_rate": 0.545,
-          "failing": 2,
+          "failing": 1,
           "weighted_failures": 4.55,
           "assessment_score": 54.5,
           "placeholder": false,
@@ -36994,13 +37024,13 @@
       "strict": 61.7,
       "verified_strict_score": 61.7,
       "checks": 10,
-      "failing": 4,
+      "failing": 2,
       "tier": 4,
       "detectors": {
         "subjective_assessment": {
           "potential": 10,
           "pass_rate": 0.617,
-          "failing": 4,
+          "failing": 2,
           "weighted_failures": 3.83,
           "assessment_score": 61.7,
           "placeholder": false,
@@ -37198,13 +37228,13 @@
       "strict": 71.4,
       "verified_strict_score": 71.4,
       "checks": 10,
-      "failing": 3,
+      "failing": 2,
       "tier": 4,
       "detectors": {
         "subjective_assessment": {
           "potential": 10,
           "pass_rate": 0.714,
-          "failing": 3,
+          "failing": 2,
           "weighted_failures": 2.86,
           "assessment_score": 71.4,
           "placeholder": false,
