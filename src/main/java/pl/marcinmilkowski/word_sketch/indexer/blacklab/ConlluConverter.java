@@ -77,7 +77,6 @@ public class ConlluConverter {
                     // NOTE: chunks++ runs unconditionally after close, so every chunk file
                     // that was opened (including error-path chunks) is counted.
                     try (BufferedWriter toClose = writer) {
-                        // close flushes and releases the file handle
                     }
                     chunks++;
                 }

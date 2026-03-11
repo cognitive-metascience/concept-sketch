@@ -67,12 +67,7 @@ public class BlackLabQueryExecutor implements QueryExecutor {
             return Collections.emptyList();
         }
 
-        String bcql;
-        try {
-            bcql = buildBcqlWithLemmaSubstitution(cqlPattern, lemma);
-        } catch (IllegalArgumentException e) {
-            throw new IOException("Invalid CQL pattern for lemma '" + lemma + "': " + e.getMessage(), e);
-        }
+        String bcql = buildBcqlWithLemmaSubstitution(cqlPattern, lemma);
 
         CollocateQueryHelper.CollocateSearch collocateSearch = collocateQueryHelper.executeCollocateSearch(lemma, bcql, true);
         long headwordFreq = collocateSearch.headwordFreq();

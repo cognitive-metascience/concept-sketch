@@ -1,0 +1,94 @@
+{
+  "batch": "low_level_elegance",
+  "batch_index": 5,
+  "assessments": {"low_level_elegance": 76.0},
+  "dimension_notes": {
+    "low_level_elegance": {
+      "evidence": [
+        "wrapHandler in WordSketchApiServer uses three typed catch blocks (IAE→400, IOException→500, Exception→500) with distinct log levels (warn vs error) — direct and intention-revealing.",
+        "validateExploreRequest in ExplorationHandlers uses a guard-clause early-return pattern consistently: parse → validate seeds → validate relation → validate params → return DTO. Each failure path returns null and sends its own error.",
+        "LongIntHashMap implements open-addressing with linear probing cleanly: put, get, containsKey all follow the same probe loop; rehash rebuilds without touching the logic path.",
+        "CqlUtils.splitCqlTokens uses a depth counter to handle nested brackets; the logic correctly skips quoted strings both inside and outside brackets, and handles backslash escapes.",
+        "buildAdjectiveProfileList in CollocateProfileComparator creates three separate double[] arrays (scores, then streams for avg, max, min) over the same nounScores.values() data, where a single pass would suffice.",
+        "logTopProfiles in CollocateProfileComparator contains complex lambda chains for debug logging; the method is only called at DEBUG level but the stream setup cost is paid unconditionally (no logger.isDebugEnabled() guard).",
+        "VisualizationHandlers.handleVisualRadial wraps its entire body in a try-catch(Exception) and calls sendError — even though it is already wrapped by wrapHandler in WordSketchApiServer. The inner catch silently overrides the outer handler's exception classification.",
+        "handleBcqlQueryPost in SketchHandlers has its own four-clause try-catch block (IOException, JSONException, IllegalArgumentException, Exception) that duplicates the exception taxonomy of wrapHandler, producing redundant error handling on the same call path.",
+        "The ExploreParams private record in ExplorationHandlers is a well-scoped internal value that reduces the argument count from 4 to 1 without leaking beyond the class."
+      ],
+      "impact_scope": "module",
+      "fix_scope": "multi_file_refactor",
+      "confidence": "high"
+    }
+  },
+  "dimension_judgment": {
+    "low_level_elegance": {
+      "strengths": [
+        "wrapHandler delivers clean exception taxonomy in a small, readable method.",
+        "Guard-clause early-return pattern used consistently across all exploration handlers.",
+        "LongIntHashMap probe loop is clean, correct, and free of defensive sprawl.",
+        "CqlUtils.splitCqlTokens handles the full bracket-depth + quote-skip case with a single readable pass.",
+        "ExploreParams and ValidatedExploreRequest private records demonstrate balanced extraction: small, named, and scoped to where they are used."
+      ],
+      "issue_character": "Two handlers break the uniform error-handling contract by duplicating exception handling that wrapHandler already provides — the problems are localized to VisualizationHandlers and SketchHandlers.handleBcqlQueryPost rather than systemic.",
+      "score_rationale": "The majority of this codebase has direct, intention-revealing internals: the guard-clause pattern is consistent, utility logic is clean, and extraction level is balanced. The score is held back by two specific violations of the established error-handling contract (VisualizationHandlers and handleBcqlQueryPost both re-catch exceptions that wrapHandler already handles), and a minor inefficiency in CollocateProfileComparator's multiple stream passes over the same data. These are fixable in place and do not indicate a systemic craft problem, placing the codebase around 76."
+    }
+  },
+  "issues": [
+    {
+      "dimension": "low_level_elegance",
+      "identifier": "lle_visualization_double_catch",
+      "summary": "VisualizationHandlers.handleVisualRadial wraps its body in catch(Exception) despite being registered via wrapHandler, producing redundant error handling",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/api/VisualizationHandlers.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/api/WordSketchApiServer.java"
+      ],
+      "evidence": [
+        "WordSketchApiServer registers the handler: registerPostHandler(server, \"/api/visual/radial\", wrapHandler(visualizationHandlers::handleVisualRadial, \"Radial plot\")).",
+        "VisualizationHandlers.handleVisualRadial body: try { ... } catch (Exception e) { logger.error(\"Error rendering radial\", e); HttpApiUtils.sendError(exchange, 500, ...) }.",
+        "The inner catch intercepts all exceptions before wrapHandler sees them, bypassing the outer exception taxonomy (IAE→400, IOException→500) and sending 500 for all errors including client errors."
+      ],
+      "suggestion": "Remove the try-catch from handleVisualRadial and let exceptions propagate to wrapHandler. If IllegalArgumentException can be thrown during JSON parsing, it will correctly be converted to a 400 by wrapHandler.",
+      "confidence": "high",
+      "impact_scope": "local",
+      "fix_scope": "single_edit"
+    },
+    {
+      "dimension": "low_level_elegance",
+      "identifier": "lle_bcql_double_catch",
+      "summary": "SketchHandlers.handleBcqlQueryPost duplicates the wrapHandler exception taxonomy in its own try-catch",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/api/SketchHandlers.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/api/WordSketchApiServer.java"
+      ],
+      "evidence": [
+        "handleBcqlQueryPost is registered via wrapHandler and contains its own four-clause catch (IOException, JSONException, IllegalArgumentException, Exception) that re-implements the same error responses as wrapHandler.",
+        "This means every exception thrown in handleBcqlQueryPost is caught twice — once by the inner handler and once (never reached) by wrapHandler."
+      ],
+      "suggestion": "Remove the try-catch from handleBcqlQueryPost; let the existing wrapHandler boundary handle exception classification. If JSONException needs special treatment, add it to wrapHandler's catch taxonomy.",
+      "confidence": "high",
+      "impact_scope": "local",
+      "fix_scope": "single_edit"
+    },
+    {
+      "dimension": "low_level_elegance",
+      "identifier": "lle_logtopdebug_no_guard",
+      "summary": "CollocateProfileComparator.logTopProfiles builds expensive stream chains unconditionally at DEBUG level with no isDebugEnabled guard",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/exploration/CollocateProfileComparator.java"
+      ],
+      "evidence": [
+        "logTopProfiles calls profiles.stream().filter(...).limit(...).forEach(...) twice, with sort operations, unconditionally on each compareCollocateProfiles call.",
+        "The output only goes to logger.debug(...), so in production (INFO level) the stream processing runs but produces no output."
+      ],
+      "suggestion": "Wrap the method body with if (logger.isDebugEnabled()) { ... } to skip the stream computation entirely in non-debug deployments.",
+      "confidence": "high",
+      "impact_scope": "local",
+      "fix_scope": "single_edit"
+    }
+  ],
+  "retrospective": {
+    "root_causes": ["The two double-catch patterns suggest that handlers were developed independently before the wrapHandler contract was established, and were not cleaned up after the contract was centralised."],
+    "likely_symptoms": [],
+    "possible_false_positives": []
+  }
+}

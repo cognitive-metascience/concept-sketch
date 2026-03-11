@@ -1,4 +1,4 @@
-package pl.marcinmilkowski.word_sketch.api;
+package pl.marcinmilkowski.word_sketch.config;
 
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.*;

@@ -1,0 +1,61 @@
+{
+  "batch": "dependency_health",
+  "batch_index": 4,
+  "assessments": {"dependency_health": 91.0},
+  "dimension_notes": {
+    "dependency_health": {
+      "evidence": [
+        "pom.xml declares: blacklab-engine and blacklab-query-parser — both necessary for BlackLab corpus querying (distinct artifacts with distinct roles: engine = index access, query-parser = CQL/BCQL parsing).",
+        "fastjson2 — single JSON library used consistently throughout; no competing JSON library (e.g., Jackson or Gson) is present.",
+        "slf4j-api + logback-classic — standard, intentional pairing for SLF4J facade with Logback backend; no multiple logging frameworks.",
+        "jspecify — lightweight @Nullable/@NonNull annotation library; not a framework, minimal footprint.",
+        "junit-jupiter-api, junit-jupiter-engine, junit-platform-launcher — all test-scoped, consistent JUnit 5 setup.",
+        "No moment/dayjs, no axios/fetch, no lodash equivalents — the Java dependency surface is appropriately minimal for the domain.",
+        "No unused imports or pom entries visible; every listed dependency is actively referenced in production sources.",
+        "BlackLab brings Lucene as a transitive dependency; this is expected and unavoidable given the project's use of BlackLab as the index engine.",
+        "issues_preventing_higher_score: The com.sun.net.httpserver package (JDK internal HTTP server) is used as the HTTP framework without a declared dependency — this works but is an implicit JDK internal API that could break across JDK versions."
+      ],
+      "impact_scope": "codebase",
+      "fix_scope": "single_edit",
+      "confidence": "high",
+      "issues_preventing_higher_score": "Use of com.sun.net.httpserver (JDK internal HTTP server API) is an undeclared implicit dependency; it works on current JDKs but is not a stable public API."
+    }
+  },
+  "dimension_judgment": {
+    "dependency_health": {
+      "strengths": [
+        "Single JSON library (fastjson2) used consistently across all serialization points — no competing parsers.",
+        "Logging uses the standard SLF4J + Logback pairing with no framework duplication.",
+        "All declared dependencies have a clear distinct purpose; no library is pulled in for light or duplicated use.",
+        "Test dependencies are properly scoped and use a consistent JUnit 5 setup."
+      ],
+      "issue_character": "Only one low-severity concern: reliance on com.sun.net.httpserver as an implicit JDK internal rather than a declared public API dependency.",
+      "score_rationale": "Dependency health is a clear strength of this codebase. The production dependency set is minimal, non-duplicated, and purpose-driven. The only concern is use of com.sun.net.httpserver which is a JDK internal API (not a formally supported public module); on Java 21+ this is stable in practice but not guaranteed across future JDK releases. This keeps the score just below the exemplary range."
+    }
+  },
+  "issues": [
+    {
+      "dimension": "dependency_health",
+      "identifier": "dh_sun_httpserver_implicit",
+      "summary": "com.sun.net.httpserver (JDK internal API) used as the HTTP server without an explicit module declaration or alternative dependency",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/api/WordSketchApiServer.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/api/HttpApiUtils.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/api/VisualizationHandlers.java"
+      ],
+      "evidence": [
+        "WordSketchApiServer imports com.sun.net.httpserver.HttpServer and uses it for all route registration.",
+        "com.sun.net.httpserver is a JDK internal package not guaranteed stable across Java versions, though it has been available since Java 6 and is present in Java 21."
+      ],
+      "suggestion": "For a production server consider replacing com.sun.net.httpserver with a declared lightweight dependency such as the JDK's com.sun.net.httpserver via --add-modules jdk.httpserver in module-info.java, or migrate to a small stable alternative (e.g., Javalin, Undertow, or Vert.x HTTP lite). At minimum, add a module-info.java requires jdk.httpserver declaration so the dependency is explicit.",
+      "confidence": "medium",
+      "impact_scope": "codebase",
+      "fix_scope": "multi_file_refactor"
+    }
+  ],
+  "retrospective": {
+    "root_causes": ["com.sun.net.httpserver chosen for zero-dependency simplicity, which is reasonable for a single-user research tool but worth flagging."],
+    "likely_symptoms": [],
+    "possible_false_positives": []
+  }
+}

@@ -1,11 +1,12 @@
-package pl.marcinmilkowski.word_sketch.api;
+package pl.marcinmilkowski.word_sketch.config;
 
 import java.util.Map;
+import org.jspecify.annotations.Nullable;
 
 /**
- * Shared utilities for relation identifier handling across API handlers.
+ * Shared utilities for relation identifier handling.
  */
-class RelationUtils {
+public class RelationUtils {
 
     private RelationUtils() {}
 
@@ -34,8 +35,10 @@ class RelationUtils {
      * Resolves short relation aliases (e.g. "adj_predicate") to canonical grammar config IDs
      * (e.g. "noun_adj_predicates"). Pass-through for strings that are already canonical IDs.
      * Resolution is case-insensitive; the returned value is always lower-cased.
+     *
+     * @return the canonical grammar-config ID, or {@code null} if {@code relation} is {@code null}
      */
-    static String resolveRelationAlias(String relation) {
+    public static @Nullable String resolveRelationAlias(@Nullable String relation) {
         if (relation == null) return null;
         String lower = relation.toLowerCase();
         return RELATION_ALIASES.getOrDefault(lower, lower);

@@ -37,6 +37,7 @@ public class CollocateProfileComparator {
      *             the adjective pattern is config-driven and not hard-coded in a fallback constant.
      *             This overload falls back to {@code FALLBACK_ADJECTIVE_PATTERN}, bypassing
      *             GrammarConfig and creating a parallel code path.
+     *             Scheduled for removal in v2.0.
      */
     @Deprecated
     public CollocateProfileComparator(QueryExecutor executor) {
@@ -113,7 +114,7 @@ public class CollocateProfileComparator {
             List<QueryResults.WordSketchResult> adjectives = executor.findCollocations(
                 noun, adjectivePattern, minLogDice, maxPerNoun);
             logger.debug("  Found {} adjectives", adjectives.size());
-            if (!adjectives.isEmpty()) {
+            if (!adjectives.isEmpty() && logger.isDebugEnabled()) {
                 logger.debug("  Top 5: {}", adjectives.subList(0, Math.min(5, adjectives.size())));
             }
             for (QueryResults.WordSketchResult r : adjectives) {
@@ -172,6 +173,7 @@ public class CollocateProfileComparator {
     }
 
     private void logTopProfiles(List<AdjectiveProfile> profiles) {
+        if (!logger.isDebugEnabled()) return;
         profiles.stream()
             .filter(p -> p.presentInCount() >= 2)
             .limit(10)

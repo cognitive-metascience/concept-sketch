@@ -3,6 +3,7 @@ package pl.marcinmilkowski.word_sketch.model;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 /**
@@ -51,6 +52,7 @@ public class ExplorationResult {
      * @return non-null empty result
      */
     public static ExplorationResult empty(String seed) {
+        Objects.requireNonNull(seed, "seed must not be null");
         return new ExplorationResult(seed, Map.of(), Map.of(), List.of(), List.of());
     }
 

@@ -144,23 +144,11 @@ public class WordSketchApiServer {
      * Wraps an {@link com.sun.net.httpserver.HttpHandler} with uniform error handling.
      * Catches {@link IllegalArgumentException} and sends a 400 response (client error).
      * Catches {@link IOException} and any other {@link Exception}, logs them, and sends a 500 response.
+     * Delegates to {@link HttpApiUtils#wrapWithErrorHandling} so the contract can be unit-tested.
      */
     private com.sun.net.httpserver.HttpHandler wrapHandler(
             com.sun.net.httpserver.HttpHandler handler, String description) {
-        return exchange -> {
-            try {
-                handler.handle(exchange);
-            } catch (IllegalArgumentException e) {
-                logger.warn("{} client error", description, e);
-                HttpApiUtils.sendError(exchange, 400, "Bad request: " + e.getMessage());
-            } catch (IOException e) {
-                logger.error("{} error", description, e);
-                HttpApiUtils.sendError(exchange, 500, description + " failed: " + e.getMessage());
-            } catch (Exception e) {
-                logger.error("{} unexpected error", description, e);
-                HttpApiUtils.sendError(exchange, 500, "Unexpected error: " + e.getMessage());
-            }
-        };
+        return HttpApiUtils.wrapWithErrorHandling(handler, description);
     }
 
     public void stop() {

@@ -88,6 +88,7 @@ public class SemanticFieldExplorer {
      *             production code path is used and pattern derivation is config-driven.
      *             This overload falls back to {@code FALLBACK_NOUN_CQL_CONSTRAINT}, which
      *             bypasses grammar config and creates a parallel code path.
+     *             Scheduled for removal in v2.0.
      */
     @Deprecated
     public SemanticFieldExplorer(QueryExecutor executor) {
@@ -351,11 +352,30 @@ public class SemanticFieldExplorer {
      *
      * @param seeds          ordered seed words (at least 2)
      * @param relationConfig grammar relation to use for collocate lookup
+     * @param opts           tuning parameters (topCollocates, minLogDice, minShared)
+     * @return ExplorationResult mapping multi-seed data into the shared exploration model
+     */
+    public ExplorationResult exploreMultiSeed(
+            Set<String> seeds,
+            RelationConfig relationConfig,
+            ExploreOptions opts) throws IOException {
+        return multiSeedExplorer.explore(seeds, relationConfig, opts.minLogDice(), opts.topCollocates(), opts.minShared());
+    }
+
+    /**
+     * Multi-seed semantic field exploration: finds collocates shared across multiple seeds.
+     * Delegates to {@link MultiSeedExplorer} which owns the multi-seed algorithm.
+     *
+     * @param seeds          ordered seed words (at least 2)
+     * @param relationConfig grammar relation to use for collocate lookup
      * @param minLogDice     minimum logDice threshold for inclusion
      * @param topCollocates  maximum collocates to fetch per seed
      * @param minShared      minimum number of seeds a collocate must appear in
      * @return ExplorationResult mapping multi-seed data into the shared exploration model
+     * @deprecated Prefer {@link #exploreMultiSeed(Set, RelationConfig, ExploreOptions)} for a
+     *             consistent API surface aligned with {@link #exploreByPattern(String, RelationConfig, ExploreOptions)}.
      */
+    @Deprecated
     public ExplorationResult exploreMultiSeed(
             Set<String> seeds,
             RelationConfig relationConfig,

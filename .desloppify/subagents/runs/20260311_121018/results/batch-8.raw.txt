@@ -1,0 +1,58 @@
+{
+  "batch": "incomplete_migration",
+  "batch_index": 8,
+  "assessments": {"incomplete_migration": 84.0},
+  "dimension_notes": {
+    "incomplete_migration": {
+      "evidence": [
+        "CollocateProfileComparator has a @Deprecated single-arg constructor CollocateProfileComparator(QueryExecutor) that bypasses GrammarConfig and falls back to a hard-coded FALLBACK_ADJECTIVE_PATTERN. No callers of this constructor appear in production code — it is a shim with no active external need.",
+        "The @Deprecated constructor has no @deprecated Javadoc tag with a removal timeline or migration instruction — a developer encountering it has no guidance on when it will be removed.",
+        "GrammarConfigLoader.validateNoLegacyKeys() actively rejects 'copulas' key and logs an explicit migration error message — this shows a completed migration that left a validator in place, which is not incomplete migration debt but rather a guard against regression.",
+        "RelationType enum contains SURFACE, DEP, ADJ_PREDICATE, ADJ_MODIFIER, SUBJECT_OF, OBJECT_OF — the enum appears to serve dual roles: the first two (SURFACE, DEP) are relation categories, while the last four are specific relation types used as relationType in RelationConfig. This mixed taxonomy could indicate an incomplete migration from a simpler enum to a richer type system.",
+        "No TODO/FIXME referencing 'migrate', 'legacy', 'old api', or 'remove after' were found in the reviewed sources.",
+        "No mixed-format files (e.g., old-style class + new record) or parallel API surfaces (e.g., old field name + new field name) beyond the deprecated constructor.",
+        "issues_preventing_higher_score: The @Deprecated constructor in CollocateProfileComparator is a live migration shim with no recorded removal plan."
+      ],
+      "impact_scope": "local",
+      "fix_scope": "single_edit",
+      "confidence": "high",
+      "issues_preventing_higher_score": "CollocateProfileComparator has a @Deprecated constructor shim with no removal timeline or Javadoc migration note."
+    }
+  },
+  "dimension_judgment": {
+    "incomplete_migration": {
+      "strengths": [
+        "No TODO/FIXME migrate/legacy markers found in the reviewed source files.",
+        "GrammarConfigLoader validates against the removed 'copulas' key — evidence that a previous migration completed cleanly with a regression guard.",
+        "No mixed-format or parallel API surfaces visible beyond the one deprecated constructor.",
+        "Active use of Java records for new value types (AdjectiveProfile, CoreCollocate, DiscoveredNoun) is consistent — no mixed class/record for the same concept."
+      ],
+      "issue_character": "Migration debt is minimal and concentrated in one deprecated constructor shim (CollocateProfileComparator), which has no production callers and no documented removal plan.",
+      "score_rationale": "The codebase is largely clean of migration debt: one previous migration (copulas removal) completed with a guard in place, and no stale shims or mixed paradigms are visible elsewhere. The one exception — the @Deprecated CollocateProfileComparator constructor — is a real but low-severity issue: it is a dead shim with no active callers and no removal timeline. The RelationType enum dual-use is a mild design tension rather than a migration issue per se. This places the codebase solidly in the 82-86 range for this dimension."
+    }
+  },
+  "issues": [
+    {
+      "dimension": "incomplete_migration",
+      "identifier": "im_deprecated_comparator_constructor",
+      "summary": "CollocateProfileComparator has a @Deprecated single-arg constructor shim with no callers in production code and no removal timeline documented",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/exploration/CollocateProfileComparator.java"
+      ],
+      "evidence": [
+        "@Deprecated public CollocateProfileComparator(QueryExecutor executor) { this(executor, null); } — a constructor that bypasses GrammarConfig and hard-codes the fallback adjective pattern.",
+        "The @Deprecated annotation has no accompanying @deprecated Javadoc tag naming the preferred constructor or giving a removal milestone.",
+        "No production caller of the single-arg constructor is visible in the codebase; all visible call sites pass a GrammarConfig."
+      ],
+      "suggestion": "Remove the deprecated constructor entirely if there are no external callers. If it must remain for library users, add a @deprecated Javadoc tag: '@deprecated Use {@link #CollocateProfileComparator(QueryExecutor, GrammarConfig)} instead. Will be removed in v2.0.'",
+      "confidence": "high",
+      "impact_scope": "local",
+      "fix_scope": "single_edit"
+    }
+  ],
+  "retrospective": {
+    "root_causes": ["The deprecated constructor was left as a compatibility shim when GrammarConfig was added as a required parameter, without a clear removal plan."],
+    "likely_symptoms": [],
+    "possible_false_positives": []
+  }
+}

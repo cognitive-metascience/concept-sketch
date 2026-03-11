@@ -2,11 +2,12 @@ package pl.marcinmilkowski.word_sketch.api;
 
 import com.alibaba.fastjson2.JSON;
 import com.alibaba.fastjson2.JSONArray;
+import com.alibaba.fastjson2.JSONException;
 import com.alibaba.fastjson2.JSONObject;
 import com.sun.net.httpserver.HttpExchange;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import pl.marcinmilkowski.word_sketch.viz.RadialPlot;
+import pl.marcinmilkowski.word_sketch.utils.RadialPlot;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -30,40 +31,40 @@ class VisualizationHandlers {
      * Returns: image/svg+xml
      */
     void handleVisualRadial(HttpExchange exchange) throws IOException {
-        try {
-            byte[] bodyBytes = exchange.getRequestBody().readNBytes(MAX_REQUEST_BODY_BYTES + 1);
-            if (bodyBytes.length > MAX_REQUEST_BODY_BYTES) {
-                HttpApiUtils.sendError(exchange, 413, "Request body too large");
-                return;
-            }
-            String body = new String(bodyBytes, StandardCharsets.UTF_8);
-            logger.debug("Radial: body = {}", body);
-            JSONObject obj = JSON.parseObject(body);
-            String center = obj.getString("center");
-            if (center == null) center = "";
-            logger.debug("Radial: center = {}", center);
-            int width = (obj.get("width") == null) ? 840 : obj.getIntValue("width");
-            int height = (obj.get("height") == null) ? 520 : obj.getIntValue("height");
-
-            JSONArray itemsArr = obj.getJSONArray("items");
-            List<RadialPlot.Item> items = new ArrayList<>();
-            if (itemsArr != null) {
-                int limit = Math.min(40, itemsArr.size());
-                for (int i = 0; i < limit; i++) {
-                    JSONObject it = itemsArr.getJSONObject(i);
-                    String label = it.getString("label");
-                    double score = it.getDoubleValue("score");
-                    items.add(new RadialPlot.Item(label, score));
-                }
-            }
-            String mode = obj.getString("mode");
-
-            String svg = RadialPlot.renderFromItems(center, items, width, height, mode);
-            byte[] bytes = svg.getBytes(StandardCharsets.UTF_8);
-            HttpApiUtils.sendBinaryResponse(exchange, "image/svg+xml; charset=utf-8", bytes);
-        } catch (Exception e) {
-            logger.error("Error rendering radial", e);
-            HttpApiUtils.sendError(exchange, 500, "Failed to render radial: " + e.getMessage());
+        byte[] bodyBytes = exchange.getRequestBody().readNBytes(MAX_REQUEST_BODY_BYTES + 1);
+        if (bodyBytes.length > MAX_REQUEST_BODY_BYTES) {
+            HttpApiUtils.sendError(exchange, 413, "Request body too large");
+            return;
         }
+        String body = new String(bodyBytes, StandardCharsets.UTF_8);
+        logger.debug("Radial: body = {}", body);
+        JSONObject obj;
+        try {
+            obj = JSON.parseObject(body);
+        } catch (JSONException e) {
+            throw new IllegalArgumentException("Invalid JSON in request body: " + e.getMessage(), e);
+        }
+        String center = obj.getString("center");
+        if (center == null) center = "";
+        logger.debug("Radial: center = {}", center);
+        int width = (obj.get("width") == null) ? 840 : obj.getIntValue("width");
+        int height = (obj.get("height") == null) ? 520 : obj.getIntValue("height");
+
+        JSONArray itemsArr = obj.getJSONArray("items");
+        List<RadialPlot.Item> items = new ArrayList<>();
+        if (itemsArr != null) {
+            int limit = Math.min(40, itemsArr.size());
+            for (int i = 0; i < limit; i++) {
+                JSONObject it = itemsArr.getJSONObject(i);
+                String label = it.getString("label");
+                double score = it.getDoubleValue("score");
+                items.add(new RadialPlot.Item(label, score));
+            }
+        }
+        String mode = obj.getString("mode");
+
+        String svg = RadialPlot.renderFromItems(center, items, width, height, mode);
+        byte[] bytes = svg.getBytes(StandardCharsets.UTF_8);
+        HttpApiUtils.sendBinaryResponse(exchange, "image/svg+xml; charset=utf-8", bytes);
     }
 }

@@ -30,6 +30,31 @@ class HttpApiUtils {
         return System.getProperty("cors.allow.origin", "http://localhost:3000");
     }
 
+    /**
+     * Wraps a handler with uniform error handling: maps {@link IllegalArgumentException} to 400,
+     * {@link java.io.IOException} to 500, and any other exception to 500.
+     *
+     * <p>Extracted here (from {@code WordSketchApiServer}) so the contract can be unit-tested
+     * without standing up a full server.</p>
+     */
+    static com.sun.net.httpserver.HttpHandler wrapWithErrorHandling(
+            com.sun.net.httpserver.HttpHandler handler, String description) {
+        return exchange -> {
+            try {
+                handler.handle(exchange);
+            } catch (IllegalArgumentException e) {
+                logger.warn("{} client error", description, e);
+                sendError(exchange, 400, "Bad request: " + e.getMessage());
+            } catch (java.io.IOException e) {
+                logger.error("{} error", description, e);
+                sendError(exchange, 500, description + " failed: " + e.getMessage());
+            } catch (Exception e) {
+                logger.error("{} unexpected error", description, e);
+                sendError(exchange, 500, "Unexpected error: " + e.getMessage());
+            }
+        };
+    }
+
     private HttpApiUtils() {}
 
     /**

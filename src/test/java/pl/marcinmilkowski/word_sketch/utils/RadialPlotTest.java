@@ -1,4 +1,4 @@
-package pl.marcinmilkowski.word_sketch.viz;
+package pl.marcinmilkowski.word_sketch.utils;
 
 import org.junit.jupiter.api.Test;
 
@@ -49,4 +49,3 @@ class RadialPlotTest {
         assertTrue(svg.trim().endsWith("</svg>"), "SVG must end with </svg>");
     }
 }
-

@@ -1,0 +1,134 @@
+package pl.marcinmilkowski.word_sketch.api;
+
+import org.junit.jupiter.api.Test;
+import pl.marcinmilkowski.word_sketch.model.CoreCollocate;
+import pl.marcinmilkowski.word_sketch.model.DiscoveredNoun;
+import pl.marcinmilkowski.word_sketch.model.Edge;
+import pl.marcinmilkowski.word_sketch.model.ExplorationResult;
+import pl.marcinmilkowski.word_sketch.model.RelationEdgeType;
+
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import static org.junit.jupiter.api.Assertions.*;
+
+class ExploreResponseBuilderTest {
+
+    private static ExplorationResult resultWith(
+            String seed,
+            Map<String, Double> seedCollocates,
+            Map<String, Long> seedFreqs,
+            List<DiscoveredNoun> nouns,
+            List<CoreCollocate> core) {
+        return new ExplorationResult(seed, seedCollocates, seedFreqs, nouns, core);
+    }
+
+    @Test
+    void buildEdges_fromSeedCollocates_createsEdgesWithSeedAdjType() {
+        Map<String, Double> collocates = Map.of("important", 8.5, "novel", 6.0);
+        ExplorationResult result = resultWith("theory", collocates, Map.of(), List.of(), List.of());
+
+        List<Edge> edges = ExploreResponseBuilder.buildEdges(result);
+
+        assertEquals(2, edges.size());
+        assertTrue(edges.stream().allMatch(e -> e.source().equals("theory")));
+        assertTrue(edges.stream().allMatch(e -> e.type() == RelationEdgeType.SEED_ADJ));
+        Edge importantEdge = edges.stream()
+                .filter(e -> e.target().equals("important")).findFirst().orElseThrow();
+        assertEquals(8.5, importantEdge.weight(), 0.001);
+    }
+
+    @Test
+    void buildEdges_fromDiscoveredNouns_createsDiscoveredAdjEdges() {
+        DiscoveredNoun noun = new DiscoveredNoun("model", Map.of("abstract", 7.0), 1, 7.0, 7.0);
+        ExplorationResult result = resultWith("theory", Map.of(), Map.of(), List.of(noun), List.of());
+
+        List<Edge> edges = ExploreResponseBuilder.buildEdges(result);
+
+        assertEquals(1, edges.size());
+        assertEquals("model", edges.get(0).source());
+        assertEquals("abstract", edges.get(0).target());
+        assertEquals(RelationEdgeType.DISCOVERED_ADJ, edges.get(0).type());
+    }
+
+    @Test
+    void buildEdges_emptyResult_returnsEmptyList() {
+        ExplorationResult result = ExplorationResult.empty("theory");
+        List<Edge> edges = ExploreResponseBuilder.buildEdges(result);
+        assertTrue(edges.isEmpty());
+    }
+
+    @Test
+    void populateExploreResponse_addsAllRequiredKeys() {
+        Map<String, Double> collocates = Map.of("important", 8.0);
+        Map<String, Long> freqs = Map.of("important", 42L);
+        List<DiscoveredNoun> nouns = List.of(
+                new DiscoveredNoun("model", Map.of("abstract", 6.0), 1, 6.0, 6.0));
+        List<CoreCollocate> core = List.of(new CoreCollocate("important", 2, 2, 8.0, 7.5));
+        ExplorationResult result = resultWith("theory", collocates, freqs, nouns, core);
+
+        Map<String, Object> response = new HashMap<>();
+        ExploreResponseBuilder.populateExploreResponse(response, result);
+
+        assertTrue(response.containsKey("seed_collocates"), "should have seed_collocates");
+        assertTrue(response.containsKey("seed_collocates_count"), "should have seed_collocates_count");
+        assertTrue(response.containsKey("discovered_nouns"), "should have discovered_nouns");
+        assertTrue(response.containsKey("discovered_nouns_count"), "should have discovered_nouns_count");
+        assertTrue(response.containsKey("core_collocates"), "should have core_collocates");
+        assertTrue(response.containsKey("core_collocates_count"), "should have core_collocates_count");
+        assertTrue(response.containsKey("edges"), "should have edges");
+    }
+
+    @Test
+    void populateExploreResponse_countsMatchListSizes() {
+        Map<String, Double> collocates = Map.of("important", 8.0, "novel", 5.0);
+        ExplorationResult result = resultWith("theory", collocates, Map.of(), List.of(), List.of());
+
+        Map<String, Object> response = new HashMap<>();
+        ExploreResponseBuilder.populateExploreResponse(response, result);
+
+        @SuppressWarnings("unchecked")
+        List<?> seedCollocs = (List<?>) response.get("seed_collocates");
+        assertEquals(2, seedCollocs.size());
+        assertEquals(2, response.get("seed_collocates_count"));
+    }
+
+    @Test
+    void formatSeedCollocates_includesWordLogDiceAndFrequency() {
+        Map<String, Double> collocates = Map.of("important", 8.75);
+        Map<String, Long> freqs = Map.of("important", 100L);
+        ExplorationResult result = resultWith("theory", collocates, freqs, List.of(), List.of());
+
+        List<Map<String, Object>> formatted = ExploreResponseBuilder.formatSeedCollocates(result);
+
+        assertEquals(1, formatted.size());
+        Map<String, Object> entry = formatted.get(0);
+        assertEquals("important", entry.get("word"));
+        assertEquals(8.75, (double) entry.get("log_dice"), 0.01);
+        assertEquals(100L, entry.get("frequency"));
+    }
+
+    @Test
+    void formatDiscoveredNouns_includesRequiredFields() {
+        DiscoveredNoun noun = new DiscoveredNoun("model", Map.of("abstract", 7.0), 1, 14.0, 7.0);
+        ExplorationResult result = resultWith("theory", Map.of(), Map.of(), List.of(noun), List.of());
+
+        List<Map<String, Object>> formatted = ExploreResponseBuilder.formatDiscoveredNouns(result);
+
+        assertEquals(1, formatted.size());
+        Map<String, Object> entry = formatted.get(0);
+        assertEquals("model", entry.get("word"));
+        assertEquals(1, entry.get("shared_count"));
+        assertNotNull(entry.get("similarity_score"));
+        assertNotNull(entry.get("avg_logdice"));
+        assertNotNull(entry.get("shared_collocates"));
+    }
+
+    @Test
+    void round2dp_roundsCorrectly() {
+        assertEquals(3.14, ExploreResponseBuilder.round2dp(3.14159), 0.001);
+        assertEquals(0.0, ExploreResponseBuilder.round2dp(0.0), 0.001);
+        assertEquals(14.0, ExploreResponseBuilder.round2dp(14.0), 0.001);
+    }
+}

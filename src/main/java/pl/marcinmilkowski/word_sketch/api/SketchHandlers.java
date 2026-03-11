@@ -367,24 +367,13 @@ class SketchHandlers {
      * POST /api/bcql with body: {"query": "[lemma=\"test\"]", "limit": 20}
      */
     void handleBcqlQueryPost(HttpExchange exchange) throws IOException {
-        try {
-            BcqlRequest req = parseBcqlRequest(exchange);
-            if (req == null) return;  // error already sent
+        BcqlRequest req = parseBcqlRequest(exchange);
+        if (req == null) return;  // error already sent
 
-            logger.debug("BCQL query: {}", req.query());
+        logger.debug("BCQL query: {}", req.query());
 
-            List<QueryResults.CollocateResult> results = executor.executeBcqlQuery(req.query(), req.limit());
-            HttpApiUtils.sendJsonResponse(exchange, buildBcqlResponse(req, results));
-        } catch (IOException e) {
-            logger.error("BCQL query I/O error", e);
-            HttpApiUtils.sendError(exchange, 500, "BCQL query failed: " + e.getMessage());
-        } catch (JSONException | IllegalArgumentException e) {
-            logger.warn("BCQL query client error", e);
-            HttpApiUtils.sendError(exchange, 400, "BCQL query error: " + e.getMessage());
-        } catch (Exception e) {
-            logger.error("BCQL query unexpected error", e);
-            HttpApiUtils.sendError(exchange, 500, "BCQL query internal error: " + e.getMessage());
-        }
+        List<QueryResults.CollocateResult> results = executor.executeBcqlQuery(req.query(), req.limit());
+        HttpApiUtils.sendJsonResponse(exchange, buildBcqlResponse(req, results));
     }
 
     private record BcqlRequest(String query, int limit) {}
@@ -397,7 +386,12 @@ class SketchHandlers {
             return null;
         }
         String body = new String(bodyBytes, StandardCharsets.UTF_8);
-        JSONObject obj = JSON.parseObject(body);
+        JSONObject obj;
+        try {
+            obj = JSON.parseObject(body);
+        } catch (JSONException e) {
+            throw new IllegalArgumentException("Invalid JSON in request body: " + e.getMessage(), e);
+        }
         String bcqlQuery = obj.getString("query");
         if (bcqlQuery == null || bcqlQuery.isBlank()) {
             HttpApiUtils.sendError(exchange, 400, "Missing required parameter: query");

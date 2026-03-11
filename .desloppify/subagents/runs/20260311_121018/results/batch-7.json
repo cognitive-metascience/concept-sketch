@@ -1,0 +1,76 @@
+{
+  "batch": "ai_generated_debt",
+  "batch_index": 7,
+  "assessments": {"ai_generated_debt": 76.0},
+  "dimension_notes": {
+    "ai_generated_debt": {
+      "evidence": [
+        "SemanticFieldExplorer Javadoc is a thorough class-level comment with algorithmic steps, an example walkthrough (Seed: house → Semantic class: dwellings/places), and a computational limits section — genuinely informative, not boilerplate.",
+        "QueryExecutor interface Javadoc distinguishes findCollocations, executeCqlQuery, executeBcqlQuery, and executeSurfacePattern with explicit behavioral contracts and cross-references — high-value documentation.",
+        "ExploreOptions Javadoc notes the intentional naming asymmetry ('Explore' vs 'Exploration') — this is an honest explanation, not an echo comment.",
+        "handleBcqlQueryPost in SketchHandlers has its own four-clause try-catch that duplicates the wrapHandler exception taxonomy — the identical exception structure copy-pasted from the outer handler is a classic AI-generated debt pattern.",
+        "VisualizationHandlers.handleVisualRadial has a structural catch(Exception e) { logger.error(...); sendError(...) } that mirrors the wrapHandler boilerplate exactly.",
+        "LogDiceCalculator.relativeFrequency(long, long) method body is: if (headwordFreq <= 0) return 0.0; return (double) collocateFreq / headwordFreq; — this utility method has no callers in the production codebase (a potential dead pass-through).",
+        "QueryResults inner class has a private constructor with the comment '// Utility class - prevent instantiation' — the comment echos what the code already clearly expresses.",
+        "ConlluConverter inner finally block has the comment '// close flushes and releases the file handle' on a try-with-resources close operation — this is self-evident from the language construct.",
+        "ExplorationHandlers.parseSeedSet Javadoc says 'Parses a comma-separated seeds parameter into a cleaned, lowercased ordered set' — accurate and useful, not a restatement.",
+        "No entry/exit logs on every function; no full object dumps to console; generic names like handleData or processItem are absent."
+      ],
+      "impact_scope": "module",
+      "fix_scope": "multi_file_refactor",
+      "confidence": "high"
+    }
+  },
+  "dimension_judgment": {
+    "ai_generated_debt": {
+      "strengths": [
+        "Most class-level and method-level Javadoc adds domain insight not derivable from the code alone.",
+        "SemanticFieldExplorer's algorithmic walkthrough example is a concrete teaching aid, not echo prose.",
+        "No trace of generic domain names (handleData, processItem) — method names are domain-specific throughout.",
+        "No noisy entry/exit logging or full object dumps to console."
+      ],
+      "issue_character": "The debt is concentrated in two places that duplicate the exception-handling boilerplate of wrapHandler (VisualizationHandlers and handleBcqlQueryPost), plus a small number of echo comments on self-evident operations.",
+      "score_rationale": "The codebase is largely free of AI-generated debt patterns: documentation is purposeful, names are domain-aligned, and defensive sprawl is absent at most boundaries. The two redundant exception-handling blocks are a clear debt pattern — identical structure copy-pasted from the outer handler — and the handful of echo comments add noise without value. These are fixable quickly and do not represent a pervasive problem, placing the score around 76: meaningfully above 'significant drag' but with real items to clean up."
+    }
+  },
+  "issues": [
+    {
+      "dimension": "ai_generated_debt",
+      "identifier": "aigd_bcql_redundant_exception_handling",
+      "summary": "handleBcqlQueryPost contains a full exception-handling block that exactly duplicates the wrapHandler taxonomy — textbook AI-generated debt boilerplate",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/api/SketchHandlers.java"
+      ],
+      "evidence": [
+        "handleBcqlQueryPost: catch (IOException e) { sendError 500 }, catch (JSONException | IllegalArgumentException e) { sendError 400 }, catch (Exception e) { sendError 500 } — all three response codes mirror wrapHandler exactly.",
+        "Since the handler is registered via wrapHandler, these catches are never reached by the outer handler; the code is an unreachable shadow copy."
+      ],
+      "suggestion": "Remove the try-catch from handleBcqlQueryPost. If JSONException (from fastjson2) needs to be treated as a 400, add it to the wrapHandler catch taxonomy (or map it as a subclass of IllegalArgumentException if the library permits).",
+      "confidence": "high",
+      "impact_scope": "local",
+      "fix_scope": "single_edit"
+    },
+    {
+      "dimension": "ai_generated_debt",
+      "identifier": "aigd_echo_comments",
+      "summary": "Two echo-style comments restate what the surrounding code already expresses",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/indexer/blacklab/ConlluConverter.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/model/QueryResults.java"
+      ],
+      "evidence": [
+        "QueryResults: private QueryResults() { // Utility class - prevent instantiation } — the private constructor already prevents instantiation; the comment adds nothing.",
+        "ConlluConverter finally block: try (BufferedWriter toClose = writer) { // close flushes and releases the file handle } — the try-with-resources statement already communicates this; the comment echoes the language semantics."
+      ],
+      "suggestion": "Remove the echo comment from QueryResults constructor. For ConlluConverter, replace the echo comment with a brief explanation of WHY a partial error-path chunk is left open (which is actually documented in the preceding comment block — the inner comment can simply be removed).",
+      "confidence": "medium",
+      "impact_scope": "local",
+      "fix_scope": "single_edit"
+    }
+  ],
+  "retrospective": {
+    "root_causes": ["Redundant exception handling in two handlers suggests they were written before the wrapHandler contract was finalised and not cleaned up when the contract was centralised."],
+    "likely_symptoms": ["aigd_bcql_redundant_exception_handling"],
+    "possible_false_positives": []
+  }
+}

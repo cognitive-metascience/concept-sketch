@@ -5,6 +5,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import pl.marcinmilkowski.word_sketch.config.GrammarConfig;
 import pl.marcinmilkowski.word_sketch.config.RelationConfig;
+import pl.marcinmilkowski.word_sketch.config.RelationUtils;
 import pl.marcinmilkowski.word_sketch.model.AdjectiveProfile;
 import pl.marcinmilkowski.word_sketch.model.ComparisonResult;
 import pl.marcinmilkowski.word_sketch.model.Edge;
@@ -98,21 +99,13 @@ class ExplorationHandlers {
             topCollocates, nounsPerSeed, minLogDice, minShared);
 
         ExplorationResult result;
-        try {
-            result = semanticFieldExplorer.exploreByPattern(seed, resolvedConfig, opts);
-        } catch (IOException e) {
-            HttpApiUtils.sendError(exchange, 500, "Exploration failed: " + e.getMessage());
-            return;
-        } catch (IllegalArgumentException e) {
-            HttpApiUtils.sendError(exchange, 400, "Invalid exploration parameters: " + e.getMessage());
-            return;
-        }
+        result = semanticFieldExplorer.exploreByPattern(seed, resolvedConfig, opts);
 
         Map<String, Object> extraParams = new HashMap<>();
         extraParams.put("nouns_per", nounsPerSeed);
         Map<String, Object> response = buildBaseExploreResponse(relationType, topCollocates, minShared, minLogDice, extraParams);
         response.put("seed", result.getSeed());
-        buildExploreResponseBody(response, result);
+        ExploreResponseBuilder.populateExploreResponse(response, result);
 
         HttpApiUtils.sendJsonResponse(exchange, response);
     }
@@ -144,23 +137,15 @@ class ExplorationHandlers {
         int minShared = req.exploreParams().minShared();
         double minLogDice = req.exploreParams().minLogDice();
 
+        ExploreOptions opts = new ExploreOptions(topCollocates, 0, minLogDice, minShared);
         ExplorationResult result;
-        try {
-            result = semanticFieldExplorer.exploreMultiSeed(
-                seeds, resolvedConfig, minLogDice, topCollocates, minShared);
-        } catch (IOException e) {
-            HttpApiUtils.sendError(exchange, 500, "Multi-seed exploration failed: " + e.getMessage());
-            return;
-        } catch (IllegalArgumentException e) {
-            HttpApiUtils.sendError(exchange, 400, "Invalid exploration parameters: " + e.getMessage());
-            return;
-        }
+        result = semanticFieldExplorer.exploreMultiSeed(seeds, resolvedConfig, opts);
 
         Map<String, Object> response = buildBaseExploreResponse(relationType, topCollocates, minShared, minLogDice, Map.of());
         response.put("seeds", new ArrayList<>(seeds));
         response.put("seed_count", seeds.size());
 
-        buildExploreResponseBody(response, result);
+        ExploreResponseBuilder.populateExploreResponse(response, result);
 
         HttpApiUtils.sendJsonResponse(exchange, response);
     }
@@ -183,15 +168,7 @@ class ExplorationHandlers {
         double minLogDice = exploreParams.minLogDice();
 
         ComparisonResult result;
-        try {
-            result = semanticFieldExplorer.compareCollocateProfiles(seeds, minLogDice, topCollocates);
-        } catch (IOException e) {
-            HttpApiUtils.sendError(exchange, 500, "Comparison failed: " + e.getMessage());
-            return;
-        } catch (IllegalArgumentException e) {
-            HttpApiUtils.sendError(exchange, 400, "Invalid comparison parameters: " + e.getMessage());
-            return;
-        }
+        result = semanticFieldExplorer.compareCollocateProfiles(seeds, minLogDice, topCollocates);
 
         Map<String, Object> response = new HashMap<>();
         response.put("status", "ok");
@@ -247,15 +224,7 @@ class ExplorationHandlers {
         if (resolvedConfig == null) return;
 
         List<String> examples;
-        try {
-            examples = semanticFieldExplorer.fetchExamples(adjective, noun, resolvedConfig, maxExamples);
-        } catch (IOException e) {
-            HttpApiUtils.sendError(exchange, 500, "Failed to fetch examples: " + e.getMessage());
-            return;
-        } catch (IllegalArgumentException e) {
-            HttpApiUtils.sendError(exchange, 400, "Invalid parameters: " + e.getMessage());
-            return;
-        }
+        examples = semanticFieldExplorer.fetchExamples(adjective, noun, resolvedConfig, maxExamples);
 
         Map<String, Object> response = new HashMap<>();
         response.put("status", "ok");
@@ -265,22 +234,6 @@ class ExplorationHandlers {
         response.put("total_results", examples.size());
 
         HttpApiUtils.sendJsonResponse(exchange, response);
-    }
-
-    private void buildExploreResponseBody(Map<String, Object> response, ExplorationResult result) {
-        ExploreResponseBuilder.populateExploreResponse(response, result);
-    }
-
-    private static List<Map<String, Object>> formatSeedCollocates(ExplorationResult result) {
-        return ExploreResponseBuilder.formatSeedCollocates(result);
-    }
-
-    private static List<Map<String, Object>> formatDiscoveredNouns(ExplorationResult result) {
-        return ExploreResponseBuilder.formatDiscoveredNouns(result);
-    }
-
-    private static List<Map<String, Object>> formatCoreCollocates(ExplorationResult result) {
-        return ExploreResponseBuilder.formatCoreCollocates(result);
     }
 
     /**

@@ -1,0 +1,76 @@
+{
+  "batch": "convention_outlier",
+  "batch_index": 16,
+  "assessments": {"convention_outlier": 73.0},
+  "dimension_notes": {
+    "convention_outlier": {
+      "evidence": [
+        "Package 'collections' contains exactly one class (LongIntHashMap) while semantically-similar utility classes (CqlUtils, LogDiceCalculator) live in 'utils' — the package split creates asymmetric organization without documented rationale",
+        "Model layer has a mixed strategy: ExplorationResult and ComparisonResult are traditional classes (private fields, getX() accessors), while AdjectiveProfile, CoreCollocate, DiscoveredNoun, Edge, and ExplorationResult.SummaryCounts are Java records — this is documented in model/package-info.java with an explanation, so the divergence is intentional",
+        "VisualizationHandlers uses a broad inner catch(Exception)→500 convention while all other handler classes (SketchHandlers, ExplorationHandlers) rely on wrapHandler for error classification — a clear style island in error-handling convention",
+        "ExplorationHandlers declares three private static methods (formatSeedCollocates, formatDiscoveredNouns, formatCoreCollocates) that are effectively dead — no other sibling handler class has this pattern of unused private delegations",
+        "Handler class visibility is uniformly package-private (no `public` modifier) and consistently instantiated by WordSketchApiServer — this convention is correctly maintained across all four handler classes",
+        "The `ExploreResponseBuilder` is `final` while handler classes are not — a minor but inconsistent application of the `final` modifier"
+      ],
+      "impact_scope": "module",
+      "fix_scope": "single_edit",
+      "confidence": "high"
+    }
+  },
+  "dimension_judgment": {
+    "convention_outlier": {
+      "strengths": [
+        "All handler classes are package-private and follow the same construction convention (injected dependencies, no public constructor) — consistent module boundary",
+        "The model/package-info.java explicitly documents the mixed record/class strategy, transforming what would be an unexplained inconsistency into a documented design decision",
+        "Naming follows consistent camelCase throughout — no snake_case or mixed conventions in Java identifiers",
+        "Build and format method naming conventions in ExploreResponseBuilder (build* vs format*) are applied without outliers"
+      ],
+      "issue_character": "The outliers are localised: one error-handling style island in VisualizationHandlers, one package organization asymmetry (collections vs utils), and dead private methods in one class — none represent a systemic naming drift.",
+      "score_rationale": "The codebase is largely convention-consistent. The documented mixed record/class strategy in the model package is intentional and explained. The main convention outliers (VisualizationHandlers' catch-all, the collections package, dead delegation wrappers) are each confined to a single location. The codebase sits above the 'significant drag' level because the outliers are few and findable, but short of 'mostly consistent' because the VisualizationHandlers error handling convention is a real style island that will surprise a developer reading sibling handlers."
+    }
+  },
+  "issues": [
+    {
+      "dimension": "convention_outlier",
+      "identifier": "collections-package-outlier",
+      "summary": "Single-class 'collections' package is inconsistent with the 'utils' package that holds similar utility code",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/collections/LongIntHashMap.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/utils/CqlUtils.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/utils/LogDiceCalculator.java"
+      ],
+      "evidence": [
+        "LongIntHashMap is a standalone utility data structure with no domain semantics — similar to CqlUtils and LogDiceCalculator which live in 'utils'",
+        "No other files exist in the 'collections' package — the split adds navigational overhead for a single class"
+      ],
+      "suggestion": "Move LongIntHashMap to the 'utils' package to consolidate non-domain utilities, or move LogDiceCalculator and CqlUtils to 'collections' — the choice is less important than eliminating the split",
+      "confidence": "medium",
+      "impact_scope": "local",
+      "fix_scope": "multi_file_refactor"
+    },
+    {
+      "dimension": "convention_outlier",
+      "identifier": "visualization-handler-style-island",
+      "summary": "VisualizationHandlers uses a catch-all inner exception handler while all sibling handlers delegate error classification to wrapHandler",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/api/VisualizationHandlers.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/api/SketchHandlers.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/api/ExplorationHandlers.java"
+      ],
+      "evidence": [
+        "VisualizationHandlers: entire handleVisualRadial body wrapped in catch(Exception)→500",
+        "SketchHandlers: relies on wrapHandler for error classification, only sending explicit errors for specific validation failures",
+        "The style difference means adding a new handler by following VisualizationHandlers as a template would produce inconsistent error codes"
+      ],
+      "suggestion": "Refactor handleVisualRadial to match the sibling convention: let exceptions propagate to wrapHandler; add only explicit validation for required fields",
+      "confidence": "high",
+      "impact_scope": "local",
+      "fix_scope": "single_edit"
+    }
+  ],
+  "retrospective": {
+    "root_causes": ["VisualizationHandlers was extracted from SketchHandlers at a point when the wrapHandler convention was already established but not retrofitted into the new file"],
+    "likely_symptoms": [],
+    "possible_false_positives": ["The record vs class split in the model is documented as intentional and should NOT be treated as a convention_outlier"]
+  }
+}

@@ -1,4 +1,4 @@
-package pl.marcinmilkowski.word_sketch.collections;
+package pl.marcinmilkowski.word_sketch.utils;
 
 /**
  * A memory-efficient open-addressing hash map from long keys to int values.
@@ -32,6 +32,10 @@ public class LongIntHashMap {
     }
 
     public void put(long key, int value) {
+        if (key == EMPTY_KEY) {
+            throw new IllegalArgumentException(
+                "Long.MIN_VALUE is reserved as the empty-slot sentinel and cannot be stored as a key");
+        }
         if (size >= threshold) {
             rehash();
         }

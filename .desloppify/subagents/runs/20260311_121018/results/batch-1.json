@@ -1,0 +1,52 @@
+{
+  "batch": "cross_module_architecture",
+  "batch_index": 1,
+  "assessments": {"cross_module_architecture": 82.0},
+  "dimension_notes": {
+    "cross_module_architecture": {
+      "evidence": [
+        "Dependency direction is consistently inward: api/ imports from exploration/, model/, config/, query/; exploration/ imports from query/, model/, config/; query/ imports only model/; config/ imports model/ and utils/ — no upward imports visible.",
+        "LongIntHashMap lives in a dedicated collections/ package; it is referenced by query-layer code (CollocateQueryHelper) — a clean containment for a specialized data structure with no package cycle.",
+        "RelationUtils in api/ maps short aliases to grammar-config IDs; this is business-domain knowledge about relation naming that arguably belongs in config/ but is isolated in one small class, limiting blast radius.",
+        "SemanticFieldExplorer is public in exploration/ and aggregates MultiSeedExplorer (package-private) and CollocateProfileComparator (public) — the internal helper is properly scoped.",
+        "ExplorationHandlers in api/ creates a SemanticFieldExplorer directly in WordSketchApiServer's constructor, tying the api and exploration layers together at construction time rather than through an interface.",
+        "QueryExecutor interface in query/ provides the only formal boundary between the api/exploration layers and the BlackLab implementation — all callers use the interface, not the concrete class.",
+        "No circular dependencies detected: api → exploration → query → model is a strict DAG."
+      ],
+      "impact_scope": "module",
+      "fix_scope": "single_edit",
+      "confidence": "high"
+    }
+  },
+  "dimension_judgment": {
+    "cross_module_architecture": {
+      "strengths": [
+        "Strict one-direction dependency DAG: api → exploration → query → model with no cycles.",
+        "QueryExecutor interface provides a clean boundary isolating BlackLab from the exploration and api layers.",
+        "LongIntHashMap correctly quarantined in collections/ with no upward leakage.",
+        "Package-private visibility on MultiSeedExplorer and ExplorationHandlers/ExploreResponseBuilder prevents accidental cross-layer access.",
+        "Each package has a focused, intelligible mandate: no hub package that everything imports."
+      ],
+      "issue_character": "Issues are shallow and isolated: one misplaced domain helper (RelationUtils) and one construction-time coupling that could be relaxed, rather than any cycle or hub problem.",
+      "score_rationale": "The codebase scores well here: the layering is clean, dependencies flow inward, and the one interface boundary (QueryExecutor) is used consistently. The only real concerns are RelationUtils living in api/ when it maps config-domain concepts, and direct instantiation of SemanticFieldExplorer in the server constructor rather than via the QueryExecutor contract. These are minor; there are no cycles, no shared-mutable state across boundaries, and no hub modules. This places the codebase solidly in the 80-85 range for this dimension."
+    }
+  },
+  "issues": [
+    {
+      "dimension": "cross_module_architecture",
+      "identifier": "cma_relation_utils_placement",
+      "summary": "RelationUtils in api/ owns domain knowledge (grammar config ID mappings) that belongs in config/",
+      "related_files": ["src/main/java/pl/marcinmilkowski/word_sketch/api/RelationUtils.java"],
+      "evidence": ["RelationUtils.RELATION_ALIASES maps short aliases (adj_predicate, subject_of) to grammar-config IDs (noun_adj_predicates, noun_verbs). This mapping is a domain contract between the public API vocabulary and the grammar config, not an HTTP concern."],
+      "suggestion": "Move RelationUtils to the config/ package (or create config/RelationAliases.java) so the api/ package imports config/ for alias resolution, consistent with the existing dependency direction.",
+      "confidence": "medium",
+      "impact_scope": "module",
+      "fix_scope": "multi_file_refactor"
+    }
+  ],
+  "retrospective": {
+    "root_causes": ["The api/ package was built incrementally and absorbed some config-domain logic that was convenient at the time."],
+    "likely_symptoms": [],
+    "possible_false_positives": []
+  }
+}

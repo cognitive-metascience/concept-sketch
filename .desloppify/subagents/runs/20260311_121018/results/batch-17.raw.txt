@@ -1,0 +1,106 @@
+{
+  "batch": "test_strategy",
+  "batch_index": 17,
+  "assessments": {"test_strategy": 65.0},
+  "dimension_notes": {
+    "test_strategy": {
+      "evidence": [
+        "21 test files found covering most key subsystems: CqlUtils, LogDiceCalculator, LongIntHashMap, GrammarConfigLoader, RelationsValidation, BlackLabSnippetParser, CollocateProfileComparator, SemanticFieldExplorer, ConlluConverter, RelationUtils, HttpApiUtils, HandlersTest, RadialPlot, BCQLParser",
+        "HandlersTest tests HTTP handlers using a custom MockExchange — covers missing-parameter 400 cases and some validation paths; does not test successful execution paths which would require a real QueryExecutor",
+        "MultiSeedExplorer has no dedicated test file — its behaviour is only tested through SemanticFieldExplorer integration tests that use a stub executor",
+        "ExploreResponseBuilder has no test file — the JSON serialisation of ExplorationResult/ComparisonResult/Edge is untested in isolation",
+        "WordSketchApiServer routing layer (registerRoutes, wrapHandler IAE→400 mapping) has no test — the classification contract advertised in Javadoc is not verified",
+        "BlackLabBcqlConcordanceTest, BlackLabQueryExecutorTest, DependencySketchTest, HybridAlgorithmTest likely require a real on-disk index to run (integration tests) — there is no clear test tier separation and no indication of which tests are unit vs integration",
+        "SemanticFieldExplorerTest and CollocateProfileComparatorTest use stub QueryExecutors correctly — the exploration algorithm is well-tested in isolation from the index",
+        "ConlluConverterTest was recently added and tests the error path (documented in the task instructions as a new addition)"
+      ],
+      "impact_scope": "subsystem",
+      "fix_scope": "multi_file_refactor",
+      "confidence": "high"
+    }
+  },
+  "dimension_judgment": {
+    "test_strategy": {
+      "strengths": [
+        "The stub QueryExecutor pattern is used consistently in SemanticFieldExplorerTest and CollocateProfileComparatorTest, decoupling algorithm correctness tests from index availability",
+        "Core utilities (CqlUtils, LogDiceCalculator, LongIntHashMap) all have dedicated unit tests",
+        "HandlersTest validates the validation/error path with MockExchange — tests are not purely happy-path",
+        "RelationsValidationTest verifies the grammar config structure, preventing silent misconfiguration"
+      ],
+      "issue_character": "The test coverage has a clear split: utility classes and exploration algorithms are well tested in isolation, while the HTTP layer (routing, error classification, response assembly) and the multi-seed exploration code are sparsely tested.",
+      "score_rationale": "The codebase has a solid unit-test foundation for the core algorithms and utilities. However the absence of tests for ExploreResponseBuilder, MultiSeedExplorer, and the wrapHandler classification contract means that changes to the API response shape or error handling have no automated regression safety net. The lack of test tier separation (unit vs integration) makes the CI feedback loop unclear — a developer cannot easily run 'just the fast tests'. These gaps are real but the utility layer coverage prevents the score from dropping below 60."
+    }
+  },
+  "issues": [
+    {
+      "dimension": "test_strategy",
+      "identifier": "explore-response-builder-untested",
+      "summary": "ExploreResponseBuilder has no unit tests — the JSON response shape for all exploration endpoints is unverified",
+      "related_files": ["src/main/java/pl/marcinmilkowski/word_sketch/api/ExploreResponseBuilder.java"],
+      "evidence": [
+        "No ExploreResponseBuilderTest file exists",
+        "populateExploreResponse, formatSeedCollocates, formatDiscoveredNouns, formatCoreCollocates, formatAdjectiveProfile, and buildEdges all produce the final API response shape",
+        "Changes to field names (e.g. 'log_dice', 'shared_count') would not be caught by any test"
+      ],
+      "suggestion": "Add ExploreResponseBuilderTest with unit tests for each format method using sample model objects; focus on verifying field names and types since these are the contract with frontend consumers",
+      "confidence": "high",
+      "impact_scope": "module",
+      "fix_scope": "single_edit"
+    },
+    {
+      "dimension": "test_strategy",
+      "identifier": "multiseed-explorer-untested",
+      "summary": "MultiSeedExplorer has no dedicated tests — the multi-seed algorithm is only exercised through SemanticFieldExplorer integration paths",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/exploration/MultiSeedExplorer.java"
+      ],
+      "evidence": [
+        "No MultiSeedExplorerTest exists",
+        "MultiSeedExplorer.explore contains distinct logic for threshold computation (`Math.min(minShared, seeds.size())`), collocate aggregation, and DiscoveredNoun building — these paths are not directly verified",
+        "SemanticFieldExplorer.exploreMultiSeed simply delegates, so any test through SemanticFieldExplorer only reaches MultiSeedExplorer indirectly"
+      ],
+      "suggestion": "Add MultiSeedExplorerTest using a stub QueryExecutor similar to SemanticFieldExplorerTest; test the threshold-clipping logic and edge cases (minShared > seeds.size(), no shared collocates)",
+      "confidence": "high",
+      "impact_scope": "module",
+      "fix_scope": "single_edit"
+    },
+    {
+      "dimension": "test_strategy",
+      "identifier": "wrap-handler-contract-untested",
+      "summary": "wrapHandler's IAE→400 classification is documented but not verified by any test",
+      "related_files": ["src/main/java/pl/marcinmilkowski/word_sketch/api/WordSketchApiServer.java"],
+      "evidence": [
+        "The wrapHandler method Javadoc states 'Catches IllegalArgumentException and sends a 400 response' — this is a key contract for client error handling",
+        "No test in HandlersTest or elsewhere exercises the path where a handler throws IAE and verifies the HTTP 400 response",
+        "The VisualizationHandlers bug (catch-all prevents wrapHandler from seeing IAE) would not be caught by any existing test"
+      ],
+      "suggestion": "Add a test to HandlersTest that wraps a handler which throws IllegalArgumentException and asserts the response is 400; and one for IOException→500; this also validates that the VisualizationHandlers inner-catch bug would be caught in future",
+      "confidence": "medium",
+      "impact_scope": "module",
+      "fix_scope": "single_edit"
+    },
+    {
+      "dimension": "test_strategy",
+      "identifier": "no-test-tier-separation",
+      "summary": "Unit tests and index-requiring integration tests are not separated — running tests without an index may silently skip or fail integration tests with no clear indicator",
+      "related_files": [
+        "src/test/java/pl/marcinmilkowski/word_sketch/query/BlackLabQueryExecutorTest.java",
+        "src/test/java/pl/marcinmilkowski/word_sketch/query/BlackLabBcqlConcordanceTest.java"
+      ],
+      "evidence": [
+        "BlackLabQueryExecutorTest, DependencySketchTest, HybridAlgorithmTest likely fail or are @Disabled without a real index",
+        "SemanticFieldExplorerTest and CollocateProfileComparatorTest run without an index using stubs — these are fast unit tests",
+        "No Maven profile or JUnit tag separates the two groups"
+      ],
+      "suggestion": "Tag index-requiring tests with a custom JUnit5 tag (e.g. @Tag(\"integration\")) and configure a Maven Surefire exclude for the default build; document which tests require an index in the README",
+      "confidence": "medium",
+      "impact_scope": "subsystem",
+      "fix_scope": "multi_file_refactor"
+    }
+  ],
+  "retrospective": {
+    "root_causes": ["Test coverage grew organically with the codebase — exploration algorithms got tests when they were written, but the response assembly layer was treated as 'thin glue' and not tested separately"],
+    "likely_symptoms": ["explore-response-builder-untested and wrap-handler-contract-untested are likely to cause regressions from refactoring"],
+    "possible_false_positives": ["BlackLabDummyTest might be a smoke test that intentionally skips without an index — would need inspection to confirm"]
+  }
+}

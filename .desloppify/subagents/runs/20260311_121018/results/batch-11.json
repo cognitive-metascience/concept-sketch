@@ -1,0 +1,69 @@
+{
+  "batch": "logic_clarity",
+  "batch_index": 11,
+  "assessments": {"logic_clarity": 77.0},
+  "dimension_notes": {
+    "logic_clarity": {
+      "evidence": [
+        "ExplorationHandlers declares three private static methods (formatSeedCollocates, formatDiscoveredNouns, formatCoreCollocates) that are never called within the class — each is a one-line delegation wrapper to ExploreResponseBuilder that has no other caller, making them dead code after the refactor",
+        "In SemanticFieldExplorer.exploreByPattern, the null/empty guard on `seed` is placed AFTER the parameter has already been used in a conditional expression: `ExplorationResult.empty(seed != null ? seed : \"\")` — the ternary within the return is correct but the outer check at line ~140 feels redundant since callers should pass non-null seeds",
+        "CollocateQueryHelper.executeCollocateSearch passes `@Nullable BlackLabIndex index` but never null-checks it before calling `index.mainAnnotatedField()` or `index.search()`, creating an implicit assumption that the field is always non-null despite the annotation suggesting otherwise",
+        "VisualizationHandlers.handleVisualRadial wraps everything in a catch(Exception) that always returns 500, which means IllegalArgumentException from JSON parsing is classified as a server error instead of the 400 that all sibling handlers produce — this is both a logic and consistency gap",
+        "In CollocateQueryHelper.scoreHits, the limit is computed as `Math.min((long) maxResults * OVER_FETCH_FACTOR, (long) records.size())` but the variable is cast to int without overflow protection — when maxResults is large (e.g. Integer.MAX_VALUE/3+1) the long multiplication can exceed Integer.MAX_VALUE before the cast"
+      ],
+      "impact_scope": "module",
+      "fix_scope": "single_edit",
+      "confidence": "high"
+    }
+  },
+  "dimension_judgment": {
+    "logic_clarity": {
+      "strengths": [
+        "Phase separation in CollocateQueryHelper.executeBcqlQuery (collect → score → rank) is explicit and well-labelled, making the algorithm easy to follow",
+        "Guard clauses at method entry (null/empty lemma checks in executeSurfacePattern, executeDependencyPattern) are used consistently across the query layer",
+        "Conditional chains in handleSketchRequest are clear: `dep` path vs surface path vs full sketch are dispatched without nesting",
+        "The validateExploreRequest / ValidatedExploreRequest pattern eliminates duplicated preamble logic across exploration handlers",
+        "ConlluConverter.convertConlluToWplChunks has a clear documented comment explaining the deliberate behaviour on the error path in the finally block"
+      ],
+      "issue_character": "The dominant issue pattern is dead code left by incomplete refactoring — private delegation wrappers that no longer have callers — rather than incorrect logic; one real correctness gap exists in the visualization handler's exception reclassification.",
+      "score_rationale": "The codebase largely does what it claims: control flow is predictable, phases are labelled, guard clauses are consistent. The dead delegation methods in ExplorationHandlers are clearly vestigial and harmless but represent logic that confuses readers. The VisualizationHandlers catch-all is a real defect that reclassifies client errors as 500. These issues are local rather than systemic, keeping the score comfortably above the 'significant drag' threshold but below 'exemplary'."
+    }
+  },
+  "issues": [
+    {
+      "dimension": "logic_clarity",
+      "identifier": "dead-delegate-methods",
+      "summary": "Three private static delegation methods in ExplorationHandlers are never called — dead code after refactor",
+      "related_files": ["src/main/java/pl/marcinmilkowski/word_sketch/api/ExplorationHandlers.java"],
+      "evidence": [
+        "formatSeedCollocates(ExplorationResult) at line ~225 delegates to ExploreResponseBuilder.formatSeedCollocates but has no internal callers",
+        "formatDiscoveredNouns(ExplorationResult) and formatCoreCollocates(ExplorationResult) are similarly dead one-line delegates",
+        "buildExploreResponseBody now calls ExploreResponseBuilder.populateExploreResponse directly, making these wrappers unreachable"
+      ],
+      "suggestion": "Delete the three private static wrapper methods (formatSeedCollocates, formatDiscoveredNouns, formatCoreCollocates) from ExplorationHandlers — they are no longer reachable after populateExploreResponse was introduced",
+      "confidence": "high",
+      "impact_scope": "local",
+      "fix_scope": "single_edit"
+    },
+    {
+      "dimension": "logic_clarity",
+      "identifier": "viz-handler-catch-all-500",
+      "summary": "VisualizationHandlers.handleVisualRadial uses a broad catch(Exception) that classifies all errors as 500, preventing wrapHandler from properly returning 400 for client errors",
+      "related_files": ["src/main/java/pl/marcinmilkowski/word_sketch/api/VisualizationHandlers.java"],
+      "evidence": [
+        "The entire handler body is wrapped in `try { ... } catch (Exception e) { sendError(exchange, 500, ...) }`",
+        "IllegalArgumentException from malformed JSON input would produce a 500 instead of the 400 that wrapHandler delivers for IAE in all sibling handlers",
+        "SketchHandlers and ExplorationHandlers both let wrapHandler classify IAE as 400 — VisualizationHandlers diverges from this pattern"
+      ],
+      "suggestion": "Remove the inner try-catch from handleVisualRadial and let exceptions propagate to wrapHandler, which already provides consistent IAE→400 and IOException→500 mapping; add explicit validation checks for mandatory fields before any parsing side-effects if early 400 responses are needed",
+      "confidence": "high",
+      "impact_scope": "local",
+      "fix_scope": "single_edit"
+    }
+  ],
+  "retrospective": {
+    "root_causes": ["Incomplete cleanup after extracting ExploreResponseBuilder — the old delegation methods were not removed when populateExploreResponse centralised the call"],
+    "likely_symptoms": ["dead-delegate-methods may be an artefact of a rename/extract refactor without a follow-up dead-code pass"],
+    "possible_false_positives": []
+  }
+}

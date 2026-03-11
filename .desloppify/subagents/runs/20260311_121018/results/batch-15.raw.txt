@@ -1,0 +1,72 @@
+{
+  "batch": "initialization_coupling",
+  "batch_index": 15,
+  "assessments": {"initialization_coupling": 81.0},
+  "dimension_notes": {
+    "initialization_coupling": {
+      "evidence": [
+        "WordSketchApiServer constructor creates SemanticFieldExplorer, SketchHandlers, ExplorationHandlers, and VisualizationHandlers but deliberately defers port binding (TCP) to start() — the separation is documented in a comment and is a correct design decision",
+        "BlackLabQueryExecutor opens the BlackLab index file in its constructor — I/O at construction time; this means test code that wants an executor needs either a real index or must mock at the interface level (QueryExecutor), not at the class level",
+        "SemanticFieldExplorer constructor calls deriveNounCqlConstraint(grammarConfig) at construction time — this performs a stream filter over grammarConfig.getRelations() but not I/O; the computation is pure and deterministic",
+        "The @Deprecated single-arg constructors in SemanticFieldExplorer and CollocateProfileComparator create parallel init paths with fallback constants — if a test uses the deprecated constructor it gets a different pattern than production, creating an inconsistency that is acknowledged in Javadoc but still a latent risk",
+        "GrammarConfig is a loaded-at-startup immutable object passed through constructors via DI rather than fetched lazily or from a global static — this is good design, no stale-snapshot risk",
+        "No environment variables are read at class-load time; the CORS origin property is read at response-send time via getCorsAllowOrigin(), and the grammar.config property is read in Main.handleBlackLabServerCommand before the server is constructed — no import-time side effects"
+      ],
+      "impact_scope": "module",
+      "fix_scope": "single_edit",
+      "confidence": "high"
+    }
+  },
+  "dimension_judgment": {
+    "initialization_coupling": {
+      "strengths": [
+        "Port binding is correctly deferred from the constructor to start() — construction and network side effects are separated",
+        "GrammarConfig is injected through constructors rather than accessed via a static singleton, eliminating global init-ordering risks",
+        "getCorsAllowOrigin() reads the system property at call time, not at class load — correct avoidance of stale snapshot from a module-level constant",
+        "No circular init dependencies observed — each class depends only on already-initialised collaborators passed in"
+      ],
+      "issue_character": "The initialization coupling issues are narrow: BlackLab index I/O at construction time limits testability, and the deprecated fallback constructors create a parallel initialization path that diverges from production.",
+      "score_rationale": "This Java codebase handles initialization concerns well for the most part — GrammarConfig injection, deferred port binding, and property-read-at-use-time show deliberate design. The main gap is BlackLabQueryExecutor's index-opening I/O in its constructor, which is the most common 'initialization coupling' anti-pattern in Java; it's not hidden but it does force any integration test to have a real index. The deprecated fallback constructors are a minor documented risk. These are relatively contained issues that do not significantly harm the developer experience."
+    }
+  },
+  "issues": [
+    {
+      "dimension": "initialization_coupling",
+      "identifier": "index-io-in-constructor",
+      "summary": "BlackLabQueryExecutor opens the BlackLab index file in its constructor, coupling object creation to file-system I/O",
+      "related_files": ["src/main/java/pl/marcinmilkowski/word_sketch/query/BlackLabQueryExecutor.java"],
+      "evidence": [
+        "`this.blackLabIndex = BlackLab.open(new File(indexPath))` is called unconditionally in the constructor body",
+        "Any test wanting a real BlackLabQueryExecutor must have a valid on-disk index — the QueryExecutor interface provides a testable seam, but only at the cost of never constructing the class under test",
+        "Construction failure throws IOException, meaning callers must handle checked exceptions in a context (object allocation) where they are unusual"
+      ],
+      "suggestion": "Consider extracting a static factory method `BlackLabQueryExecutor.open(String indexPath)` that performs the I/O, leaving a private constructor for dependency injection in tests; the interface-based test seam (QueryExecutor stub) already works well for unit tests",
+      "confidence": "medium",
+      "impact_scope": "module",
+      "fix_scope": "single_edit"
+    },
+    {
+      "dimension": "initialization_coupling",
+      "identifier": "deprecated-fallback-constructors",
+      "summary": "Deprecated single-arg constructors in SemanticFieldExplorer and CollocateProfileComparator create a parallel initialization path with hardcoded fallback patterns that differ from production",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/exploration/SemanticFieldExplorer.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/exploration/CollocateProfileComparator.java"
+      ],
+      "evidence": [
+        "SemanticFieldExplorer(QueryExecutor) delegates to `this(executor, null)` which invokes deriveNounCqlConstraint(null), returning FALLBACK_NOUN_CQL_CONSTRAINT",
+        "The Javadoc warns this 'bypasses grammar config and creates a parallel code path'",
+        "Any test or caller using the deprecated form gets `[xpos=\"NN.*\"]` instead of the config-derived pattern — silent divergence from production"
+      ],
+      "suggestion": "Remove the deprecated constructors once all callers in tests are updated to use the two-arg form with a test GrammarConfig (the GrammarConfigHelper in tests already provides this); add a static `forTest(QueryExecutor, GrammarConfig)` factory if the two-arg constructor is too heavy for test setup",
+      "confidence": "medium",
+      "impact_scope": "module",
+      "fix_scope": "multi_file_refactor"
+    }
+  ],
+  "retrospective": {
+    "root_causes": ["The deprecated constructors are a transitional artifact from before GrammarConfig was introduced — they represent in-progress migration debt"],
+    "likely_symptoms": [],
+    "possible_false_positives": []
+  }
+}

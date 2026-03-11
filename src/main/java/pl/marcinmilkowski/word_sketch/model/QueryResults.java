@@ -8,9 +8,7 @@ import java.util.List;
  */
 public class QueryResults {
 
-    private QueryResults() {
-        // Utility class - prevent instantiation
-    }
+    private QueryResults() {}
 
     /**
      * Result of a word sketch query containing collocation information.

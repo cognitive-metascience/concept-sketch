@@ -1,0 +1,71 @@
+{
+  "batch": "abstraction_fitness",
+  "batch_index": 3,
+  "assessments": {"abstraction_fitness": 80.0},
+  "dimension_notes": {
+    "abstraction_fitness": {
+      "evidence": [
+        "QueryExecutor interface has one production implementation (BlackLabQueryExecutor) but the abstraction is justified: it isolates the expensive BlackLab dependency from the exploration and api layers and enables testability. The interface contract is coherent and documents each method's distinct role.",
+        "ExplorationHandlers contains three private static methods — formatSeedCollocates, formatDiscoveredNouns, formatCoreCollocates — that are pure pass-throughs to ExploreResponseBuilder with identical signatures. They add no behavior, policy, or translation.",
+        "ExploreOptions record bundles four tuning parameters; it is used in exactly one call path (SemanticFieldExplorer.exploreByPattern). This is a focused, paid-for abstraction.",
+        "ValidatedExploreRequest private record in ExplorationHandlers is an appropriate internal DTO that eliminates a multi-return-value parse-and-validate pattern.",
+        "GrammarConfigLoader is a pure static-factory loader; callers receive GrammarConfig value objects — the abstraction boundary is clean and the loader has no stateful surface.",
+        "RelationConfig.buildFullPattern() encapsulates pattern substitution; callers do not manipulate pattern strings directly.",
+        "wrapHandler in WordSketchApiServer is a thin wrapper, but it adds genuine cross-cutting policy (IAE→400, IOException→500, catch-all→500) — it pays for its existence.",
+        "SemanticFieldExplorer.exploreByPattern has a wide parameter list now replaced by ExploreOptions, but exploreMultiSeed still takes four loose parameters instead of using ExploreOptions (the record's Javadoc even notes that nounsPerSeed does not apply to multi-seed, explaining the asymmetry).",
+        "One-impl interface count flagged in scan (1) maps to QueryExecutor — as argued above, this is justified.",
+        "Scan sub_axes: abstraction_leverage 100, interface_honesty 92, delegation_density 100, definition_directness 100, type_discipline 100 — mechanical analysis sees a clean picture."
+      ],
+      "impact_scope": "module",
+      "fix_scope": "single_edit",
+      "confidence": "high",
+      "sub_axes": {
+        "abstraction_leverage": 88.0,
+        "indirection_cost": 78.0,
+        "interface_honesty": 90.0,
+        "delegation_density": 92.0,
+        "definition_directness": 88.0,
+        "type_discipline": 95.0
+      }
+    }
+  },
+  "dimension_judgment": {
+    "abstraction_fitness": {
+      "strengths": [
+        "QueryExecutor interface adds genuine value as a BlackLab isolation boundary and testability seam.",
+        "ExploreOptions record cleanly replaces a 4-argument tuple in the single-seed path.",
+        "GrammarConfigLoader is a pure loader with no stateful surface — callers hold the value object, not the loader.",
+        "ValidatedExploreRequest DTO cleanly captures validated state and eliminates an awkward null-return parse pattern.",
+        "RelationConfig.buildFullPattern() and substituteAtPosition() hide pattern string manipulation from callers."
+      ],
+      "issue_character": "The main abstraction issue is a small set of no-op pass-through methods in ExplorationHandlers, rather than a systemic over-engineering or under-abstraction pattern.",
+      "score_rationale": "Most abstractions in this codebase pay for themselves with real leverage: the interface isolates an expensive external library, the record reduces a 4-arg tuple, the DTO eliminates a multi-output pattern. The one clear defect — three zero-value private statics delegating to ExploreResponseBuilder — is a low-cost fix. The wide parameter bag on exploreMultiSeed is a minor ergonomic issue with a reasonable documented rationale. The codebase sits solidly around 80: above 'significant drag' but with room to sharpen the abstraction around multi-seed parameter bundling."
+    }
+  },
+  "issues": [
+    {
+      "dimension": "abstraction_fitness",
+      "identifier": "af_passthrough_private_statics",
+      "summary": "Three private static methods in ExplorationHandlers are pure pass-throughs to ExploreResponseBuilder with no added behavior",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/api/ExplorationHandlers.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/api/ExploreResponseBuilder.java"
+      ],
+      "evidence": [
+        "ExplorationHandlers.formatSeedCollocates(result) body: return ExploreResponseBuilder.formatSeedCollocates(result);",
+        "ExplorationHandlers.formatDiscoveredNouns(result) body: return ExploreResponseBuilder.formatDiscoveredNouns(result);",
+        "ExplorationHandlers.formatCoreCollocates(result) body: return ExploreResponseBuilder.formatCoreCollocates(result);",
+        "None of the three methods are called — buildExploreResponseBody delegates to ExploreResponseBuilder.populateExploreResponse() directly."
+      ],
+      "suggestion": "Delete these three private statics. All callers use buildExploreResponseBody (which calls ExploreResponseBuilder.populateExploreResponse directly), so these dead delegates can be removed without impact.",
+      "confidence": "high",
+      "impact_scope": "local",
+      "fix_scope": "single_edit"
+    }
+  ],
+  "retrospective": {
+    "root_causes": ["The three pass-through statics are likely remnants from before ExploreResponseBuilder.populateExploreResponse was introduced to consolidate response assembly."],
+    "likely_symptoms": ["af_passthrough_private_statics"],
+    "possible_false_positives": []
+  }
+}

@@ -1,0 +1,87 @@
+{
+  "batch": "error_consistency",
+  "batch_index": 14,
+  "assessments": {"error_consistency": 67.0},
+  "dimension_notes": {
+    "error_consistency": {
+      "evidence": [
+        "wrapHandler in WordSketchApiServer establishes a clear contract: IAE→400, IOException→500, Exception→500 — this is the intended baseline for all handlers",
+        "VisualizationHandlers.handleVisualRadial wraps its entire body in catch(Exception)→500, preventing wrapHandler's IAE→400 path from ever firing for this endpoint; a malformed JSON body returns 500 instead of 400, unlike all sibling POST handlers",
+        "ExplorationHandlers has its own inner try-catch blocks for IOException and IAE inside each handler method (e.g. handleSemanticFieldExplore, handleSemanticFieldExploreMulti) — these produce correct 400/500 responses but create a double-handling layer since wrapHandler already provides the same mapping",
+        "BlackLabQueryExecutor.findCollocations wraps IllegalArgumentException as IOException: `throw new IOException(\"Invalid CQL pattern...\", e)` — this reclassifies a client-side error (bad pattern) as an I/O error; wrapHandler will then return 500 instead of 400 for this class of input problem",
+        "CollocateQueryHelper.executeCollocateSearch catches InvalidQuery (a library parse exception) and rethrows as IOException — this is consistent with the IOException-based I/O boundary contract of the QueryExecutor interface",
+        "ConlluConverter.convertConlluToWplChunks lets IOExceptions propagate naturally; Main.handleBlackLabIndexCommand catches Exception at the top level — consistent for a CLI boundary",
+        "GrammarConfigLoader.load throws IOException for config parse errors — consistent with file-I/O framing"
+      ],
+      "impact_scope": "subsystem",
+      "fix_scope": "multi_file_refactor",
+      "confidence": "high"
+    }
+  },
+  "dimension_judgment": {
+    "error_consistency": {
+      "strengths": [
+        "wrapHandler provides a single documented error-classification contract for all registered HTTP endpoints — IAE as 400, IOException as 500, any other Exception as 500",
+        "QueryExecutor interface uniformly declares `throws IOException` so all callers have a single exception type to handle from the query layer",
+        "BlackLabSnippetParser methods that fail to parse return null or empty string rather than throwing, keeping parse errors local and non-fatal"
+      ],
+      "issue_character": "The errors are concentrated at two boundaries: a visualization handler that opts out of the wrapHandler classification contract, and a query-layer wrapping of IllegalArgumentException as IOException that promotes a client error to a server error.",
+      "score_rationale": "The codebase has a clearly designed error strategy (wrapHandler contract, IOException boundary in QueryExecutor) but it is unevenly applied. The VisualizationHandlers outlier breaks the 400/500 classification the project clearly intends, and the IAE-wrapped-as-IOException in findCollocations silently misclassifies a correctible client error. These are not catastrophic but they are real inconsistencies that would frustrate a developer debugging HTTP error codes. The score sits below 70 because the defects are in the API boundary — the highest-visibility layer — even though the core query layer is internally consistent."
+    }
+  },
+  "issues": [
+    {
+      "dimension": "error_consistency",
+      "identifier": "viz-handler-swallows-400",
+      "summary": "VisualizationHandlers.handleVisualRadial catches all exceptions as 500, bypassing wrapHandler's IAE→400 contract",
+      "related_files": ["src/main/java/pl/marcinmilkowski/word_sketch/api/VisualizationHandlers.java"],
+      "evidence": [
+        "`catch (Exception e) { sendError(exchange, 500, ...)` wraps the entire handler body",
+        "JSON parsing of malformed `width`/`height` fields would throw NumberFormatException (subclass of IllegalArgumentException via fastjson) and be reported as 500 rather than 400",
+        "SketchHandlers.handleBcqlQueryPost and all ExplorationHandlers handlers correctly propagate IAE or return explicit 400 responses for client errors"
+      ],
+      "suggestion": "Remove the broad inner try-catch from handleVisualRadial; add specific validation for required fields (items array null check, invalid width/height) that throws IllegalArgumentException to be caught by wrapHandler as 400",
+      "confidence": "high",
+      "impact_scope": "local",
+      "fix_scope": "single_edit"
+    },
+    {
+      "dimension": "error_consistency",
+      "identifier": "iae-wrapped-as-ioexception",
+      "summary": "BlackLabQueryExecutor.findCollocations wraps IllegalArgumentException (bad CQL pattern) as IOException, causing wrapHandler to return 500 for a client-side input error",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/query/BlackLabQueryExecutor.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/api/WordSketchApiServer.java"
+      ],
+      "evidence": [
+        "`catch (IllegalArgumentException e) { throw new IOException(\"Invalid CQL pattern...\", e); }` in findCollocations",
+        "The wrapping IOException reaches wrapHandler which maps IOException→500, losing the 400 classification that the original IAE would have triggered",
+        "The original IAE comes from buildBcqlWithLemmaSubstitution when a CQL pattern does not start with '[' — this is detectable and correctable by the API caller"
+      ],
+      "suggestion": "Let the IllegalArgumentException propagate unchanged from findCollocations so wrapHandler classifies it as 400; or rethrow as a domain-specific checked exception that the handler layer can distinguish; alternatively add explicit pattern validation in the API handler before calling findCollocations",
+      "confidence": "high",
+      "impact_scope": "module",
+      "fix_scope": "single_edit"
+    },
+    {
+      "dimension": "error_consistency",
+      "identifier": "double-handled-exploration-errors",
+      "summary": "ExplorationHandlers inner try-catch blocks duplicate the error classification already provided by wrapHandler, creating redundant error-handling layers",
+      "related_files": ["src/main/java/pl/marcinmilkowski/word_sketch/api/ExplorationHandlers.java"],
+      "evidence": [
+        "handleSemanticFieldExplore has `catch (IOException e) { sendError(500, ...) } catch (IllegalArgumentException e) { sendError(400, ...) }` inside the handler",
+        "wrapHandler already provides the same IOException→500 and IAE→400 mapping for every registered endpoint",
+        "The inner catches produce the same HTTP codes as wrapHandler but with slightly different error message formatting — a future change to the error message format would need to be made in two places"
+      ],
+      "suggestion": "Remove the inner try-catch blocks from handleSemanticFieldExplore and handleSemanticFieldExploreMulti; let IOException and IAE propagate to wrapHandler which provides the same classification uniformly; keep explicit sendError only for cases that need a specific 400 message before the exception phase (e.g. missing-seeds check)",
+      "confidence": "medium",
+      "impact_scope": "local",
+      "fix_scope": "single_edit"
+    }
+  ],
+  "retrospective": {
+    "root_causes": ["VisualizationHandlers was written before the wrapHandler pattern was standardised, and was never updated to remove its own catch-all"],
+    "likely_symptoms": ["double-handled-exploration-errors is partly a symptom of the wrapHandler contract being introduced incrementally rather than designed upfront"],
+    "possible_false_positives": []
+  }
+}
