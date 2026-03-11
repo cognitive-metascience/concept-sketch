@@ -224,4 +224,23 @@ class HttpApiUtils {
 
         return params;
     }
+
+    /**
+     * Reads the full request body, throwing {@link RequestEntityTooLargeException} if it exceeds
+     * {@code maxBytes}. Uses a one-byte-over read to detect oversize bodies without buffering the
+     * entire stream.
+     *
+     * @param exchange  the HTTP exchange to read from
+     * @param maxBytes  maximum allowed body size in bytes
+     * @return the body as a UTF-8 string
+     * @throws IOException                    if reading fails
+     * @throws RequestEntityTooLargeException if the body exceeds {@code maxBytes}
+     */
+    static String readBodyWithSizeLimit(HttpExchange exchange, int maxBytes) throws IOException {
+        byte[] bodyBytes = exchange.getRequestBody().readNBytes(maxBytes + 1);
+        if (bodyBytes.length > maxBytes) {
+            throw new RequestEntityTooLargeException("Request body too large");
+        }
+        return new String(bodyBytes, java.nio.charset.StandardCharsets.UTF_8);
+    }
 }

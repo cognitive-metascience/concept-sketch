@@ -10,7 +10,6 @@ import pl.marcinmilkowski.word_sketch.query.QueryResults;
 import pl.marcinmilkowski.word_sketch.query.QueryExecutor;
 
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -63,11 +62,7 @@ class CorpusQueryHandlers {
      * {@code wrapWithErrorHandling} maps this to HTTP 413.
      */
     private BcqlRequest parseBcqlRequest(HttpExchange exchange) throws IOException {
-        byte[] bodyBytes = exchange.getRequestBody().readNBytes(MAX_REQUEST_BODY_BYTES + 1);
-        if (bodyBytes.length > MAX_REQUEST_BODY_BYTES) {
-            throw new RequestEntityTooLargeException("Request body too large");
-        }
-        String body = new String(bodyBytes, StandardCharsets.UTF_8);
+        String body = HttpApiUtils.readBodyWithSizeLimit(exchange, MAX_REQUEST_BODY_BYTES);
         JSONObject obj;
         try {
             obj = JSON.parseObject(body);

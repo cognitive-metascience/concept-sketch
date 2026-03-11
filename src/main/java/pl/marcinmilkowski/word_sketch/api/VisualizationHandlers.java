@@ -25,17 +25,12 @@ class VisualizationHandlers {
     private static final int MAX_REQUEST_BODY_BYTES = 65536;
 
     /**
-     * Render radial plot.
      * POST /api/visual/radial
      * Body JSON: { center: "word", width: 840, height: 520, items: [{label:"", score: 3.2}, ...] }
      * Returns: image/svg+xml
      */
     void handleVisualRadial(HttpExchange exchange) throws IOException {
-        byte[] bodyBytes = exchange.getRequestBody().readNBytes(MAX_REQUEST_BODY_BYTES + 1);
-        if (bodyBytes.length > MAX_REQUEST_BODY_BYTES) {
-            throw new RequestEntityTooLargeException("Request body too large");
-        }
-        String body = new String(bodyBytes, StandardCharsets.UTF_8);
+        String body = HttpApiUtils.readBodyWithSizeLimit(exchange, MAX_REQUEST_BODY_BYTES);
         logger.debug("Radial: body = {}", body);
         JSONObject obj;
         try {
