@@ -6,6 +6,7 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Optional;
 import java.util.regex.Pattern;
 
 /**
@@ -52,10 +53,10 @@ public class ConlluConverter {
                             sentences++;
                             sentencesInChunk++;
                             inSentence = false;
-                            long[] rotated = rotateChunkIfNeeded(writer, outputDir, chunks, sentencesInChunk, sentencesPerChunk);
-                            if (rotated != null) {
+                            Optional<long[]> rotated = rotateChunkIfNeeded(writer, outputDir, chunks, sentencesInChunk, sentencesPerChunk);
+                            if (rotated.isPresent()) {
                                 writer = null;
-                                chunks = rotated[0];
+                                chunks = rotated.get()[0];
                                 sentencesInChunk = 0;
                             }
                         }
@@ -97,16 +98,16 @@ public class ConlluConverter {
 
     /**
      * Closes the current chunk writer and increments the chunk counter when the per-chunk
-     * sentence quota is reached. Returns a {@code long[]{newChunkCount}} when rotation
-     * occurred (caller should reset {@code sentencesInChunk} to 0 and set writer to null),
-     * or {@code null} when no rotation was needed.
+     * sentence quota is reached. Returns {@code Optional.of(new long[]{newChunkCount})} when
+     * rotation occurred (caller should reset {@code sentencesInChunk} to 0 and set writer to null),
+     * or {@code Optional.empty()} when no rotation was needed.
      */
-    private static long[] rotateChunkIfNeeded(
+    private static Optional<long[]> rotateChunkIfNeeded(
             BufferedWriter writer, Path outputDir, long chunks,
             int sentencesInChunk, int sentencesPerChunk) throws IOException {
-        if (sentencesInChunk < sentencesPerChunk) return null;
+        if (sentencesInChunk < sentencesPerChunk) return Optional.empty();
         writer.close();
-        return new long[]{chunks + 1};
+        return Optional.of(new long[]{chunks + 1});
     }
 
     private static BufferedWriter openChunk(Path outputDir, long index) throws IOException {

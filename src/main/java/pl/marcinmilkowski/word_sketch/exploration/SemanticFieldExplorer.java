@@ -156,7 +156,7 @@ public class SemanticFieldExplorer {
         int minShared = opts.minShared();
 
         if (seed == null || seed.isEmpty()) {
-            return ExplorationResult.empty(seed != null ? seed : "");
+            return ExplorationResult.empty("");
         }
 
         seed = seed.toLowerCase().trim();
@@ -309,7 +309,10 @@ public class SemanticFieldExplorer {
      */
     public @NonNull ComparisonResult compareCollocateProfiles(
             @NonNull Set<String> seedNouns, @NonNull ExplorationOptions opts) throws IOException {
-        if (seedNouns == null || seedNouns.size() < 2) {
+        if (seedNouns == null) {
+            throw new IllegalArgumentException("seedNouns must not be null");
+        }
+        if (seedNouns.size() < 2) {
             throw new IllegalArgumentException(
                 "Comparison requires at least 2 seed nouns for a meaningful result");
         }

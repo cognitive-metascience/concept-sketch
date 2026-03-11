@@ -42,7 +42,7 @@ public final class GrammarConfig {
     }
 
     /** @return the grammar version string from the config file (e.g. {@code "1.0"}); may be null for legacy configs */
-    public String getVersion() {
+    public @org.jspecify.annotations.Nullable String getVersion() {
         return version;
     }
 

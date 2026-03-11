@@ -1,0 +1,95 @@
+{
+  "batch": "ai_generated_debt",
+  "batch_index": 10,
+  "assessments": {"ai_generated_debt": 78.0},
+  "dimension_notes": {
+    "ai_generated_debt": {
+      "evidence": [
+        "No generic handler names (handle, process, doOperation) in domain code: method names are domain-specific throughout (exploreByPattern, compareCollocateProfiles, computeCollocateIntersection, buildAdjectiveProfileList, deriveTokenPosition).",
+        "Most Javadoc comments add genuine information beyond restating the signature. HttpApiUtils class-level Javadoc explains the rationale for co-locating request and response concerns — this is non-obvious design reasoning worth documenting.",
+        "ExplorationResult field Javadoc: 'Single-seed mode: contains the lemma string. Multi-seed mode: contains the seeds joined with a comma.' — this explains a non-obvious encoding. Useful documentation, not restating.",
+        "RelationEdgeType.toString() override: 'Overriding Object.toString() ensures that logging frameworks, template engines, and string concatenation emit the API-safe label rather than the Java enum constant name.' — explains why, not what. Appropriate.",
+        "WordSketchApiServer class Javadoc security model explanation ('binds exclusively to the loopback address...any change to the bind address must be accompanied by...') is non-trivial and operationally important.",
+        "Some minor restating patterns detected: CoreCollocate.coverage() has Javadoc 'Coverage ratio: how many of the discovered nouns share this collocate' above a method whose name 'coverage' already communicates this. The body is 'return totalNouns > 0 ? (double) sharedByCount / totalNouns : 0.0;' — the comment adds minimal value over the method name and body.",
+        "LogDiceCalculator.relativeFrequency: 'Compute relative frequency (collocate frequency / headword frequency).' — the formula in parentheses matches the code exactly (return (double) collocateFreq / (double) headwordFreq). The Javadoc restates the implementation.",
+        "requireNextArg in Main.java: Javadoc explains 'Callers in main let this propagate to the top-level catch handler which prints the message and exits cleanly.' — this is useful because the propagation strategy is non-obvious for a method that throws IAE in a switch.",
+        "No observed defensive null checks on non-nullable typed values in domain code. The null checks that exist (e.g., seeds != null in CollocateProfileComparator) are at genuine API boundaries.",
+        "No entry/exit debug logging on every function. Logger.debug calls are targeted at specific computational steps (found X adjectives, top 5 results) and filtered by logger.isDebugEnabled() before building debug strings.",
+        "ConlluConverter finally block comment: 'On the error path the in-progress sentence is left open deliberately: writing a partial </s> tag would produce a malformed chunk...' — this explains a deliberate non-action that would otherwise look like a bug. Essential.",
+        "GrammarConfigLoader inline code example in class Javadoc is well-structured and matches the actual API. Non-trivial documentation effort that benefits users of the API.",
+        "QueryExecutor interface has extensive method Javadoc with multiple paragraphs explaining the distinction between findCollocations, executeCqlQuery, executeBcqlQuery, executeSurfacePattern — these distinctions are genuinely confusing without explanation and the docs clarify each method's scope. Not restating.",
+        "RelationConfig.computeDeprel() Javadoc: 'Extracts and computes the dependency relation (deprel) from the pattern. For DEP relations, looks for deprel=\"xxx\" attribute constraint in the pattern.' — explains the regex scanning approach. Appropriate.",
+        "ExplorationResult.getSeed() @return: 'the seed word(s); in single-seed mode this is the lemma, in multi-seed mode it is a comma-joined string' — helpful disambiguation.",
+        "No copy-pasted identical error handling blocks across files — each handler uses wrapWithErrorHandling rather than duplicating catch blocks.",
+        "No pass-through wrapper functions observed that merely forward arguments without adding anything.",
+        "VisualizationHandlers.handleVisualRadial: 'if (center == null) center = \"\"' — defensive null handling for a field that comes from JSON parsing (obj.getString returns null for missing keys). This is a genuine API boundary check, not defensive overengineering."
+      ],
+      "impact_scope": "module",
+      "fix_scope": "multi_file_refactor",
+      "confidence": "high"
+    }
+  },
+  "dimension_judgment": {
+    "ai_generated_debt": {
+      "strengths": [
+        "Method and variable names are domain-specific throughout — no generic handleData, processItem, or doOperation names in production code.",
+        "Javadoc consistently adds non-obvious context (design rationale, error propagation strategy, encoding conventions) rather than restating the code.",
+        "No copy-pasted error handling boilerplate — wrapWithErrorHandling centralises the pattern.",
+        "No entry/exit function tracing — debug logging is targeted and guarded by isDebugEnabled().",
+        "ConvlluConverter and GrammarConfigLoader contain some of the best documentation in the codebase: comments explain deliberate non-actions and non-obvious design choices."
+      ],
+      "issue_character": "AI-generated debt is minimal; the main pattern is occasional restating comments on trivially named methods (coverage(), relativeFrequency()) where the method name and formula already communicate the full meaning.",
+      "score_rationale": "The codebase earns a high score on this dimension — code is domain-vocabulary-rich, comments add genuine value in most places, and no generic-names or defensive overengineering patterns are present. The score stops short of 85+ due to a handful of restating comments on trivially self-evident methods, and one mild boilerplate pattern (several response.put('status', 'ok') calls that appear identically in each handler but are not flagged as ai-debt since this is idiomatic for this layer)."
+    }
+  },
+  "issues": [
+    {
+      "dimension": "ai_generated_debt",
+      "identifier": "coverage_method_restating_javadoc",
+      "summary": "CoreCollocate.coverage() Javadoc restates what the method name and one-line body already communicate",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/model/CoreCollocate.java"
+      ],
+      "evidence": [
+        "/** Coverage ratio: how many of the discovered nouns share this collocate */",
+        "public double coverage() { return totalNouns > 0 ? (double) sharedByCount / totalNouns : 0.0; }",
+        "The method name 'coverage' and the record fields 'sharedByCount / totalNouns' in the body already communicate the ratio concept. The Javadoc adds no insight about edge cases, units, or callers."
+      ],
+      "suggestion": "Remove the Javadoc or replace with a note about an edge case: '/** Returns 0.0 when totalNouns is 0 to avoid division by zero. */' which is the only non-obvious piece of information in the implementation.",
+      "confidence": "low",
+      "impact_scope": "local",
+      "fix_scope": "single_edit",
+      "root_cause_cluster": "restating_comment"
+    },
+    {
+      "dimension": "ai_generated_debt",
+      "identifier": "relative_frequency_restating_javadoc",
+      "summary": "LogDiceCalculator.relativeFrequency Javadoc restates the formula visible in the one-line implementation",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/utils/LogDiceCalculator.java"
+      ],
+      "evidence": [
+        "/** Compute relative frequency (collocate frequency / headword frequency). */",
+        "public static double relativeFrequency(long collocateFreq, long headwordFreq) { if (headwordFreq <= 0) { return 0.0; } return (double) collocateFreq / (double) headwordFreq; }",
+        "The parenthetical '(collocate frequency / headword frequency)' reproduces what the method body shows directly. The only non-obvious detail is the zero-guard, which is not mentioned in the comment."
+      ],
+      "suggestion": "Update the Javadoc to: '/** Returns 0.0 when headwordFreq is zero or negative. */' — this documents the only non-obvious behaviour. Remove the formula restatement.",
+      "confidence": "low",
+      "impact_scope": "local",
+      "fix_scope": "single_edit",
+      "root_cause_cluster": "restating_comment"
+    }
+  ],
+  "retrospective": {
+    "root_causes": [
+      "Restating comments are a low-effort documentation habit — adding a Javadoc comment to a one-liner feels like complete documentation even when the comment says nothing new.",
+      "The overall codebase shows evidence of deliberate documentation review (the more complex classes have excellent Javadoc), so the restating comments on trivial methods are outliers rather than a systemic pattern."
+    ],
+    "likely_symptoms": [],
+    "possible_false_positives": [
+      "ExplorationResult.getSeed() Javadoc explaining single-seed vs. multi-seed mode is potentially verbose but is genuinely non-obvious and should not be flagged as restating.",
+      "ConlluConverter finally block comment about deliberate non-action (not closing </s> on error path) is essential documentation, not defensive bloat.",
+      "The multiple response.put('status', 'ok') calls across handlers could look like copied boilerplate, but this is idiomatic HTTP handler code, not AI-generated debt."
+    ]
+  }
+}

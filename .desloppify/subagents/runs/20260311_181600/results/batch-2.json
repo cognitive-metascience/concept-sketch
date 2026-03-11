@@ -1,0 +1,107 @@
+{
+  "batch": "high_level_elegance",
+  "batch_index": 2,
+  "assessments": {"high_level_elegance": 68.0},
+  "dimension_notes": {
+    "high_level_elegance": {
+      "evidence": [
+        "Top-level package split (api, config, exploration, indexer/blacklab, model, query, utils, viz) maps reasonably to domain capabilities: HTTP surface, grammar configuration, semantic exploration, corpus indexing, corpus querying, utilities, visualization.",
+        "model/ package mixes two distinct responsibilities: pure domain value objects (AdjectiveProfile, ComparisonResult, CoreCollocate, DiscoveredNoun, Edge, ExplorationResult) and a presentation/serialization utility (ExploreResponseAssembler). The package-info.java documents the package as 'domain model classes' — ExploreResponseAssembler violates this stated contract.",
+        "RelationType enum (model/RelationType.java) holds both index-strategy values (SURFACE, DEP) and linguistic-domain labels (ADJ_PREDICATE, ADJ_MODIFIER, SUBJECT_OF, OBJECT_OF) in one type. This means the enum's public API surface is inconsistent: half of it is relevant to query routing, half to semantic domain categorization.",
+        "config/ is clean: GrammarConfig (data), GrammarConfigLoader (I/O factory), RelationConfig (record), RelationPatternBuilder (static pattern factory), RelationUtils (static alias/lookup utilities) — all config-adjacent concerns, well-separated from exploration and query logic.",
+        "exploration/ correctly encapsulates its three collaborators (SemanticFieldExplorer, MultiSeedExplorer, CollocateProfileComparator) and exposes only SemanticFieldExplorer to api/. The options records (ExplorationOptions, SingleSeedExplorationOptions) document the single-seed vs. multi-seed split clearly.",
+        "api/ handler decomposition (SketchHandlers, ConcordanceHandlers, ExplorationHandlers, CorpusQueryHandlers, VisualizationHandlers, WordSketchApiServer) provides a predictable one-handler-per-endpoint-group pattern. A new engineer can locate the right handler from the endpoint name.",
+        "indexer/blacklab is isolated; nothing outside imports its internals. Its two classes (BlackLabConllUIndexer, ConlluConverter) have separate file-I/O and chunking concerns documented in Javadoc.",
+        "WordSketchApiServer Javadoc lists all endpoints in a table — useful reference, matches the registered routes. The security model (loopback-only bind) is documented at the class level.",
+        "QueryExecutor interface Javadoc honestly states 'single production implementation — acts primarily as a testability seam' — this is self-aware documentation of a design tradeoff."
+      ],
+      "impact_scope": "subsystem",
+      "fix_scope": "multi_file_refactor",
+      "confidence": "high"
+    }
+  },
+  "dimension_judgment": {
+    "high_level_elegance": {
+      "strengths": [
+        "Package-level decomposition mostly aligns with domain capabilities; api/exploration/query/config split gives new engineers a predictable map.",
+        "api/ handler granularity is consistent: one handler class per concern group, registered by WordSketchApiServer which acts as the sole router.",
+        "config/ separation between data carrier (GrammarConfig/RelationConfig records), I/O factory (GrammarConfigLoader), and pattern-building utilities (RelationPatternBuilder, RelationUtils) is clear.",
+        "exploration/ internal structure (SemanticFieldExplorer delegating to MultiSeedExplorer and CollocateProfileComparator) localises change: multi-seed algorithm changes affect only MultiSeedExplorer.",
+        "WordSketchApiServer Javadoc endpoint table matches runtime registration — contract and implementation stay in sync."
+      ],
+      "issue_character": "The main ownership issue is that model/ has two distinct identities — a clean domain model and a response-assembly utility — and RelationType doubles as both a query-routing discriminator and a linguistic-category label, blurring the boundaries that the package split is meant to express.",
+      "score_rationale": "The codebase scores well for package naming and most ownership boundaries, but falls short of the high-70s/80s range because the model/ package has a stated contract ('domain model classes') that ExploreResponseAssembler actively violates, and RelationType conflates two semantic axes that call-site readers must mentally decompose. These are not cosmetic issues: they erode the predictability that makes high_level_elegance valuable to a new engineer navigating the codebase."
+    }
+  },
+  "issues": [
+    {
+      "dimension": "high_level_elegance",
+      "identifier": "model_package_mixed_responsibility",
+      "summary": "model/ package contains both domain value objects and HTTP response-assembly logic (ExploreResponseAssembler)",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/model/ExploreResponseAssembler.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/model/package-info.java"
+      ],
+      "evidence": [
+        "package-info.java defines model/ as 'domain model classes for word-sketch query results and semantic-field exploration' — ExploreResponseAssembler.populateExploreResponse writes JSON-key strings like 'seed_collocates_count', 'discovered_nouns_count', 'edges' into response maps for HTTP handlers. This is presentation work, not domain logic.",
+        "ExploreResponseAssembler.formatAdjectiveProfile and populateComparisonResponse build API response shapes — decisions about which fields appear in a REST response belong in api/, not in the domain layer.",
+        "All callers of ExploreResponseAssembler are in api/ (ExplorationHandlers.java): the only package that imports ExploreResponseAssembler is api/, confirming it has no domain-layer callers."
+      ],
+      "suggestion": "Move ExploreResponseAssembler to api/ (or api/response/ if sub-packages are desired). Keep ExplorationResult, ComparisonResult, AdjectiveProfile, etc. in model/ as pure domain objects. This restores the stated contract of model/ and makes the model/api boundary clear.",
+      "confidence": "high",
+      "impact_scope": "subsystem",
+      "fix_scope": "multi_file_refactor",
+      "root_cause_cluster": "boundary_placement"
+    },
+    {
+      "dimension": "high_level_elegance",
+      "identifier": "relation_type_dual_semantics",
+      "summary": "RelationType enum serves two unrelated roles: Lucene query-strategy selector and linguistic domain category label",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/model/RelationType.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/config/RelationConfig.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/exploration/CollocateProfileComparator.java"
+      ],
+      "evidence": [
+        "RelationType declared as: 'public enum RelationType { SURFACE, DEP, ADJ_PREDICATE, ADJ_MODIFIER, SUBJECT_OF, OBJECT_OF }'. SURFACE and DEP are used in SketchHandlers.handleRelationsForType to dispatch to surface or dependency query paths; ADJ_PREDICATE, ADJ_MODIFIER, SUBJECT_OF, OBJECT_OF are used in CollocateProfileComparator.deriveAdjectivePattern as linguistic semantic filters.",
+        "GrammarConfig.getRelation() stores Optional<RelationType> — a caller cannot know whether the Optional contains a strategy value or a domain label without reading the grammar JSON or inspecting call sites.",
+        "WordSketchApiServer.start() documents endpoint paths that expose 'surface' vs 'dep' — these are the SURFACE/DEP values; the remaining four values have no corresponding URL segment."
+      ],
+      "suggestion": "Separate into QueryStrategy { SURFACE, DEP } (for index-level dispatch in RelationConfig) and RelationDomain { ADJ_PREDICATE, ADJ_MODIFIER, SUBJECT_OF, OBJECT_OF } (for semantic categorization in exploration). RelationConfig can hold both as separate fields, allowing each field to convey its specific meaning.",
+      "confidence": "medium",
+      "impact_scope": "subsystem",
+      "fix_scope": "multi_file_refactor",
+      "root_cause_cluster": "enum_semantic_mixing"
+    },
+    {
+      "dimension": "high_level_elegance",
+      "identifier": "exploration_result_seed_encoding",
+      "summary": "ExplorationResult encodes multi-seed mode by comma-joining seeds into a single String field, conflating single-seed and multi-seed result shapes",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/model/ExplorationResult.java"
+      ],
+      "evidence": [
+        "ExplorationResult.seed field Javadoc: 'Single-seed mode: contains the lemma string. Multi-seed mode: contains the seeds joined with a comma.' The seeds() method then splits on ',' to recover the list.",
+        "This means ExplorationResult is used for two logically distinct things (single-seed exploration result vs. multi-seed intersection result) with a string encoding to tell them apart — a new engineer reading the class cannot tell from the type signature which mode they're in.",
+        "seeds() returns List.of(seed.split(',')) — if any seed lemma contained a comma (unusual but possible for some corpus conventions), this would silently misbehave."
+      ],
+      "suggestion": "Introduce a proper field: 'List<String> seeds' (always non-empty; single-seed result has one element). Remove the comma-join encoding. Update the factory method empty(String) and the multi-seed constructor path accordingly. This makes the type self-documenting for both modes.",
+      "confidence": "medium",
+      "impact_scope": "module",
+      "fix_scope": "multi_file_refactor",
+      "root_cause_cluster": "type_encoding_smell"
+    }
+  ],
+  "retrospective": {
+    "root_causes": [
+      "ExploreResponseAssembler was moved to model/ to make it public for use by api/ handlers, but this is a visibility workaround rather than a principled placement — public visibility should not override package responsibility.",
+      "RelationType grew additively: SURFACE/DEP were the original values for query routing; ADJ_PREDICATE etc. were added later as convenient filtering labels without evaluating whether the existing enum was the right home.",
+      "ExplorationResult's seed field evolved from single-seed to support multi-seed mode with minimal refactoring, resulting in an encoding convention that callers must understand."
+    ],
+    "likely_symptoms": [
+      "Developers may place new response-formatting logic in model/ because ExploreResponseAssembler established a precedent there.",
+      "New engineers filtering by RelationType may accidentally include or exclude values they don't expect."
+    ],
+    "possible_false_positives": []
+  }
+}

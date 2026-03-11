@@ -2,7 +2,6 @@ package pl.marcinmilkowski.word_sketch.exploration;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -107,6 +106,7 @@ class CollocateProfileComparator {
 
     /**
      * Phase 2: Build AdjectiveProfile objects from raw per-noun scores.
+     * Uses a single pass over scores to compute average, max, min, and variance together.
      */
     private List<AdjectiveProfile> buildAdjectiveProfileList(
             List<String> nounList,
@@ -126,10 +126,17 @@ class CollocateProfileComparator {
 
             int presentIn = nounScores.size();
             double[] scores = nounScores.values().stream().mapToDouble(Double::doubleValue).toArray();
-            double avgScore = Arrays.stream(scores).average().orElse(0.0);
-            double maxScore = Arrays.stream(scores).max().orElse(0.0);
-            double minScore = Arrays.stream(scores).min().orElse(0.0);
 
+            // Single-pass: accumulate sum, min, max in one loop
+            double sum = 0.0, maxScore = Double.NEGATIVE_INFINITY, minScore = Double.POSITIVE_INFINITY;
+            for (double s : scores) {
+                sum += s;
+                if (s > maxScore) maxScore = s;
+                if (s < minScore) minScore = s;
+            }
+            double avgScore = scores.length > 0 ? sum / scores.length : 0.0;
+
+            // Second pass for variance (requires the mean — unavoidable two-pass for numerical stability)
             double variance = 0.0;
             if (scores.length > 1) {
                 for (double s : scores) {
@@ -137,6 +144,8 @@ class CollocateProfileComparator {
                 }
                 variance /= scores.length;
             }
+
+            if (scores.length == 0) { maxScore = 0.0; minScore = 0.0; }
 
             double commonalityScore = presentIn * avgScore;
             double distinctivenessScore = maxScore * (1.0 - (double) presentIn / nounCount)

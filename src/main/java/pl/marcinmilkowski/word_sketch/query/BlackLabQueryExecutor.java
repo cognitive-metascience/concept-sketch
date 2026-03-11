@@ -263,7 +263,7 @@ public class BlackLabQueryExecutor implements QueryExecutor {
      * @param lemma       headword to prepend
      * @throws IllegalArgumentException if {@code cqlPattern} does not start with {@code [}
      */
-    private static String buildBcqlWithLemmaSubstitution(String cqlPattern, String lemma) {
+    static String buildBcqlWithLemmaSubstitution(String cqlPattern, String lemma) {
         if (cqlPattern.startsWith("[")) {
             return String.format("\"%s\" %s", CqlUtils.escapeForRegex(lemma.toLowerCase()), cqlPattern);
         } else {

@@ -1,0 +1,62 @@
+{
+  "batch": "package_organization",
+  "batch_index": 12,
+  "assessments": {"package_organization": 68.0},
+  "dimension_notes": {
+    "package_organization": {
+      "evidence": [
+        "api/ (8 files): WordSketchApiServer, HttpApiUtils, SketchHandlers, ExplorationHandlers, ConcordanceHandlers, CorpusQueryHandlers, VisualizationHandlers — all HTTP/server concerns, cohesive.",
+        "config/ (5 files): GrammarConfig, GrammarConfigLoader, RelationConfig, RelationPatternBuilder, RelationUtils — all grammar configuration concerns, cohesive.",
+        "exploration/ (5 files): SemanticFieldExplorer, MultiSeedExplorer, CollocateProfileComparator, ExplorationOptions, SingleSeedExplorationOptions — all exploration algorithm concerns, cohesive.",
+        "query/ (5 files): QueryExecutor, QueryResults, BlackLabQueryExecutor, BlackLabSnippetParser, CollocateQueryHelper — all corpus query concerns, cohesive.",
+        "model/ (12 files including package-info): AdjectiveProfile, ComparisonResult, CoreCollocate, DiscoveredNoun, Edge, ExplorationResult, ExploreResponseAssembler, PosGroup, RelationEdgeType, RelationType, SharingCategory, package-info.",
+        "ExploreResponseAssembler is placed in model/ but its responsibility is response serialization: it converts model objects into Map<String,Object> for JSON HTTP responses. Its methods (populateExploreResponse, populateComparisonResponse, formatAdjectiveProfile, serializeEdge) are all about HTTP response assembly, not domain modeling. The model/package-info describes the package as 'domain model classes for word-sketch query results and semantic-field exploration', which does not fit a response assembler.",
+        "ExploreResponseAssembler imports java.util.HashMap, java.util.List, java.util.Map, java.util.Set — these are presentation-layer construction patterns, not domain types.",
+        "utils/ (3 files): CqlUtils, LogDiceCalculator, LongIntHashMap — fine.",
+        "viz/ (1 file): RadialPlot — narrow, appropriate.",
+        "indexer/blacklab/ (2 files): BlackLabConllUIndexer, ConlluConverter — cohesive."
+      ],
+      "impact_scope": "module",
+      "fix_scope": "multi_file_refactor",
+      "confidence": "high"
+    }
+  },
+  "dimension_judgment": {
+    "package_organization": {
+      "strengths": [
+        "api/, config/, exploration/, query/, and indexer/ are each tightly cohesive — files within each package share a single concern and change together.",
+        "No root-level stragglers with low fan-in that should be moved.",
+        "Package naming directly reflects responsibilities (api, config, exploration, query, utils).",
+        "model/ provides a clean package-info documenting naming conventions."
+      ],
+      "issue_character": "ExploreResponseAssembler was recently moved from api/ to model/, but it performs HTTP response assembly (building Map<String,Object> structures for JSON serialization) rather than domain modeling, creating a presentation concern in the domain model package.",
+      "score_rationale": "Nearly all packages are well-scoped with clear ownership and no cross-package coupling violations. The single placement issue — ExploreResponseAssembler in model/ — is a moderate problem because it misrepresents the package's stated purpose and creates a coupling between model/ and HTTP response shapes. This is not a fragmented codebase but the one misplacement affects navigability for developers who expect model/ to contain pure domain types. Score is held below 75 because the misplacement is not trivially correctable without deciding whether a new 'presentation' or 'assembly' package is needed or whether it belongs back in api/."
+    }
+  },
+  "issues": [
+    {
+      "dimension": "package_organization",
+      "identifier": "assembler_in_model",
+      "summary": "ExploreResponseAssembler belongs in api/ or a new presentation/ package, not model/",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/model/ExploreResponseAssembler.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/api/ExplorationHandlers.java"
+      ],
+      "evidence": [
+        "ExploreResponseAssembler.populateExploreResponse and populateComparisonResponse produce Map<String,Object> structures that directly correspond to JSON HTTP response fields (e.g., 'seed_collocates', 'discovered_nouns', 'parameters').",
+        "model/package-info declares the package purpose as 'domain model classes for word-sketch query results and semantic-field exploration' — ExploreResponseAssembler is not a domain model.",
+        "ExploreResponseAssembler is the only class in model/ that creates HTTP-response-shaped maps; all other model/ files are pure domain value types (records, enums, or value objects).",
+        "ExplorationHandlers (in api/) imports and calls ExploreResponseAssembler directly, making api/ depend on model/ for presentation logic."
+      ],
+      "suggestion": "Staged reorg plan: (1) Create package api/assembly/ or keep in api/ as a package-private class. (2) Move ExploreResponseAssembler.java to src/main/java/pl/marcinmilkowski/word_sketch/api/ExploreResponseAssembler.java and change visibility from public to package-private. (3) Update import in ExplorationHandlers (no change needed if same package). (4) Update ExploreResponseAssemblerTest import path. Validate: mvn test -Dtest=ExploreResponseAssemblerTest. Note: if ExploreResponseAssembler must remain public (e.g., tested externally), consider a dedicated api/assembly sub-package.",
+      "confidence": "high",
+      "impact_scope": "module",
+      "fix_scope": "multi_file_refactor"
+    }
+  ],
+  "retrospective": {
+    "root_causes": ["When ExploreResponseAssembler was extracted from api/ it was moved to model/ to avoid api/ becoming too large, but the domain boundary was not respected."],
+    "likely_symptoms": ["assembler_in_model"],
+    "possible_false_positives": []
+  }
+}

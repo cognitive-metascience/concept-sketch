@@ -1,0 +1,109 @@
+{
+  "batch": "mid_level_elegance",
+  "batch_index": 9,
+  "assessments": {"mid_level_elegance": 71.0},
+  "dimension_notes": {
+    "mid_level_elegance": {
+      "evidence": [
+        "The api → exploration boundary is explicit: ExplorationHandlers constructs ExplorationOptions or SingleSeedExplorationOptions, passes them to SemanticFieldExplorer — the options types are named value objects, not raw Maps or varargs. The input translation from HTTP params to domain options happens once (resolveExploreParams) before the domain call.",
+        "The api → config boundary is clean: resolveRelationConfig returns a typed RelationConfig; callers use the typed object. No string-based config lookups after the initial resolution.",
+        "ExploreResponseAssembler centralises model-to-response translation for exploration results. However, its placement in model/ means the translation concern lives on the domain side of the model/api boundary rather than the API side — callers in api/ must reach into model/ for what is functionally a response-assembly concern.",
+        "handleSemanticFieldExplore and handleSemanticFieldExploreMulti both extract relationType via 'resolvedConfig.relationType().orElseThrow()' — this is the same pattern at both call sites, suggesting relationType could be validated and made mandatory earlier in the pipeline (e.g., in resolveRelationConfig) so callers don't need to orElseThrow.",
+        "Response maps are assembled inline in handler methods via 'response.put(\"status\", \"ok\"); response.put(\"relation_type\", ...); ...' — this is glue-code entropy: each handler method has 5-10 response.put() calls for common fields before delegating to ExploreResponseAssembler. The buildBaseExploreResponse helper reduces but does not eliminate this pattern.",
+        "The GrammarConfig → RelationConfig → RelationPatternBuilder pipeline is clean: GrammarConfigLoader produces immutable GrammarConfig; getRelation() returns Optional<RelationConfig>; RelationPatternBuilder's static methods take RelationConfig as input — no mutable state flows across these seams.",
+        "SemanticFieldExplorer.exploreByPattern takes explicit typed parameters (String seed, RelationConfig, SingleSeedExplorationOptions) rather than a generic Options bag — the seam inputs are minimal and typed.",
+        "handleSemanticFieldComparison does not use buildBaseExploreResponse — it builds its response map differently (no 'parameters' sub-map, different shape). This means the comparison endpoint's response shape drifts from the explore endpoints' shapes without a shared contract object.",
+        "The ValidatedExploreRequest private record in ExplorationHandlers bundles parsed params + seedsRaw + RelationConfig + ExploreParams — clean choreography boundary that avoids threading 4+ parameters through multiple helper calls.",
+        "ConcordanceHandlers.handleConcordanceExamples: builds bcqlQuery by calling RelationPatternBuilder.buildFullPattern then CqlUtils.substituteAtPosition — two-step substitution that could be encapsulated in RelationPatternBuilder.buildFullPattern(config, noun, adjective). The two-step call is also used in ExplorationHandlers indirectly, making the seam slightly inconsistent.",
+        "SemanticFieldExplorer.fetchExamples: delegates to executor.executeBcqlQuery — a direct and predictable seam with no ad-hoc translation.",
+        "ExplorationHandlers.handleSemanticFieldComparison throws IAE for seeds.size() < 2 directly, while handleSemanticFieldExploreMulti sends a 400 directly for the same class of validation (cardinality check). Two sibling methods handle the same type of validation error with different mechanisms at the seam."
+      ],
+      "impact_scope": "subsystem",
+      "fix_scope": "multi_file_refactor",
+      "confidence": "high"
+    }
+  },
+  "dimension_judgment": {
+    "mid_level_elegance": {
+      "strengths": [
+        "Input translation from HTTP params to typed domain options happens once (resolveExploreParams, resolveRelationConfig) before domain calls — no re-parsing or re-derivation downstream.",
+        "GrammarConfig → RelationConfig → RelationPatternBuilder pipeline is immutable and linear — clean data flow with no back-references.",
+        "SemanticFieldExplorer method signatures are explicit (typed params, no generic bags) — calling code reads naturally.",
+        "ValidatedExploreRequest private record cleanly bundles multi-param state across the multi-seed handler flow."
+      ],
+      "issue_character": "The primary seam-quality issue is ad-hoc Map<String,Object> assembly scattered across handler methods with partial deduplication (buildBaseExploreResponse covers some fields but not all), and inconsistent cardinality-validation patterns between sibling handlers that share the same logical constraint.",
+      "score_rationale": "The codebase has well-designed input seams (typed options objects, explicit param resolution) and a clean config pipeline, which earns it into the low-70s. The score is held back by the response-assembly entropy (ad-hoc response.put chains rather than a typed response object) and the inconsistent validation mechanism between handleSemanticFieldComparison (IAE) and handleSemanticFieldExploreMulti (direct sendError) — both of which create friction at the api/domain boundary."
+    }
+  },
+  "issues": [
+    {
+      "dimension": "mid_level_elegance",
+      "identifier": "response_map_assembly_entropy",
+      "summary": "Handler methods assemble response maps via scattered response.put() calls, with only partial deduplication through buildBaseExploreResponse",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/api/ExplorationHandlers.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/model/ExploreResponseAssembler.java"
+      ],
+      "evidence": [
+        "handleSemanticFieldExplore: 'response.put(\"status\", \"ok\"); response.put(\"relation_type\", ...); response.put(\"parameters\", paramsUsed); response.put(\"seed\", result.getSeed())' then calls ExploreResponseAssembler.populateExploreResponse — 4 puts before delegation.",
+        "handleSemanticFieldExploreMulti: similar 4 puts before ExploreResponseAssembler.populateExploreResponse, plus additional 'response.put(\"seeds\", ...) and response.put(\"seed_count\", ...)'.",
+        "handleSemanticFieldComparison: builds its own Map without using buildBaseExploreResponse — different response shape with no shared contract.",
+        "buildBaseExploreResponse partially deduplicates the common 'status', 'relation_type', 'parameters' fields but callers still add seed-specific fields ad hoc after calling it."
+      ],
+      "suggestion": "Define a typed response builder or a sealed hierarchy of response types (ExploreResponse, MultiExploreResponse, ComparisonResponse) that encodes which fields are present for each endpoint. ExploreResponseAssembler can be the factory for these types, moving the assembly concern fully to one place. For a lighter approach, ensure buildBaseExploreResponse is used by all three endpoints and the per-endpoint additions are documented in ExploreResponseAssembler.",
+      "confidence": "medium",
+      "impact_scope": "module",
+      "fix_scope": "multi_file_refactor",
+      "root_cause_cluster": "boundary_glue_code_entropy"
+    },
+    {
+      "dimension": "mid_level_elegance",
+      "identifier": "relation_type_orelsethrow_at_call_sites",
+      "summary": "Both explore handlers call relationType().orElseThrow() independently after resolveRelationConfig, repeating validation that could be performed once inside resolveRelationConfig",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/api/ExplorationHandlers.java"
+      ],
+      "evidence": [
+        "handleSemanticFieldExplore: 'String relationType = resolvedConfig.relationType().orElseThrow(() -> new IllegalStateException(\"relationType absent after validation...\"))'. ",
+        "handleSemanticFieldExploreMulti: identical pattern: 'req.relationConfig().relationType().orElseThrow(() -> new IllegalStateException(\"relationType absent after validation...\"))'.",
+        "resolveRelationConfig already validates that relationType is present ('if (relType.isEmpty()) throw new IllegalArgumentException(...)') but returns RelationConfig rather than the extracted RelationType. Callers then have to unwrap the Optional again.",
+        "The orElseThrow message 'absent after validation' implies the check is a defensive guard against a post-validation invariant, not a user-visible error — this duplication suggests the seam could be cleaner."
+      ],
+      "suggestion": "Change resolveRelationConfig to return a record or pair that includes both the validated RelationConfig and the non-null RelationType (since the method already validates its presence). Callers receive the type directly and need not unwrap an Optional that is guaranteed non-empty at this point.",
+      "confidence": "medium",
+      "impact_scope": "module",
+      "fix_scope": "single_edit",
+      "root_cause_cluster": "redundant_post_validation_unwrap"
+    },
+    {
+      "dimension": "mid_level_elegance",
+      "identifier": "concordance_two_step_pattern_substitution",
+      "summary": "ConcordanceHandlers manually performs two-step pattern substitution (buildFullPattern then substituteAtPosition) instead of using the combined RelationPatternBuilder.buildFullPattern(config, noun, collocate)",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/api/ConcordanceHandlers.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/config/RelationPatternBuilder.java"
+      ],
+      "evidence": [
+        "ConcordanceHandlers.handleConcordanceExamples: 'String patternWithHead = RelationPatternBuilder.buildFullPattern(rel.get(), noun); bcqlQuery = CqlUtils.substituteAtPosition(patternWithHead, adjective, rel.get().collocatePosition())'.",
+        "RelationPatternBuilder.buildFullPattern(RelationConfig, String headword, String collocateLemma) already encapsulates both substitutions — the 3-argument overload exists precisely for this use case.",
+        "The two-step call in ConcordanceHandlers bypasses the intended 3-argument API, making the seam at the api/config boundary inconsistent with the available contract."
+      ],
+      "suggestion": "Replace the two-step call with 'bcqlQuery = RelationPatternBuilder.buildFullPattern(rel.get(), noun, adjective)'. This uses the existing 3-argument overload and removes the direct CqlUtils dependency from ConcordanceHandlers.",
+      "confidence": "high",
+      "impact_scope": "local",
+      "fix_scope": "single_edit",
+      "root_cause_cluster": "boundary_bypass"
+    }
+  ],
+  "retrospective": {
+    "root_causes": [
+      "The two-step pattern substitution in ConcordanceHandlers was likely written before the 3-argument RelationPatternBuilder.buildFullPattern overload was added.",
+      "Response map assembly entropy grows incrementally as endpoints add fields — without a typed response contract, each new field becomes a response.put call in the handler.",
+      "The relationType orElseThrow duplication reflects a common Java Optional unwrapping pattern that is verbose but correct — the seam could be simplified by returning a validated result object from resolveRelationConfig."
+    ],
+    "likely_symptoms": [
+      "response_map_assembly_entropy is a symptom that there is no typed API response contract between the handler layer and the response assembly layer."
+    ],
+    "possible_false_positives": []
+  }
+}

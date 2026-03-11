@@ -3,7 +3,6 @@ package pl.marcinmilkowski.word_sketch.api;
 import com.alibaba.fastjson2.JSON;
 import com.alibaba.fastjson2.JSONObject;
 import com.sun.net.httpserver.Headers;
-import pl.marcinmilkowski.word_sketch.model.ExploreResponseAssembler;
 import com.sun.net.httpserver.HttpContext;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpPrincipal;
@@ -348,7 +347,7 @@ class HandlersTest {
         ExplorationHandlers handlers = new ExplorationHandlers(GrammarConfigHelper.requireTestConfig(), null);
         MockExchange ex = new MockExchange(
                 "http://localhost/api/semantic-field/explore-multi?seeds=theory,model&nouns_per=5");
-        handlers.handleSemanticFieldExploreMulti(ex);
+        HttpApiUtils.wrapWithErrorHandling(handlers::handleSemanticFieldExploreMulti, "test").handle(ex);
         assertEquals(400, ex.statusCode);
     }
 

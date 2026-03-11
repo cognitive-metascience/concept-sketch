@@ -1,0 +1,68 @@
+{
+  "batch": "test_strategy",
+  "batch_index": 18,
+  "assessments": {"test_strategy": 49.0},
+  "dimension_notes": {
+    "test_strategy": {
+      "evidence": [
+        "228 tests pass. Test files: 28 test classes covering config, exploration, api, model, query, utils, and indexer packages.",
+        "5 live-index test classes are annotated @Disabled: BlackLabConllUIndexerTest, BlackLabBcqlConcordanceTest, BlackLabDummyTest, BlackLabQueryExecutorTest, DependencySketchTest. These classes test the primary data pipeline of the application — BlackLabQueryExecutor.findCollocations, executeSurfacePattern, executeDependencyPattern, and the indexer — but are excluded from CI because they require a real on-disk BlackLab index.",
+        "BlackLabQueryExecutor is the system's primary query executor. Its actual Lucene/BlackLab integration (parsing BCQL patterns, grouping hits by collocate, computing logDice from hit groups, executing dependency patterns) has zero automated test coverage in any enabled test.",
+        "CollocateQueryHelper (the logDice ranking and hit-group aggregation engine) is tested in CollocateQueryHelperTest but only via stub subclasses — the actual BlackLab integration path is not exercised.",
+        "SemanticFieldExplorer and MultiSeedExplorer are well unit-tested via stub executors (SemanticFieldExplorerTest, SemanticFieldExplorerInternalTest, MultiSeedExplorerTest). These tests cover the exploration algorithm.",
+        "HandlersTest tests ExplorationHandlers, SketchHandlers via a MockExchange — covers HTTP request/response formatting with stub executors.",
+        "WordSketchApiServerTest tests the server lifecycle (start, route registration, stop) on an ephemeral port — a good recent addition.",
+        "GrammarConfigLoaderTest, RelationUtilsTest, RelationsValidationTest cover config loading and validation.",
+        "CqlUtilsTest, LogDiceCalculatorTest, LongIntHashMapTest cover utility classes.",
+        "ExploreResponseAssemblerTest covers response assembly.",
+        "No snapshot test overuse — tests assert on specific values.",
+        "Critical gap: the full pipeline (indexing → querying → scoring → ranking) has no automated test path because all live-index tests are @Disabled."
+      ],
+      "impact_scope": "subsystem",
+      "fix_scope": "multi_file_refactor",
+      "confidence": "high"
+    }
+  },
+  "dimension_judgment": {
+    "test_strategy": {
+      "strengths": [
+        "Exploration algorithms (SemanticFieldExplorer, MultiSeedExplorer, CollocateProfileComparator) are well unit-tested with stub executors.",
+        "HTTP handler logic is tested via MockExchange without requiring a full server.",
+        "WordSketchApiServerTest uses ephemeral port for lifecycle testing — avoids port conflicts.",
+        "Config layer (GrammarConfigLoader, RelationUtils) has thorough unit test coverage.",
+        "No snapshot test overuse; all assertions are on concrete values."
+      ],
+      "issue_character": "The core BlackLab query execution path — the application's primary function — has no enabled automated tests because all 5 live-index test classes are @Disabled, leaving the indexer and query executor with zero CI coverage.",
+      "score_rationale": "The test suite covers most of the application's algorithm, config, and API layers well. However, the central integration path — BlackLabQueryExecutor talking to a real Lucene index — is completely excluded from automated testing. For a corpus linguistics tool, the correctness of query execution (BCQL parsing, hit grouping, logDice scoring from real frequencies) is the core business logic, and its absence from CI is a significant strategic gap. Score is held below 50 because this is not a gap in peripheral code; it is the primary data path of the application."
+    }
+  },
+  "issues": [
+    {
+      "dimension": "test_strategy",
+      "identifier": "disabled_live_index_tests_core_path",
+      "summary": "All 5 live-index test classes are @Disabled, leaving BlackLabQueryExecutor and indexer with zero CI coverage",
+      "related_files": [
+        "src/test/java/pl/marcinmilkowski/word_sketch/query/BlackLabQueryExecutorTest.java",
+        "src/test/java/pl/marcinmilkowski/word_sketch/query/BlackLabBcqlConcordanceTest.java",
+        "src/test/java/pl/marcinmilkowski/word_sketch/query/BlackLabDummyTest.java",
+        "src/test/java/pl/marcinmilkowski/word_sketch/query/DependencySketchTest.java",
+        "src/test/java/pl/marcinmilkowski/word_sketch/indexer/blacklab/BlackLabConllUIndexerTest.java"
+      ],
+      "evidence": [
+        "All 5 classes are annotated @Disabled.",
+        "BlackLabQueryExecutor.findCollocations, executeSurfacePattern, executeDependencyPattern, executeBcqlQuery are the application's primary data methods — none are exercised by any enabled test.",
+        "CollocateQueryHelper.buildAndRankCollocates (logDice ranking from real hit groups) is not exercised by enabled tests.",
+        "The full index-then-query pipeline is untested in CI."
+      ],
+      "suggestion": "Create a small test corpus (20-50 sentences in CoNLL-U format), index it in a @BeforeAll or @TempDir setup, and run a minimal integration test suite: (1) index the test corpus with BlackLabConllUIndexer, (2) open BlackLabQueryExecutor on the test index, (3) assert findCollocations returns expected collocates, (4) assert executeSurfacePattern returns expected results with correct logDice rank order. This enables CI coverage of the core path without requiring the full 74M-sentence production corpus. Re-enable the @Disabled classes guarded on a CI environment variable or JVM system property.",
+      "confidence": "high",
+      "impact_scope": "subsystem",
+      "fix_scope": "multi_file_refactor"
+    }
+  ],
+  "retrospective": {
+    "root_causes": ["Live-index tests require a production corpus that is not available in CI, so they were disabled. No lightweight test corpus was created as an alternative."],
+    "likely_symptoms": ["disabled_live_index_tests_core_path"],
+    "possible_false_positives": []
+  }
+}

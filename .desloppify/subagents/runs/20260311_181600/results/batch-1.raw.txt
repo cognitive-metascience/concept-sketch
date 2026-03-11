@@ -1,0 +1,85 @@
+{
+  "batch": "cross_module_architecture",
+  "batch_index": 1,
+  "assessments": {"cross_module_architecture": 72.0},
+  "dimension_notes": {
+    "cross_module_architecture": {
+      "evidence": [
+        "Dependency direction is broadly correct: api → model, config, exploration, query; exploration → model, config, query; model has no outbound deps to api or query — leaves are clean",
+        "ExploreResponseAssembler lives in model/ but implements HTTP-response assembly (builds Map<String,Object> response bodies with JSON keys). This is presentation-layer logic, not domain model logic. api/ is the intended home for code that constructs HTTP payloads.",
+        "RelationType enum mixes two orthogonal concerns in one type: SURFACE and DEP are index-strategy discriminators (how Lucene searches), while ADJ_PREDICATE, ADJ_MODIFIER, SUBJECT_OF, OBJECT_OF are linguistic relation identifiers. CollocateProfileComparator.deriveAdjectivePattern() uses RelationType.ADJ_MODIFIER / ADJ_PREDICATE as filter values — callers of the enum must know which values are 'strategy' vs 'domain label', creating implicit knowledge at every call site.",
+        "WordSketchApiServer is a hub that constructs all five handler classes (SketchHandlers, ExplorationHandlers, ConcordanceHandlers, CorpusQueryHandlers, VisualizationHandlers). This is appropriate wiring responsibility; it does not reach into their internals after construction.",
+        "LongIntHashMap (utils/) has no outbound project imports — correctly self-contained.",
+        "The indexer/blacklab sub-package depends only on standard library and BlackLab itself; no reverse dependency on api/ or exploration/ — boundary is clean.",
+        "No cycles detected: model/ ← exploration/ ← api/ is a directed chain with no back-edges observed."
+      ],
+      "impact_scope": "subsystem",
+      "fix_scope": "multi_file_refactor",
+      "confidence": "high"
+    }
+  },
+  "dimension_judgment": {
+    "cross_module_architecture": {
+      "strengths": [
+        "Overall dependency direction flows inward: model/ has no outbound project deps, ensuring the domain layer is not coupled to infrastructure.",
+        "Handler decomposition in api/ is granular and each handler class has a single responsibility (Sketch, Concordance, Exploration, CorpusQuery, Visualization).",
+        "The exploration/ sub-system encapsulates its collaborators (MultiSeedExplorer, CollocateProfileComparator) and exposes only SemanticFieldExplorer to the api/ layer.",
+        "No import cycles detected across any package boundary.",
+        "indexer/blacklab is well-isolated — nothing outside it imports its internals."
+      ],
+      "issue_character": "The primary architectural issue is a single but recurring cross-boundary placement: ExploreResponseAssembler belongs logically in api/ (it constructs HTTP response maps) yet was moved to model/, and RelationType conflates two different semantic axes in one enum, forcing callers to reason about which values are strategies versus domain labels.",
+      "score_rationale": "The codebase has healthy dependency direction and no cycles. The score is held below 80 by two concrete violations: ExploreResponseAssembler's misplacement blurs the model/api boundary, and RelationType's mixed semantics creates an implicit convention that every call site must respect. Neither is catastrophic, but both are real boundary erosions that affect developer trust in package roles."
+    }
+  },
+  "issues": [
+    {
+      "dimension": "cross_module_architecture",
+      "identifier": "explore_response_assembler_in_model",
+      "summary": "ExploreResponseAssembler assembles HTTP response maps yet lives in model/ instead of api/",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/model/ExploreResponseAssembler.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/api/ExplorationHandlers.java"
+      ],
+      "evidence": [
+        "ExploreResponseAssembler.populateExploreResponse(Map<String,Object> response, ExplorationResult) adds JSON-key strings like 'seed_collocates', 'discovered_nouns', 'edges' to a map passed by an HTTP handler — this is presentation-layer work.",
+        "The class is imported by ExplorationHandlers (api/) and by VisualizationHandlers (api/) but not by any other model/ class — its only callers are in api/.",
+        "model/ package-info.java defines the package as 'domain model classes for word-sketch query results' — ExploreResponseAssembler's response-assembly responsibility is out of scope for that definition."
+      ],
+      "suggestion": "Move ExploreResponseAssembler to api/ (package pl.marcinmilkowski.word_sketch.api). Update all import statements. Keep ExplorationResult and ComparisonResult in model/ as pure domain objects. If assembly needs to remain decoupled from handler classes, a sub-package api/assembly/ is also acceptable.",
+      "confidence": "high",
+      "impact_scope": "subsystem",
+      "fix_scope": "multi_file_refactor",
+      "root_cause_cluster": "boundary_placement"
+    },
+    {
+      "dimension": "cross_module_architecture",
+      "identifier": "relation_type_semantic_mixing",
+      "summary": "RelationType enum conflates index-strategy values (SURFACE, DEP) with linguistic-domain values (ADJ_PREDICATE, SUBJECT_OF, etc.)",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/model/RelationType.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/exploration/CollocateProfileComparator.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/config/RelationConfig.java"
+      ],
+      "evidence": [
+        "RelationType enum: 'public enum RelationType { SURFACE, DEP, ADJ_PREDICATE, ADJ_MODIFIER, SUBJECT_OF, OBJECT_OF }' — SURFACE/DEP are used by RelationConfig.relationType() to discriminate query execution path; ADJ_PREDICATE/ADJ_MODIFIER/SUBJECT_OF/OBJECT_OF are used by CollocateProfileComparator and ExplorationResult as domain-level semantic labels.",
+        "CollocateProfileComparator.deriveAdjectivePattern filters relations by RelationType.ADJ_MODIFIER and ADJ_PREDICATE — callers must know that these values express linguistic domain categories, not Lucene strategies.",
+        "SketchHandlers.handleRelationsForType uses RelationType.SURFACE and RelationType.DEP as routing discriminators — a caller must know that only SURFACE/DEP are valid here."
+      ],
+      "suggestion": "Split into two enums: IndexStrategy { SURFACE, DEP } for the query-execution path in RelationConfig.relationType(), and RelationDomain { ADJ_PREDICATE, ADJ_MODIFIER, SUBJECT_OF, OBJECT_OF } for the linguistic-category axis used by SemanticFieldExplorer and CollocateProfileComparator. RelationConfig could carry both (Optional<IndexStrategy> indexStrategy, Optional<RelationDomain> domain) or merge to a union type if needed.",
+      "confidence": "medium",
+      "impact_scope": "subsystem",
+      "fix_scope": "multi_file_refactor",
+      "root_cause_cluster": "enum_semantic_mixing"
+    }
+  ],
+  "retrospective": {
+    "root_causes": [
+      "ExploreResponseAssembler was moved from api/ to model/ to make it public (package-private in api/ limited test access), but the correct fix would be to keep it in api/ and use a test-visible accessor or move tests to the api package.",
+      "RelationType grew organically: SURFACE/DEP were added first for query routing, then domain labels were added for exploration filtering without creating a separate enum."
+    ],
+    "likely_symptoms": [
+      "ExploreResponseAssembler in model/ may look like a domain class to new developers, leading to incorrect reuse."
+    ],
+    "possible_false_positives": []
+  }
+}

@@ -1,0 +1,89 @@
+{
+  "batch": "error_consistency",
+  "batch_index": 4,
+  "assessments": {"error_consistency": 73.0},
+  "dimension_notes": {
+    "error_consistency": {
+      "evidence": [
+        "Dominant pattern: domain methods throw IOException for I/O failures; validation logic throws IllegalArgumentException (IAE); HttpApiUtils.wrapWithErrorHandling catches IAE→400 and IOException→500. This two-tier pattern is applied consistently across ExplorationHandlers, SketchHandlers, ConcordanceHandlers, CorpusQueryHandlers.",
+        "LogDiceCalculator.compute throws IAE when headwordFreq or collocateTotal are zero/negative — documented in Javadoc: 'throws IllegalArgumentException when headwordFreq or collocateTotal are zero or negative'. Consistent with the IAE-for-validation convention.",
+        "GrammarConfigLoader.load throws IOException for file-not-found, malformed JSON, missing fields, and duplicate ids. All cases are specific IOException subtypes or plain IOException with descriptive messages — no catch-and-discard observed.",
+        "Inconsistency: ExplorationHandlers.handleSemanticFieldExploreMulti calls HttpApiUtils.sendError(exchange, 400, ...) directly for the nouns_per pre-flight check, but all other validation failures in the same class throw IAE and rely on wrapWithErrorHandling for the 400 response. Direct sendError and IAE-throw serve the same purpose and should not be mixed in the same handler class.",
+        "Inconsistency: VisualizationHandlers.handleVisualRadial returns null (via direct sendError for 413) inside a wrapWithErrorHandling-wrapped context — the 413 path is a documented exception because wrapWithErrorHandling cannot express 413. This is acceptable but the pattern differs from the IAE-for-validation norm. Same applies to CorpusQueryHandlers.parseBcqlRequest.",
+        "Main.handleBlackLabServerCommand: the shutdown hook closes executor and server; IOException during close is caught and logged as a warning rather than propagated — appropriate for shutdown context.",
+        "Main top-level catch: 'catch (Exception e)' — acceptable for a CLI entry point where all unhandled exceptions should print a message and exit.",
+        "RelationUtils.resolveRelationAlias returns null when the input is null — callers in ExplorationHandlers use params.getOrDefault('relation', 'noun_adj_predicates'), so null is not reachable in practice; but the method contract accepts null silently, which is inconsistent with the IAE-for-invalid-input pattern used elsewhere.",
+        "SemanticFieldExplorer.exploreByPattern and compareCollocateProfiles both declare throws IOException — consistent with the domain-layer contract.",
+        "No broad catch(Exception) observed in non-entry-point code. No observed catch-and-swallow of IOException without logging."
+      ],
+      "impact_scope": "subsystem",
+      "fix_scope": "multi_file_refactor",
+      "confidence": "high"
+    }
+  },
+  "dimension_judgment": {
+    "error_consistency": {
+      "strengths": [
+        "IAE-for-validation / IOException-for-I/O is applied as a coherent two-tier strategy across most of the codebase.",
+        "wrapWithErrorHandling centralises HTTP error mapping, avoiding per-handler try/catch boilerplate.",
+        "LogDiceCalculator.compute now throws IAE on invalid inputs rather than returning a NaN sentinel — this removes a class of silent numeric errors.",
+        "GrammarConfigLoader uses specific, descriptive IOException messages for each failure mode, making startup errors immediately actionable.",
+        "Main's shutdown hook handles both server.stop() and executor.close(), preventing resource leaks even when server construction throws."
+      ],
+      "issue_character": "Error handling is broadly consistent but has two friction points: ExplorationHandlers mixes direct sendError with the IAE-throw pattern in sibling methods, and RelationUtils.resolveRelationAlias silently returns null for null input rather than either throwing IAE or documenting a null-returns-null contract.",
+      "score_rationale": "The codebase has a clear and well-implemented error strategy for the dominant case (IAE + wrapWithErrorHandling). The score is in the low-70s rather than 80+ because the nouns_per validation in handleSemanticFieldExploreMulti breaks the IAE convention without a documented reason, and the null-passthrough in resolveRelationAlias is a latent inconsistency that relies on caller behavior rather than the method contract to be safe."
+    }
+  },
+  "issues": [
+    {
+      "dimension": "error_consistency",
+      "identifier": "multi_seed_direct_send_error_vs_iae",
+      "summary": "handleSemanticFieldExploreMulti uses direct sendError for nouns_per validation instead of the IAE-throw convention used by all sibling handlers",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/api/ExplorationHandlers.java"
+      ],
+      "evidence": [
+        "handleSemanticFieldExploreMulti: 'if (params.containsKey(\"nouns_per\")) { HttpApiUtils.sendError(exchange, 400, \"nouns_per is not supported...\"); return; }' — direct sendError before buildExploreRequest.",
+        "Sibling method handleSemanticFieldExplore uses resolveRelationConfig which throws IAE('Unknown relation: ...'), picked up by wrapWithErrorHandling → 400.",
+        "handleSemanticFieldComparison throws IAE('Comparison requires at least 2 seed nouns...') — also IAE-throw pattern.",
+        "The nouns_per check is a validation failure of the same class as 'missing required param' or 'unknown relation', but uses a different mechanism."
+      ],
+      "suggestion": "Replace the direct sendError with 'throw new IllegalArgumentException(\"nouns_per is not supported for multi-seed exploration\")' and remove the early return. wrapWithErrorHandling will convert it to a 400 response with the message, consistent with all other validation paths in ExplorationHandlers.",
+      "confidence": "high",
+      "impact_scope": "local",
+      "fix_scope": "single_edit",
+      "root_cause_cluster": "error_strategy_inconsistency"
+    },
+    {
+      "dimension": "error_consistency",
+      "identifier": "resolve_relation_alias_null_passthrough",
+      "summary": "RelationUtils.resolveRelationAlias silently returns null for null input instead of failing fast with IAE, relying on callers to avoid null",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/config/RelationUtils.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/api/ExplorationHandlers.java"
+      ],
+      "evidence": [
+        "RelationUtils.resolveRelationAlias: '@return the canonical grammar-config ID, or null if relation is null' — returns null by design.",
+        "ExplorationHandlers.resolveRelationConfig calls: 'RelationUtils.resolveRelationAlias(params.getOrDefault(\"relation\", \"noun_adj_predicates\"))' — getOrDefault prevents null in practice, but the method signature makes null a valid input/output.",
+        "If a future caller passes null (e.g. from a misconfigured default), the result null propagates to grammarConfig.getRelation(null) which returns Optional.empty(), then resolveRelationConfig throws IAE('Unknown relation: null') — a confusing error message compared to 'relation must not be null'."
+      ],
+      "suggestion": "Change resolveRelationAlias to accept @NonNull String relation (throwing IAE if null) and remove the null-passthrough branch. Update the @return Javadoc. Callers that need null-safe behavior can guard before calling.",
+      "confidence": "medium",
+      "impact_scope": "module",
+      "fix_scope": "single_edit",
+      "root_cause_cluster": "null_contract_inconsistency"
+    }
+  ],
+  "retrospective": {
+    "root_causes": [
+      "The direct sendError in handleSemanticFieldExploreMulti was likely written before the IAE convention was fully established, or was added as a quick pre-flight check without checking the sibling handler pattern.",
+      "resolveRelationAlias was written with a null-safe signature to be maximally defensive, but this conflicts with the codebase's actual null-signaling convention (IAE for invalid args, @NonNull annotations elsewhere)."
+    ],
+    "likely_symptoms": [
+      "The nouns_per direct sendError is a symptom that the pre-flight check was added hastily rather than through the established validation pattern."
+    ],
+    "possible_false_positives": [
+      "The 413 direct sendError in CorpusQueryHandlers.parseBcqlRequest and VisualizationHandlers.handleVisualRadial is a documented exception to the IAE pattern (413 cannot be expressed via IAE→wrapWithErrorHandling) and should not be flagged as an error_consistency issue."
+    ]
+  }
+}

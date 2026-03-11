@@ -1,0 +1,84 @@
+{
+  "batch": "contract_coherence",
+  "batch_index": 13,
+  "assessments": {"contract_coherence": 73.0},
+  "dimension_notes": {
+    "contract_coherence": {
+      "evidence": [
+        "SemanticFieldExplorer.compareCollocateProfiles declares @NonNull Set<String> seedNouns but then immediately does 'if (seedNouns == null || seedNouns.size() < 2)' — the null branch contradicts the @NonNull annotation. @NonNull promises callers the parameter is non-null; checking it for null internally says the opposite.",
+        "The package-private exploreByPattern overload (testing seam) has an untyped 'String seed' parameter (no @NonNull) but then checks 'if (seed == null || seed.isEmpty()) { return ExplorationResult.empty(seed != null ? seed : \"\"); }'. The ternary is reachable only when seed IS null (the outer null check's true branch), making 'seed != null ? seed : \"\"' effectively always evaluate to the empty-string branch. This is a confusing dead expression.",
+        "GrammarConfig.getVersion() Javadoc states 'may be null for legacy configs' but the method lacks @Nullable annotation, violating the JSpecify contract documentation pattern used consistently elsewhere in the codebase.",
+        "LogDiceCalculator.compute() throws IAE on invalid inputs — correctly documented in Javadoc and matches implementation.",
+        "HttpApiUtils.requireParam() declares @NonNull return and throws IAE on missing param — matches Javadoc and wrapWithErrorHandling contract.",
+        "resolveRelationConfig() in ExplorationHandlers throws IAE for unknown/misconfigured relations — correctly documented and matches behavior.",
+        "QueryExecutor.findCollocations() Javadoc says 'returns an empty list silently if null or empty' for lemma, but the parameter has no @Nullable annotation — the signed contract does not declare the parameter nullable, yet the Javadoc describes null-handling behavior.",
+        "ExploreResponseAssembler public methods have no @NonNull/@Nullable annotations despite being a public API class, while HttpApiUtils (also package-private API) has thorough @NonNull/@Nullable coverage."
+      ],
+      "impact_scope": "module",
+      "fix_scope": "multi_file_refactor",
+      "confidence": "high"
+    }
+  },
+  "dimension_judgment": {
+    "contract_coherence": {
+      "strengths": [
+        "LogDiceCalculator.compute() accurately documents and enforces its error contract (throws IAE on invalid inputs, no NaN sentinel).",
+        "HttpApiUtils.requireParam(), parseIntParam(), parseDoubleParam() all have accurate @NonNull/@Nullable annotations and Javadoc that matches behavior.",
+        "The wrapWithErrorHandling contract (IAE→400, IOException→500, other→500) is accurately documented and consistently applied.",
+        "ExplorationResult.empty() has correct null-guard and Javadoc."
+      ],
+      "issue_character": "The primary pattern of issues is @NonNull annotation contract violations where methods declare a parameter as @NonNull but then defensively check it for null, contradicting the annotation promise; combined with some public methods lacking @Nullable where Javadoc describes nullable returns.",
+      "score_rationale": "The codebase has good contract discipline in its utility and HTTP layers. The issues are concentrated in the exploration layer where @NonNull annotations were added to public methods but the underlying defensive null checks were not reconciled, creating misleading contracts. GrammarConfig.getVersion() and QueryExecutor.findCollocations() also have undeclared-nullable return/parameter gaps. These are real contract coherence failures that reduce developer trust in the annotations, bringing the score below 80."
+    }
+  },
+  "issues": [
+    {
+      "dimension": "contract_coherence",
+      "identifier": "nonnull_then_nullcheck_compareprofiles",
+      "summary": "compareCollocateProfiles declares @NonNull seedNouns but internally null-checks it",
+      "related_files": ["src/main/java/pl/marcinmilkowski/word_sketch/exploration/SemanticFieldExplorer.java"],
+      "evidence": [
+        "Signature: 'public @NonNull ComparisonResult compareCollocateProfiles(@NonNull Set<String> seedNouns, @NonNull ExplorationOptions opts)'",
+        "Body line 312: 'if (seedNouns == null || seedNouns.size() < 2)' — null check contradicts @NonNull"
+      ],
+      "suggestion": "Remove the null branch: change the condition to 'if (seedNouns.size() < 2)' since @NonNull already promises non-null. If defensive null handling is desired for untrusted callers, remove the @NonNull annotation and add @Nullable, then update callers accordingly.",
+      "confidence": "high",
+      "impact_scope": "local",
+      "fix_scope": "single_edit"
+    },
+    {
+      "dimension": "contract_coherence",
+      "identifier": "dead_ternary_explore_null_check",
+      "summary": "Package-private exploreByPattern returns ExplorationResult.empty(seed != null ? seed : \"\") where the ternary false branch is unreachable",
+      "related_files": ["src/main/java/pl/marcinmilkowski/word_sketch/exploration/SemanticFieldExplorer.java"],
+      "evidence": [
+        "Code: 'if (seed == null || seed.isEmpty()) { return ExplorationResult.empty(seed != null ? seed : \"\"); }'",
+        "The inner ternary 'seed != null ? seed : \"\"' is inside the branch where seed IS null (outer condition's null case), making the 'seed != null' sub-condition always false when triggered. The true branch ('seed') is unreachable inside this block.",
+        "Simplify to: 'return ExplorationResult.empty(\"\");' in the null branch and handle empty separately."
+      ],
+      "suggestion": "Split the guard: 'if (seed == null) return ExplorationResult.empty(\"\"); if (seed.isEmpty()) return ExplorationResult.empty(seed);' — or add @NonNull to the parameter and let callers guarantee non-null, matching the public overload.",
+      "confidence": "high",
+      "impact_scope": "local",
+      "fix_scope": "single_edit"
+    },
+    {
+      "dimension": "contract_coherence",
+      "identifier": "version_nullable_undeclared",
+      "summary": "GrammarConfig.getVersion() can return null (per Javadoc) but lacks @Nullable annotation",
+      "related_files": ["src/main/java/pl/marcinmilkowski/word_sketch/config/GrammarConfig.java"],
+      "evidence": [
+        "Javadoc: '@return the grammar version string from the config file (e.g. \"1.0\"); may be null for legacy configs'",
+        "No @Nullable annotation on the return type, inconsistent with the codebase's JSpecify usage pattern."
+      ],
+      "suggestion": "Add @org.jspecify.annotations.Nullable to the return type: 'public @Nullable String getVersion()'",
+      "confidence": "high",
+      "impact_scope": "local",
+      "fix_scope": "single_edit"
+    }
+  ],
+  "retrospective": {
+    "root_causes": ["@NonNull annotations were added as a forward pass to the public API but defensive null checks from earlier defensive-coding practice were not removed, creating contradictions."],
+    "likely_symptoms": ["nonnull_then_nullcheck_compareprofiles", "dead_ternary_explore_null_check"],
+    "possible_false_positives": []
+  }
+}

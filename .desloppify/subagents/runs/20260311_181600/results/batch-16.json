@@ -1,0 +1,56 @@
+{
+  "batch": "design_coherence",
+  "batch_index": 16,
+  "assessments": {"design_coherence": 76.0},
+  "dimension_notes": {
+    "design_coherence": {
+      "evidence": [
+        "The mechanical signal flagged 'boilerplate_duplication' between ExplorationHandlers.java:4 and CollocateProfileComparator.java:9 over a 7-line window. On inspection this is a coincidental overlap of standard Java import statements (java.util.*, logging, model imports). Import lines are not extractable logic — this is a false positive from the mechanical scanner.",
+        "ExplorationHandlers class handles 4 exploration endpoints. Each handler method is focused. The buildExploreRequest() private helper is a clean extraction of shared validation for multi-seed calls.",
+        "HttpApiUtils.getCorsAllowOrigin() is a private static method whose entire body is 'return CORS_ALLOW_ORIGIN'. It exists only as dead indirection over a constant. This is a minor design incoherence: either the method should be removed (field referenced directly) or the field should remain dynamic (justifying the method).",
+        "SketchHandlers.executeRelationQueries uses a BiFunction<RelationConfig, ExecutedSketch, Map<String,Object>> parameter for the response-builder callback. This generalizes the two sketch-building paths (surface and dependency) into one loop. The design is correct but adds some indirection complexity — the BiFunction type signature is verbose without a named functional interface.",
+        "SketchHandlers.handleSketchRequest dispatches over URL path segments with a sequence of if/else checks. The logic is clear but routes surface vs. dep vs. relation-specific vs. full-sketch in a single method — this is acceptable given Java's lack of built-in routing, and the method is not deeply nested.",
+        "WordSketchApiServer.registerRoutes() is purely declarative — each endpoint is one line. This is a good repeated structural pattern done correctly without needing to be data-driven.",
+        "ExplorationHandlers.buildBaseExploreResponse() is a good extraction of response-structure boilerplate shared across 2 handlers."
+      ],
+      "impact_scope": "local",
+      "fix_scope": "single_edit",
+      "confidence": "high"
+    }
+  },
+  "dimension_judgment": {
+    "design_coherence": {
+      "strengths": [
+        "Handler classes (SketchHandlers, ExplorationHandlers, ConcordanceHandlers, CorpusQueryHandlers, VisualizationHandlers) each have a single focused responsibility.",
+        "buildExploreRequest() and buildBaseExploreResponse() are well-extracted shared helpers that eliminate duplication between explore and explore-multi handlers.",
+        "executeRelationQueries() BiFunction pattern generalizes the two sketch-loop variants without code duplication.",
+        "WordSketchApiServer.registerRoutes() is declarative and easy to scan."
+      ],
+      "issue_character": "The only confirmed design coherence issue is a single no-op private method (getCorsAllowOrigin()) that creates meaningless indirection; the flagged mechanical duplication signal is a false positive (coincidental import overlap).",
+      "score_rationale": "Overall design coherence is good. Functions are focused, parameter grouping (ExploreParams, ValidatedExploreRequest records) is used to avoid long parameter lists, and structural patterns are consistent. The score is held below 80 primarily due to the getCorsAllowOrigin() no-op method which, while minor, reflects a class that has not been fully cleaned up after the static-field refactoring. No deep nesting, no functions doing too many things, no parameter lists needing grouping were found beyond what already exists."
+    }
+  },
+  "issues": [
+    {
+      "dimension": "design_coherence",
+      "identifier": "noop_cors_getter",
+      "summary": "getCorsAllowOrigin() private method has no logic — pure pointless indirection over a static final constant",
+      "related_files": ["src/main/java/pl/marcinmilkowski/word_sketch/api/HttpApiUtils.java"],
+      "evidence": [
+        "private static String getCorsAllowOrigin() { return CORS_ALLOW_ORIGIN; }",
+        "CORS_ALLOW_ORIGIN is 'private static final String' initialized once at class load — it is immutable.",
+        "setCorsHeader() calls getCorsAllowOrigin() instead of referencing the constant directly.",
+        "The only explanation for this pattern is that getCorsAllowOrigin() existed before CORS_ALLOW_ORIGIN became a static final (when it was dynamic); the field was made static final but the getter was left behind."
+      ],
+      "suggestion": "Remove getCorsAllowOrigin() and update setCorsHeader() to reference CORS_ALLOW_ORIGIN directly: 'exchange.getResponseHeaders().set(\"Access-Control-Allow-Origin\", CORS_ALLOW_ORIGIN);'",
+      "confidence": "high",
+      "impact_scope": "local",
+      "fix_scope": "single_edit"
+    }
+  ],
+  "retrospective": {
+    "root_causes": ["The refactoring that made CORS_ALLOW_ORIGIN a static final field did not clean up the now-redundant private getter."],
+    "likely_symptoms": [],
+    "possible_false_positives": ["The mechanical 'boilerplate_duplication' signal between ExplorationHandlers:4 and CollocateProfileComparator:9 is coincidental import overlap, not extractable logic."]
+  }
+}

@@ -1,0 +1,84 @@
+{
+  "batch": "convention_outlier",
+  "batch_index": 3,
+  "assessments": {"convention_outlier": 78.0},
+  "dimension_notes": {
+    "convention_outlier": {
+      "evidence": [
+        "Naming convention is consistently Java camelCase for methods/fields, PascalCase for classes/records throughout all packages. No snake_case intrusions observed.",
+        "Handler class naming follows a uniform pattern: SketchHandlers, ConcordanceHandlers, ExplorationHandlers, CorpusQueryHandlers, VisualizationHandlers — all suffixed with 'Handlers'.",
+        "model/ uses both records (AdjectiveProfile, CoreCollocate, DiscoveredNoun, Edge, RelationEdgeType — PascalCase record components) and traditional classes (ExplorationResult, ComparisonResult) with get-prefixed accessors. package-info.java documents this mixed-accessor convention as intentional.",
+        "Options types follow a parallel naming pattern: ExplorationOptions for multi-seed and comparison, SingleSeedExplorationOptions for single-seed. However 'Single' prefix vs. no prefix (rather than 'Multi') is asymmetric — there is no MultiSeedExplorationOptions, only the shared ExplorationOptions. The asymmetry is explained in Javadoc but creates a convention gap.",
+        "Private record names within methods are local-to-class and follow the same PascalCase convention: ValidatedExploreRequest, ExploreParams (in ExplorationHandlers), ExecutedSketch, BcqlRequest.",
+        "ExploreResponseAssembler is in model/ but its naming matches a service/utility pattern (suffix 'Assembler') used elsewhere only for static util classes (RelationPatternBuilder, RelationUtils, CqlUtils, LogDiceCalculator) — the Assembler suffix is appropriate but its package location diverges from where similar utility classes live (config/ for RelationPatternBuilder, utils/ for CqlUtils).",
+        "'ExploreParams' abbreviates 'Exploration' to 'Explore' (private record in ExplorationHandlers) while the same concept in the public API uses the full word: ExplorationOptions, SingleSeedExplorationOptions. This abbreviation inconsistency is local and low-impact (private record) but detectable.",
+        "round2dp in ExploreResponseAssembler is an abbreviated name; all other math-related methods in the codebase (compute, relativeFrequency, coverage) use full words. This is a minor outlier.",
+        "Static factory/utility classes consistently use private constructors: LogDiceCalculator, CqlUtils, RelationPatternBuilder, RelationUtils, ConlluConverter, HttpApiUtils — this convention is uniform."
+      ],
+      "impact_scope": "module",
+      "fix_scope": "multi_file_refactor",
+      "confidence": "high"
+    }
+  },
+  "dimension_judgment": {
+    "convention_outlier": {
+      "strengths": [
+        "Java camelCase/PascalCase naming conventions are applied uniformly across all 40+ files with zero snake_case intrusions.",
+        "Handler class naming suffix ('Handlers') is applied consistently to all five HTTP handler classes.",
+        "Static utility class pattern (private constructor, all-static methods) is applied uniformly to six utility classes across utils/ and config/.",
+        "package-info.java documents the intentional mixed accessor convention in model/ — the variation is explicit rather than accidental."
+      ],
+      "issue_character": "The convention issues are minor: a naming abbreviation asymmetry between ExploreParams (private) and ExplorationOptions (public), the round2dp abbreviated method name in an otherwise full-word utility class, and ExploreResponseAssembler's Assembler-suffix naming pattern used outside the package (config/) where other static utilities live.",
+      "score_rationale": "The codebase is highly consistent at the naming and structural level — the score sits in the high-70s rather than 85+ because of three detectable convention gaps: the Explore/Exploration abbreviation inconsistency, the round2dp outlier name, and the asymmetric SingleSeed/multi-seed options naming. None of these impede understanding, but a new engineer scanning the options types would notice the asymmetry and spend time confirming there is no MultiSeedExplorationOptions type."
+    }
+  },
+  "issues": [
+    {
+      "dimension": "convention_outlier",
+      "identifier": "exploration_options_asymmetric_naming",
+      "summary": "Options types have asymmetric naming: SingleSeedExplorationOptions for single-seed, plain ExplorationOptions for multi-seed/comparison — no MultiSeedExplorationOptions counterpart",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/exploration/ExplorationOptions.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/exploration/SingleSeedExplorationOptions.java"
+      ],
+      "evidence": [
+        "ExplorationOptions is used for multi-seed (SemanticFieldExplorer.exploreMultiSeed) and comparison (compareCollocateProfiles) — two use cases sharing the same record.",
+        "SingleSeedExplorationOptions.toBaseOptions() projects to ExplorationOptions — the Javadoc says 'extends shared ExplorationOptions parameters' indicating SingleSeedExplorationOptions is the specialisation of ExplorationOptions.",
+        "A reader searching for 'multi-seed options' will search for 'MultiSeed' and find nothing, then must discover via Javadoc that ExplorationOptions is the multi-seed record."
+      ],
+      "suggestion": "Either rename ExplorationOptions to MultiSeedExplorationOptions (symmetric pair) or add a Javadoc alias comment on ExplorationOptions clarifying 'also used as the multi-seed options type' — the second option is lower risk. If introducing a true MultiSeedExplorationOptions record is preferred, keep ExplorationOptions as the common base and have both single/multi-seed records compose it.",
+      "confidence": "medium",
+      "impact_scope": "module",
+      "fix_scope": "multi_file_refactor",
+      "root_cause_cluster": "naming_asymmetry"
+    },
+    {
+      "dimension": "convention_outlier",
+      "identifier": "round2dp_abbreviated_name",
+      "summary": "round2dp in ExploreResponseAssembler uses an abbreviated numeric suffix where the rest of the utility surface uses full descriptive names",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/model/ExploreResponseAssembler.java"
+      ],
+      "evidence": [
+        "Method: 'public static double round2dp(double value)' — '2dp' abbreviates '2 decimal places'.",
+        "All other static utility methods in the codebase use full words: LogDiceCalculator.compute, LogDiceCalculator.relativeFrequency, CqlUtils.splitCqlTokens, CqlUtils.mergeLemmaConstraint, RelationPatternBuilder.buildFullPattern, RelationUtils.resolveRelationAlias.",
+        "round2dp is called 12 times within ExploreResponseAssembler itself — renaming is a contained change."
+      ],
+      "suggestion": "Rename to roundToTwoDecimalPlaces or roundTwoDecimalPlaces to match the full-word convention. Alternatively, if the codebase accepts numeric shorthand in names, document it in a style note — but 2dp appears nowhere else.",
+      "confidence": "low",
+      "impact_scope": "local",
+      "fix_scope": "single_edit",
+      "root_cause_cluster": "naming_abbreviation"
+    }
+  ],
+  "retrospective": {
+    "root_causes": [
+      "ExplorationOptions was named as a shared base before SingleSeedExplorationOptions was extracted, so no symmetric multi-seed counterpart was needed at the time — the asymmetry crept in during incremental refactoring.",
+      "round2dp is a convenience shorthand that was not checked against the codebase's naming convention before merge."
+    ],
+    "likely_symptoms": [],
+    "possible_false_positives": [
+      "The mixed record/class pattern in model/ could appear as a convention outlier but is explicitly documented in package-info.java — it should not be flagged."
+    ]
+  }
+}

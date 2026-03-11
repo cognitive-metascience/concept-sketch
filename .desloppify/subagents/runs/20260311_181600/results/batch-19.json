@@ -1,0 +1,76 @@
+{
+  "batch": "api_surface_coherence",
+  "batch_index": 19,
+  "assessments": {"api_surface_coherence": 73.0},
+  "dimension_notes": {
+    "api_surface_coherence": {
+      "evidence": [
+        "HTTP method consistency: GET for read-only endpoints, POST for /api/visual/radial (request body required) and /api/bcql (arbitrary BCQL body). Consistent and correct.",
+        "The /api/concordance/examples endpoint uses 'seed' and 'collocate' parameters (recently renamed from word1/word2). The /api/semantic-field/examples endpoint uses 'adjective' and 'noun' parameters. These two endpoints are sibling concordance-lookup endpoints with different but rationale-based parameter naming: concordance/examples is relation-agnostic (seed=headword, collocate=any collocate), while semantic-field/examples is adjective/noun-specific. However, a developer using both endpoints may expect consistent naming.",
+        "explore endpoint uses 'seed' (singular, exactly one value). explore-multi endpoint uses 'seeds' (plural, comma-separated, ≥2). This distinction is intentional and documented in both the Javadoc and server endpoint listing.",
+        "QueryExecutor interface has two dependency methods: executeDependencyPattern(lemma, deprel, minLogDice, maxResults) and executeDependencyPatternWithPos(lemma, deprel, minLogDice, maxResults, headPosConstraint). These differ by one parameter. Having two separate interface methods rather than one with an Optional/nullable parameter is a minor API surface coherence issue.",
+        "All exploration endpoints consistently use ExplorationOptions/SingleSeedExplorationOptions for parameter grouping — consistent internal API.",
+        "HttpApiUtils has consistent parameter parsing API: requireParam, parseIntParam, parseDoubleParam, parseQueryParams — uniform naming and error contract.",
+        "buildExploreRequest() shared helper is package-private and consistent across multi-seed handlers.",
+        "RelationConfig.computeDeprel() is called on every relation config returned from API — this involves regex compilation on each call (Pattern.compile inside the method). There is no caching, so repeated calls for the same config will recompile the pattern."
+      ],
+      "impact_scope": "module",
+      "fix_scope": "single_edit",
+      "confidence": "high"
+    }
+  },
+  "dimension_judgment": {
+    "api_surface_coherence": {
+      "strengths": [
+        "HTTP method discipline is correct throughout: GETs for reads, POSTs for body-bearing operations.",
+        "The seed/seeds parameter naming distinction is intentional, documented, and prevents incorrect multi-seed use of the single-seed endpoint.",
+        "HttpApiUtils has a uniform, consistent parameter-parsing API used by all handler classes.",
+        "Exploration parameter grouping (ExploreParams, ExplorationOptions records) prevents long parameter list anti-patterns."
+      ],
+      "issue_character": "The primary coherence issue is that sibling concordance endpoints (/concordance/examples and /semantic-field/examples) use different parameter names for the same concept (seed/collocate vs noun/adjective), and QueryExecutor has two near-identical dependency methods that differ by one parameter.",
+      "score_rationale": "The REST API surface is mostly coherent. HTTP methods, error contracts, and parameter conventions within endpoint families are consistent. The score is held below 80 because (1) the two concordance-style endpoints use different parameter naming conventions for head/collocate relationships, reducing discoverability, and (2) the QueryExecutor interface exposes two separate dependency methods that differ only by one parameter, which could be unified. Neither is severe but both add surface area a caller must understand."
+    }
+  },
+  "issues": [
+    {
+      "dimension": "api_surface_coherence",
+      "identifier": "dep_method_pair_unifiable",
+      "summary": "QueryExecutor exposes two near-identical dependency methods differing only by headPosConstraint parameter",
+      "related_files": ["src/main/java/pl/marcinmilkowski/word_sketch/query/QueryExecutor.java"],
+      "evidence": [
+        "executeDependencyPattern(String lemma, String deprel, double minLogDice, int maxResults)",
+        "executeDependencyPatternWithPos(String lemma, String deprel, double minLogDice, int maxResults, @NonNull String headPosConstraint)",
+        "The only difference is the headPosConstraint parameter. Both are in the public QueryExecutor interface, meaning implementations must provide both.",
+        "Callers must choose between two methods that do the same thing with/without a pos constraint."
+      ],
+      "suggestion": "Unify into a single method with @Nullable headPosConstraint: 'List<WordSketchResult> executeDependencyPattern(String lemma, String deprel, double minLogDice, int maxResults, @Nullable String headPosConstraint)'. Provide a default interface method for the no-constraint variant: 'default List<WordSketchResult> executeDependencyPattern(String lemma, String deprel, double minLogDice, int maxResults) { return executeDependencyPattern(lemma, deprel, minLogDice, maxResults, null); }'. Update BlackLabQueryExecutor to implement the unified method.",
+      "confidence": "medium",
+      "impact_scope": "module",
+      "fix_scope": "multi_file_refactor"
+    },
+    {
+      "dimension": "api_surface_coherence",
+      "identifier": "concordance_param_naming_inconsistency",
+      "summary": "/concordance/examples uses seed/collocate params while sibling /semantic-field/examples uses noun/adjective",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/api/ConcordanceHandlers.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/api/ExplorationHandlers.java"
+      ],
+      "evidence": [
+        "/api/concordance/examples: ?seed=theory&collocate=good",
+        "/api/semantic-field/examples: ?adjective=good&noun=theory",
+        "Both endpoints accept a headword + a collocate and return concordance lines; the concepts are the same but the parameter names differ.",
+        "A developer using both endpoints must remember which convention each uses."
+      ],
+      "suggestion": "Align /semantic-field/examples to use seed/collocate: rename ?adjective to ?collocate and ?noun to ?seed in ExplorationHandlers.handleSemanticFieldExamples(). Update API documentation. The renaming aligns with the codebase's recently-adopted seed/collocate vocabulary (ConcordanceHandlers recently renamed word1/word2 to seed/collocate).",
+      "confidence": "medium",
+      "impact_scope": "local",
+      "fix_scope": "single_edit"
+    }
+  ],
+  "retrospective": {
+    "root_causes": ["The /semantic-field/examples endpoint was designed with domain-specific noun/adjective naming before the seed/collocate vocabulary was standardized across the API."],
+    "likely_symptoms": ["concordance_param_naming_inconsistency"],
+    "possible_false_positives": ["The seed vs seeds distinction is intentional, not an API inconsistency."]
+  }
+}

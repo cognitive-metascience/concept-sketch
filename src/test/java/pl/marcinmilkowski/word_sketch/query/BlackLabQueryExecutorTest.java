@@ -2,58 +2,103 @@ package pl.marcinmilkowski.word_sketch.query;
 
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Assumptions;
 import java.nio.file.Path;
 import static org.junit.jupiter.api.Assertions.*;
 
 /**
- * Unit tests for BlackLabQueryExecutor.
+ * Tests for {@link BlackLabQueryExecutor}.
  *
- * <p>BlackLabQueryExecutor wraps a live BlackLab index; all its public methods
- * require an on-disk index to operate.  These tests are skipped automatically
- * when no index is available.  To enable them, provide a valid BlackLab index
- * directory via the {@code CONCEPT_SKETCH_TEST_INDEX} environment variable or
- * the {@code conceptSketch.testIndex} system property.
+ * <p>Static helper method tests run in every CI environment without any index.
+ * The {@link LiveIndex} nested class is skipped automatically when no index
+ * is available — provide one via {@code CONCEPT_SKETCH_TEST_INDEX} or
+ * the {@code conceptSketch.testIndex} system property to enable those tests.</p>
  */
-@Disabled("Requires a live BlackLab index — set CONCEPT_SKETCH_TEST_INDEX env var and remove @Disabled to run")
+@DisplayName("BlackLabQueryExecutor")
 class BlackLabQueryExecutorTest {
 
-    private static final String INDEX_PATH = System.getenv("CONCEPT_SKETCH_TEST_INDEX") != null
-            ? System.getenv("CONCEPT_SKETCH_TEST_INDEX")
-            : System.getProperty("conceptSketch.testIndex");
+    // ── Static helper tests (no index required, always run in CI) ────────────
 
-    @BeforeAll
-    static void requireIndex() {
-        Assumptions.assumeTrue(INDEX_PATH != null, "No index path configured — set CONCEPT_SKETCH_TEST_INDEX to enable");
-        Path path = Path.of(INDEX_PATH);
-        Assumptions.assumeTrue(path.toFile().exists(),
-            "Requires live BlackLab index at " + path + " — set CONCEPT_SKETCH_TEST_INDEX to enable");
+    @Test
+    @DisplayName("buildBcqlWithLemmaSubstitution: bracket-starting pattern is prefixed with quoted lemma")
+    void buildBcql_bracketPattern_prependsLemma() {
+        String result = BlackLabQueryExecutor.buildBcqlWithLemmaSubstitution("[xpos=\"JJ.*\"]", "house");
+        assertEquals("\"house\" [xpos=\"JJ.*\"]", result);
     }
 
     @Test
-    void findCollocations_missingLemma_throwsIllegalArgumentException() throws Exception {
-        try (BlackLabQueryExecutor executor = new BlackLabQueryExecutor(INDEX_PATH)) {
-            // A cqlPattern that is neither a placeholder (%s) nor starts with '[' is invalid.
-            assertThrows(IllegalArgumentException.class, () ->
-                executor.findCollocations("house", "INVALID_PATTERN_FORMAT", 0.0, 10));
+    @DisplayName("buildBcqlWithLemmaSubstitution: lemma is lowercased")
+    void buildBcql_lemmaIsLowercased() {
+        String result = BlackLabQueryExecutor.buildBcqlWithLemmaSubstitution("[xpos=\"NN\"]", "Theory");
+        assertTrue(result.startsWith("\"theory\""), "Lemma must be lowercased in BCQL pattern: " + result);
+    }
+
+    @Test
+    @DisplayName("buildBcqlWithLemmaSubstitution: backslash in lemma is escaped")
+    void buildBcql_backslashEscaped() {
+        String result = BlackLabQueryExecutor.buildBcqlWithLemmaSubstitution("[xpos=\"NN\"]", "back\\slash");
+        assertTrue(result.startsWith("\"back\\\\slash\""), "Backslash must be doubled: " + result);
+    }
+
+    @Test
+    @DisplayName("buildBcqlWithLemmaSubstitution: non-bracket pattern throws IllegalArgumentException")
+    void buildBcql_nonBracketPattern_throwsIAE() {
+        assertThrows(IllegalArgumentException.class, () ->
+            BlackLabQueryExecutor.buildBcqlWithLemmaSubstitution("INVALID_FORMAT", "house"));
+    }
+
+    @Test
+    @DisplayName("buildBcqlWithLemmaSubstitution: empty-string pattern throws IllegalArgumentException")
+    void buildBcql_emptyPattern_throwsIAE() {
+        assertThrows(IllegalArgumentException.class, () ->
+            BlackLabQueryExecutor.buildBcqlWithLemmaSubstitution("", "house"));
+    }
+
+    // ── Live-index tests (skipped in CI when no index is present) ────────────
+
+    @Nested
+    @DisplayName("LiveIndex — requires CONCEPT_SKETCH_TEST_INDEX")
+    @Disabled("Requires a live BlackLab index — set CONCEPT_SKETCH_TEST_INDEX env var and remove @Disabled to run")
+    class LiveIndex {
+
+        private static final String INDEX_PATH = System.getenv("CONCEPT_SKETCH_TEST_INDEX") != null
+                ? System.getenv("CONCEPT_SKETCH_TEST_INDEX")
+                : System.getProperty("conceptSketch.testIndex");
+
+        @BeforeAll
+        static void requireIndex() {
+            Assumptions.assumeTrue(INDEX_PATH != null,
+                "No index path configured — set CONCEPT_SKETCH_TEST_INDEX to enable");
+            Path path = Path.of(INDEX_PATH);
+            Assumptions.assumeTrue(path.toFile().exists(),
+                "Requires live BlackLab index at " + path + " — set CONCEPT_SKETCH_TEST_INDEX to enable");
         }
-    }
 
-    @Test
-    void findCollocations_validLemmaAndPattern_returnsNonNullList() throws Exception {
-        try (BlackLabQueryExecutor executor = new BlackLabQueryExecutor(INDEX_PATH)) {
-            var results = executor.findCollocations("house", "[xpos=\"JJ.*\"]", 0.0, 10);
-            assertNotNull(results, "Result list must not be null");
+        @Test
+        void findCollocations_invalidPattern_throwsIllegalArgumentException() throws Exception {
+            try (BlackLabQueryExecutor executor = new BlackLabQueryExecutor(INDEX_PATH)) {
+                assertThrows(IllegalArgumentException.class, () ->
+                    executor.findCollocations("house", "INVALID_PATTERN_FORMAT", 0.0, 10));
+            }
         }
-    }
 
-    @Test
-    void getTotalFrequency_knownLemma_returnsPositiveCount() throws Exception {
-        try (BlackLabQueryExecutor executor = new BlackLabQueryExecutor(INDEX_PATH)) {
-            long freq = executor.getTotalFrequency("theory");
-            assertTrue(freq > 0, "Frequency of a common lemma should be positive");
+        @Test
+        void findCollocations_validLemmaAndPattern_returnsNonNullList() throws Exception {
+            try (BlackLabQueryExecutor executor = new BlackLabQueryExecutor(INDEX_PATH)) {
+                var results = executor.findCollocations("house", "[xpos=\"JJ.*\"]", 0.0, 10);
+                assertNotNull(results, "Result list must not be null");
+            }
+        }
+
+        @Test
+        void getTotalFrequency_knownLemma_returnsPositiveCount() throws Exception {
+            try (BlackLabQueryExecutor executor = new BlackLabQueryExecutor(INDEX_PATH)) {
+                long freq = executor.getTotalFrequency("theory");
+                assertTrue(freq > 0, "Frequency of a common lemma should be positive");
+            }
         }
     }
 }
-

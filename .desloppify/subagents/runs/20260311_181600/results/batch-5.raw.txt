@@ -1,0 +1,108 @@
+{
+  "batch": "naming_quality",
+  "batch_index": 5,
+  "assessments": {"naming_quality": 80.0},
+  "dimension_notes": {
+    "naming_quality": {
+      "evidence": [
+        "Handler method names clearly express HTTP-handler intent: handleSemanticFieldExplore, handleSemanticFieldExploreMulti, handleSemanticFieldComparison, handleSemanticFieldExamples, handleConcordanceExamples, handleCorpusQuery — all follow the handle + domain-noun + action pattern.",
+        "buildExploreRequest, resolveRelationConfig, resolveExploreParams, buildBaseExploreResponse, parseSeedSet — all accurately predict the method's behavior. 'resolve' correctly signals that these methods derive a value from input params rather than creating a new object.",
+        "ExploreParams (private record in ExplorationHandlers) abbreviates 'Exploration' to 'Explore' while the public API uses ExplorationOptions, SingleSeedExplorationOptions. The abbreviation is within a private scope so impact is low, but it creates a vocabulary split inside the same class.",
+        "round2dp in ExploreResponseAssembler — '2dp' is an uncommon abbreviation (two decimal places) that does not follow the codebase's convention of full words. All other method names in the utils layer use full words: compute, relativeFrequency, splitCqlTokens, escapeForRegex.",
+        "computeCollocatePosGroup in RelationPatternBuilder: 'compute' prefix accurately signals a derived value rather than a stored field access — good.",
+        "buildRawAdjectiveProfiles in CollocateProfileComparator: 'Raw' communicates that this is the pre-aggregation pass — useful discriminator from buildAdjectiveProfileList.",
+        "OVER_FETCH_FACTOR in CollocateQueryHelper — clearly communicates purpose with a domain-meaningful constant name.",
+        "FALLBACK_NOUN_CQL_CONSTRAINT and FALLBACK_ADJECTIVE_PATTERN — consistent FALLBACK_ prefix convention for default-value constants.",
+        "executeRelationQueries in SketchHandlers uses a BiFunction parameter named 'builder' — 'builder' is generic for a callback that constructs a Map. In context it's clear, but 'responseBuilder' or 'relDataBuilder' would better anchor the generic 'builder' name to the specific output type.",
+        "ValidatedExploreRequest private record name — 'Validated' prefix accurately signals a post-validation container, distinct from raw params.",
+        "nounCqlConstraint in SemanticFieldExplorer — precise: it is a CQL constraint expression specific to the noun POS.",
+        "computeDeprel in RelationConfig — 'compute' correctly signals a derived value (not stored) from the pattern string.",
+        "fullScores in CollocateProfileComparator.buildAdjectiveProfileList — 'full' disambiguates from 'rawProfiles' (which only contains present-in nouns); the naming pair works well.",
+        "getCorsAllowOrigin in HttpApiUtils — private method returning the static final constant CORS_ALLOW_ORIGIN. The getter adds no value since the constant is a private static final in the same class — this is a pass-through wrapper where the constant name is more descriptive.",
+        "wrapHandler vs wrapWithErrorHandling — WordSketchApiServer.wrapHandler delegates to HttpApiUtils.wrapWithErrorHandling. The private method wrapHandler is shorter but loses the 'ErrorHandling' descriptor that communicates the method's purpose."
+      ],
+      "impact_scope": "module",
+      "fix_scope": "multi_file_refactor",
+      "confidence": "high"
+    }
+  },
+  "dimension_judgment": {
+    "naming_quality": {
+      "strengths": [
+        "Handler method names (handle* prefix) and resolve/build/parse/compute method prefixes are applied consistently to communicate intent.",
+        "Domain-specific names appear throughout: seedCollocates, discoveredNouns, coreCollocates, collocatePosGroup — no generic 'data', 'item', 'stuff' anywhere.",
+        "FALLBACK_ prefix for default-value constants is applied uniformly.",
+        "Private record names (ValidatedExploreRequest, ExploreParams, ExecutedSketch, BcqlRequest) are concise and contextually accurate within their owning classes."
+      ],
+      "issue_character": "Naming is high quality overall with a few specific gaps: the round2dp abbreviation breaks the full-word convention, ExploreParams abbreviates Exploration within the same file that uses ExplorationOptions, and getCorsAllowOrigin wraps a constant without adding clarity.",
+      "score_rationale": "The codebase scores 80 — naming is clearly above average, with domain-aligned vocabulary throughout and a consistent handle/build/resolve/compute prefix system. It does not reach 85+ because of the round2dp abbreviation (an outlier in the utils convention), the ExploreParams/ExplorationOptions vocabulary split, and getCorsAllowOrigin as a pass-through getter of a constant that is already well-named."
+    }
+  },
+  "issues": [
+    {
+      "dimension": "naming_quality",
+      "identifier": "round2dp_abbreviation",
+      "summary": "round2dp uses abbreviated numeric jargon (2dp = 2 decimal places) instead of a descriptive method name",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/model/ExploreResponseAssembler.java"
+      ],
+      "evidence": [
+        "'public static double round2dp(double value)' — '2dp' is not a standard Java naming convention; it is shorthand from British numeric notation.",
+        "Called 12 times within ExploreResponseAssembler; no other method in the codebase uses numeric shorthand in its name.",
+        "Every other utility method uses full words: LogDiceCalculator.compute, LogDiceCalculator.relativeFrequency, CqlUtils.splitCqlTokens."
+      ],
+      "suggestion": "Rename to roundToTwoDecimals or roundTwoDecimalPlaces. The method body is trivial (Math.round(value * 100.0) / 100.0) so the name should carry the full meaning.",
+      "confidence": "medium",
+      "impact_scope": "local",
+      "fix_scope": "single_edit",
+      "root_cause_cluster": "naming_abbreviation"
+    },
+    {
+      "dimension": "naming_quality",
+      "identifier": "explore_params_vocabulary_split",
+      "summary": "ExploreParams (private record) abbreviates Exploration to Explore in the same class that uses ExplorationOptions as the public equivalent",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/api/ExplorationHandlers.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/exploration/ExplorationOptions.java"
+      ],
+      "evidence": [
+        "ExplorationHandlers private record: 'private record ExploreParams(int topCollocates, int minShared, double minLogDice, int nounsPerCollocate)'.",
+        "The public equivalent type (passed to SemanticFieldExplorer) is ExplorationOptions — same concept, full word.",
+        "Within ExplorationHandlers, resolveExploreParams() returns ExploreParams, then converts to ExplorationOptions — the abbreviated type name directly precedes the full-word type name at the boundary."
+      ],
+      "suggestion": "Rename the private record to ExplorationParams or ExplorationParameters to match the Exploration prefix. Since it is a private record, the rename is contained to ExplorationHandlers.",
+      "confidence": "low",
+      "impact_scope": "local",
+      "fix_scope": "single_edit",
+      "root_cause_cluster": "naming_abbreviation"
+    },
+    {
+      "dimension": "naming_quality",
+      "identifier": "get_cors_allow_origin_pass_through",
+      "summary": "getCorsAllowOrigin() is a private getter that just returns a private static final constant, adding a naming layer with no signal",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/api/HttpApiUtils.java"
+      ],
+      "evidence": [
+        "'private static String getCorsAllowOrigin() { return CORS_ALLOW_ORIGIN; }' — the getter returns the constant directly with no logic.",
+        "CORS_ALLOW_ORIGIN is already a well-named static final: 'Cached at class-load time from the cors.allow.origin JVM system property'. Reading the constant name gives the same information as calling the getter.",
+        "All four callers within HttpApiUtils (setCorsHeader, which is called by sendJsonResponse, sendError, sendOptionsResponse, sendBinaryResponse) could reference CORS_ALLOW_ORIGIN directly without losing clarity."
+      ],
+      "suggestion": "Remove getCorsAllowOrigin() and have setCorsHeader reference CORS_ALLOW_ORIGIN directly. This eliminates a pointless indirection while keeping the constant's descriptive name visible at each use site.",
+      "confidence": "low",
+      "impact_scope": "local",
+      "fix_scope": "single_edit",
+      "root_cause_cluster": "unnecessary_indirection"
+    }
+  ],
+  "retrospective": {
+    "root_causes": [
+      "round2dp and ExploreParams were likely named quickly during incremental development without reference to the established full-word convention.",
+      "getCorsAllowOrigin may have been added to enable future override (e.g., dynamic CORS), but since the value is now a static final, the getter's purpose has been superseded."
+    ],
+    "likely_symptoms": [],
+    "possible_false_positives": [
+      "wrapHandler in WordSketchApiServer is a thin delegate to wrapWithErrorHandling — while shorter, 'handler wrapping' is implied by the registration context and the delegate's name provides clarity. This is borderline but not a clear naming defect."
+    ]
+  }
+}

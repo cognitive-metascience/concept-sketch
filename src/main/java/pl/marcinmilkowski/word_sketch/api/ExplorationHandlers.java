@@ -8,7 +8,6 @@ import pl.marcinmilkowski.word_sketch.config.GrammarConfig;
 import pl.marcinmilkowski.word_sketch.config.RelationConfig;
 import pl.marcinmilkowski.word_sketch.config.RelationUtils;
 import pl.marcinmilkowski.word_sketch.model.ComparisonResult;
-import pl.marcinmilkowski.word_sketch.model.ExploreResponseAssembler;
 import pl.marcinmilkowski.word_sketch.model.ExplorationResult;
 import pl.marcinmilkowski.word_sketch.exploration.ExplorationOptions;
 import pl.marcinmilkowski.word_sketch.exploration.SingleSeedExplorationOptions;
@@ -55,7 +54,7 @@ class ExplorationHandlers {
     private ValidatedExploreRequest buildExploreRequest(Map<String, String> params) {
         String seedsRaw = HttpApiUtils.requireParam(params, "seeds");
         RelationConfig resolvedConfig = resolveRelationConfig(params);
-        ExploreParams exploreParams = resolveExploreParams(params);
+        ExplorationParams exploreParams = resolveExplorationParams(params);
         return new ValidatedExploreRequest(params, seedsRaw, resolvedConfig, exploreParams);
     }
 
@@ -63,7 +62,7 @@ class ExplorationHandlers {
             Map<String, String> params,
             String seedsRaw,
             RelationConfig relationConfig,
-            ExploreParams exploreParams) {}
+            ExplorationParams exploreParams) {}
 
     /**
      * Handle semantic field exploration (single seed).
@@ -80,7 +79,7 @@ class ExplorationHandlers {
         Map<String, String> params = HttpApiUtils.parseQueryParams(exchange.getRequestURI().getQuery());
         String seed = HttpApiUtils.requireParam(params, "seed");
         RelationConfig resolvedConfig = resolveRelationConfig(params);
-        ExploreParams exploreParams = resolveExploreParams(params);
+        ExplorationParams exploreParams = resolveExplorationParams(params);
 
         String relationType = resolvedConfig.relationType()
             .orElseThrow(() -> new IllegalStateException(
@@ -120,8 +119,7 @@ class ExplorationHandlers {
         // Parse once and reuse for both the nouns_per pre-flight and buildExploreRequest.
         Map<String, String> params = HttpApiUtils.parseQueryParams(exchange.getRequestURI().getQuery());
         if (params.containsKey("nouns_per")) {
-            HttpApiUtils.sendError(exchange, 400, "nouns_per is not supported for multi-seed exploration");
-            return;
+            throw new IllegalArgumentException("nouns_per is not supported for multi-seed exploration");
         }
 
         ValidatedExploreRequest req = buildExploreRequest(params);
@@ -181,7 +179,7 @@ class ExplorationHandlers {
                 "Comparison requires at least 2 seed nouns; received " + seeds.size());
         }
 
-        ExploreParams exploreParams = resolveExploreParams(params);
+        ExplorationParams exploreParams = resolveExplorationParams(params);
 
         ExplorationOptions opts = new ExplorationOptions(
             exploreParams.topCollocates(), exploreParams.minLogDice(), exploreParams.minShared());
@@ -247,18 +245,16 @@ class ExplorationHandlers {
     }
 
     /** Parses a comma-separated seeds parameter into a cleaned, lowercased ordered set. */
-    private static Set<String> parseSeedSet(String seedsParam) {
+    private static Set<String> parseSeedSet(@NonNull String seedsParam) {
         Set<String> seeds = new LinkedHashSet<>();
-        if (seedsParam != null) {
-            for (String s : seedsParam.split(",")) {
-                String cleaned = s.trim().toLowerCase();
-                if (!cleaned.isEmpty()) seeds.add(cleaned);
-            }
+        for (String s : seedsParam.split(",")) {
+            String cleaned = s.trim().toLowerCase();
+            if (!cleaned.isEmpty()) seeds.add(cleaned);
         }
         return seeds;
     }
 
-    private record ExploreParams(int topCollocates, int minShared, double minLogDice, int nounsPerCollocate) {}
+    private record ExplorationParams(int topCollocates, int minShared, double minLogDice, int nounsPerCollocate) {}
 
     /**
      * Resolves and validates the relation parameter from request params.
@@ -281,11 +277,11 @@ class ExplorationHandlers {
         return relationConfig.get();
     }
 
-    private ExploreParams resolveExploreParams(Map<String, String> params) {
+    private ExplorationParams resolveExplorationParams(Map<String, String> params) {
         int top = HttpApiUtils.parseIntParam(params, "top", 10);
         int minShared = HttpApiUtils.parseIntParam(params, "min_shared", 2);
         double minLogDice = HttpApiUtils.parseDoubleParam(params, "min_logdice", 3.0);
         int nounsPerCollocate = HttpApiUtils.parseIntParam(params, "nouns_per", 30);
-        return new ExploreParams(top, minShared, minLogDice, nounsPerCollocate);
+        return new ExplorationParams(top, minShared, minLogDice, nounsPerCollocate);
     }
 }

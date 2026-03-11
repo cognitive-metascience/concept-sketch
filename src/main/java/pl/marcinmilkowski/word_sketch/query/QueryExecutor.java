@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.util.List;
 
 import org.jspecify.annotations.NonNull;
+import org.jspecify.annotations.Nullable;
 import pl.marcinmilkowski.word_sketch.query.QueryResults;
 
 /**
@@ -49,7 +50,7 @@ public interface QueryExecutor extends Closeable {
      * @throws IOException if index access fails
      * @throws IllegalArgumentException if {@code cqlPattern} is not in a recognized format
      */
-    List<QueryResults.WordSketchResult> findCollocations(String lemma, String cqlPattern,
+    List<QueryResults.WordSketchResult> findCollocations(@Nullable String lemma, String cqlPattern,
                                              double minLogDice, int maxResults) throws IOException;
 
     /**

@@ -34,16 +34,11 @@ class HttpApiUtils {
     private static final Logger logger = LoggerFactory.getLogger(HttpApiUtils.class);
 
     /**
-     * Allowed CORS origin. Cached at class-load time from the {@code cors.allow.origin} JVM
-     * system property (default: {@code http://localhost:3000}).
-     * Override at startup via {@code -Dcors.allow.origin=https://myapp.example.com}.
+     * Default allowed CORS origin (used when the {@code cors.allow.origin} system property
+     * is absent). Override at startup via {@code -Dcors.allow.origin=https://myapp.example.com},
+     * or in tests via {@code System.setProperty("cors.allow.origin", ...)}.
      */
-    private static final String CORS_ALLOW_ORIGIN =
-            System.getProperty("cors.allow.origin", "http://localhost:3000");
-
-    private static String getCorsAllowOrigin() {
-        return CORS_ALLOW_ORIGIN;
-    }
+    private static final String DEFAULT_CORS_ALLOW_ORIGIN = "http://localhost:3000";
 
     /**
      * Wraps a handler with uniform error handling: maps {@link IllegalArgumentException} to 400,
@@ -73,11 +68,13 @@ class HttpApiUtils {
     private HttpApiUtils() {}
 
     /**
-     * Sets the {@code Access-Control-Allow-Origin} response header using {@link #getCorsAllowOrigin()}.
+     * Sets the {@code Access-Control-Allow-Origin} response header, reading {@code cors.allow.origin}
+     * from the JVM system property at call time so per-test overrides take effect immediately.
      * Called by every response-sending method to ensure consistent CORS behaviour.
      */
     private static void setCorsHeader(HttpExchange exchange) {
-        exchange.getResponseHeaders().set("Access-Control-Allow-Origin", getCorsAllowOrigin());
+        String origin = System.getProperty("cors.allow.origin", DEFAULT_CORS_ALLOW_ORIGIN);
+        exchange.getResponseHeaders().set("Access-Control-Allow-Origin", origin);
     }
 
     public static void sendJsonResponse(@NonNull HttpExchange exchange, @NonNull Object data) throws IOException {

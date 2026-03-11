@@ -1,0 +1,82 @@
+{
+  "batch": "logic_clarity",
+  "batch_index": 14,
+  "assessments": {"logic_clarity": 76.0},
+  "dimension_notes": {
+    "logic_clarity": {
+      "evidence": [
+        "SemanticFieldExplorer.compareCollocateProfiles (line 312): 'if (seedNouns == null || seedNouns.size() < 2)' — the null check on @NonNull seedNouns is a redundant always-false condition in any correctly-used path.",
+        "SemanticFieldExplorer.exploreByPattern (package-private): 'if (seed == null || seed.isEmpty()) { return ExplorationResult.empty(seed != null ? seed : \"\"); }' — the inner ternary 'seed != null ? seed : \"\"' is dead. Inside this block, the only way to reach the return is if seed == null OR seed.isEmpty(). When seed IS null the ternary evaluates to \"\"; when seed isEmpty() the ternary evaluates to seed (the empty string). In both cases the result is the same string value (\"\") but the code implies a distinction that doesn't exist.",
+        "HttpApiUtils.getCorsAllowOrigin() private method returns only CORS_ALLOW_ORIGIN constant — pure indirection, zero logic, exists solely as a layer with no behavior.",
+        "ExplorationHandlers.parseSeedSet(String seedsParam): 'if (seedsParam != null)' guard — this method is only called with values obtained from HttpApiUtils.requireParam() (which returns @NonNull non-empty String) or from req.seedsRaw() which is itself from requireParam. The null guard is dead code.",
+        "SketchHandlers.handleSketchRequest: path parsing logic is clear with explicit conditions, no redundant branches.",
+        "ExplorationHandlers.buildExploreRequest: clean single-responsibility extraction, no logical redundancy.",
+        "LogDiceCalculator.compute: 'if (dice <= 0) return 0.0' followed by 'return Math.max(0.0, logDice)' — the second Math.max guard handles the case where logDice (post-log) is negative after the log transform; the first guard handles zero/negative dice before the log. Both are needed and non-redundant."
+      ],
+      "impact_scope": "local",
+      "fix_scope": "single_edit",
+      "confidence": "high"
+    }
+  },
+  "dimension_judgment": {
+    "logic_clarity": {
+      "strengths": [
+        "SketchHandlers path dispatch logic is clear and follows a clean early-return/guard-clause style.",
+        "LogDiceCalculator.compute has correctly structured guard clauses — no redundancy.",
+        "ExplorationHandlers handler methods each have a single clear decision path with no duplicated branches.",
+        "MultiSeedExplorer.identifyCommonCollocates uses a clean threshold pattern with no redundant conditions."
+      ],
+      "issue_character": "The pattern of issues is defensive null checks that are dead in practice because callers already guarantee non-null (via @NonNull annotations or requireParam()), plus a private method that adds a layer of indirection with zero logic.",
+      "score_rationale": "Most of the codebase has clear, direct logic with well-structured early returns. The issues are concentrated in three places: a dead null check that contradicts @NonNull, a dead ternary expression in an already-null-checked block, and a no-op private method wrapper. These are clarity failures but not correctness bugs. Score is held below 80 because a developer reading the exploration code must mentally discount the null checks to understand the actual control flow."
+    }
+  },
+  "issues": [
+    {
+      "dimension": "logic_clarity",
+      "identifier": "dead_null_check_compareprofiles",
+      "summary": "Redundant null check on @NonNull seedNouns parameter in compareCollocateProfiles",
+      "related_files": ["src/main/java/pl/marcinmilkowski/word_sketch/exploration/SemanticFieldExplorer.java"],
+      "evidence": [
+        "'public @NonNull ComparisonResult compareCollocateProfiles(@NonNull Set<String> seedNouns, ...)' — parameter declared @NonNull",
+        "Line 312: 'if (seedNouns == null || seedNouns.size() < 2)' — null condition is always false per @NonNull contract"
+      ],
+      "suggestion": "Remove the '|| seedNouns == null' sub-expression, leaving only 'if (seedNouns.size() < 2)'.",
+      "confidence": "high",
+      "impact_scope": "local",
+      "fix_scope": "single_edit"
+    },
+    {
+      "dimension": "logic_clarity",
+      "identifier": "dead_ternary_in_null_guard",
+      "summary": "Dead ternary 'seed != null ? seed : \"\"' inside a branch reachable only when seed is null",
+      "related_files": ["src/main/java/pl/marcinmilkowski/word_sketch/exploration/SemanticFieldExplorer.java"],
+      "evidence": [
+        "Code: 'if (seed == null || seed.isEmpty()) { return ExplorationResult.empty(seed != null ? seed : \"\"); }'",
+        "When seed IS null: ternary evaluates to \"\". When seed IS empty string: ternary evaluates to seed (which equals \"\"). Both paths produce the same result, making the ternary meaningless."
+      ],
+      "suggestion": "Simplify to 'if (seed == null || seed.isEmpty()) { return ExplorationResult.empty(\"\"); }'",
+      "confidence": "high",
+      "impact_scope": "local",
+      "fix_scope": "single_edit"
+    },
+    {
+      "dimension": "logic_clarity",
+      "identifier": "dead_null_guard_parse_seed_set",
+      "summary": "parseSeedSet guards against null seedsParam but callers always pass non-null values",
+      "related_files": ["src/main/java/pl/marcinmilkowski/word_sketch/api/ExplorationHandlers.java"],
+      "evidence": [
+        "parseSeedSet(String seedsParam): 'if (seedsParam != null)' — all callers pass a value from requireParam() which returns @NonNull, making the null branch unreachable.",
+        "Method signature has no @Nullable annotation on seedsParam."
+      ],
+      "suggestion": "Add @NonNull to the parameter and remove the null guard: 'private static Set<String> parseSeedSet(@NonNull String seedsParam) { Set<String> seeds = new LinkedHashSet<>(); for (String s : seedsParam.split(\",\")) { ... } return seeds; }'",
+      "confidence": "medium",
+      "impact_scope": "local",
+      "fix_scope": "single_edit"
+    }
+  ],
+  "retrospective": {
+    "root_causes": ["Defensive null checks were written before @NonNull annotations were added; when annotations were introduced the defensive checks were not reconciled."],
+    "likely_symptoms": ["dead_null_check_compareprofiles", "dead_ternary_in_null_guard"],
+    "possible_false_positives": []
+  }
+}
