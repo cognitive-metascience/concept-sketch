@@ -1,12 +1,12 @@
 package pl.marcinmilkowski.word_sketch.config;
 
 import com.alibaba.fastjson2.JSONObject;
-import org.jspecify.annotations.Nullable;
 import pl.marcinmilkowski.word_sketch.model.PosGroup;
 import pl.marcinmilkowski.word_sketch.model.RelationType;
 import pl.marcinmilkowski.word_sketch.utils.CqlUtils;
 
 import java.util.Locale;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -65,11 +65,12 @@ public record RelationConfig(
      *
      * @param headword the lemma to substitute at the head position; if {@code null} or blank,
      *                 the unmodified pattern is returned unchanged
-     * @return the substituted pattern, or the original pattern when headword is null/blank;
-     *         returns {@code null} when the {@code pattern} field is null
+     * @return the substituted pattern, or the original pattern when headword is null/blank
+     * @throws NullPointerException if the {@code pattern} field is null (indicates a misconfigured
+     *         RelationConfig — GrammarConfigLoader must always set a non-null pattern)
      */
-    public @Nullable String buildFullPattern(String headword) {
-        if (pattern == null) return null;
+    public String buildFullPattern(String headword) {
+        Objects.requireNonNull(pattern, "RelationConfig '" + id + "' has no pattern — check grammar config");
         if (headword == null || headword.isBlank()) return pattern;
 
         // Parse the pattern and substitute the headword at head_position

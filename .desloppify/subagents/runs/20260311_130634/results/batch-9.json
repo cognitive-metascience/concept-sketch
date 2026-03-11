@@ -1,0 +1,67 @@
+{
+  "batch": "package_organization",
+  "batch_index": 9,
+  "assessments": {
+    "package_organization": 77.0
+  },
+  "dimension_notes": {
+    "package_organization": {
+      "evidence": [
+        "structure.directory_profiles lists 7 production packages: api/ (6 files, 1307 LOC), config/ (4 files, 591 LOC), exploration/ (4 files, 726 LOC), indexer/blacklab/ (2 files, 231 LOC), model/ (11 files including package-info), query/ (4 files), utils/ (4 files).",
+        "No package has more than 11 files. No flat-directory overload. Each package has a coherent surface explanation.",
+        "indexer/blacklab/ is correctly isolated as a 2-file subsystem (BlackLabConllUIndexer + ConlluConverter). Low file count, focused responsibility.",
+        "exploration/ (4 files) groups SemanticFieldExplorer, MultiSeedExplorer, CollocateProfileComparator, ExploreOptions cleanly by exploration algorithm. Navigation is predictable.",
+        "utils/ contains 4 files: CqlUtils (CQL parsing primitives), LogDiceCalculator (statistical scoring), LongIntHashMap (custom collection), RadialPlot (SVG renderer). CqlUtils, LogDiceCalculator, and LongIntHashMap are genuine utilities with no domain dependencies. RadialPlot is an SVG rendering engine for word-sketch visualization — it is only imported by api/VisualizationHandlers.java, not by any other utils/ consumer.",
+        "model/ contains 11 files including package-info. QueryResults defines SnippetResult and CollocateResult — two result types whose primary consumers are in query/ (BlackLabQueryExecutor) and api/ (SketchHandlers). These result types are in model/ because they are shared across the query and api layers, which is correct placement.",
+        "query/ contains BlackLabQueryExecutor, BlackLabSnippetParser, CollocateQueryHelper (package-private), QueryExecutor. The three non-public files correctly stay in the package; only QueryExecutor is public. This scoping discipline is correct.",
+        "api/ (6 files, 1307 LOC) is the heaviest package by LOC but the file count is manageable. All 6 files have clear roles: server wiring (WordSketchApiServer), HTTP utilities (HttpApiUtils), 3 handler groups (Sketch, Exploration, Visualization), and a response builder (ExploreResponseBuilder).",
+        "Main.java is at the root (word_sketch/) — it is the application entry point, fan_in=0 from other source files, and is correctly placed as a root-level file with no imports from utils/ and no utility role."
+      ],
+      "impact_scope": "subsystem",
+      "fix_scope": "multi_file_refactor",
+      "confidence": "high"
+    }
+  },
+  "dimension_judgment": {
+    "package_organization": {
+      "strengths": [
+        "All packages have fewer than 11 files; no flat-directory overload anywhere in the codebase.",
+        "indexer/blacklab/ is correctly isolated as a 2-file subsystem with no dependencies outside model/utils.",
+        "exploration/ cleanly groups the exploration algorithm components (SemanticFieldExplorer, MultiSeedExplorer, CollocateProfileComparator, ExploreOptions) with package-private scoping on the non-public classes.",
+        "query/ enforces package-private scoping on CollocateQueryHelper and BlackLabSnippetParser — exactly the right navigability decision."
+      ],
+      "issue_character": "The organization is sound except for one misplaced file: RadialPlot belongs to api/visualization concerns but lives in utils/, breaking the utils/-as-general-primitives contract.",
+      "score_rationale": "The package layout is navigable and well-considered: each directory has a clear purpose, file counts are manageable, and scoping decisions (package-private helpers) reinforce the boundaries. The score is 77 rather than 85+ due to RadialPlot's placement in utils/ — it is the only file in the package with no util callers and a domain-specific rendering responsibility. This is a clear misplacement that a developer searching for visualization code will not find in utils/. One additional concern: model/ hosts QueryResults which ties closely to query/ internals (SnippetResult, CollocateResult types are only produced by BlackLabQueryExecutor), but this is a borderline design decision with a reasonable rationale."
+    }
+  },
+  "issues": [
+    {
+      "dimension": "package_organization",
+      "identifier": "radialplot_in_utils",
+      "summary": "RadialPlot (SVG visualization renderer) is in utils/ but has no relationship to general utilities and is only consumed by api/VisualizationHandlers",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/utils/RadialPlot.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/api/VisualizationHandlers.java"
+      ],
+      "evidence": [
+        "RadialPlot imports: java.util.ArrayList, java.util.List, java.util.Locale — no imports from utils/ and no imports shared with other utils/ files.",
+        "VisualizationHandlers.java in api/ is the only caller: `RadialPlot.renderFromItems(center, items, width, height, mode)`.",
+        "utils/ contains CqlUtils (CQL parsing), LogDiceCalculator (statistics), LongIntHashMap (data structure) — all reusable across subsystems. RadialPlot breaks this contract by being endpoint-specific.",
+        "The CLAUDE.md notes RadialPlot was moved from viz/ to utils/ in a recent refactor — the move was a step backwards in boundary clarity."
+      ],
+      "suggestion": "Move RadialPlot.java to api/ (package-private alongside VisualizationHandlers) or to a new api/viz/ sub-package. Steps: (1) Move file to target location. (2) Update the import in VisualizationHandlers.java. (3) If RadialPlot should remain public for external use, keep it in a viz/ sub-package under api/. If it is purely internal, make it package-private.",
+      "confidence": "high",
+      "impact_scope": "module",
+      "fix_scope": "multi_file_refactor"
+    }
+  ],
+  "retrospective": {
+    "root_causes": [
+      "RadialPlot was moved to utils/ from viz/ without checking whether utils/ was the right home for a rendering class."
+    ],
+    "likely_symptoms": [],
+    "possible_false_positives": [
+      "model/QueryResults placement: while the types SnippetResult and CollocateResult are primarily produced in query/, they are consumed by api/ handlers too — model/ is a defensible home."
+    ]
+  }
+}

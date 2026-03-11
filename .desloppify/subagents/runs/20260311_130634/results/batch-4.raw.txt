@@ -1,0 +1,44 @@
+{
+  "batch": "dependency_health",
+  "batch_index": 4,
+  "assessments": {
+    "dependency_health": 90.0
+  },
+  "dimension_notes": {
+    "dependency_health": {
+      "evidence": [
+        "pom.xml production runtime dependencies: blacklab-engine + blacklab-query-parser (same library family, distinct concerns: index/query engine vs. CQL/BCQL parsing), fastjson2 (single JSON library, no competing JSON dependency), slf4j-api + logback-classic (standard facade+implementation pair, no competing logging framework), jspecify (null-annotation library, no competing annotation dependency).",
+        "blacklab-engine is used for BlackLabIndex, HitGroups, Concordances and related BlackLab search types throughout the query subsystem. blacklab-query-parser provides CorpusQueryLanguageParser and ContextualQueryLanguageParser — two genuinely different parsers for two different query syntaxes. This is not duplication.",
+        "No multiple HTTP client libraries: the server uses com.sun.net.httpserver (JDK built-in) exclusively. No third-party HTTP server or client.",
+        "No duplicate date/time libraries, no competing serialization frameworks, no competing assertion libraries.",
+        "Test dependencies: junit-jupiter-api, junit-jupiter-engine, junit-platform-launcher — a single coherent JUnit 5 stack. No TestNG or Mockito competing alongside it.",
+        "logback 1.5.18 paired with slf4j 2.0.7 — compatible versions (SLF4J 2.x pairs with Logback 1.4+). No version conflict.",
+        "fastjson2 is used consistently across all JSON serialization call sites (HttpApiUtils, SketchHandlers, VisualizationHandlers, GrammarConfigLoader). No Jackson or Gson used anywhere.",
+        "holistic_context.dependencies shows no signals for dependency issues."
+      ],
+      "impact_scope": "codebase",
+      "fix_scope": "single_edit",
+      "confidence": "high",
+      "issues_preventing_higher_score": "Minor: jspecify (null annotations) is a compile-time annotation dependency with no runtime impact, but its presence alongside the JDK's @Nullable from other packages is worth watching as the annotation ecosystem evolves. No concrete defect found."
+    }
+  },
+  "dimension_judgment": {
+    "dependency_health": {
+      "strengths": [
+        "Single JSON library (fastjson2) used consistently at all call sites — no competing serialization framework.",
+        "HTTP server uses the JDK built-in com.sun.net.httpserver — no third-party HTTP dependency required.",
+        "BlackLab engine and parser are distinct modules for distinct purposes (search execution vs. query parsing), not the same function duplicated.",
+        "Logging uses the standard SLF4J + Logback pair at compatible versions (slf4j 2.0.7 + logback 1.5.18).",
+        "JUnit 5 stack is self-consistent (api + engine + platform-launcher at matching versions)."
+      ],
+      "issue_character": "No dependency health defects identified; the dependency graph is minimal, purposeful, and free of duplication or version conflicts.",
+      "score_rationale": "The dependency set is small and well-chosen. Every production dependency earns its weight: BlackLab is the core corpus search engine, fastjson2 handles JSON, SLF4J+Logback provides logging, jspecify adds null-annotation support. There are no duplicate libraries for the same purpose, no heavy deps pulled in for trivial use, and no version conflicts visible in the pom. The score is 90 rather than 100 because fastjson2's 'fast' serialization includes non-standard extension APIs (JSONObject, JSONArray mutation) that create a mild library lock-in — this is a design-time trade-off rather than a defect, but it is worth noting."
+    }
+  },
+  "issues": [],
+  "retrospective": {
+    "root_causes": [],
+    "likely_symptoms": [],
+    "possible_false_positives": []
+  }
+}

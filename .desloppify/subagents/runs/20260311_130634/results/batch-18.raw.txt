@@ -1,0 +1,77 @@
+{
+  "batch": "api_surface_coherence",
+  "batch_index": 18,
+  "assessments": {"api_surface_coherence": 73.0},
+  "dimension_notes": {
+    "api_surface_coherence": {
+      "evidence": [
+        "QueryExecutor interface parameter ordering is consistent: (lemma, pattern/deprel, minLogDice, maxResults) across findCollocations, executeSurfacePattern, executeDependencyPattern, executeDependencyPatternWithPos. The headPosConstraint comes last in the 5-param variant — appropriate.",
+        "SemanticFieldExplorer public API has a clean shape after the round-16 work: exploreByPattern(seed, RelationConfig, ExploreOptions) and exploreMultiSeed(seeds, RelationConfig, ExploreOptions) are structurally parallel. The deprecated 5-param exploreMultiSeed still exists but is clearly marked.",
+        "HTTP GET endpoints consistently use 'top' for max-results: ?top=15. The POST /api/bcql endpoint uses 'limit' in the JSON body. Both control max-results but have different names — a client building a generic parameter layer would need to know which spelling to use for which endpoint.",
+        "HttpApiUtils static methods consistently put HttpExchange first, followed by data: sendJsonResponse(exchange, data), sendError(exchange, code, message), sendBinaryResponse(exchange, contentType, bytes). This is a clean convention applied uniformly.",
+        "POST /api/bcql response uses 'results' as the array key; GET /api/sketch/{lemma} uses 'collocations'; GET /api/semantic-field/explore uses 'seed_collocates'. Each endpoint's primary result array has a different key name. While semantically distinct, a caller building a generic results-renderer cannot reuse the same key path.",
+        "ExplorationHandlers has a 4-param public overload (seed, relationName, bcqlPattern, simplePattern, opts) on exploreByPattern in SemanticFieldExplorer — this is a lower-level overload that exposes pattern strings directly. The 3-param overload (seed, RelationConfig, opts) is the preferred API. The 4-param form is public and accessible, creating an overloaded surface where one variant should clearly be internal.",
+        "WordSketchApiServer endpoint listing in class Javadoc matches the registerRoutes method — documentation and implementation are in sync. Good.",
+        "ExploreResponseBuilder is package-private (api-internal only) — not part of the public API surface. Clean encapsulation.",
+        "validateExploreRequest private method in ExplorationHandlers elegantly consolidates shared preamble for three handlers into a single call, reducing the effective public surface complexity."
+      ],
+      "impact_scope": "module",
+      "fix_scope": "multi_file_refactor",
+      "confidence": "high"
+    }
+  },
+  "dimension_judgment": {
+    "api_surface_coherence": {
+      "strengths": [
+        "QueryExecutor parameter ordering is fully consistent across all six methods — a developer can learn the pattern from one method and apply it to all.",
+        "HttpApiUtils exchange-first convention is applied uniformly across all 7 exchange-bearing utility methods.",
+        "SemanticFieldExplorer preferred API (3-param with ExploreOptions) is coherent and parallel across the single-seed and multi-seed paths.",
+        "Endpoint documentation in WordSketchApiServer Javadoc matches the actual registered routes."
+      ],
+      "issue_character": "Issues are narrow but affect caller experience: the 'top' vs 'limit' naming drift between GET and POST endpoints, the divergent primary-result array key names, and the exposed 4-param internal overload — these are the kind of inconsistencies that show up as one-off special cases in client code.",
+      "score_rationale": "The Java API layer (QueryExecutor, SemanticFieldExplorer) is coherent with consistent parameter ordering and clear deprecation paths. The HTTP API surface is less coherent: 'top' vs 'limit' for the same concept, different array key names across endpoints, and a lower-level overload that leaks implementation detail into the public SemanticFieldExplorer API. A score of 80 would require consistent max-results parameter naming across all endpoints and the lower-level pattern-string overload to be package-private."
+    }
+  },
+  "issues": [
+    {
+      "dimension": "api_surface_coherence",
+      "identifier": "top-vs-limit-inconsistency",
+      "summary": "GET endpoints use 'top' and POST /api/bcql uses 'limit' for the same max-results concept",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/api/ExplorationHandlers.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/api/SketchHandlers.java"
+      ],
+      "evidence": [
+        "GET /api/semantic-field/explore: '?top=15' — ExplorationHandlers resolveExploreParams parses 'top' parameter.",
+        "GET /api/concordance/examples: 'params.getOrDefault(\"top\", \"10\")'.",
+        "POST /api/bcql JSON body: '{\"query\": \"...\", \"limit\": 10}' — SketchHandlers.parseBcqlRequest: 'int limit = obj.getIntValue(\"limit\")'.",
+        "POST /api/visual/radial has no max-results parameter but its item cap is hard-coded to 40."
+      ],
+      "suggestion": "Standardise on 'top' across all endpoints for max-results (matching the GET convention and the grammar of 'top N results'). Update parseBcqlRequest to read 'top' (keeping 'limit' as a fallback for backward compatibility).",
+      "confidence": "high",
+      "impact_scope": "module",
+      "fix_scope": "single_edit"
+    },
+    {
+      "dimension": "api_surface_coherence",
+      "identifier": "internal-overload-public-leak",
+      "summary": "SemanticFieldExplorer.exploreByPattern(seed, relationName, bcqlPattern, simplePattern, opts) exposes internal pattern-string API as a public overload",
+      "related_files": ["src/main/java/pl/marcinmilkowski/word_sketch/exploration/SemanticFieldExplorer.java"],
+      "evidence": [
+        "'public ExplorationResult exploreByPattern(String seed, String relationName, String bcqlPattern, String simplePattern, ExploreOptions opts)' — public visibility.",
+        "The 3-param overload '(seed, RelationConfig, opts)' calls this 5-param form internally.",
+        "The 5-param form takes raw BCQL strings that callers would have to construct manually — details that belong inside the RelationConfig overload.",
+        "No @deprecated annotation or note suggesting the 3-param form is preferred."
+      ],
+      "suggestion": "Make the 5-param overload package-private or add @deprecated with a note pointing to the 3-param (RelationConfig) overload. The internal delegation from the 3-param overload would still work unchanged.",
+      "confidence": "high",
+      "impact_scope": "module",
+      "fix_scope": "single_edit"
+    }
+  ],
+  "retrospective": {
+    "root_causes": ["'limit' is the Fastjson2/SQL vocabulary; the codebase uses 'top' for query-parameter convention but didn't audit POST body keys when standardising.", "The 5-param overload was the original implementation; when RelationConfig was introduced as the preferred entry point the lower-level form was not restricted."],
+    "likely_symptoms": ["top-vs-limit-inconsistency"],
+    "possible_false_positives": []
+  }
+}

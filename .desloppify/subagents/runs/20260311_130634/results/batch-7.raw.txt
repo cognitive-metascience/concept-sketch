@@ -1,0 +1,69 @@
+{
+  "batch": "ai_generated_debt",
+  "batch_index": 7,
+  "assessments": {
+    "ai_generated_debt": 81.0
+  },
+  "dimension_notes": {
+    "ai_generated_debt": {
+      "evidence": [
+        "SemanticFieldExplorer class-level Javadoc is substantive: explains exploration algorithm in a numbered algorithm outline with a concrete 'house' example, describes computational limits, and cross-references result DTOs. This is genuine documentation of a non-trivial algorithm.",
+        "LogDiceCalculator.compute Javadoc explains the UNCOMPUTABLE sentinel and its NaN semantics — not obvious from the signature alone. Adds value.",
+        "ExploreOptions field-level Javadoc: each field has a 1-line description. The comment_ratio is high (0.70) but the comments add non-trivial context (e.g., `nounsPerSeed` note about single-seed-only applicability).",
+        "RelationUtils.RELATION_ALIASES Javadoc lists all valid case-insensitive keys and states the pass-through behavior for unknown keys — concrete and useful. Comment_ratio 0.43 flagged by scanner.",
+        "GrammarConfigLoader private helpers: `missingConfigException` has `/** Returns a FileNotFoundException for a missing config file; always call with throw. */` — the 'always call with throw' note is genuine guidance for a non-obvious pattern.",
+        "ExplorationResult.empty(String) Javadoc: `@param seed the seed word; must not be null @return non-null empty result` — this accurately describes what requireNonNull enforces and what the return guarantees. The content is correct but the body (3 lines) is simple enough that the doc adds modest value.",
+        "Logger.debug calls in SemanticFieldExplorer are all guarded by `logger.isDebugEnabled()` where appropriate (CollocateProfileComparator.logTopProfiles has an explicit guard). No full-object dumps at INFO or WARN level.",
+        "No entry/exit trace logging on ordinary methods — logging is reserved for meaningful lifecycle events (exploration start/complete) and unexpected empty-results cases.",
+        "No defensive null-check on non-nullable typed values found: GrammarConfig.getRelations() returns an unmodifiable list, and callers trust it. No null checks on the return value of grammarConfig.getRelation(id).get() after isPresent() guard.",
+        "RelationEdgeType.toString() override is documented with a rationale: 'Overriding Object.toString() ensures that logging frameworks emit the API-safe label rather than the Java enum constant name'. This is a concrete 'why' explanation — not an echo comment.",
+        "Minor: `/** Build edges for graph visualization from a single-seed exploration result. */` on ExploreResponseBuilder.buildEdges(ExplorationResult) restates the method name with minimal additional context. Same for `/** Build edges for graph visualization from a comparison result. */` on the overload.",
+        "Minor: `private static String fmt(double value)` in RadialPlot has no Javadoc — consistent with its 'obvious from name' level. Appropriate absence of comment."
+      ],
+      "impact_scope": "codebase",
+      "fix_scope": "single_edit",
+      "confidence": "medium",
+      "issues_preventing_higher_score": "Two trivial restating Javadoc comments on buildEdges overloads in ExploreResponseBuilder and a few docstrings on very short factory methods where the code body is self-explanatory."
+    }
+  },
+  "dimension_judgment": {
+    "ai_generated_debt": {
+      "strengths": [
+        "SemanticFieldExplorer's class-level Javadoc explains a non-obvious algorithm with a numbered outline and a concrete 'house' example — a developer encountering exploration for the first time gets real orientation.",
+        "Logger.debug calls are guarded (isDebugEnabled or logTopProfiles explicit guard) and log meaningful state, not object dumps.",
+        "RelationEdgeType.toString() override documents 'why' the override exists, not just 'what' it does.",
+        "GrammarConfigLoader's 'always call with throw' note on missingConfigException is genuinely non-obvious guidance for a builder-exception pattern."
+      ],
+      "issue_character": "Issues are isolated to two method-level Javadocs that restate the method name without adding insight — a minor pattern rather than a systemic commenting style.",
+      "score_rationale": "The codebase largely avoids AI-generated debt patterns: comments explain rationale rather than restating code, debug logging is disciplined and guarded, there are no defensive null-checks on non-nullable values, and no boilerplate error handling is copied across files. The score is 81 rather than 88+ because two Javadoc comments on ExploreResponseBuilder.buildEdges overloads echo the method name without adding context (acceptable but slightly noisy), and a handful of very short factory methods carry multi-line Javadocs that add modest value over reading the 2-3-line body directly."
+    }
+  },
+  "issues": [
+    {
+      "dimension": "ai_generated_debt",
+      "identifier": "buildedges_restating_javadoc",
+      "summary": "ExploreResponseBuilder.buildEdges overloads have restating Javadoc that adds no insight beyond the method name and parameter type",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/api/ExploreResponseBuilder.java"
+      ],
+      "evidence": [
+        "`/** Build edges for graph visualization from a single-seed exploration result. */` on `static List<Edge> buildEdges(ExplorationResult result)` — the method name and parameter type already state this.",
+        "`/** Build edges for graph visualization from a comparison result. */` on `static List<Edge> buildEdges(ComparisonResult result)` — same pattern.",
+        "Neither comment explains the edge type (SEED_ADJ vs DISCOVERED_ADJ vs MODIFIER) selected for each result type, which would be non-obvious from the signature and would genuinely add value."
+      ],
+      "suggestion": "Replace the restating sentences with descriptions of the edge type semantics: e.g., 'Builds SEED_ADJ edges from seed collocates and DISCOVERED_ADJ edges from each discovered noun's shared collocates.' and 'Builds MODIFIER edges for adjective-noun pairs with positive logDice scores.' This converts echo documentation into useful guidance.",
+      "confidence": "medium",
+      "impact_scope": "local",
+      "fix_scope": "single_edit"
+    }
+  ],
+  "retrospective": {
+    "root_causes": [
+      "The restating-comment pattern appears to be a holdover from early drafts where placeholder Javadoc was added and not upgraded to substantive documentation."
+    ],
+    "likely_symptoms": [],
+    "possible_false_positives": [
+      "High comment_ratio signals (ExploreOptions: 0.70, RelationEdgeType: 0.40) are not AI debt — those files contain substantive field-level and enum-level documentation."
+    ]
+  }
+}

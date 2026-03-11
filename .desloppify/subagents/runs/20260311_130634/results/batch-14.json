@@ -1,0 +1,73 @@
+{
+  "batch": "error_consistency",
+  "batch_index": 14,
+  "assessments": {"error_consistency": 74.0},
+  "dimension_notes": {
+    "error_consistency": {
+      "evidence": [
+        "wrapWithErrorHandling in HttpApiUtils is the canonical error boundary: IAE→400, IOException→500, Exception→500. All handler registrations in WordSketchApiServer.registerRoutes use wrapHandler, which delegates to wrapWithErrorHandling. This is a consistent, testable pattern.",
+        "SketchHandlers.handleRelationQueryForPattern contains an internal try/catch for IOException from executeSurfacePattern that bypasses wrapHandler: catches, logs with logger.error, then sends 'Query failed: <msg>'. The wrapHandler description-prefixed message ('Sketch request failed: <msg>') is never reached for this path. Two different 500-message formats exist for the same operation.",
+        "SketchHandlers.parseBcqlRequest uses three distinct error-signaling strategies within one method: throws IAE for bad JSON (propagates to wrapHandler→400), calls sendError+return null for missing/too-long/too-complex query (direct 400), returns null for body-too-large (direct 413). The inconsistency is contained but notable.",
+        "GrammarConfigLoader: IOException is propagated from load(Path); createDefaultEnglish wraps it in IllegalStateException with the config path in the message — context preserved, appropriate layer transition.",
+        "BlackLabQueryExecutor constructor: broad 'catch (Exception e)' wraps in IOException. The cause is passed, so context is preserved. The broad catch is justified (BlackLab throws heterogeneous runtime exceptions on index failure).",
+        "CollocateQueryHelper.getTotalFrequency: catches RuntimeException, wraps in IOException with lemma context. Cause preserved.",
+        "executeRelationQueries in SketchHandlers: catches 'IOException | RuntimeException' per relation and appends to 'relationErrors'. Errors are included in the response JSON rather than silently swallowed. Intentional and appropriate for a partial-results scenario.",
+        "ExplorationHandlers.resolveExploreParams: catches NumberFormatException and calls sendError(400, ...). No error context beyond 'expected an integer or decimal value' — the bad parameter name is not included in the message, losing diagnostic context.",
+        "SemanticFieldExplorer.compareCollocateProfiles throws IAE for fewer than 2 seeds. The calling layer (ExplorationHandlers.handleSemanticFieldExploreMulti) validates this case before calling, so the IAE is a safety net rather than the primary error path — but the two layers have overlapping checks."
+      ],
+      "impact_scope": "module",
+      "fix_scope": "multi_file_refactor",
+      "confidence": "high"
+    }
+  },
+  "dimension_judgment": {
+    "error_consistency": {
+      "strengths": [
+        "wrapWithErrorHandling creates a single, testable error boundary for all registered handlers — the mapping rule is declared once and tested in WrapHandlerTest.",
+        "All wrap-caused error responses use JSON with an 'error' key — consistent response shape for clients.",
+        "Exception wrapping always preserves the original cause (new IOException(msg, cause), new IllegalStateException(msg, cause)) — debuggable stack traces throughout.",
+        "Intentional partial-error collection in executeRelationQueries is clearly demarcated: errors go to 'errors' key in the response, normal results to 'relations' key."
+      ],
+      "issue_character": "Issues stem from one pre-existing internal catch that was not removed when wrapHandler was introduced, and one error message that drops the bad parameter's name — isolated inconsistencies rather than a systemic pattern.",
+      "score_rationale": "The error-handling framework is well-designed: a canonical wrapper, IAE-as-validation-error convention, cause-preserving wraps at layer transitions. The score is held below 80 primarily by the handleRelationQueryForPattern catch that contradicts the wrapHandler contract — the 500-message format diverges from all other handlers and the logger level (error vs warn) also diverges. The missing parameter name in the NumberFormatException message is a smaller gap. A codebase scoring 80 would have zero handlers catching exceptions before wrapHandler gets a chance, except at intentional partial-result boundaries."
+    }
+  },
+  "issues": [
+    {
+      "dimension": "error_consistency",
+      "identifier": "internal-ioe-catch-format-divergence",
+      "summary": "handleRelationQueryForPattern's internal IOException catch produces a different 500-message format than all other handlers",
+      "related_files": ["src/main/java/pl/marcinmilkowski/word_sketch/api/SketchHandlers.java"],
+      "evidence": [
+        "Internal catch: 'HttpApiUtils.sendError(exchange, 500, \"Query failed: \" + e.getMessage())' with logger.error.",
+        "wrapHandler path for the same handler class: sends '<description> failed: <message>' with logger.error.",
+        "All other handlers use only the wrapHandler path — no internal catches for IOException.",
+        "A client or monitoring tool parsing 500 messages would see inconsistent prefixes: 'Query failed:' vs 'Sketch request failed:'."
+      ],
+      "suggestion": "Remove the internal try/catch. Let IOException from executeSurfacePattern propagate to wrapHandler. If a more specific error message is needed, throw a new IOException with a descriptive message rather than catching and resending.",
+      "confidence": "high",
+      "impact_scope": "local",
+      "fix_scope": "single_edit"
+    },
+    {
+      "dimension": "error_consistency",
+      "identifier": "numformat-missing-param-name",
+      "summary": "resolveExploreParams error message omits the bad parameter name, losing diagnostic context",
+      "related_files": ["src/main/java/pl/marcinmilkowski/word_sketch/api/ExplorationHandlers.java"],
+      "evidence": [
+        "catch (NumberFormatException e) { HttpApiUtils.sendError(exchange, 400, \"Invalid numeric parameter — expected an integer or decimal value\"); }",
+        "The message does not identify which parameter (top, min_shared, min_logdice, nouns_per) had an invalid value.",
+        "By contrast, handleConcordanceExamples sends 'Invalid numeric parameter: top' including the name."
+      ],
+      "suggestion": "Parse each parameter individually (as handleConcordanceExamples does) to include the failing parameter name in the error message, or catch NumberFormatException per-field and rethrow as IAE with the parameter name.",
+      "confidence": "high",
+      "impact_scope": "local",
+      "fix_scope": "single_edit"
+    }
+  ],
+  "retrospective": {
+    "root_causes": ["handleRelationQueryForPattern pre-dates the wrapHandler unification and was not updated when that refactor landed."],
+    "likely_symptoms": ["internal-ioe-catch-format-divergence"],
+    "possible_false_positives": []
+  }
+}

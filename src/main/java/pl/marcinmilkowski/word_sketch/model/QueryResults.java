@@ -1,6 +1,7 @@
 package pl.marcinmilkowski.word_sketch.model;
 
 import java.util.List;
+import org.jspecify.annotations.Nullable;
 
 /**
  * Common result classes for word sketch queries.
@@ -44,7 +45,7 @@ public class QueryResults {
     /** Scored collocate result produced by the BCQL scoring pipeline. */
     public record CollocateResult(String sentence, String rawXml,
                                    int startOffset, int endOffset, String docId,
-                                   String collocateLemma, long frequency, double logDice)
+                                   @Nullable String collocateLemma, long frequency, double logDice)
             implements ConcordanceResult {
         @Override public String getSentence() { return sentence; }
         @Override public int getStartOffset() { return startOffset; }

@@ -1,0 +1,72 @@
+{
+  "batch": "logic_clarity",
+  "batch_index": 11,
+  "assessments": {"logic_clarity": 76.0},
+  "dimension_notes": {
+    "logic_clarity": {
+      "evidence": [
+        "Guard clauses are applied consistently and early: findCollocations, executeSurfacePattern, executeDependencyPattern all return Collections.emptyList() when lemma is null/empty, avoiding deeper NPEs.",
+        "handleRelationQueryForPattern (SketchHandlers) contains an internal try/catch for IOException from executeSurfacePattern, yet the method is declared throws IOException and is invoked from a handler already wrapped by wrapHandler. The method signature advertises that it propagates IOException but swallows the one IOException path that actually fires in production.",
+        "ExploreResponseBuilder.formatAdjectiveProfile checks 'if (adj.nounScores() != null)' before iterating, but AdjectiveProfile.nounScores() is a record component constructed from a freshly-allocated LinkedHashMap that is never null — the check is always true and misleads readers about the type contract.",
+        "ExplorationHandlers.handleSemanticFieldExplore uses a split declaration: 'ExplorationResult result; result = semanticFieldExplorer.exploreByPattern(...)' — no code separates the two statements, so the blank declaration communicates nothing except uncertainty.",
+        "SemanticFieldExplorer.exploreByPattern returns ExplorationResult.empty(seed != null ? seed : \"\") when seed is null or empty. The null check and empty check are fused into a single condition, then the ternary silently coerces null to \"\". A reader cannot tell at a glance which branch returns null vs. empty string.",
+        "BlackLabQueryExecutor.buildBcqlWithLemmaSubstitution: the if/else has the throw in the else branch, which is correct, but the Javadoc says 'must start with [' — the contract is clear and logic is sound here.",
+        "CollocateQueryHelper.scoreHits: 'int limit = (int) Math.min((long) maxResults * OVER_FETCH_FACTOR, (long) records.size())' — wide cast avoids overflow before min(); clean logic with an in-code comment explaining safety."
+      ],
+      "impact_scope": "module",
+      "fix_scope": "multi_file_refactor",
+      "confidence": "high"
+    }
+  },
+  "dimension_judgment": {
+    "logic_clarity": {
+      "strengths": [
+        "Guard clauses at method entry are consistent across all five QueryExecutor implementations: null/empty lemma → early return with empty list.",
+        "The four-phase exploration algorithm in SemanticFieldExplorer delegates each phase to a named private method, making the overall flow readable as an ordered sequence.",
+        "wrapWithErrorHandling in HttpApiUtils is a clean, single-responsibility dispatcher: IAE→400, IOException→500, Exception→500, with no overlapping branches.",
+        "CqlUtils.splitCqlTokens handles nested brackets and quoted strings with explicit depth counting — the logic is provably correct and the method is narrow in scope.",
+        "ConlluConverter.convertConlluToWplChunks documents the deliberate choice to leave a partial sentence open on the error path, preventing misreads of the finally block."
+      ],
+      "issue_character": "Issues are isolated and mostly cosmetic — one real control-flow inconsistency (internal catch inside a wrapped handler), one always-true null guard, one misleading split declaration — rather than a systemic logic problem.",
+      "score_rationale": "The codebase scores well on the core logic_clarity rubric: no identical if/else branches, no dead code after unconditional returns, no always-false conditions, consistent guard-clause discipline. The score is pulled below 80 by the handleRelationQueryForPattern catch that contradicts both the method's throws declaration and the wrapHandler contract (a developer reading the method signature expects IOExceptions to propagate, but they don't), and the redundant null guard on a non-nullable record component. These are minor in count but non-trivial to reason about — a developer debugging an unexpected 500 message format will be confused by the two divergent paths."
+    }
+  },
+  "issues": [
+    {
+      "dimension": "logic_clarity",
+      "identifier": "internal-ioe-catch-inconsistency",
+      "summary": "handleRelationQueryForPattern catches IOException internally despite being wrapped by wrapHandler, producing an inconsistent 500-message format",
+      "related_files": ["src/main/java/pl/marcinmilkowski/word_sketch/api/SketchHandlers.java"],
+      "evidence": [
+        "handleRelationQueryForPattern declares 'throws IOException' and is called from handleSketchRequest which is registered via wrapHandler.",
+        "The internal try/catch logs with logger.error and sends 'Query failed: <message>' — wrapHandler would instead send '<description> failed: <message>'.",
+        "All other handlers (handleFullSketch, handleDepSketchForType, executeRelationQueries) let IOException propagate or collect it in relationErrors; this method is the sole exception.",
+        "The method's throws clause becomes misleading: the only IOException that can escape is from sendError itself (a stream-write failure), not from the query execution."
+      ],
+      "suggestion": "Remove the internal try/catch and let IOException from executeSurfacePattern propagate to wrapHandler, matching the pattern used by all other handlers. If per-relation error reporting is desired, follow the executeRelationQueries pattern of collecting errors rather than aborting.",
+      "confidence": "high",
+      "impact_scope": "local",
+      "fix_scope": "single_edit"
+    },
+    {
+      "dimension": "logic_clarity",
+      "identifier": "redundant-null-check-nounscores",
+      "summary": "formatAdjectiveProfile checks nounScores() != null on a record component that is never null",
+      "related_files": ["src/main/java/pl/marcinmilkowski/word_sketch/api/ExploreResponseBuilder.java"],
+      "evidence": [
+        "AdjectiveProfile is constructed in CollocateProfileComparator.buildAdjectiveProfileList with 'fullScores' which is a newly allocated LinkedHashMap — never null.",
+        "The check 'if (adj.nounScores() != null)' in formatAdjectiveProfile is always true, implying to readers that null is a possible state.",
+        "No other record component in the model classes is defensively checked this way."
+      ],
+      "suggestion": "Remove the null guard. If the contract must be enforced, add Objects.requireNonNull in the AdjectiveProfile compact constructor instead of checking at every call site.",
+      "confidence": "high",
+      "impact_scope": "local",
+      "fix_scope": "single_edit"
+    }
+  ],
+  "retrospective": {
+    "root_causes": ["Incremental handler wrapping left one pre-existing internal catch orphaned after wrapHandler was introduced."],
+    "likely_symptoms": ["internal-ioe-catch-inconsistency"],
+    "possible_false_positives": []
+  }
+}

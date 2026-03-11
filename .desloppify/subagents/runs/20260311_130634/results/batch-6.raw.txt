@@ -1,0 +1,81 @@
+{
+  "batch": "mid_level_elegance",
+  "batch_index": 6,
+  "assessments": {
+    "mid_level_elegance": 76.0
+  },
+  "dimension_notes": {
+    "mid_level_elegance": {
+      "evidence": [
+        "ValidatedExploreRequest record bundles query parameters, resolved RelationConfig, and resolved ExploreParams after validation — a clean handoff object that eliminates re-validation in each handler.",
+        "ExploreResponseBuilder.populateExploreResponse(Map<String,Object>, ExplorationResult) takes a caller-owned mutable map and adds fields to it. The caller then adds more fields after the call (e.g., 'seed', 'seeds', 'seed_count'). This is a mutation-at-a-seam pattern: the caller must know which keys the method populates and which keys to add after.",
+        "buildBaseExploreResponse returns a mutable HashMap. handleSemanticFieldExplore and handleSemanticFieldExploreMulti both add keys to the returned map after calling this method. The implicit contract is that callers must always mutate the returned map to complete it — there is no way to produce a complete response without mutation.",
+        "ExploreResponseBuilder.formatAdjectiveProfile returns a new Map<String,Object> rather than mutating an input — consistent with pure conversion, correct seam design.",
+        "handleSemanticFieldComparison does not go through validateExploreRequest (correct, since it has different semantics) but re-parses params and re-calls resolveExploreParams independently. The shared preamble pattern (resolveExploreParams, parseBaseExploreRequest) is duplicated across the handler and the shared validateExploreRequest path.",
+        "handleSemanticFieldExamples calls resolveRelationConfig but not resolveExploreParams or validateExploreRequest — it has its own param extraction for `top` (Integer.parseInt with manual 400 on NumberFormatException). The same parse-or-400 pattern is implemented a slightly different way than in resolveExploreParams.",
+        "Data translation from model to JSON is correctly isolated in ExploreResponseBuilder — no JSON map construction appears in SemanticFieldExplorer or the model layer.",
+        "Error propagation across the api→exploration seam: IAE from the exploration layer propagates up through the handler into wrapHandler which maps it to 400. This is a clean, documented contract (wrapHandler Javadoc specifies IAE→400)."
+      ],
+      "impact_scope": "module",
+      "fix_scope": "multi_file_refactor",
+      "confidence": "high"
+    }
+  },
+  "dimension_judgment": {
+    "mid_level_elegance": {
+      "strengths": [
+        "ValidatedExploreRequest record cleanly encapsulates the post-validation state, eliminating repetitive re-validation across handlers.",
+        "Model-to-JSON translation is correctly isolated in ExploreResponseBuilder — the model layer has no JSON dependencies.",
+        "IAE→400 error contract is explicit and tested (WrapHandlerTest) — error propagation across the api/exploration seam is predictable.",
+        "ExploreResponseBuilder.formatAdjectiveProfile and formatSeedCollocates return new maps rather than mutating inputs — the pure conversion style is consistent."
+      ],
+      "issue_character": "The main issue is a mutable-map seam: buildBaseExploreResponse and populateExploreResponse both operate on caller-mutated maps, creating an implicit contract that handlers must know which fields each helper adds and which remain for them to fill in.",
+      "score_rationale": "The codebase shows well-designed seams in several places (ValidatedExploreRequest, ExploreResponseBuilder isolation, IAE error contract). What pulls the score down is the mutable-map assembly pattern: response construction is split between buildBaseExploreResponse, populateExploreResponse, and ad-hoc caller mutations, making the full response schema non-obvious at any single call site. A developer adding a new response field has to trace through multiple methods to verify it won't collide. These are real maintenance costs but contained within the api package, placing the score in the mid-70s."
+    }
+  },
+  "issues": [
+    {
+      "dimension": "mid_level_elegance",
+      "identifier": "mutable_map_seam",
+      "summary": "Response assembly is split across buildBaseExploreResponse, populateExploreResponse, and caller mutations — no single place shows the complete response schema",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/api/ExplorationHandlers.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/api/ExploreResponseBuilder.java"
+      ],
+      "evidence": [
+        "handleSemanticFieldExplore: calls buildBaseExploreResponse(...) → response; then response.put(\"seed\", result.getSeed()); then ExploreResponseBuilder.populateExploreResponse(response, result). Three separate mutation sites for one response.",
+        "populateExploreResponse(Map<String,Object> response, ExplorationResult result) takes the caller's map and adds 6 keys to it: seed_collocates, seed_collocates_count, discovered_nouns, discovered_nouns_count, core_collocates, core_collocates_count, edges. There is no declaration of what keys it adds.",
+        "buildBaseExploreResponse returns a partially-constructed map (status, relation_type, parameters) that is always incomplete until callers add endpoint-specific fields — callers must know the remaining schema."
+      ],
+      "suggestion": "Introduce an ExploreResponseAssembler that builds the complete response in one call, accepting all required data as parameters: `buildExploreResponse(String relationType, ExploreOptions opts, String seed, ExplorationResult result)`. This collapses the three-step mutation into one call site and makes the full response schema visible in one method signature. ExploreResponseBuilder static helpers can be reused internally.",
+      "confidence": "high",
+      "impact_scope": "module",
+      "fix_scope": "multi_file_refactor"
+    },
+    {
+      "dimension": "mid_level_elegance",
+      "identifier": "numeric_param_parse_duplication",
+      "summary": "handleSemanticFieldExamples re-implements numeric parameter parsing independently from resolveExploreParams",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/api/ExplorationHandlers.java"
+      ],
+      "evidence": [
+        "resolveExploreParams uses try-catch NumberFormatException returning null on failure, covering top, min_shared, min_logdice, nouns_per in one call.",
+        "handleSemanticFieldExamples has its own: `try { maxExamples = Integer.parseInt(params.getOrDefault(\"top\", \"10\")); } catch (NumberFormatException e) { HttpApiUtils.sendError(exchange, 400, \"Invalid numeric parameter: top\"); return; }`",
+        "The error messages differ: resolveExploreParams returns 'Invalid numeric parameter — expected an integer or decimal value', while the examples handler returns 'Invalid numeric parameter: top'. Same intent, different implementation and message."
+      ],
+      "suggestion": "Add `top` parsing to resolveExploreParams or add an overload/helper for single-parameter numeric parsing (e.g., a static `parseIntParam(exchange, params, name, defaultValue)` that sends 400 and returns OptionalInt). Use it in both handleSemanticFieldExamples and wherever numeric params are parsed manually.",
+      "confidence": "high",
+      "impact_scope": "local",
+      "fix_scope": "single_edit"
+    }
+  ],
+  "retrospective": {
+    "root_causes": [
+      "Response assembly grew incrementally: buildBaseExploreResponse was added to DRY the common fields, then populateExploreResponse was added for exploration fields, but neither was designed to be the single assembly point.",
+      "handleSemanticFieldExamples was added after the other handlers and the numeric param pattern was re-implemented locally."
+    ],
+    "likely_symptoms": [],
+    "possible_false_positives": []
+  }
+}

@@ -1,0 +1,90 @@
+{
+  "batch": "abstraction_fitness",
+  "batch_index": 3,
+  "assessments": {
+    "abstraction_fitness": 78.0
+  },
+  "dimension_notes": {
+    "abstraction_fitness": {
+      "evidence": [
+        "QueryExecutor has 7 declared methods and exactly one production implementation (BlackLabQueryExecutor). It is a single-implementation interface.",
+        "SemanticFieldExplorer.exploreMultiSeed(Set, RelationConfig, ExploreOptions) delegates in one line to multiSeedExplorer.explore(seeds, relationConfig, opts.minLogDice(), opts.topCollocates(), opts.minShared()). The non-deprecated overload adds only parameter unpacking.",
+        "SemanticFieldExplorer.exploreByPattern(String, RelationConfig, ExploreOptions) delegates to exploreByPattern(String, String, String, String, ExploreOptions) — but that 5-param overload is also public, leaking a lower-level API surface through the abstraction.",
+        "CollocateQueryHelper is a package-private helper that encapsulates complex ranking, hit-collection, and scoring logic shared by 4 methods in BlackLabQueryExecutor. It pays for itself: without it, BlackLabQueryExecutor would have ~400 extra lines.",
+        "ExploreOptions bundles 4 parameters (topCollocates, nounsPerSeed, minLogDice, minShared) into a record — justified given the parameter count and multiple callers.",
+        "ExploreResponseBuilder has real formatting, rounding, and edge-case logic (formatAdjectiveProfile with isSpecific/strongestNoun branching, buildEdges with type discrimination). It is not a pass-through.",
+        "GrammarConfigLoader is a pure loader (no state, no instance) returning immutable GrammarConfig values. The split between loader and value is a real abstraction boundary.",
+        "scan evidence: one_impl_interface_count=1 (QueryExecutor), facade_module_count=0, delegation_heavy_class_count=0. The mechanical signals confirm the observation.",
+        "The 5-parameter public overload of exploreByPattern (seed, relationName, bcqlPattern, simplePattern, opts) was originally meant as the low-level entry point but is now both public and accessible alongside the higher-level RelationConfig overload — callers must choose between two levels of abstraction on the same class."
+      ],
+      "impact_scope": "subsystem",
+      "fix_scope": "multi_file_refactor",
+      "confidence": "medium",
+      "sub_axes": {
+        "abstraction_leverage": 80.0,
+        "indirection_cost": 75.0,
+        "interface_honesty": 78.0,
+        "delegation_density": 85.0,
+        "definition_directness": 82.0,
+        "type_discipline": 88.0
+      }
+    }
+  },
+  "dimension_judgment": {
+    "abstraction_fitness": {
+      "strengths": [
+        "CollocateQueryHelper is a well-justified extraction: it owns hit-collection, collocate ranking, and BCQL two-phase pipeline, reducing BlackLabQueryExecutor from a god class to a coordinator.",
+        "ExploreResponseBuilder has genuine formatting logic (rounding, category labelling, optional specific-noun extraction) — it earns its existence.",
+        "ExploreOptions cleanly groups the 4-parameter tuple that previously spread across every exploration call site.",
+        "GrammarConfig (value) / GrammarConfigLoader (I/O) split is a textbook clean abstraction."
+      ],
+      "issue_character": "Issues are concentrated in the exploration facade layer: one single-impl interface and one class that exposes both high-level and low-level overloads of the same operation, giving callers more surface area than necessary.",
+      "score_rationale": "The abstraction layer is mostly healthy: helpers are justified, options objects are appropriate, and the loader/value split is exemplary. The score falls into the upper-70s rather than 85+ because QueryExecutor is a wide (7 methods) single-implementation interface that imposes design overhead without current payback, and SemanticFieldExplorer leaks its internal 5-param overload as a public API alongside the higher-level RelationConfig overload — callers face an unnecessary choice. These are contained issues, not systemic over-abstraction."
+    }
+  },
+  "issues": [
+    {
+      "dimension": "abstraction_fitness",
+      "identifier": "queryexecutor_single_impl_wide",
+      "summary": "QueryExecutor interface has 7 methods and only one production implementation, imposing interface overhead without current payback",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/query/QueryExecutor.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/query/BlackLabQueryExecutor.java"
+      ],
+      "evidence": [
+        "QueryExecutor declares findCollocations, executeCqlQuery, executeBcqlQuery, getTotalFrequency, executeSurfacePattern, executeDependencyPattern, executeDependencyPatternWithPos — 7 methods.",
+        "Only BlackLabQueryExecutor implements these in production. The interface is used for test mocking only.",
+        "The interface's Javadoc correctly explains each method's distinct responsibility, but 7 abstract methods is a large surface for a one-implementation abstraction."
+      ],
+      "suggestion": "Consider splitting QueryExecutor into two narrower interfaces: CollocateQueryPort (findCollocations, executeSurfacePattern, executeBcqlQuery) used by exploration, and DependencyQueryPort (executeDependencyPattern, executeDependencyPatternWithPos) used by sketch handlers. This makes each interface testable at a finer granularity and makes dependencies explicit. Alternatively, accept the single-impl design as a testability shim and document it explicitly.",
+      "confidence": "medium",
+      "impact_scope": "subsystem",
+      "fix_scope": "multi_file_refactor"
+    },
+    {
+      "dimension": "abstraction_fitness",
+      "identifier": "explorebypattern_low_level_overload_public",
+      "summary": "SemanticFieldExplorer leaks a 5-parameter low-level exploreByPattern overload as a public method alongside the RelationConfig overload",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/exploration/SemanticFieldExplorer.java"
+      ],
+      "evidence": [
+        "Two public overloads: `exploreByPattern(String seed, RelationConfig config, ExploreOptions opts)` and `exploreByPattern(String seed, String relationName, String bcqlPattern, String simplePattern, ExploreOptions opts)`.",
+        "The 5-param overload was the original entry point; the RelationConfig overload was added as a convenience wrapper. Now both are public, giving callers the choice of bypassing the RelationConfig abstraction.",
+        "The 5-param overload is not called from any production caller in the current codebase (ExplorationHandlers calls the 3-param RelationConfig version). It is purely an internal implementation detail that escaped into the public API."
+      ],
+      "suggestion": "Reduce the 5-param overload to package-private (remove `public`) so it serves only as an internal implementation step. If callers outside the exploration package need low-level control, document that explicitly. This removes the API leakage without changing behavior.",
+      "confidence": "high",
+      "impact_scope": "module",
+      "fix_scope": "single_edit"
+    }
+  ],
+  "retrospective": {
+    "root_causes": [
+      "The exploration subsystem was refactored incrementally; the lower-level overload was not demoted to package-private when the higher-level one was added.",
+      "QueryExecutor was designed for testability before concrete boundary-splitting showed where narrower interfaces would serve better."
+    ],
+    "likely_symptoms": [],
+    "possible_false_positives": []
+  }
+}

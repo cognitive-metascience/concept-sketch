@@ -1,0 +1,43 @@
+{
+  "batch": "initialization_coupling",
+  "batch_index": 15,
+  "assessments": {"initialization_coupling": 86.0},
+  "dimension_notes": {
+    "initialization_coupling": {
+      "evidence": [
+        "WordSketchApiServer constructor explicitly defers port binding to start(): 'NOTE: Port binding is deferred to start() so that construction and network binding are separated.' This is the correct pattern for testability and configuration-before-binding.",
+        "Main.handleBlackLabServerCommand registers the shutdown hook BEFORE constructing the server: 'AtomicReference<WordSketchApiServer> serverHolder = new AtomicReference<>()' is set up before the server is created, ensuring executor.close() is always called even if server construction throws. Careful initialization ordering.",
+        "HttpApiUtils.getCorsAllowOrigin() reads System.getProperty at call time, not at class-load time. The Javadoc explicitly calls this out: 'Read at use time via getCorsAllowOrigin() so that the system property is evaluated when the response is sent, not at class-load time.' This prevents the common fragility of reading system properties before they are set.",
+        "RelationUtils.RELATION_ALIASES is a static final Map initialized from Map.of() with string literals — no I/O, no ordering dependency, immutable at class load. Safe.",
+        "BlackLabSnippetParser static Pattern fields are compiled regex from string literals — deterministic, no external dependency at class load. Safe.",
+        "SemanticFieldExplorer(QueryExecutor, GrammarConfig) constructor: delegates immediately to CollocateProfileComparator(executor, grammarConfig) and MultiSeedExplorer(executor). All purely in-memory. No I/O at construction time.",
+        "GrammarConfigLoader.createDefaultEnglish() reads System.getProperty at method call time, not class-load time, so the system property can be set after JVM start.",
+        "No circular initialization dependencies found: the dependency graph is a clean DAG (Main → WordSketchApiServer → {SketchHandlers, ExplorationHandlers} → {QueryExecutor, SemanticFieldExplorer} → {CollocateProfileComparator, MultiSeedExplorer, QueryExecutor}).",
+        "CollocateQueryHelper is constructed inside BlackLabQueryExecutor's constructor and receives the already-open BlackLabIndex — no lazy initialization, no global singleton, no ordering risk."
+      ],
+      "impact_scope": "local",
+      "fix_scope": "single_edit",
+      "confidence": "high",
+      "issues_preventing_higher_score": "The only material concern is that CollocateQueryHelper accepts @Nullable BlackLabIndex in its constructor (discussed in type_safety batch) — if null were passed, every method would throw NPE. This is a latent coupling to construction order rather than a strict initialization_coupling defect, but it represents untested null-tolerance that could surface if the constructor is called from a new context."
+    }
+  },
+  "dimension_judgment": {
+    "initialization_coupling": {
+      "strengths": [
+        "Port binding explicitly deferred to start() — construction and binding are correctly separated.",
+        "CORS system property read at response time, not class-load time — documented with rationale.",
+        "Shutdown hook registered before server construction — executor cleanup is guaranteed even on construction failure.",
+        "No global mutable singletons with cross-module ordering dependencies.",
+        "Static state consists only of immutable constants (Map.of, compiled Patterns, numeric values) — safe at any load order."
+      ],
+      "issue_character": "There are no material initialization_coupling defects in this codebase; Java's classloading and constructor discipline is consistently applied. The only minor concern is a @Nullable annotation on a parameter that cannot safely be null at runtime.",
+      "score_rationale": "Java's static typing and explicit constructors make module-level side effects like Python import-time I/O structurally impossible. Within that context, this codebase applies the right patterns: deferred binding, call-time property reads, DI through constructors. The score is 86 rather than higher because the @Nullable on CollocateQueryHelper's constructor creates a misleading impression that null is a valid initialization input, and no runtime guard validates it — a developer adding a test or extending the class could accidentally pass null and trigger NPEs without violating any declared contract."
+    }
+  },
+  "issues": [],
+  "retrospective": {
+    "root_causes": [],
+    "likely_symptoms": [],
+    "possible_false_positives": ["CollocateQueryHelper @Nullable constructor — a valid typing concern but not strictly an initialization_coupling defect; the NPE would be at use time, not at initialization time."]
+  }
+}

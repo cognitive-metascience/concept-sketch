@@ -31,6 +31,8 @@ import pl.marcinmilkowski.word_sketch.utils.LogDiceCalculator;
 
 import org.jspecify.annotations.Nullable;
 
+import java.util.Objects;
+
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -53,6 +55,8 @@ class CollocateQueryHelper {
     private final BlackLabIndex index;
 
     CollocateQueryHelper(@Nullable BlackLabIndex index) {
+        // Null is accepted to support test subclasses that override getTotalFrequency and
+        // executeCollocateSearch. Production callers must always supply a non-null index.
         this.index = index;
     }
 
@@ -67,6 +71,7 @@ class CollocateQueryHelper {
      * @throws IOException if an unexpected non-runtime failure occurs
      */
     long getTotalFrequency(String lemma) throws IOException {
+        Objects.requireNonNull(index, "BlackLabIndex must not be null for getTotalFrequency");
         try {
             AnnotatedField field = index.mainAnnotatedField();
             Annotation annotation = field.annotation("lemma");
@@ -101,6 +106,7 @@ class CollocateQueryHelper {
      */
     CollocateSearch executeCollocateSearch(String lemma, String bcqlPattern, boolean withStoredHits)
             throws IOException {
+        Objects.requireNonNull(index, "BlackLabIndex must not be null for executeCollocateSearch");
         try {
             TextPattern pattern = nl.inl.blacklab.queryParser.corpusql.CorpusQueryLanguageParser
                     .parse(bcqlPattern, "lemma");
