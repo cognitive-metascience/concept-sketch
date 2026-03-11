@@ -1,0 +1,63 @@
+{
+  "batch": "mid_level_elegance",
+  "batch_index": 6,
+  "assessments": {"mid_level_elegance": 74.0},
+  "dimension_notes": {
+    "mid_level_elegance": {
+      "evidence": [
+        "HTTP handlers (ExplorationHandlers, SketchHandlers, etc.) follow a consistent pattern: parse params → validate → delegate to domain service → assemble response → send. The seam between HTTP and domain is clear.",
+        "ExploreResponseAssembler centralizes all model-to-presentation translation; ExplorationHandlers passes ExplorationResult/ComparisonResult through to it and adds only HTTP-level framing. Clean single-translation-point boundary.",
+        "ExploreOptions and SingleSeedExploreOptions cleanly delineate which parameters flow to single-seed vs multi-seed paths. The toBaseOptions() projection on SingleSeedExploreOptions is a clean handoff.",
+        "SemanticFieldExplorer.exploreByPattern has two overloads: one accepts RelationConfig (public, used by ExplorationHandlers) and one accepts four strings (package-private, used internally). The overload delegates appropriately but the two exist at the same level without a clear comment about which callers should use which — minor seam ambiguity.",
+        "ExplorationHandlers.validateExploreRequest aggregates validation from three separate explore handlers into one ValidatedExploreRequest record — this is a clean seam-consolidation move that avoids three copies of the same preamble.",
+        "The 'nouns_per is not supported for multi-seed exploration' check in handleSemanticFieldExploreMulti validates that a single-seed-only parameter is not accidentally passed to the multi-seed path — explicit and correct, but the check reaching into req.params() (raw string map) rather than a typed parameter object means the API contract is enforced at a string level.",
+        "CollocateQueryHelper.executeCollocateSearch cleanly encapsulates the BlackLab search setup; BlackLabQueryExecutor delegates to it without duplicating query/grouping logic.",
+        "Data translation from BlackLab HitRecord to QueryResults.CollocateResult happens once, in CollocateQueryHelper.scoreHits — good single-translation-point.",
+        "MultiSeedExplorer.explore uses a private SeedCollocateData record to hand structured data across phases cleanly — no mutable accumulator threading across methods.",
+        "The boundary between ExplorationHandlers and SemanticFieldExplorer uses typed options objects (ExploreOptions, SingleSeedExploreOptions), not raw parameter maps — good seam contract."
+      ],
+      "impact_scope": "module",
+      "fix_scope": "single_edit",
+      "confidence": "high"
+    }
+  },
+  "dimension_judgment": {
+    "mid_level_elegance": {
+      "strengths": [
+        "ExploreResponseAssembler provides a single, clear model-to-presentation translation boundary.",
+        "ExploreOptions and SingleSeedExploreOptions cleanly separate per-path options; toBaseOptions() projection is an elegant seam.",
+        "validateExploreRequest in ExplorationHandlers aggregates three-handler shared validation into a single typed record.",
+        "SeedCollocateData private record cleanly packages multi-phase data hand-off in MultiSeedExplorer.",
+        "CollocateQueryHelper.executeCollocateSearch and scoreHits cleanly encapsulate the BlackLab query pipeline, keeping BlackLabQueryExecutor thin."
+      ],
+      "issue_character": "Issues are small and isolated: a string-level parameter check where a typed check would be cleaner, and a minor ambiguity in SemanticFieldExplorer's two-overload exploreByPattern that requires understanding both to know which to call.",
+      "score_rationale": "The mid-level seam design is solid: data flows cleanly through typed objects across boundaries, translation happens in dedicated classes, and orchestration reads as composition rather than tangle. The score sits in the mid-seventies rather than higher because the 'nouns_per is not supported for multi-seed' guard checks raw param strings at the HTTP layer instead of being enforced by the type system, and the two exploreByPattern overloads at different visibility levels are slightly confusing without a Javadoc pointer between them."
+    }
+  },
+  "issues": [
+    {
+      "dimension": "mid_level_elegance",
+      "identifier": "nouns_per_string_level_guard",
+      "summary": "The 'nouns_per is not supported for multi-seed' guard checks a raw string parameter key rather than enforcing the constraint through the type system",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/api/ExplorationHandlers.java"
+      ],
+      "evidence": [
+        "handleSemanticFieldExploreMulti checks if (req.params().containsKey(\"nouns_per\")) and returns a 400 error. This reads a raw string from the parameter map at the HTTP boundary.",
+        "The ExploreParams record includes nounsPerCollocate which is irrelevant for multi-seed paths — the single-seed-only nature is enforced at runtime rather than at the type level."
+      ],
+      "suggestion": "Remove nounsPerCollocate from ExploreParams (used in both paths). Resolve it only in handleSemanticFieldExplore directly from params before building SingleSeedExploreOptions. The multi-seed handler then never sees the parameter and no runtime guard is needed.",
+      "confidence": "medium",
+      "impact_scope": "local",
+      "fix_scope": "single_edit",
+      "root_cause_cluster": "options_bag_leakage"
+    }
+  ],
+  "retrospective": {
+    "root_causes": [
+      "ExploreParams was introduced to consolidate parameter parsing but accumulated nounsPerCollocate even though multi-seed exploration does not use it, leaking a single-seed concern into the shared record."
+    ],
+    "likely_symptoms": [],
+    "possible_false_positives": []
+  }
+}

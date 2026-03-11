@@ -14,6 +14,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.function.BiFunction;
 import java.util.function.Predicate;
 
@@ -179,11 +180,9 @@ class SketchHandlers {
             if (rel.relationType().orElse(null) != relationType) continue;
             if (!extraFilter.test(rel)) continue;
             try {
-                ExecutedSketch sketch = executeAndFormatCollocations(lemma, rel);
-                if (sketch != null) {
-                    byRelation.put(rel.id(), builder.apply(rel, sketch));
-                }
-            } catch (IOException | RuntimeException e) {
+                Optional<ExecutedSketch> sketchOpt = executeAndFormatCollocations(lemma, rel);
+                sketchOpt.ifPresent(sketch -> byRelation.put(rel.id(), builder.apply(rel, sketch)));
+            } catch (IOException e) {
                 logger.warn("Relation {} failed for lemma {}: {}", rel.id(), lemma, e.getMessage());
                 relationErrors.add(rel.id() + ": " + e.getMessage());
             }
@@ -235,18 +234,18 @@ class SketchHandlers {
 
     /**
      * Executes the surface pattern for a relation and formats the results into the JSON-ready collocations list.
-     * Returns {@code null} when the query returns no results (so callers can skip the relation).
+     * Returns {@link Optional#empty()} when the query returns no results (so callers can skip the relation).
      */
-    private ExecutedSketch executeAndFormatCollocations(String lemma,
+    private Optional<ExecutedSketch> executeAndFormatCollocations(String lemma,
             pl.marcinmilkowski.word_sketch.config.RelationConfig rel) throws IOException {
         String fullPattern = rel.buildFullPattern(lemma);
         List<QueryResults.WordSketchResult> results = executor.executeSurfacePattern(lemma, fullPattern, 0.0, 20);
-        if (results.isEmpty()) return null;
+        if (results.isEmpty()) return Optional.empty();
         List<Map<String, Object>> collocations = new ArrayList<>();
         for (QueryResults.WordSketchResult result : results) {
             collocations.add(formatWordSketchResult(result));
         }
-        return new ExecutedSketch(results, collocations);
+        return Optional.of(new ExecutedSketch(results, collocations));
     }
 
     private record ExecutedSketch(

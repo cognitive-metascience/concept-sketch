@@ -106,7 +106,7 @@ class CollocateQueryHelperTest {
         freqMap.put("important", 200L);
 
         List<QueryResults.WordSketchResult> results =
-            helper.buildAndRankCollocates(freqMap, 10000L, 0.0, 10, null);
+            helper.buildAndRankCollocates(freqMap, 10000L, 0.0, 10, Map.of());
 
         assertEquals(2, results.size());
         assertEquals("important", results.get(0).lemma(),
@@ -122,7 +122,7 @@ class CollocateQueryHelperTest {
         freqMap.put("important", 200L);
 
         List<QueryResults.WordSketchResult> results =
-            helper.buildAndRankCollocates(freqMap, 10000L, 99.0, 10, null);
+            helper.buildAndRankCollocates(freqMap, 10000L, 99.0, 10, Map.of());
 
         assertTrue(results.isEmpty(), "All results should be filtered out by very high minLogDice");
     }
@@ -142,7 +142,7 @@ class CollocateQueryHelperTest {
         freqMap.put("e", 90L);
 
         List<QueryResults.WordSketchResult> results =
-            helper.buildAndRankCollocates(freqMap, 10000L, 0.0, 2, null);
+            helper.buildAndRankCollocates(freqMap, 10000L, 0.0, 2, Map.of());
 
         assertEquals(2, results.size(), "Should respect maxResults=2");
     }
@@ -153,7 +153,7 @@ class CollocateQueryHelperTest {
         CollocateQueryHelper helper = defaultStub();
 
         List<QueryResults.WordSketchResult> results =
-            helper.buildAndRankCollocates(Map.of(), 10000L, 0.0, 10, null);
+            helper.buildAndRankCollocates(Map.of(), 10000L, 0.0, 10, Map.of());
 
         assertTrue(results.isEmpty(), "Empty frequency map should produce empty results");
     }
@@ -166,7 +166,7 @@ class CollocateQueryHelperTest {
         long headwordFreq = 10000L;
 
         List<QueryResults.WordSketchResult> results =
-            helper.buildAndRankCollocates(freqMap, headwordFreq, 0.0, 10, null);
+            helper.buildAndRankCollocates(freqMap, headwordFreq, 0.0, 10, Map.of());
 
         assertEquals(1, results.size());
         double logDice = results.get(0).logDice();

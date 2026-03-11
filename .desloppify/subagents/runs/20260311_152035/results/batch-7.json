@@ -1,0 +1,84 @@
+{
+  "batch": "ai_generated_debt",
+  "batch_index": 7,
+  "assessments": {"ai_generated_debt": 68.0},
+  "dimension_notes": {
+    "ai_generated_debt": {
+      "evidence": [
+        "SemanticFieldExplorer Javadoc is comprehensive and adds real value: it describes the two-mode algorithm (exploration vs comparison), provides a worked example with step-by-step output ('Exploring from house'), and explains computational limits. This is not AI-generated bloat — it is useful technical documentation.",
+        "QueryExecutor interface has detailed Javadoc on each method, explaining subtle distinctions (findCollocations vs executeSurfacePattern, CQL vs BCQL). The documentation explains WHY two similar-looking methods exist, which is genuinely useful.",
+        "RelationConfig.buildFullPattern Javadoc explains null/blank passthrough behavior and provides a caution about when this is acceptable vs when callers should validate — valuable specification, not fluff.",
+        "Main.java has a large showUsage() method using System.out.println for every line, including blank lines and examples. This is verbose but appropriate for a CLI tool — each line serves navigation.",
+        "GrammarConfigLoader has very detailed Javadoc on parseRelation, validatePositions, and helper methods. Some of these (e.g., readConfigFile which is 3 lines) have Javadoc that is longer than the method body — borderline docstring bloat.",
+        "CollocateQueryHelper has a trace-level log inside a hot loop: logger.trace(\"No joint frequency found for collocate '{}' — logDice will be 0\", collocateLemma). Appropriately trace-level (not debug), so this is not noisy logging.",
+        "BlackLabSnippetParser.extractLemmaWithFallback Javadoc explains the plain-text fallback behavior with a concrete example ('a plain word pos grouping format') — useful, not restating.",
+        "Edge.toMap() has a comment '// rounded to two decimal places' — this restates the Math.round(weight * 100.0) / 100.0 expression directly. Minor restating comment.",
+        "ExploreResponseAssembler has two buildEdges overloads (for ExplorationResult and ComparisonResult). Their Javadoc mostly restates the edge types produced, which is visible from the method body. Not severe but adds length without insight.",
+        "SemanticFieldExplorer.exploreByPattern has a very long logger.debug call: logger.debug(\"Exploring semantic field: seed='{}', relation='{}', top={}, minShared={}, minLogDice={}\", ...) with 5 format arguments — noisy at debug level but not trace. Borderline.",
+        "Main.java handleBlackLabIndexCommand, handleBlackLabQueryCommand, handleBlackLabServerCommand each print header banners (=== BlackLab Indexer ===, etc.) with System.out.println — expected CLI UX, not AI noise.",
+        "requireNextArg in Main.java has a 6-line Javadoc for a 5-line method; the Javadoc's CAUTION notice adds real value by calling out the System.exit behavior."
+      ],
+      "impact_scope": "local",
+      "fix_scope": "single_edit",
+      "confidence": "high"
+    }
+  },
+  "dimension_judgment": {
+    "ai_generated_debt": {
+      "strengths": [
+        "SemanticFieldExplorer's algorithm-documenting Javadoc with worked example is genuinely informative and not typical AI-filler.",
+        "QueryExecutor interface Javadoc explains non-obvious distinctions (findCollocations vs executeSurfacePattern; CQL vs BCQL) that a developer needs to understand to use the API correctly.",
+        "Logging is generally well-calibrated: trace-level for hot-loop diagnostics, debug for algorithm progress, info for startup.",
+        "Comments in ConlluConverter's finally block explain a subtle error-path decision — exactly the kind of WHY comment that belongs in code."
+      ],
+      "issue_character": "Issues are mild and scattered: a few restating comments (Edge.toMap, some ExploreResponseAssembler Javadoc) and docstrings on simple helper methods that are longer than the method bodies — typical LLM-assist patterns but not pervasive.",
+      "score_rationale": "The codebase sits in the upper-sixties: the documentation is largely useful and intention-explaining, which is better than average. What pulls the score below 75 is a consistent pattern of docstrings on short, obvious helper methods in GrammarConfigLoader and ExploreResponseAssembler that restate what the code already shows, and a few minor restating inline comments. These are not harmful, but they add noise that a careful human author would have trimmed."
+    }
+  },
+  "issues": [
+    {
+      "dimension": "ai_generated_debt",
+      "identifier": "restating_edge_tomap_comment",
+      "summary": "Edge.toMap() inline comment restates the expression it annotates without adding insight",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/model/Edge.java"
+      ],
+      "evidence": [
+        "Javadoc says 'The log_dice field is rounded to two decimal places.' and the body contains Math.round(weight * 100.0) / 100.0 — the comment restates what the arithmetic already expresses.",
+        "The Javadoc sentence would be useful if the rounding precision were a design decision that callers depend on; as a method-internal comment it adds no insight."
+      ],
+      "suggestion": "Remove the 'rounded to two decimal places' note from the inline Javadoc. If the rounding precision is an API contract callers depend on, document it in the return type description instead.",
+      "confidence": "medium",
+      "impact_scope": "local",
+      "fix_scope": "single_edit",
+      "root_cause_cluster": "restating_comments"
+    },
+    {
+      "dimension": "ai_generated_debt",
+      "identifier": "grammar_loader_trivial_method_docstrings",
+      "summary": "GrammarConfigLoader has Javadoc on 2-3 line helper methods (readConfigFile, missingConfigException) whose comment bodies are longer than the implementations",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/config/GrammarConfigLoader.java"
+      ],
+      "evidence": [
+        "readConfigFile: Javadoc says 'Reads config file content, throwing FileNotFoundException if the file does not exist.' The method is 3 lines and the Javadoc is 2 lines — near 1:1 ratio of comment to code.",
+        "missingConfigException: Javadoc says 'Returns a FileNotFoundException for a missing config file; always call with throw.' The method is 2 lines — the docstring is longer than the implementation."
+      ],
+      "suggestion": "Remove or shorten the Javadoc on trivial private helper methods (readConfigFile, missingConfigException). Reserve Javadoc for methods with non-obvious behavior, constraints, or error contracts.",
+      "confidence": "medium",
+      "impact_scope": "local",
+      "fix_scope": "single_edit",
+      "root_cause_cluster": "docstring_bloat"
+    }
+  ],
+  "retrospective": {
+    "root_causes": [
+      "LLM-assisted development likely generated Javadoc for all methods by default, including trivial helpers that would benefit from no comment or a single-line one.",
+      "The codebase has mostly good comments, which suggests a developer who understands what WHY comments are — the AI-debt patterns are residual rather than systemic."
+    ],
+    "likely_symptoms": [],
+    "possible_false_positives": [
+      "SemanticFieldExplorer extensive Javadoc — this is genuinely informative, not AI bloat; the worked example documents non-obvious algorithm semantics."
+    ]
+  }
+}

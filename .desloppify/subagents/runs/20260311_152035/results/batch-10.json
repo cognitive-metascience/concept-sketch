@@ -1,0 +1,104 @@
+{
+  "batch": "contract_coherence",
+  "batch_index": 10,
+  "assessments": {"contract_coherence": 76.0},
+  "dimension_notes": {
+    "contract_coherence": {
+      "evidence": [
+        "QueryExecutor.findCollocations Javadoc: '@throws IllegalArgumentException if cqlPattern is not in a recognized format'. BlackLabQueryExecutor.buildBcqlWithLemmaSubstitution throws IllegalArgumentException when the pattern doesn't start with '['. Contract is honored.",
+        "QueryExecutor.getTotalFrequency Javadoc: 'Returns 0 if not found' — implementation returns 0L on null annotation. Contract honored.",
+        "LogDiceCalculator.compute: declares returning UNCOMPUTABLE (NaN) when frequencies are invalid, not 0.0 — this is an honest contract that distinguishes 'uncomputable' from 'zero association'. Callers in CollocateQueryHelper correctly use Double.isNaN to detect the sentinel.",
+        "RelationConfig.buildFullPattern(String): documents null/blank passthrough explicitly: 'when headword is null or blank, the original pattern is returned unchanged'. The note 'callers that always require substitution should validate the headword before calling' is a correct caller-responsibility declaration.",
+        "ExplorationResult.empty(String): Javadoc '@param seed must not be null' but uses Objects.requireNonNull — contract enforced at runtime. Consistent.",
+        "ComparisonResult.getNouns(): Javadoc says 'never null, may be empty' — the constructor assigns Collections.unmodifiableList, so the never-null contract holds. Similarly for getAllAdjectives(). Contracts are honest.",
+        "SemanticFieldExplorer.compareCollocateProfiles: '@throws IllegalArgumentException if fewer than 2 seed nouns are provided' — the check is present: 'if (seedNouns == null || seedNouns.size() < 2)'. Contract honored.",
+        "BlackLabQueryExecutor.findCollocations: null/empty lemma returns Collections.emptyList() silently (logged at debug). QueryExecutor interface Javadoc does not document this silent-empty behavior — a minor contract gap.",
+        "QueryExecutor.executeDependencyPatternWithPos: '@param headPosConstraint must not be null' in Javadoc. BlackLabQueryExecutor does NOT enforce this — if headPosConstraint is null, String.format will embed 'null' in the BCQL pattern, producing a malformed query that may throw at query execution time rather than at the contract boundary.",
+        "CollocateQueryHelper.buildAndRankCollocates: '@param posMap optional collocate-lemma → POS tag map; pass null when POS information is unavailable'. Accepting null as a documented parameter is an honest contract. The implementation guards: 'posMap != null ? posMap.getOrDefault(...) : UNKNOWN_POS'. Honored.",
+        "BlackLabQueryExecutor.executeBcqlQuery fully delegates to collocateQueryHelper.executeBcqlQuery — no contract violations introduced.",
+        "BlackLabConllUIndexer.indexFile Javadoc: 'prefer indexDirectory when the intent is explicitly to walk a directory' but indexDirectory is private and never called — the Javadoc references a method callers cannot use, which is misleading."
+      ],
+      "impact_scope": "local",
+      "fix_scope": "single_edit",
+      "confidence": "high"
+    }
+  },
+  "dimension_judgment": {
+    "contract_coherence": {
+      "strengths": [
+        "LogDiceCalculator.UNCOMPUTABLE sentinel is a clearly distinguished contract state (NaN, not 0.0), documented and correctly checked by callers.",
+        "RelationConfig.buildFullPattern null/blank passthrough is explicitly documented with a caller-responsibility note — honest about silent behavior.",
+        "QueryExecutor interface has precise, method-level Javadoc distinguishing similar-looking methods (findCollocations vs executeSurfacePattern; CQL vs BCQL).",
+        "ComparisonResult never-null collection contracts are enforced by Collections.unmodifiableList, not just stated in comments."
+      ],
+      "issue_character": "Issues are isolated and mild: one parameter that is documented as 'must not be null' but not enforced at the boundary, a silent-empty behavior not mentioned in the interface contract, and one Javadoc reference to an inaccessible private method — all are localized rather than systemic.",
+      "score_rationale": "The codebase sits in the mid-seventies on contract coherence: the majority of contracts are honest and enforced, with null-handling and error-return behaviors documented accurately. Two concrete gaps prevent a higher score: executeDependencyPatternWithPos accepts a null headPosConstraint that can silently produce malformed queries (contract says 'must not be null' but no guard exists), and findCollocations' silent-empty-on-null-lemma behavior is undocumented at the interface level. These are not crash risks in practice but are genuine contract gaps."
+    }
+  },
+  "issues": [
+    {
+      "dimension": "contract_coherence",
+      "identifier": "head_pos_constraint_null_not_enforced",
+      "summary": "QueryExecutor.executeDependencyPatternWithPos documents headPosConstraint as non-null but the implementation does not enforce this, allowing null to silently produce a malformed BCQL pattern",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/query/QueryExecutor.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/query/BlackLabQueryExecutor.java"
+      ],
+      "evidence": [
+        "QueryExecutor.executeDependencyPatternWithPos Javadoc: '@param headPosConstraint POS regex for the head token (e.g., VB.*); must not be null'.",
+        "BlackLabQueryExecutor.executeDependencyPatternWithPos only checks 'if (lemma == null || lemma.isEmpty() || deprel == null)' — headPosConstraint is not checked.",
+        "String.format with a null headPosConstraint would produce '[lemma=\"x\" & xpos=\"null\"]', which is a valid BCQL string but an incorrect query — the failure is silent and deferred to query execution."
+      ],
+      "suggestion": "Add Objects.requireNonNull(headPosConstraint, \"headPosConstraint must not be null\") at the start of BlackLabQueryExecutor.executeDependencyPatternWithPos. Also add @Nullable or @NonNull (jspecify) to the parameter declaration in both the interface and implementation.",
+      "confidence": "high",
+      "impact_scope": "local",
+      "fix_scope": "single_edit",
+      "root_cause_cluster": "contract_gap_null_guard"
+    },
+    {
+      "dimension": "contract_coherence",
+      "identifier": "find_collocations_silent_empty_undocumented",
+      "summary": "BlackLabQueryExecutor.findCollocations silently returns empty list for null/empty lemma, but this behavior is not mentioned in the QueryExecutor interface contract",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/query/QueryExecutor.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/query/BlackLabQueryExecutor.java"
+      ],
+      "evidence": [
+        "BlackLabQueryExecutor.findCollocations: 'if (lemma == null || lemma.isEmpty()) { logger.debug(\"skipping query — lemma is null or empty\"); return Collections.emptyList(); }'",
+        "QueryExecutor.findCollocations Javadoc documents @param lemma and @throws but does not mention the null/empty silent-empty behavior — callers reading the interface cannot know this.",
+        "Similarly executeSurfacePattern and executeDependencyPattern have the same silent-empty guard without interface-level documentation."
+      ],
+      "suggestion": "Add to QueryExecutor.findCollocations Javadoc: '@param lemma the head lemma; passing null or empty returns an empty list without querying the index'. Apply the same documentation update to executeSurfacePattern and executeDependencyPattern for consistency.",
+      "confidence": "medium",
+      "impact_scope": "local",
+      "fix_scope": "single_edit",
+      "root_cause_cluster": "contract_gap_silent_behavior"
+    },
+    {
+      "dimension": "contract_coherence",
+      "identifier": "indexfile_javadoc_references_private_method",
+      "summary": "BlackLabConllUIndexer.indexFile Javadoc references private method indexDirectory that callers cannot access, misleading the API consumer",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/indexer/blacklab/BlackLabConllUIndexer.java"
+      ],
+      "evidence": [
+        "indexFile Javadoc: 'prefer indexDirectory when the intent is explicitly to walk a directory with a glob pattern.'",
+        "indexDirectory is private — callers cannot call it. The Javadoc recommendation is therefore impossible to follow and misleading."
+      ],
+      "suggestion": "Remove the 'prefer indexDirectory' sentence from indexFile Javadoc. If indexDirectory is intended to be public in future, add a TODO comment in the method body instead. If it is dead code, remove the method entirely (as noted in the high_level_elegance review).",
+      "confidence": "high",
+      "impact_scope": "local",
+      "fix_scope": "single_edit",
+      "root_cause_cluster": "misleading_javadoc"
+    }
+  ],
+  "retrospective": {
+    "root_causes": [
+      "The null-guard omission in executeDependencyPatternWithPos was likely an oversight when the method was added — other methods have the guard, this one was missed.",
+      "The silent-empty behavior documentation gap is a common Java convention issue: null-tolerance without documenting the null contract at the interface level.",
+      "The indexFile Javadoc referencing a private method is a leftover from a refactoring where indexDirectory was made private but its reference in the Javadoc was not updated."
+    ],
+    "likely_symptoms": [],
+    "possible_false_positives": []
+  }
+}

@@ -6,8 +6,6 @@ import com.sun.net.httpserver.HttpExchange;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.jspecify.annotations.Nullable;
-
 import java.io.IOException;
 import java.io.OutputStream;
 import java.util.HashMap;
@@ -129,14 +127,13 @@ class HttpApiUtils {
     }
 
     /**
-     * Returns the parameter value, or sends a 400 error and returns null if missing/empty.
-     * Caller must check for null return.
+     * Returns the parameter value, or throws {@link IllegalArgumentException} if missing or empty.
+     * {@link #wrapWithErrorHandling} catches IAE and maps it to a 400 Bad Request response.
      */
-    public static @Nullable String requireParam(HttpExchange exchange, Map<String, String> params, String name) throws IOException {
+    public static String requireParam(Map<String, String> params, String name) {
         String v = params.getOrDefault(name, "").trim();
         if (v.isEmpty()) {
-            sendError(exchange, 400, "Missing required parameter: " + name);
-            return null;
+            throw new IllegalArgumentException("Missing required parameter: " + name);
         }
         return v;
     }

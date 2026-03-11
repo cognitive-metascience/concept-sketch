@@ -60,8 +60,7 @@ class ExplorationHandlers {
     private @Nullable ValidatedExploreRequest validateExploreRequest(HttpExchange exchange) throws IOException {
         Map<String, String> params = parseBaseExploreRequest(exchange);
 
-        String seedsRaw = HttpApiUtils.requireParam(exchange, params, "seeds");
-        if (seedsRaw == null) return null;
+        String seedsRaw = HttpApiUtils.requireParam(params, "seeds");
 
         RelationConfig resolvedConfig = resolveRelationConfig(exchange, params);
         if (resolvedConfig == null) return null;
@@ -115,6 +114,13 @@ class ExplorationHandlers {
      * GET /api/semantic-field/explore-multi?seeds=theory,model,hypothesis&relation=adj_predicate&top=15&min_shared=2
      */
     void handleSemanticFieldExploreMulti(HttpExchange exchange) throws IOException {
+        // Reject unsupported params before any further validation or parsing.
+        Map<String, String> rawParams = parseBaseExploreRequest(exchange);
+        if (rawParams.containsKey("nouns_per")) {
+            HttpApiUtils.sendError(exchange, 400, "nouns_per is not supported for multi-seed exploration");
+            return;
+        }
+
         ValidatedExploreRequest req = validateExploreRequest(exchange);
         if (req == null) return;
 
@@ -130,11 +136,6 @@ class ExplorationHandlers {
             .orElseThrow(() -> new IllegalStateException(
                 "relationType absent after validation for relation: " + resolvedConfig.id()))
             .name();
-
-        if (req.params().containsKey("nouns_per")) {
-            HttpApiUtils.sendError(exchange, 400, "nouns_per is not supported for multi-seed exploration");
-            return;
-        }
 
         int topCollocates = req.exploreParams().topCollocates();
         int minShared = req.exploreParams().minShared();
@@ -159,8 +160,7 @@ class ExplorationHandlers {
     void handleSemanticFieldComparison(HttpExchange exchange) throws IOException {
         Map<String, String> params = parseBaseExploreRequest(exchange);
 
-        String seedsParam = HttpApiUtils.requireParam(exchange, params, "seeds");
-        if (seedsParam == null) return;
+        String seedsParam = HttpApiUtils.requireParam(params, "seeds");
 
         Set<String> seeds = parseSeedSet(seedsParam);
 
@@ -184,10 +184,8 @@ class ExplorationHandlers {
     void handleSemanticFieldExamples(HttpExchange exchange) throws IOException {
         Map<String, String> params = parseBaseExploreRequest(exchange);
 
-        String adjective = HttpApiUtils.requireParam(exchange, params, "adjective");
-        if (adjective == null) return;
-        String noun = HttpApiUtils.requireParam(exchange, params, "noun");
-        if (noun == null) return;
+        String adjective = HttpApiUtils.requireParam(params, "adjective");
+        String noun = HttpApiUtils.requireParam(params, "noun");
 
         int maxExamples = HttpApiUtils.parseIntParam(params, "top", 10);
 

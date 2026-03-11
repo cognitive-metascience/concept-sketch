@@ -95,7 +95,7 @@ public class WordSketchApiServer {
 
         // POST with JSON body to avoid URL encoding issues
         registerPostHandler(server, "/api/bcql",
-            wrapHandler(bcqlHandlers::handleBcqlQueryPost, "BCQL query"));
+            wrapHandler(bcqlHandlers::handleBcqlQuery, "BCQL query"));
     }
 
     public void start() {

@@ -32,6 +32,7 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.function.Function;
 
 /**
@@ -162,6 +163,7 @@ public class BlackLabQueryExecutor implements QueryExecutor {
             logger.debug("executeDependencyPatternWithPos: skipping query — lemma or deprel is null/empty");
             return Collections.emptyList();
         }
+        Objects.requireNonNull(headPosConstraint, "headPosConstraint must not be null");
 
         String bcql = String.format("[lemma=\"%s\" & xpos=\"%s\"] -%s-> _",
                                     CqlUtils.escapeForRegex(lemma.toLowerCase()), headPosConstraint, deprel);
@@ -237,7 +239,7 @@ public class BlackLabQueryExecutor implements QueryExecutor {
                 },
                 freqMap, lemmaPosMap);
 
-        return collocateQueryHelper.buildAndRankCollocates(freqMap, headwordFreq, minLogDice, maxResults, lemmaPosMap.isEmpty() ? null : lemmaPosMap);
+        return collocateQueryHelper.buildAndRankCollocates(freqMap, headwordFreq, minLogDice, maxResults, lemmaPosMap);
     }
 
     @Override

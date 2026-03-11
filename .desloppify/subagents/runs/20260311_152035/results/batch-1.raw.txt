@@ -1,0 +1,68 @@
+{
+  "batch": "cross_module_architecture",
+  "batch_index": 1,
+  "assessments": {"cross_module_architecture": 78.0},
+  "dimension_notes": {
+    "cross_module_architecture": {
+      "evidence": [
+        "Dependency direction is consistently upward: utils/model are leaf packages with no imports from other project packages; query imports utils; config imports utils+model; exploration imports query+config+model; api imports all of the above.",
+        "LongIntHashMap lives in utils with no project-level dependencies — correctly placed leaf utility.",
+        "Main.java (composition root) imports api+config+query+indexer — the only place where all layers converge, as expected for a CLI entry point.",
+        "No circular imports detected: the sealed ConcordanceResult hierarchy in QueryResults confines concordance subtyping within the query package.",
+        "SemanticFieldExplorer is a hub in the exploration package: it holds references to QueryExecutor, CollocateProfileComparator, and MultiSeedExplorer. This is acceptable — it is the stated public surface of the subsystem.",
+        "BlackLabQueryExecutor delegates heavy work to CollocateQueryHelper (package-private), keeping the public class surface lean.",
+        "ExploreResponseAssembler in the api package imports model classes (AdjectiveProfile, ComparisonResult, CoreCollocate, DiscoveredNoun, Edge, ExplorationResult, RelationEdgeType) — a downstream presentation class reaching directly into the domain model, which is fine, but it creates a wide coupling surface between api and model.",
+        "The viz package (RadialPlot) has no reverse dependency from other packages; it is only consumed by VisualizationHandlers in api — correctly isolated.",
+        "com.sun.net.httpserver (JDK internal API) is used directly in WordSketchApiServer and all handler classes — this ties the entire api layer to a JDK-internal transport and would create blast-radius impact if the HTTP server abstraction needed to change."
+      ],
+      "impact_scope": "subsystem",
+      "fix_scope": "multi_file_refactor",
+      "confidence": "high"
+    }
+  },
+  "dimension_judgment": {
+    "cross_module_architecture": {
+      "strengths": [
+        "Layer dependency direction is clean and consistent: utils/model → query/config → exploration → api, with no violations observed.",
+        "Composition root (Main.java) is the only file that imports across all layers, keeping cross-layer assembly localized.",
+        "Package-private visibility used effectively: CollocateQueryHelper, MultiSeedExplorer, CollocateProfileComparator are not exported from their packages.",
+        "No import cycles detected in the project's Java package graph."
+      ],
+      "issue_character": "Issues are isolated rather than systemic: the dependency direction is sound, but a single transport coupling (com.sun.net.httpserver) creates a codebase-wide blast radius, and the api-to-model coupling surface is wider than necessary.",
+      "score_rationale": "The codebase earns a high-seventies score because the layer boundaries are respected and enforced by visibility modifiers. What prevents a score in the 85+ range is the hard dependency on com.sun.net.httpserver across every handler class (a blast-radius concern if the HTTP server ever needs replacing) and the api package's broad direct coupling to nine model types through ExploreResponseAssembler, which blurs the api/model boundary slightly. These are real but contained issues, not deep structural problems."
+    }
+  },
+  "issues": [
+    {
+      "dimension": "cross_module_architecture",
+      "identifier": "httpserver_internal_api_coupling",
+      "summary": "All api handler classes are coupled directly to com.sun.net.httpserver (JDK internal API), creating a wide blast radius for transport changes",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/api/WordSketchApiServer.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/api/HttpApiUtils.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/api/SketchHandlers.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/api/ExplorationHandlers.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/api/BcqlHandlers.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/api/ConcordanceHandlers.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/api/VisualizationHandlers.java"
+      ],
+      "evidence": [
+        "Every handler class imports com.sun.net.httpserver.HttpExchange directly; switching to a different HTTP server would require editing all 7 handler classes.",
+        "HttpApiUtils itself imports com.sun.net.httpserver.HttpExchange and is used uniformly, creating a shared chokepoint — if HttpApiUtils were updated to wrap a different type, all callers would change."
+      ],
+      "suggestion": "Introduce a thin HttpRequest/HttpResponse abstraction in the api package that wraps the HttpExchange. Handler methods would accept the abstraction rather than the JDK type. This contains the com.sun.net.httpserver dependency to WordSketchApiServer and HttpApiUtils only, reducing the blast radius from 7 classes to 2.",
+      "confidence": "medium",
+      "impact_scope": "subsystem",
+      "fix_scope": "multi_file_refactor",
+      "root_cause_cluster": "transport_boundary_leakage"
+    }
+  ],
+  "retrospective": {
+    "root_causes": [
+      "The codebase grew with a single HTTP server implementation in mind; no abstraction was introduced because the cost was not yet felt.",
+      "The model package is used as a shared DTO layer across all layers, which is appropriate but worth monitoring as the domain grows."
+    ],
+    "likely_symptoms": [],
+    "possible_false_positives": []
+  }
+}

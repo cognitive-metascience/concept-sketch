@@ -72,7 +72,7 @@ class HandlersTest {
     void handleConcordanceExamples_missingWord1_returns400() throws Exception {
         ConcordanceHandlers handlers = new ConcordanceHandlers(null, GrammarConfigHelper.requireTestConfig());
         MockExchange ex = new MockExchange("http://localhost/api/concordance?word2=house");
-        handlers.handleConcordanceExamples(ex);
+        HttpApiUtils.wrapWithErrorHandling(handlers::handleConcordanceExamples, "test").handle(ex);
         assertEquals(400, ex.statusCode);
     }
 
@@ -80,7 +80,7 @@ class HandlersTest {
     void handleConcordanceExamples_missingWord2_returns400() throws Exception {
         ConcordanceHandlers handlers = new ConcordanceHandlers(null, GrammarConfigHelper.requireTestConfig());
         MockExchange ex = new MockExchange("http://localhost/api/concordance?word1=big");
-        handlers.handleConcordanceExamples(ex);
+        HttpApiUtils.wrapWithErrorHandling(handlers::handleConcordanceExamples, "test").handle(ex);
         assertEquals(400, ex.statusCode);
     }
 
@@ -88,7 +88,7 @@ class HandlersTest {
     void handleConcordanceExamples_missingBothWords_returns400() throws Exception {
         ConcordanceHandlers handlers = new ConcordanceHandlers(null, GrammarConfigHelper.requireTestConfig());
         MockExchange ex = new MockExchange("http://localhost/api/concordance");
-        handlers.handleConcordanceExamples(ex);
+        HttpApiUtils.wrapWithErrorHandling(handlers::handleConcordanceExamples, "test").handle(ex);
         assertEquals(400, ex.statusCode);
     }
 
@@ -98,7 +98,7 @@ class HandlersTest {
     void handleSemanticFieldExplore_missingSeed_returns400() throws Exception {
         ExplorationHandlers handlers = new ExplorationHandlers(GrammarConfigHelper.requireTestConfig(), null);
         MockExchange ex = new MockExchange("http://localhost/api/semantic-field/explore");
-        handlers.handleSemanticFieldExplore(ex);
+        HttpApiUtils.wrapWithErrorHandling(handlers::handleSemanticFieldExplore, "test").handle(ex);
         assertEquals(400, ex.statusCode);
     }
 
@@ -106,7 +106,7 @@ class HandlersTest {
     void handleSemanticFieldExploreMulti_missingSeeds_returns400() throws Exception {
         ExplorationHandlers handlers = new ExplorationHandlers(GrammarConfigHelper.requireTestConfig(), null);
         MockExchange ex = new MockExchange("http://localhost/api/semantic-field/explore-multi");
-        handlers.handleSemanticFieldExploreMulti(ex);
+        HttpApiUtils.wrapWithErrorHandling(handlers::handleSemanticFieldExploreMulti, "test").handle(ex);
         assertEquals(400, ex.statusCode);
     }
 
@@ -189,7 +189,7 @@ class HandlersTest {
     void handleSemanticFieldComparison_missingSeeds_returns400() throws Exception {
         ExplorationHandlers handlers = new ExplorationHandlers(GrammarConfigHelper.requireTestConfig(), null);
         MockExchange ex = new MockExchange("http://localhost/api/semantic-field");
-        handlers.handleSemanticFieldComparison(ex);
+        HttpApiUtils.wrapWithErrorHandling(handlers::handleSemanticFieldComparison, "test").handle(ex);
         assertEquals(400, ex.statusCode);
     }
 
@@ -222,7 +222,7 @@ class HandlersTest {
     void handleSemanticFieldExamples_missingAdjective_returns400() throws Exception {
         ExplorationHandlers handlers = new ExplorationHandlers(GrammarConfigHelper.requireTestConfig(), null);
         MockExchange ex = new MockExchange("http://localhost/api/semantic-field/examples?noun=theory");
-        handlers.handleSemanticFieldExamples(ex);
+        HttpApiUtils.wrapWithErrorHandling(handlers::handleSemanticFieldExamples, "test").handle(ex);
         assertEquals(400, ex.statusCode);
     }
 
@@ -230,7 +230,7 @@ class HandlersTest {
     void handleSemanticFieldExamples_missingNoun_returns400() throws Exception {
         ExplorationHandlers handlers = new ExplorationHandlers(GrammarConfigHelper.requireTestConfig(), null);
         MockExchange ex = new MockExchange("http://localhost/api/semantic-field/examples?adjective=important");
-        handlers.handleSemanticFieldExamples(ex);
+        HttpApiUtils.wrapWithErrorHandling(handlers::handleSemanticFieldExamples, "test").handle(ex);
         assertEquals(400, ex.statusCode);
     }
 

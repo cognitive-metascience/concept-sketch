@@ -1,0 +1,91 @@
+{
+  "batch": "abstraction_fitness",
+  "batch_index": 3,
+  "assessments": {"abstraction_fitness": 68.0},
+  "dimension_notes": {
+    "abstraction_fitness": {
+      "evidence": [
+        "QueryExecutor interface has 6 methods with a single concrete implementation (BlackLabQueryExecutor). The interface Javadoc explicitly acknowledges this: 'The single production implementation means the interface acts primarily as a testability seam rather than an abstraction boundary.' This is an honest single-impl interface — acceptable but worth monitoring.",
+        "CollocateQueryHelper is a package-private class used exclusively by BlackLabQueryExecutor. It is not an interface, just a helper object — appropriate decomposition without unnecessary abstraction.",
+        "ExploreResponseAssembler is a final class of static methods with no state — a pure static utility. Its methods are coherent (all transform exploration/comparison results to JSON maps), so this is a focused utility rather than a dumping ground.",
+        "SemanticFieldExplorer acts as a facade over MultiSeedExplorer and CollocateProfileComparator. It adds policy (validation, guard clauses) and composes the sub-objects — this pays for itself.",
+        "RelationConfig is a record with substantial embedded logic: buildFullPattern, buildCollocateReversePattern, computeCollocatePosGroup, extractLabelContent, posGroupFromConstraint, posGroupForPrefix, computeDeprel — 8 methods plus 2 private static helpers. This gives the record a wider responsibility surface than pure data carrying.",
+        "GrammarConfigLoader is a final class with a private constructor and only static methods — a pure loader utility. Its methods (load, fromReader, parse, readConfigFile, parseRelations, parseRelation, validatePositions, etc.) are all tightly focused on loading; no scope creep.",
+        "HttpApiUtils contains sendJsonResponse, sendError, sendOptionsResponse, sendBinaryResponse, requireMethod, parseQueryParams, requireParam, parseIntParam, wrapWithErrorHandling — 9 methods spanning HTTP response writing, request parsing, and error wrapping. This is a mild dumping ground: response sending and parameter parsing are distinct concerns.",
+        "CqlUtils has 5 methods (extractConstraintAttribute, escapeForRegex, splitCqlTokens, substituteAtPosition, mergeLemmaConstraint) — all are tightly related CQL text manipulation; a coherent utility.",
+        "Main.java handleBlackLabIndexCommand, handleBlackLabQueryCommand, handleBlackLabServerCommand each inline argument parsing, which means CLI parsing logic is not abstracted. However, given there are only 3 commands, this is not yet a problem.",
+        "ExplorationHandlers (not fully shown but partially inspected) passes around raw Map<String, String> query parameter maps throughout handlers rather than typed parameter objects — callers must know the key strings."
+      ],
+      "impact_scope": "module",
+      "fix_scope": "multi_file_refactor",
+      "confidence": "high",
+      "sub_axes": {
+        "abstraction_leverage": 68.0,
+        "indirection_cost": 75.0,
+        "interface_honesty": 65.0,
+        "delegation_density": 72.0,
+        "definition_directness": 70.0,
+        "type_discipline": 62.0
+      }
+    }
+  },
+  "dimension_judgment": {
+    "abstraction_fitness": {
+      "strengths": [
+        "CollocateQueryHelper is a well-justified extraction: it encapsulates a coherent algorithm (collocate search, frequency ranking, hit collection) that was too large to live in BlackLabQueryExecutor directly.",
+        "ExploreResponseAssembler is a focused, static utility with strong cohesion — all methods transform the same family of model objects.",
+        "SemanticFieldExplorer facade adds real policy (validation, guard clauses, fallback logic) rather than being a thin pass-through.",
+        "CqlUtils methods are tightly related and form a minimal coherent set."
+      ],
+      "issue_character": "The issues are moderate: a single-impl interface documented as intentional, a record with growing method responsibility, and HttpApiUtils as a mild utility dumping ground — individually minor but collectively reducing the signal-to-noise of the abstraction layer.",
+      "score_rationale": "The codebase scores in the upper sixties: most abstractions earn their place and the key utilities are coherent. The single-impl QueryExecutor interface is acknowledged in its own Javadoc, RelationConfig's embedded method count has grown past pure-data-carrier territory, and HttpApiUtils blends HTTP response writing with request parsing. These are drag, not crisis — typical of a mid-maturity codebase where some abstractions were introduced for real need but have drifted slightly."
+    }
+  },
+  "issues": [
+    {
+      "dimension": "abstraction_fitness",
+      "identifier": "relation_config_method_sprawl",
+      "summary": "RelationConfig record has grown beyond pure data carrier into a logic-heavy class with 8+ methods including pattern building, POS group computation, and deprel extraction",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/config/RelationConfig.java"
+      ],
+      "evidence": [
+        "RelationConfig (a record) defines: buildFullPattern(String), buildFullPattern(String, String), buildCollocateReversePattern(), computeCollocatePosGroup(String), extractLabelContent(String, int), posGroupFromConstraint(String), posGroupForPrefix(String, String), computeDeprel() — 8 methods plus the toJson() serialization method.",
+        "computeCollocatePosGroup and posGroupForPrefix contain pattern-matching logic over CQL strings that would be better in CqlUtils or a dedicated PatternAnalyzer.",
+        "buildCollocateReversePattern uses a switch on PosGroup — domain policy that belongs in a config utility, not in the data record itself."
+      ],
+      "suggestion": "Extract CQL-analysis methods (computeCollocatePosGroup, extractLabelContent, posGroupFromConstraint, posGroupForPrefix) into CqlUtils or a new RelationPatternAnalyzer class. Keep buildFullPattern and buildCollocateReversePattern in RelationConfig as they express the record's primary transformation contract. computeDeprel can remain as it reads record fields directly.",
+      "confidence": "medium",
+      "impact_scope": "module",
+      "fix_scope": "multi_file_refactor",
+      "root_cause_cluster": "rich_record_method_sprawl"
+    },
+    {
+      "dimension": "abstraction_fitness",
+      "identifier": "http_api_utils_mixed_concerns",
+      "summary": "HttpApiUtils mixes HTTP response writing with request parameter parsing — two distinct concerns in one utility class",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/api/HttpApiUtils.java"
+      ],
+      "evidence": [
+        "HttpApiUtils has response methods (sendJsonResponse, sendError, sendOptionsResponse, sendBinaryResponse, requireMethod, sendOptionsResponse) and request methods (parseQueryParams, requireParam, parseIntParam) in one class.",
+        "A developer looking for 'how to parse query parameters' and a developer looking for 'how to send a JSON error' both land in HttpApiUtils — the utility serves two distinct caller needs."
+      ],
+      "suggestion": "Split into HttpResponseUtils (response writing, CORS, method enforcement) and HttpRequestUtils (query parameter parsing, typed parameter extraction). Both remain package-private. This makes each utility easier to test in isolation and reduces the surface a caller must scan.",
+      "confidence": "low",
+      "impact_scope": "module",
+      "fix_scope": "multi_file_refactor",
+      "root_cause_cluster": "utility_dumping_ground"
+    }
+  ],
+  "retrospective": {
+    "root_causes": [
+      "RelationConfig method sprawl is a gradual accumulation: each method was added to make RelationConfig self-contained, but the record has now exceeded pure-data-carrier territory.",
+      "HttpApiUtils grew organically as the API layer was built; response and request utilities were added to the same class because they are both 'HTTP utilities.'"
+    ],
+    "likely_symptoms": [],
+    "possible_false_positives": [
+      "QueryExecutor single-impl: explicitly acknowledged in Javadoc as intentional testability seam — not a genuine abstraction fitness problem."
+    ]
+  }
+}

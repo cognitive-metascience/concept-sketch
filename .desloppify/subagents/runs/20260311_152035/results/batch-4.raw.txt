@@ -1,0 +1,81 @@
+{
+  "batch": "dependency_health",
+  "batch_index": 4,
+  "assessments": {"dependency_health": 72.0},
+  "dimension_notes": {
+    "dependency_health": {
+      "evidence": [
+        "Runtime production dependencies: blacklab-engine, blacklab-query-parser, fastjson2, slf4j-api, logback-classic (runtime scope), jspecify. All are purposefully used.",
+        "blacklab-engine and blacklab-query-parser are both listed explicitly; however BlackLab's query parser is bundled transitively via the engine. The explicit separate listing of blacklab-query-parser is likely redundant and may cause version skew if one is updated without the other.",
+        "BlackLab 4.x is NOT published to Maven Central (as noted in pom.xml comment). Resolution depends on a GitHub raw-content URL (https://raw.githubusercontent.com/instituutnederlandsetaal/BlackLab/mvn-repo/). This repository has no SLA and is volatile: branch deletion or repo rename would silently break all CI builds.",
+        "fastjson2 is used uniformly for all JSON operations throughout the API layer — no parallel JSON library detected (no Jackson, Gson, or org.json imports).",
+        "SLF4J API + Logback Classic is the correct split: API in compile scope, implementation in runtime scope — no logging framework coupling in compile classpath.",
+        "jspecify 1.0.0 is used for null annotations (@Nullable). This is a lightweight compile-time annotation dependency with no runtime impact — appropriate.",
+        "No circular import cycles between Maven modules (project is single-module).",
+        "No unused dependencies detected: every production dependency is referenced in source files.",
+        "com.sun.net.httpserver is used directly (JDK internal API, not a Maven dependency). This is not declared in pom.xml and is a hidden runtime dependency on a specific JDK, creating a silent compatibility constraint.",
+        "slf4j-api version 2.0.7 while logback-classic version is 1.5.18. SLF4J 2.x requires Logback 1.3+ — this pairing is compatible, but the API and implementation version properties are not aligned in the properties block (no shared version property for the pair)."
+      ],
+      "impact_scope": "codebase",
+      "fix_scope": "single_edit",
+      "confidence": "high"
+    }
+  },
+  "dimension_judgment": {
+    "dependency_health": {
+      "strengths": [
+        "No duplicate libraries for the same purpose detected: single JSON library (fastjson2), single logging API (SLF4J), single test framework (JUnit 5).",
+        "Logging implementation (logback-classic) is correctly scoped to runtime, keeping compile classpath clean.",
+        "jspecify is used as a lightweight null-safety annotation library without pulling in a heavyweight framework.",
+        "No unused production dependencies: every listed dependency is directly referenced in source."
+      ],
+      "issue_character": "The main risks are infrastructure/supply-chain in nature rather than code quality: a volatile GitHub-hosted Maven repository for the core corpus engine, and the implicit use of a JDK internal HTTP server API not tracked as a dependency.",
+      "score_rationale": "The codebase scores in the low seventies: the dependency set is lean and coherent with no duplication, but two real risks exist. First, the BlackLab Maven repository is a GitHub raw-content URL with no SLA — this is a build reliability risk (acknowledged in a pom.xml comment) that could silently break CI. Second, the use of com.sun.net.httpserver is an undeclared hidden dependency on a JDK-internal API. These are not code quality issues but do affect the health of the project as a developer would experience it."
+    }
+  },
+  "issues": [
+    {
+      "dimension": "dependency_health",
+      "identifier": "volatile_blacklab_maven_repo",
+      "summary": "BlackLab 4.x is resolved from a volatile GitHub raw-content Maven repository with no SLA, creating a silent CI break risk",
+      "related_files": [
+        "pom.xml"
+      ],
+      "evidence": [
+        "pom.xml declares <url>https://raw.githubusercontent.com/instituutnederlandsetaal/BlackLab/mvn-repo/</url> as the BlackLab repository.",
+        "The pom.xml comment itself warns: 'This URL has no SLA and can become unavailable (rate-limited, branch deleted, or repo renamed).'",
+        "No local installation fallback is enforced in CI; the install-blacklab.sh script is mentioned but optional."
+      ],
+      "suggestion": "Mirror the BlackLab artifacts to a private registry (GitHub Packages, Nexus, or Artifactory) and update the repository URL. Alternatively, commit the JAR to a versioned in-project Maven repository (e.g., .mvn/repository/) with documented installation steps. Remove the volatile GitHub raw URL from pom.xml once the mirror is in place.",
+      "confidence": "high",
+      "impact_scope": "codebase",
+      "fix_scope": "single_edit",
+      "root_cause_cluster": "supply_chain_risk"
+    },
+    {
+      "dimension": "dependency_health",
+      "identifier": "redundant_blacklab_query_parser_dep",
+      "summary": "blacklab-query-parser is declared as an explicit dependency when it is already a transitive dependency of blacklab-engine at the same version",
+      "related_files": [
+        "pom.xml"
+      ],
+      "evidence": [
+        "Both blacklab-engine and blacklab-query-parser are declared at version ${blacklab.version} (4.0.0). BlackLab's engine artifact pulls in the query parser transitively.",
+        "If blacklab-engine's transitive version of the parser is updated in a future release, the explicit override here will silently pin an older version, creating a hidden version conflict."
+      ],
+      "suggestion": "Remove the explicit blacklab-query-parser dependency declaration from pom.xml and let it resolve transitively from blacklab-engine. If the parser is needed at compile scope specifically (for direct imports), add a comment explaining why.",
+      "confidence": "medium",
+      "impact_scope": "codebase",
+      "fix_scope": "single_edit",
+      "root_cause_cluster": "redundant_explicit_dep"
+    }
+  ],
+  "retrospective": {
+    "root_causes": [
+      "BlackLab 4.x not being on Maven Central forced use of a GitHub raw-content URL — a known limitation documented in the pom.",
+      "The explicit blacklab-query-parser declaration was likely added when CorpusQueryLanguageParser was first referenced to ensure compile-time availability, without verifying transitive inclusion."
+    ],
+    "likely_symptoms": [],
+    "possible_false_positives": []
+  }
+}

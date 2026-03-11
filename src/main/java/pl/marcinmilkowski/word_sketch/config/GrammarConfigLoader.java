@@ -83,13 +83,12 @@ public final class GrammarConfigLoader {
         return parse(sb.toString(), null);
     }
 
-    /** Reads config file content, throwing {@link java.io.FileNotFoundException} if the file does not exist. */
     private static String readConfigFile(Path p) throws IOException {
         if (!Files.exists(p)) throw missingConfigException(p);
         return Files.readString(p);
     }
 
-    /** Returns a {@link java.io.FileNotFoundException} for a missing config file; always call with {@code throw}. */
+    // Always call with `throw`; exists to centralise the exception message.
     private static java.io.FileNotFoundException missingConfigException(Path p) {
         return new java.io.FileNotFoundException("Grammar config file not found: " + p);
     }

@@ -1,0 +1,78 @@
+{
+  "batch": "incomplete_migration",
+  "batch_index": 8,
+  "assessments": {"incomplete_migration": 76.0},
+  "dimension_notes": {
+    "incomplete_migration": {
+      "evidence": [
+        "BcqlHandlers: the 'limit' parameter is accepted as a deprecated backward-compat alias for 'top'. The comment is: 'Accept top as the canonical parameter; limit retained as deprecated backward-compat alias'. There is no @since note or removal plan.",
+        "RelationConfig.posGroupFromConstraint supports both xpos= (current) and tag= (legacy format). Comment: 'tag= fallback supports legacy grammar files that use tag= instead of xpos=. Kept to remain compatible with older grammar configs not yet migrated to xpos=.' No active migration timeline or external consumer documented.",
+        "GrammarConfigLoader.validateNoLegacyKeys actively rejects the 'copulas' key with a clear error message: 'Grammar config must NOT contain copulas key.' This is a completed migration — the old key is now rejected.",
+        "GrammarConfigLoader previously accepted a 'cql_pattern' field; the comment says 'The canonical field name is pattern; cql_pattern is no longer supported' — the old alias has been removed and the loader now throws if 'pattern' is missing. Completed migration, clean state.",
+        "No old+new pattern coexistence detected at the class level: no mixed class/record styles, no parallel query implementations.",
+        "No @Deprecated annotations on any production methods.",
+        "Grep for TODO/FIXME/HACK/migrate/legacy/old api in sources: the only legacy-mentioning comments are the two compat shims noted above (limit alias, tag= fallback).",
+        "The RelationType enum has both SURFACE and DEP (infrastructure types) and ADJ_PREDICATE, ADJ_MODIFIER, SUBJECT_OF, OBJECT_OF (semantic types) mixed in one enum. These could be considered two distinct concerns (protocol type vs semantic type) living in one type, but this is not clearly a migration artifact.",
+        "BlackLabConllUIndexer has a private indexDirectory method that is dead code but not a migration artifact — it was likely scaffolding that was never completed."
+      ],
+      "impact_scope": "local",
+      "fix_scope": "single_edit",
+      "confidence": "high"
+    }
+  },
+  "dimension_judgment": {
+    "incomplete_migration": {
+      "strengths": [
+        "GrammarConfigLoader actively rejects deprecated 'copulas' key — the migration from copulas-in-config to copulas-in-CQL-pattern is complete and enforced.",
+        "The 'cql_pattern' → 'pattern' migration is complete: the old name is unsupported and the loader throws if 'pattern' is absent.",
+        "No @Deprecated symbols called by active production code detected.",
+        "No mixed API pattern coexistence at the class or module level — a single, consistent approach is used throughout each subsystem."
+      ],
+      "issue_character": "The two compat shims (limit alias in BcqlHandlers, tag= fallback in RelationConfig) are low-risk but lack documented removal plans or caller inventories, making it unclear whether they guard actual external consumers or are purely precautionary.",
+      "score_rationale": "The codebase scores in the mid-seventies on migration cleanliness: the completed migrations (copulas key rejection, cql_pattern removal) are handled properly with clear error messages, and there are no systemic old+new coexistence problems. The score does not reach 85+ because two compat shims exist without removal plans or evidence of active external consumers — they are benign technical debt that could accumulate further if not tracked."
+    }
+  },
+  "issues": [
+    {
+      "dimension": "incomplete_migration",
+      "identifier": "limit_param_compat_shim_no_removal_plan",
+      "summary": "BcqlHandlers retains 'limit' as a deprecated backward-compat alias for 'top' with no documented removal timeline or external consumer inventory",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/api/BcqlHandlers.java"
+      ],
+      "evidence": [
+        "The Javadoc says 'The deprecated limit field is also accepted for backward compatibility.' No removal target, no issue tracker reference, and no note on whether any client actually uses 'limit'.",
+        "If the API is internal (the webapp is served alongside the API), 'limit' usage can be audited by grepping webapp/ or scanning network logs — the compat shim may already be safe to remove."
+      ],
+      "suggestion": "Audit all callers of /api/bcql (webapp JS, test suites, curl examples) to verify whether 'limit' is used. If no callers use 'limit', remove the alias in the next release. If callers exist, document them explicitly in the comment and set a removal milestone.",
+      "confidence": "medium",
+      "impact_scope": "local",
+      "fix_scope": "single_edit",
+      "root_cause_cluster": "undocumented_compat_shim"
+    },
+    {
+      "dimension": "incomplete_migration",
+      "identifier": "tag_equals_legacy_fallback",
+      "summary": "RelationConfig supports 'tag=' as a legacy grammar attribute alongside current 'xpos=', without a documented migration plan or known active legacy grammars",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/config/RelationConfig.java"
+      ],
+      "evidence": [
+        "posGroupForPrefix is called twice: once with 'xpos=' (primary) and once with 'tag=' (fallback). The comment states 'Kept to remain compatible with older grammar configs not yet migrated to xpos='.",
+        "No test or example uses 'tag=' in the grammar. If all active grammar files use 'xpos=', the fallback is dead code."
+      ],
+      "suggestion": "Grep grammar JSON files for 'tag=' attributes. If none exist, remove the posGroupForPrefix fallback call and the 'tag=' branch entirely. If legacy grammars exist, name them explicitly in the comment and set a migration deadline.",
+      "confidence": "medium",
+      "impact_scope": "local",
+      "fix_scope": "single_edit",
+      "root_cause_cluster": "undocumented_compat_shim"
+    }
+  ],
+  "retrospective": {
+    "root_causes": [
+      "Both compat shims were added defensively without inventorying whether the old names were actively used — a common pattern when migrating an API without breaking client checks."
+    ],
+    "likely_symptoms": [],
+    "possible_false_positives": []
+  }
+}

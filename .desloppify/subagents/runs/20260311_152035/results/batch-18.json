@@ -1,0 +1,74 @@
+{
+  "batch": "api_surface_coherence",
+  "batch_index": 18,
+  "assessments": {"api_surface_coherence": 72.0},
+  "dimension_notes": {
+    "api_surface_coherence": {
+      "evidence": [
+        "QueryExecutor interface maintains consistent parameter ordering across all query methods: (lemma, pattern/deprel, minLogDice, maxResults) — no positional surprises for callers.",
+        "executeDependencyPatternWithPos adds a 5th param 'headPosConstraint' as the last argument — appropriate as an optional refinement, following the least-surprise convention of appending optional parameters.",
+        "HttpApiUtils.requireParam(exchange, params, name) vs parseIntParam(params, name, defaultValue): requireParam takes exchange as first param to send 400 directly; parseIntParam does NOT take exchange and throws IllegalArgumentException instead. Two different signatures for parameter validation in the same utility class.",
+        "SemanticFieldExplorer public API is consistent: exploreByPattern(seed, config, opts), exploreMultiSeed(seeds, config, opts), compareCollocateProfiles(seeds, opts) — config and opts always in the same positions.",
+        "RelationConfig.buildFullPattern(String) and buildFullPattern(String, String) overloads are coherent — clear extension of the 1-arg version to add collocate.",
+        "Response shape consistency: all GET handlers include 'status: ok' in the response body. All POST handlers (bcql, radial) also include status. Consistent response envelope.",
+        "HttpApiUtils static methods: sendJsonResponse(exchange, data), sendError(exchange, code, msg), sendBinaryResponse(exchange, contentType, bytes), sendOptionsResponse(exchange, methods) — (exchange, ...) first param throughout. Consistent.",
+        "executeAndFormatCollocations returns null for no-results — callers must null-check. Not expressed as Optional or documented in the return type, making the contract implicit.",
+        "GrammarConfigLoader.load(Path) vs GrammarConfigLoader.fromReader(Reader): different input types for different use cases — appropriate overloads, consistently named.",
+        "SemanticFieldExplorer.exploreByPattern has two overloads: (seed, RelationConfig, opts) public and (seed, String, String, String, opts) package-private. The internal 5-param overload exposes raw pattern strings not needed by API callers."
+      ],
+      "impact_scope": "module",
+      "fix_scope": "multi_file_refactor",
+      "confidence": "high"
+    }
+  },
+  "dimension_judgment": {
+    "api_surface_coherence": {
+      "strengths": [
+        "QueryExecutor interface maintains a disciplined parameter ordering convention across 6 methods — callers can predict argument positions without checking signatures.",
+        "SemanticFieldExplorer public methods follow (seed/seeds, config, opts) ordering consistently, making the exploration API ergonomic.",
+        "All HttpApiUtils send* methods take (exchange, ...) as first parameter — consistent API boundary for HTTP response construction.",
+        "buildFullPattern overloads follow a clear extension pattern — the 2-arg version adds exactly one extra parameter in a predictable position."
+      ],
+      "issue_character": "The main coherence issue is at the parameter validation boundary: requireParam has a fundamentally different call signature and error strategy than parseIntParam/parseDoubleParam, requiring callers to know which validation style to apply in which situation.",
+      "score_rationale": "The query execution API and exploration API are coherent with consistent parameter ordering. The score is pulled down by the requireParam vs parseIntParam signature asymmetry, which affects every handler that does parameter validation, and by the null-sentinel return from executeAndFormatCollocations which creates an implicit contract not visible in the type signature. These are consistent enough patterns to be learnable but represent real friction for developers adding new handlers."
+    }
+  },
+  "issues": [
+    {
+      "dimension": "api_surface_coherence",
+      "identifier": "asc_param_validation_asymmetry",
+      "summary": "requireParam and parseIntParam/parseDoubleParam have different signatures and error strategies for request parameter validation",
+      "related_files": ["src/main/java/pl/marcinmilkowski/word_sketch/api/HttpApiUtils.java"],
+      "evidence": [
+        "requireParam(HttpExchange exchange, Map<String,String> params, String name) — takes exchange, returns null and sends 400 on missing",
+        "parseIntParam(Map<String,String> params, String name, int defaultValue) — no exchange, throws IllegalArgumentException on invalid value",
+        "Callers must know which pattern applies: required params use requireParam+null-check, optional numeric params use parseIntParam+try-catch-in-wrapper"
+      ],
+      "suggestion": "Unify on the exception-based approach: rewrite requireParam to throw IllegalArgumentException('Missing required parameter: name') and remove the HttpExchange parameter. wrapWithErrorHandling already catches IllegalArgumentException and returns 400. This makes all parameter validation consistent and removes the null-check pattern.",
+      "confidence": "high",
+      "impact_scope": "module",
+      "fix_scope": "multi_file_refactor",
+      "root_cause_cluster": "mixed_error_strategies"
+    },
+    {
+      "dimension": "api_surface_coherence",
+      "identifier": "asc_explore_by_pattern_internal_overload",
+      "summary": "SemanticFieldExplorer exposes a 5-parameter package-private overload that leaks raw pattern strings above the config abstraction",
+      "related_files": ["src/main/java/pl/marcinmilkowski/word_sketch/exploration/SemanticFieldExplorer.java"],
+      "evidence": [
+        "package-private ExplorationResult exploreByPattern(String seed, String relationName, String bcqlPattern, String simplePattern, SingleSeedExploreOptions opts)",
+        "The public API takes RelationConfig and SingleSeedExploreOptions — callers don't need raw pattern strings",
+        "The internal overload is package-private and called by tests directly, creating a coupling between tests and internal implementation details"
+      ],
+      "suggestion": "Make the 5-param overload private and create a dedicated test-helper that constructs a RelationConfig with the desired patterns instead of calling the internal overload directly from tests.",
+      "confidence": "medium",
+      "impact_scope": "local",
+      "fix_scope": "single_edit"
+    }
+  ],
+  "retrospective": {
+    "root_causes": ["requireParam was written before the exception-based wrapWithErrorHandling pattern was established as the canonical approach, resulting in a parallel null-return pattern that was never unified."],
+    "likely_symptoms": ["asc_param_validation_asymmetry", "asc_explore_by_pattern_internal_overload"],
+    "possible_false_positives": []
+  }
+}

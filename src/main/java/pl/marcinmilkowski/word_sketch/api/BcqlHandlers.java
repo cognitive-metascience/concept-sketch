@@ -43,7 +43,7 @@ class BcqlHandlers {
      * POST /api/bcql with body: {"query": "[lemma=\"test\"]", "top": 20}
      * The deprecated "limit" field is also accepted for backward compatibility.
      */
-    void handleBcqlQueryPost(HttpExchange exchange) throws IOException {
+    void handleBcqlQuery(HttpExchange exchange) throws IOException {
         BcqlRequest req = parseBcqlRequest(exchange);
         if (req == null) return;
 
@@ -55,7 +55,14 @@ class BcqlHandlers {
 
     private record BcqlRequest(String query, int top) {}
 
-    /** Parse and validate the BCQL POST body; returns null and sends an error if invalid. */
+    /**
+     * Parse and validate the BCQL POST body.
+     * Throws {@link IllegalArgumentException} for 400-class validation failures (missing/blank
+     * query, pattern too long, pattern too complex); {@code wrapWithErrorHandling} maps these to
+     * 400 responses automatically.
+     * Returns {@code null} only for 413 Request Entity Too Large (body exceeds size limit),
+     * which must be sent directly here since {@code wrapWithErrorHandling} cannot express 413.
+     */
     private BcqlRequest parseBcqlRequest(HttpExchange exchange) throws IOException {
         byte[] bodyBytes = exchange.getRequestBody().readNBytes(MAX_REQUEST_BODY_BYTES + 1);
         if (bodyBytes.length > MAX_REQUEST_BODY_BYTES) {
@@ -71,19 +78,16 @@ class BcqlHandlers {
         }
         String bcqlQuery = obj.getString("query");
         if (bcqlQuery == null || bcqlQuery.isBlank()) {
-            HttpApiUtils.sendError(exchange, 400, "Missing required parameter: query");
-            return null;
+            throw new IllegalArgumentException("Missing required parameter: query");
         }
         if (bcqlQuery.length() > MAX_BCQL_PATTERN_LENGTH) {
-            HttpApiUtils.sendError(exchange, 400,
+            throw new IllegalArgumentException(
                     "Pattern too long: " + bcqlQuery.length() + " chars (max " + MAX_BCQL_PATTERN_LENGTH + ")");
-            return null;
         }
         long bracketCount = bcqlQuery.chars().filter(c -> c == '[').count();
         if (bracketCount > MAX_BCQL_BRACKET_DEPTH) {
-            HttpApiUtils.sendError(exchange, 400,
+            throw new IllegalArgumentException(
                     "Pattern too complex: " + bracketCount + " token constraints (max " + MAX_BCQL_BRACKET_DEPTH + ")");
-            return null;
         }
         // Accept 'top' as the canonical parameter; 'limit' retained as deprecated backward-compat alias
         Integer top = obj.get("top") != null ? obj.getIntValue("top") : null;

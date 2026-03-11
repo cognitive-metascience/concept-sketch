@@ -39,10 +39,8 @@ class ConcordanceHandlers {
         String query = exchange.getRequestURI().getQuery();
         Map<String, String> params = HttpApiUtils.parseQueryParams(query);
 
-        String noun = HttpApiUtils.requireParam(exchange, params, "word1");
-        if (noun == null) return;
-        String adjective = HttpApiUtils.requireParam(exchange, params, "word2");
-        if (adjective == null) return;
+        String noun = HttpApiUtils.requireParam(params, "word1");
+        String adjective = HttpApiUtils.requireParam(params, "word2");
         String relation = params.getOrDefault("relation", "noun_adj_predicates");
 
         int top = HttpApiUtils.parseIntParam(params, "top", 10);

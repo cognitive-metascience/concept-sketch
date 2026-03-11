@@ -135,7 +135,7 @@ class CollocateQueryHelper {
      * @param headwordFreq  total corpus frequency of the headword
      * @param minLogDice    minimum logDice threshold; results below this are discarded
      * @param maxResults    maximum number of results to return
-     * @param posMap        optional collocate-lemma → POS tag map; pass {@code null} when POS
+     * @param posMap        collocate-lemma → POS tag map; pass an empty map when POS
      *                      information is unavailable (placed last as it is optional)
      */
     List<QueryResults.WordSketchResult> buildAndRankCollocates(
@@ -143,7 +143,7 @@ class CollocateQueryHelper {
             long headwordFreq,
             double minLogDice,
             int maxResults,
-            @Nullable Map<String, String> posMap) throws IOException {
+            Map<String, String> posMap) throws IOException {
         List<QueryResults.WordSketchResult> results = new ArrayList<>();
         for (Map.Entry<String, Long> entry : freqMap.entrySet()) {
             String collocateLemma = entry.getKey();
@@ -154,9 +154,9 @@ class CollocateQueryHelper {
 
             if (!Double.isNaN(logDice) && logDice >= minLogDice) {
                 double relFreq = LogDiceCalculator.relativeFrequency(jointFreq, headwordFreq);
-                String pos = posMap != null
-                        ? posMap.getOrDefault(collocateLemma, QueryResults.WordSketchResult.UNKNOWN_POS)
-                        : QueryResults.WordSketchResult.UNKNOWN_POS;
+                String pos = posMap.isEmpty()
+                        ? QueryResults.WordSketchResult.UNKNOWN_POS
+                        : posMap.getOrDefault(collocateLemma, QueryResults.WordSketchResult.UNKNOWN_POS);
                 results.add(new QueryResults.WordSketchResult(
                         collocateLemma, pos, jointFreq, logDice, relFreq, Collections.emptyList()));
             }

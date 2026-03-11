@@ -4,6 +4,7 @@ import java.io.Closeable;
 import java.io.IOException;
 import java.util.List;
 
+import org.jspecify.annotations.NonNull;
 import pl.marcinmilkowski.word_sketch.query.QueryResults;
 
 /**
@@ -40,7 +41,7 @@ public interface QueryExecutor extends Closeable {
      * constraint appended after the head lemma token, e.g. {@code "[xpos=\"JJ.*\"]"}.
      * Any other format throws {@link IllegalArgumentException}.
      *
-     * @param lemma       The head lemma to search for
+     * @param lemma       The head lemma to search for; returns an empty list silently if null or empty
      * @param cqlPattern  CQL pattern defining the collocate constraints (see above)
      * @param minLogDice  Minimum logDice score threshold (0 for no minimum)
      * @param maxResults  Maximum number of results to return
@@ -130,7 +131,7 @@ public interface QueryExecutor extends Closeable {
      */
     List<QueryResults.WordSketchResult> executeDependencyPatternWithPos(
             String lemma, String deprel,
-            double minLogDice, int maxResults, String headPosConstraint) throws IOException;
+            double minLogDice, int maxResults, @NonNull String headPosConstraint) throws IOException;
 
     /**
      * Get the type of this executor for logging/debugging.
