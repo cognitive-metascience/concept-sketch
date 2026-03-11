@@ -2,85 +2,71 @@
   "command": "next",
   "items": [
     {
-      "id": "p1-contract-fix",
-      "kind": "cluster",
-      "action_type": "refactor",
-      "summary": "Refactor parseBcqlRequest to throw IAE like sibling handlers instead of sending HTTP response and returning null \u2014 fixes error_consistency and contract_coherence simultaneously",
-      "member_count": 4,
-      "members": [
-        {
-          "id": "review::.::holistic::contract_coherence::parseBcqlRequest_nullable_return::8b5a2205",
-          "kind": "issue",
-          "confidence": "high",
-          "detector": "review",
-          "file": ".",
-          "summary": "CorpusQueryHandlers.parseBcqlRequest returns null for 413 case but method signature has no @Nullable annotation",
-          "status": "open",
-          "primary_command": "desloppify plan resolve \"review::.::holistic::contract_coherence::parseBcqlRequest_nullable_return::8b5a2205\" --note \"<what you did>\" --confirm"
-        },
-        {
-          "id": "review::.::holistic::mid_level_elegance::parse_bcql_null_seam_break::6613f9f2",
-          "kind": "issue",
-          "confidence": "high",
-          "detector": "review",
-          "file": ".",
-          "summary": "CorpusQueryHandlers.parseBcqlRequest sends an HTTP response and returns null rather than throwing, breaking the uniform exception-propagation contract at the HTTP/domain seam",
-          "status": "open",
-          "primary_command": "desloppify plan resolve \"review::.::holistic::mid_level_elegance::parse_bcql_null_seam_break::6613f9f2\" --note \"<what you did>\" --confirm"
-        },
-        {
-          "id": "review::.::holistic::naming_quality::parse_bcql_request_side_effect_name::274ffe01",
-          "kind": "issue",
-          "confidence": "high",
-          "detector": "review",
-          "file": ".",
-          "summary": "parseBcqlRequest sends an HTTP response and returns null on 413 \u2014 the 'parse' name does not communicate side effects or nullable return",
-          "status": "open",
-          "primary_command": "desloppify plan resolve \"review::.::holistic::naming_quality::parse_bcql_request_side_effect_name::274ffe01\" --note \"<what you did>\" --confirm"
-        },
-        {
-          "id": "review::.::holistic::type_safety::parseBcqlRequest_unannotated_nullable::b8e427a9",
-          "kind": "issue",
-          "confidence": "high",
-          "detector": "review",
-          "file": ".",
-          "summary": "CorpusQueryHandlers.parseBcqlRequest has a nullable return (null on 413) with no @Nullable annotation on the method signature",
-          "status": "open",
-          "primary_command": "desloppify plan resolve \"review::.::holistic::type_safety::parseBcqlRequest_unannotated_nullable::b8e427a9\" --note \"<what you did>\" --confirm"
-        }
-      ],
-      "cluster_name": "p1-contract-fix",
-      "cluster_auto": false,
+      "id": "review::.::holistic::low_level_elegance::relation_pattern_builder_redundant_delegation::72117818",
+      "kind": "issue",
+      "confidence": "high",
       "detector": "review",
-      "primary_command": "desloppify next --cluster p1-contract-fix --count 10",
-      "action_steps": [
-        {
-          "title": "In CorpusQueryHandlers.java refactor parseBcqlRequest to throw IllegalArgumentException with status 413 info instead of calling sendError and returning null",
-          "detail": "CorpusQueryHandlers.java:66-70 \u2014 replace sendError+return null with throw new IllegalArgumentException carrying HTTP 413 status. Either introduce an HttpStatusException(int status, String message) type, or change wrapHandler to catch IAE and check for a 413-marker. The key invariant: parseBcqlRequest must never return null; callers must not check for null.",
-          "issue_refs": [
-            "b764f32a",
-            "8b5a2205",
-            "6613f9f2"
-          ],
-          "effort": "small"
-        },
-        {
-          "title": "Update caller at line 47-48 to remove null check \u2014 exception propagates via wrapHandler",
-          "detail": "WordSketchApiServer.java:166 \u2014 verify or update wrapHandler to translate the 413-carrying exception to an HTTP 413 response; add @NonNull to parseBcqlRequest return type after fix to document the new contract",
-          "issue_refs": [
-            "274ffe01"
-          ],
-          "effort": "small"
-        },
-        {
-          "title": "Verify wrapHandler in WordSketchApiServer translates 413-carrying IAE to HTTP 413 response OR add a dedicated HttpStatusException type",
-          "detail": "Remove the null-check at CorpusQueryHandlers.java:47-48 (if req == null return); update the caller to handle the exception propagated by wrapHandler. Run existing tests to confirm no regression.",
-          "issue_refs": [
-            "b8e427a9"
-          ],
-          "effort": "small"
-        }
-      ]
+      "file": ".",
+      "summary": "RelationPatternBuilder.posGroupFromConstraint is a one-liner wrapper over posGroupForPrefix that adds only a null-to-PosGroup.OTHER conversion \u2014 should be inlined",
+      "detail": {
+        "holistic": true,
+        "dimension": "low_level_elegance",
+        "related_files": [
+          "src/main/java/pl/marcinmilkowski/word_sketch/config/RelationPatternBuilder.java"
+        ],
+        "evidence": [
+          "posGroupFromConstraint: `PosGroup result = posGroupForPrefix(s, \"xpos=\"); return result != null ? result : PosGroup.OTHER;`",
+          "posGroupForPrefix already returns null for non-matching patterns. The conversion to PosGroup.OTHER is a one-liner that adds indirection without adding clarity.",
+          "computeCollocatePosGroup calls posGroupFromConstraint \u2192 posGroupForPrefix \u2014 a two-hop call chain for what is effectively a single lookup."
+        ],
+        "suggestion": "Inline posGroupFromConstraint into its only caller (computeCollocatePosGroup) and have posGroupForPrefix return PosGroup.OTHER instead of null. This collapses the two-hop chain and eliminates the redundant wrapper.",
+        "reasoning": ""
+      },
+      "status": "open",
+      "primary_command": "desloppify plan resolve \"review::.::holistic::low_level_elegance::relation_pattern_builder_redundant_delegation::72117818\" --note \"<what you did>\" --confirm",
+      "queue_position": 17,
+      "plan_cluster": {
+        "name": "p2-abstraction",
+        "description": "Remove zero-value delegation wrappers and redundant one-liner methods: SingleSeedExplorationOptions pass-throughs, wrapHandler, toJson() on value objects, RelationPatternBuilder.posGroupFromConstraint",
+        "total_items": 1,
+        "action_steps": [
+          {
+            "title": "In SingleSeedExplorationOptions.java remove the three pass-through methods topCollocates()/minLogDice()/minShared() and update all callers to call base() directly",
+            "detail": "SingleSeedExplorationOptions.java:22,25,28 \u2014 delete topCollocates(), minLogDice(), minShared(). Run 'grep -r topCollocates\\|minLogDice\\|minShared src/' to find all callers; update each to use .base().topCollocates() etc. or accept ExplorationOptions directly.",
+            "issue_refs": [
+              "ffa864a8"
+            ],
+            "effort": "small",
+            "done": true
+          },
+          {
+            "title": "In WordSketchApiServer.java inline the private wrapHandler one-liner at its 10 call sites OR give it a concrete rationale (logging, metrics) \u2014 if no rationale, inline",
+            "detail": "WordSketchApiServer.java:166 \u2014 delete the private wrapHandler method; inline its body (HttpApiUtils.wrapWithErrorHandling(handler, name)) at all 10 call sites. Verify no behaviour change since wrapHandler has zero added logic.",
+            "issue_refs": [
+              "ae3b5978"
+            ],
+            "effort": "small",
+            "done": true
+          },
+          {
+            "title": "Move toJson() serialization logic out of GrammarConfig and RelationConfig value objects into a GrammarConfigSerializer helper or the API layer",
+            "detail": "GrammarConfig.java and RelationConfig.java \u2014 move toJson() methods to a new GrammarConfigSerializer.java in api/ (or wherever JSON assembly occurs). Update the single callsite in WordSketchApiServer that calls toJson() to call the serializer.",
+            "issue_refs": [
+              "44480386"
+            ],
+            "effort": "small",
+            "done": true
+          },
+          {
+            "title": "In RelationPatternBuilder.java inline posGroupFromConstraint into its callers \u2014 it is a null-to-OTHER conversion that should not have its own method",
+            "detail": "RelationPatternBuilder.java \u2014 inline posGroupFromConstraint: wherever it is called, replace the call with the two-liner null-to-PosGroup.OTHER conversion directly. Delete the method after inlining.",
+            "issue_refs": [
+              "72117818"
+            ],
+            "effort": "medium"
+          }
+        ]
+      }
     }
   ],
   "queue": {
@@ -88,7 +74,7 @@
   },
   "narrative": {
     "phase": "refinement",
-    "headline": "\u26a0 2 security issues \u2014 review before other cleanup. Crossed 80% strict! (30 review issues \u2014 run `desloppify show review --status open`)",
+    "headline": "\u26a0 2 security issues \u2014 review before other cleanup. Crossed 80% strict! (21 review issues \u2014 run `desloppify show review --status open`)",
     "dimensions": {
       "lowest_dimensions": [
         {
@@ -168,8 +154,8 @@
       {
         "type": "refactor",
         "detector": "review",
-        "count": 30,
-        "description": "30 review issues need investigation \u2014 run `desloppify show review --status open` to see them",
+        "count": 21,
+        "description": "21 review issues need investigation \u2014 run `desloppify show review --status open` to see them",
         "command": "desloppify show review --status open",
         "impact": 0.0,
         "dimension": "Unknown",
@@ -202,7 +188,7 @@
     "strategy": {
       "fixer_leverage": {
         "auto_fixable_count": 0,
-        "total_count": 98,
+        "total_count": 71,
         "coverage": 0.0,
         "impact_ratio": 0.0,
         "recommendation": "none"
@@ -246,7 +232,7 @@
         }
       },
       "can_parallelize": false,
-      "hint": "Work through actions in priority order. Rescan after each fix to track progress. Review: 30 issue(s) \u2014 `desloppify show review --status open`."
+      "hint": "Work through actions in priority order. Rescan after each fix to track progress. Review: 21 issue(s) \u2014 `desloppify show review --status open`."
     },
     "tools": {
       "fixers": [],
@@ -279,7 +265,7 @@
       "command": "desloppify show boilerplate_duplication --status open",
       "description": "1 boilerplate_duplication issues \u2014 extract shared boilerplate into reusable helpers or base classes"
     },
-    "why_now": "Work through actions in priority order. Rescan after each fix to track progress. Review: 30 issue(s) \u2014 `desloppify show review --status open`.",
+    "why_now": "Work through actions in priority order. Rescan after each fix to track progress. Review: 21 issue(s) \u2014 `desloppify show review --status open`.",
     "verification_step": {
       "command": "desloppify scan",
       "reason": "revalidate after changes"
@@ -1236,22 +1222,22 @@
       {
         "name": "p1-contract-fix",
         "description": "Refactor parseBcqlRequest to throw IAE like sibling handlers instead of sending HTTP response and returning null \u2014 fixes error_consistency and contract_coherence simultaneously",
-        "item_count": 4
+        "item_count": 2
       },
       {
         "name": "p1-logic-clarity",
         "description": "Remove dead orElseThrow calls in ExplorationHandlers after resolveRelationConfig already validates, and fix seed parameter mutation in SemanticFieldExplorer",
-        "item_count": 2
+        "item_count": 1
       },
       {
         "name": "p2-ai-debt",
         "description": "Remove step comments that restate method calls, rewrite Javadoc first sentences that mirror method names, and remove stale @Nullable from getVersion()",
-        "item_count": 3
+        "item_count": 1
       },
       {
         "name": "p2-abstraction",
         "description": "Remove zero-value delegation wrappers and redundant one-liner methods: SingleSeedExplorationOptions pass-throughs, wrapHandler, toJson() on value objects, RelationPatternBuilder.posGroupFromConstraint",
-        "item_count": 4
+        "item_count": 1
       },
       {
         "name": "p3-model",
@@ -1269,7 +1255,7 @@
         "item_count": 5
       }
     ],
-    "total_ordered": 73,
+    "total_ordered": 65,
     "total_skipped": 261,
     "plan_overrides_narrative": true
   },
@@ -1291,7 +1277,7 @@
       "score": 66.4,
       "strict": 66.4,
       "checks": 10,
-      "failing": 2,
+      "failing": 0,
       "tier": 4,
       "subjective": true,
       "placeholder": false,
@@ -1317,7 +1303,7 @@
       "score": 66.4,
       "strict": 66.4,
       "checks": 10,
-      "failing": 3,
+      "failing": 0,
       "tier": 4,
       "subjective": true,
       "placeholder": false,
@@ -1416,7 +1402,7 @@
       "score": 68.4,
       "strict": 68.4,
       "checks": 30,
-      "failing": 7,
+      "failing": 6,
       "tier": 4,
       "subjective": true,
       "placeholder": false,
@@ -1457,7 +1443,7 @@
       "score": 73.9,
       "strict": 73.9,
       "checks": 10,
-      "failing": 2,
+      "failing": 1,
       "tier": 4,
       "subjective": true,
       "placeholder": false,
@@ -1470,7 +1456,7 @@
       "score": 76.4,
       "strict": 76.4,
       "checks": 10,
-      "failing": 2,
+      "failing": 1,
       "tier": 4,
       "subjective": true,
       "placeholder": false,
@@ -1533,7 +1519,7 @@
       "score": 66.4,
       "strict": 66.4,
       "checks": 10,
-      "failing": 2,
+      "failing": 0,
       "tier": 4,
       "subjective": true,
       "placeholder": false,
@@ -1559,7 +1545,7 @@
       "score": 66.4,
       "strict": 66.4,
       "checks": 10,
-      "failing": 3,
+      "failing": 0,
       "tier": 4,
       "subjective": true,
       "placeholder": false,
@@ -1640,7 +1626,7 @@
       "score": 68.4,
       "strict": 68.4,
       "checks": 30,
-      "failing": 7,
+      "failing": 6,
       "tier": 4,
       "subjective": true,
       "placeholder": false,
@@ -1681,7 +1667,7 @@
       "score": 73.9,
       "strict": 73.9,
       "checks": 10,
-      "failing": 2,
+      "failing": 1,
       "tier": 4,
       "subjective": true,
       "placeholder": false,
@@ -1694,7 +1680,7 @@
       "score": 76.4,
       "strict": 76.4,
       "checks": 10,
-      "failing": 2,
+      "failing": 1,
       "tier": 4,
       "subjective": true,
       "placeholder": false,

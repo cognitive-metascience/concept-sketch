@@ -11,22 +11,22 @@
     "total": 1244,
     "auto_resolved": 243,
     "false_positive": 0,
-    "fixed": 792,
-    "open": 38,
+    "fixed": 801,
+    "open": 29,
     "wontfix": 171,
     "by_tier": {
       "1": {
         "auto_resolved": 127,
         "false_positive": 0,
-        "fixed": 558,
-        "open": 12,
+        "fixed": 565,
+        "open": 5,
         "wontfix": 95
       },
       "2": {
         "auto_resolved": 78,
         "false_positive": 0,
-        "fixed": 219,
-        "open": 18,
+        "fixed": 221,
+        "open": 16,
         "wontfix": 67
       },
       "3": {
@@ -49433,16 +49433,22 @@
         "suggestion": "Rename to something that signals the HTTP side effect, e.g. validateAndReadBcqlRequest, or refactor so the 413 case throws an exception (eliminating the null return and the naming ambiguity together).",
         "reasoning": ""
       },
-      "status": "open",
-      "note": null,
+      "status": "fixed",
+      "note": "parseBcqlRequest now only parses (no side effects): throws RequestEntityTooLargeException or IAE, never sends HTTP responses directly",
       "first_seen": "2026-03-11T20:21:28+00:00",
       "last_seen": "2026-03-11T20:21:28+00:00",
-      "resolved_at": null,
+      "resolved_at": "2026-03-11T20:52:50+00:00",
       "reopen_count": 0,
       "lang": "java",
       "suppressed": false,
       "suppressed_at": null,
-      "suppression_pattern": null
+      "suppression_pattern": null,
+      "resolution_attestation": {
+        "kind": "manual",
+        "text": "I have actually parseBcqlRequest now only parses (no side effects): throws RequestEntityTooLargeException or IAE, never sends HTTP responses directly and I am not gaming the score.",
+        "attested_at": "2026-03-11T20:52:50+00:00",
+        "scan_verified": false
+      }
     },
     "review::.::holistic::naming_quality::resolve_verb_imprecision::86ad51a4": {
       "id": "review::.::holistic::naming_quality::resolve_verb_imprecision::86ad51a4",
@@ -49498,16 +49504,22 @@
         "suggestion": "Remove the three delegation methods (topCollocates, minLogDice, minShared) from SingleSeedExplorationOptions. Callers should use opts.base() to access the shared parameters, which makes the two-field composition explicit. Alternatively, flatten the record to carry all four fields directly (removing the nested ExplorationOptions), which eliminates both the delegation and the two-level field access.",
         "reasoning": ""
       },
-      "status": "open",
-      "note": null,
+      "status": "fixed",
+      "note": "Removed 3 pass-through delegation methods (topCollocates, minLogDice, minShared) from SingleSeedExplorationOptions; callers now use opts.base().topCollocates() etc. directly",
       "first_seen": "2026-03-11T20:21:28+00:00",
       "last_seen": "2026-03-11T20:21:28+00:00",
-      "resolved_at": null,
+      "resolved_at": "2026-03-11T20:53:44+00:00",
       "reopen_count": 0,
       "lang": "java",
       "suppressed": false,
       "suppressed_at": null,
-      "suppression_pattern": null
+      "suppression_pattern": null,
+      "resolution_attestation": {
+        "kind": "manual",
+        "text": "I have actually Removed 3 pass-through delegation methods (topCollocates, minLogDice, minShared) from SingleSeedExplorationOptions; callers now use opts.base().topCollocates() etc. directly and I am not gaming the score.",
+        "attested_at": "2026-03-11T20:53:44+00:00",
+        "scan_verified": false
+      }
     },
     "review::.::holistic::abstraction_fitness::wrap_handler_pass_through::ae3b5978": {
       "id": "review::.::holistic::abstraction_fitness::wrap_handler_pass_through::ae3b5978",
@@ -49530,16 +49542,22 @@
         "suggestion": "Remove wrapHandler and call HttpApiUtils.wrapWithErrorHandling directly in registerRoutes(). This makes the dependency on HttpApiUtils explicit and eliminates a zero-value indirection.",
         "reasoning": ""
       },
-      "status": "open",
-      "note": null,
+      "status": "fixed",
+      "note": "Inlined wrapHandler one-liner at all 10 call sites in WordSketchApiServer.registerRoutes(); private method removed",
       "first_seen": "2026-03-11T20:21:28+00:00",
       "last_seen": "2026-03-11T20:21:28+00:00",
-      "resolved_at": null,
+      "resolved_at": "2026-03-11T20:54:04+00:00",
       "reopen_count": 0,
       "lang": "java",
       "suppressed": false,
       "suppressed_at": null,
-      "suppression_pattern": null
+      "suppression_pattern": null,
+      "resolution_attestation": {
+        "kind": "manual",
+        "text": "I have actually Inlined wrapHandler one-liner at all 10 call sites in WordSketchApiServer.registerRoutes(); private method removed and I am not gaming the score.",
+        "attested_at": "2026-03-11T20:54:04+00:00",
+        "scan_verified": false
+      }
     },
     "review::.::holistic::abstraction_fitness::to_json_on_value_objects::44480386": {
       "id": "review::.::holistic::abstraction_fitness::to_json_on_value_objects::44480386",
@@ -49564,16 +49582,22 @@
         "suggestion": "Move toJson() serialization to SketchHandlers (where it is called) or to a dedicated serializer in the api package. This removes the presentation dependency from the config value objects, makes the serialization format visible at the call site, and brings config objects into alignment with the model/exploration pattern of externalizing serialization to the api layer.",
         "reasoning": ""
       },
-      "status": "open",
-      "note": null,
+      "status": "fixed",
+      "note": "Moved toJson() from GrammarConfig and RelationConfig value objects into new GrammarConfigSerializer class; value objects no longer depend on fastjson2; tests updated to use GrammarConfigSerializer.toJson()",
       "first_seen": "2026-03-11T20:21:28+00:00",
       "last_seen": "2026-03-11T20:21:28+00:00",
-      "resolved_at": null,
+      "resolved_at": "2026-03-11T20:53:54+00:00",
       "reopen_count": 0,
       "lang": "java",
       "suppressed": false,
       "suppressed_at": null,
-      "suppression_pattern": null
+      "suppression_pattern": null,
+      "resolution_attestation": {
+        "kind": "manual",
+        "text": "I have actually Moved toJson() from GrammarConfig and RelationConfig value objects into new GrammarConfigSerializer class; value objects no longer depend on fastjson2; tests updated to use GrammarConfigSerializer.toJson() and I am not gaming the score.",
+        "attested_at": "2026-03-11T20:53:54+00:00",
+        "scan_verified": false
+      }
     },
     "review::.::holistic::dependency_health::blacklab_unstable_maven_repo::9ab24a27": {
       "id": "review::.::holistic::dependency_health::blacklab_unstable_maven_repo::9ab24a27",
@@ -49721,16 +49745,22 @@
         "suggestion": "Introduce an HttpApiUtils.sendErrorAndSignal method or a dedicated exception type (e.g., HttpException(413, ...)) that wrapWithErrorHandling can catch and map to the appropriate status code. This keeps all error signalling via exception flow and removes the null-return side-effect pattern.",
         "reasoning": ""
       },
-      "status": "open",
-      "note": null,
+      "status": "fixed",
+      "note": "parseBcqlRequest throws RequestEntityTooLargeException for 413; wrapWithErrorHandling catches it and sends 413; null-check removed from handleCorpusQuery; all cluster items fixed",
       "first_seen": "2026-03-11T20:21:28+00:00",
       "last_seen": "2026-03-11T20:21:28+00:00",
-      "resolved_at": null,
+      "resolved_at": "2026-03-11T20:52:30+00:00",
       "reopen_count": 0,
       "lang": "java",
       "suppressed": false,
       "suppressed_at": null,
-      "suppression_pattern": null
+      "suppression_pattern": null,
+      "resolution_attestation": {
+        "kind": "manual",
+        "text": "I have actually parseBcqlRequest throws RequestEntityTooLargeException for 413; wrapWithErrorHandling catches it and sends 413; null-check removed from handleCorpusQuery; all cluster items fixed and I am not gaming the score.",
+        "attested_at": "2026-03-11T20:52:30+00:00",
+        "scan_verified": false
+      }
     },
     "review::.::holistic::mid_level_elegance::explore_handler_parameter_extraction_asymmetry::3f1e0cd5": {
       "id": "review::.::holistic::mid_level_elegance::explore_handler_parameter_extraction_asymmetry::3f1e0cd5",
@@ -49820,16 +49850,22 @@
         "suggestion": "Remove the step comments that restate method names. If the step numbering is valuable for explaining the algorithm flow, move the numbered explanation to the class-level Javadoc rather than inline in the method body. The phase-method names are expressive enough to guide readers.",
         "reasoning": ""
       },
-      "status": "open",
-      "note": null,
+      "status": "fixed",
+      "note": "Deleted Step 1/2/3/4 inline comments in SemanticFieldExplorer.exploreByPattern that just restated the extracted method names below them",
       "first_seen": "2026-03-11T20:21:28+00:00",
       "last_seen": "2026-03-11T20:21:28+00:00",
-      "resolved_at": null,
+      "resolved_at": "2026-03-11T20:53:25+00:00",
       "reopen_count": 0,
       "lang": "java",
       "suppressed": false,
       "suppressed_at": null,
-      "suppression_pattern": null
+      "suppression_pattern": null,
+      "resolution_attestation": {
+        "kind": "manual",
+        "text": "I have actually Deleted Step 1/2/3/4 inline comments in SemanticFieldExplorer.exploreByPattern that just restated the extracted method names below them and I am not gaming the score.",
+        "attested_at": "2026-03-11T20:53:25+00:00",
+        "scan_verified": false
+      }
     },
     "review::.::holistic::ai_generated_debt::javadoc_mirror_names::28f12518": {
       "id": "review::.::holistic::ai_generated_debt::javadoc_mirror_names::28f12518",
@@ -49854,16 +49890,22 @@
         "suggestion": "Rewrite Javadoc first sentences to add information not in the method name: document the key precondition, the interpretation of the return value, or a non-obvious side effect. Remove field comments that duplicate the field name. Good Javadoc adds something the reader cannot derive from the name alone.",
         "reasoning": ""
       },
-      "status": "open",
-      "note": null,
+      "status": "fixed",
+      "note": "Rewrote Javadoc first sentences that mirrored method names in GrammarConfigLoader (load, fromReader, deriveHeadPositionFromPattern, deriveCollocatePositionFromPattern) and ExplorationHandlers (all 4 handler methods); sentences now describe what the method does rather than repeating its name",
       "first_seen": "2026-03-11T20:21:28+00:00",
       "last_seen": "2026-03-11T20:21:28+00:00",
-      "resolved_at": null,
+      "resolved_at": "2026-03-11T20:53:17+00:00",
       "reopen_count": 0,
       "lang": "java",
       "suppressed": false,
       "suppressed_at": null,
-      "suppression_pattern": null
+      "suppression_pattern": null,
+      "resolution_attestation": {
+        "kind": "manual",
+        "text": "I have actually Rewrote Javadoc first sentences that mirrored method names in GrammarConfigLoader (load, fromReader, deriveHeadPositionFromPattern, deriveCollocatePositionFromPattern) and ExplorationHandlers (all 4 handler methods); sentences now describe what the method does rather than repeating its name and I am not gaming the score.",
+        "attested_at": "2026-03-11T20:53:17+00:00",
+        "scan_verified": false
+      }
     },
     "review::.::holistic::incomplete_migration::legacy_api_path_no_removal_plan::1cc1b9e9": {
       "id": "review::.::holistic::incomplete_migration::legacy_api_path_no_removal_plan::1cc1b9e9",
@@ -50014,16 +50056,22 @@
         "suggestion": "Add @Nullable annotation (org.jspecify) to the return type: private @Nullable BcqlRequest parseBcqlRequest(HttpExchange exchange). Alternatively, make the 413 handling inline in handleCorpusQuery to avoid the null-return pattern entirely.",
         "reasoning": ""
       },
-      "status": "open",
-      "note": null,
+      "status": "fixed",
+      "note": "parseBcqlRequest throws RequestEntityTooLargeException (RuntimeException) for 413; wrapWithErrorHandling catches it and sends 413; null-check removed from handleCorpusQuery; wrapHandler inlined",
       "first_seen": "2026-03-11T20:21:28+00:00",
       "last_seen": "2026-03-11T20:21:28+00:00",
-      "resolved_at": null,
+      "resolved_at": "2026-03-11T20:52:10+00:00",
       "reopen_count": 0,
       "lang": "java",
       "suppressed": false,
       "suppressed_at": null,
-      "suppression_pattern": null
+      "suppression_pattern": null,
+      "resolution_attestation": {
+        "kind": "manual",
+        "text": "I have actually parseBcqlRequest throws RequestEntityTooLargeException (RuntimeException) for 413; wrapWithErrorHandling catches it and sends 413; null-check removed from handleCorpusQuery; wrapHandler inlined and I am not gaming the score.",
+        "attested_at": "2026-03-11T20:52:10+00:00",
+        "scan_verified": false
+      }
     },
     "review::.::holistic::contract_coherence::grammar_config_loader_exception_mismatch::cd84a42b": {
       "id": "review::.::holistic::contract_coherence::grammar_config_loader_exception_mismatch::cd84a42b",
@@ -50078,16 +50126,22 @@
         "suggestion": "Since resolveRelationConfig guarantees relationType is present, replace the orElseThrow pattern with a direct .get(): String relationType = resolvedConfig.relationType().get().name(). Add a comment: '// Safe: resolveRelationConfig guarantees relationType is present'. This makes the invariant explicit without defensive dead code.",
         "reasoning": ""
       },
-      "status": "open",
-      "note": null,
+      "status": "fixed",
+      "note": "Removed dead orElseThrow after resolveRelationConfig validates; replaced with .get() with safety comment. Fixed seed mutation: normalizedSeed variable. Removed Step 1-4 comments.",
       "first_seen": "2026-03-11T20:21:28+00:00",
       "last_seen": "2026-03-11T20:21:28+00:00",
-      "resolved_at": null,
+      "resolved_at": "2026-03-11T20:53:00+00:00",
       "reopen_count": 0,
       "lang": "java",
       "suppressed": false,
       "suppressed_at": null,
-      "suppression_pattern": null
+      "suppression_pattern": null,
+      "resolution_attestation": {
+        "kind": "manual",
+        "text": "I have actually Removed dead orElseThrow after resolveRelationConfig validates; replaced with .get() with safety comment. Fixed seed mutation: normalizedSeed variable. Removed Step 1-4 comments. and I am not gaming the score.",
+        "attested_at": "2026-03-11T20:53:00+00:00",
+        "scan_verified": false
+      }
     },
     "review::.::holistic::logic_clarity::seed_parameter_mutation::6e8cfc8b": {
       "id": "review::.::holistic::logic_clarity::seed_parameter_mutation::6e8cfc8b",
@@ -50551,7 +50605,10 @@
     "ai_generated_debt": {
       "score": 66.4,
       "source": "holistic",
-      "assessed_at": "2026-03-11T20:21:28+00:00"
+      "assessed_at": "2026-03-11T20:21:28+00:00",
+      "needs_review_refresh": true,
+      "refresh_reason": "review_issue_fixed",
+      "stale_since": "2026-03-11T20:53:25+00:00"
     },
     "incomplete_migration": {
       "score": 81.5,
@@ -50579,12 +50636,18 @@
     "contract_coherence": {
       "score": 70.7,
       "source": "holistic",
-      "assessed_at": "2026-03-11T20:21:28+00:00"
+      "assessed_at": "2026-03-11T20:21:28+00:00",
+      "needs_review_refresh": true,
+      "refresh_reason": "review_issue_fixed",
+      "stale_since": "2026-03-11T20:52:10+00:00"
     },
     "logic_clarity": {
       "score": 73.9,
       "source": "holistic",
-      "assessed_at": "2026-03-11T20:21:28+00:00"
+      "assessed_at": "2026-03-11T20:21:28+00:00",
+      "needs_review_refresh": true,
+      "refresh_reason": "review_issue_fixed",
+      "stale_since": "2026-03-11T20:53:00+00:00"
     },
     "type_safety": {
       "score": 65.1,
@@ -50633,7 +50696,10 @@
     "naming_quality": {
       "score": 76.4,
       "source": "holistic",
-      "assessed_at": "2026-03-11T20:21:28+00:00"
+      "assessed_at": "2026-03-11T20:21:28+00:00",
+      "needs_review_refresh": true,
+      "refresh_reason": "review_issue_fixed",
+      "stale_since": "2026-03-11T20:52:50+00:00"
     },
     "abstraction_fitness": {
       "score": 66.4,
@@ -50654,7 +50720,10 @@
         "Delegation Density": 72.0,
         "Definition Directness": 76.0,
         "Type Discipline": 79.0
-      }
+      },
+      "needs_review_refresh": true,
+      "refresh_reason": "review_issue_fixed",
+      "stale_since": "2026-03-11T20:54:04+00:00"
     },
     "dependency_health": {
       "score": 78.7,
@@ -50672,7 +50741,10 @@
     "mid_level_elegance": {
       "score": 66.7,
       "source": "holistic",
-      "assessed_at": "2026-03-11T20:21:28+00:00"
+      "assessed_at": "2026-03-11T20:21:28+00:00",
+      "needs_review_refresh": true,
+      "refresh_reason": "review_issue_fixed",
+      "stale_since": "2026-03-11T20:52:30+00:00"
     },
     "definition_directness": {
       "score": 56.7,
@@ -53535,13 +53607,13 @@
       "strict": 76.4,
       "verified_strict_score": 76.4,
       "checks": 10,
-      "failing": 2,
+      "failing": 1,
       "tier": 4,
       "detectors": {
         "subjective_assessment": {
           "potential": 10,
           "pass_rate": 0.764,
-          "failing": 2,
+          "failing": 1,
           "weighted_failures": 2.36,
           "assessment_score": 76.4,
           "placeholder": false,
@@ -53556,13 +53628,13 @@
       "strict": 73.9,
       "verified_strict_score": 73.9,
       "checks": 10,
-      "failing": 2,
+      "failing": 1,
       "tier": 4,
       "detectors": {
         "subjective_assessment": {
           "potential": 10,
           "pass_rate": 0.739,
-          "failing": 2,
+          "failing": 1,
           "weighted_failures": 2.61,
           "assessment_score": 73.9,
           "placeholder": false,
@@ -53598,13 +53670,13 @@
       "strict": 70.7,
       "verified_strict_score": 70.7,
       "checks": 10,
-      "failing": 2,
+      "failing": 1,
       "tier": 4,
       "detectors": {
         "subjective_assessment": {
           "potential": 10,
           "pass_rate": 0.707,
-          "failing": 2,
+          "failing": 1,
           "weighted_failures": 2.93,
           "assessment_score": 70.7,
           "placeholder": false,
@@ -53640,13 +53712,13 @@
       "strict": 66.4,
       "verified_strict_score": 66.4,
       "checks": 10,
-      "failing": 3,
+      "failing": 0,
       "tier": 4,
       "detectors": {
         "subjective_assessment": {
           "potential": 10,
           "pass_rate": 0.664,
-          "failing": 3,
+          "failing": 0,
           "weighted_failures": 3.36,
           "assessment_score": 66.4,
           "placeholder": false,
@@ -53676,13 +53748,13 @@
       "strict": 66.4,
       "verified_strict_score": 66.4,
       "checks": 10,
-      "failing": 2,
+      "failing": 0,
       "tier": 4,
       "detectors": {
         "subjective_assessment": {
           "potential": 10,
           "pass_rate": 0.664,
-          "failing": 2,
+          "failing": 0,
           "weighted_failures": 3.36,
           "assessment_score": 66.4,
           "placeholder": false,
@@ -53718,13 +53790,13 @@
       "strict": 66.7,
       "verified_strict_score": 66.7,
       "checks": 10,
-      "failing": 3,
+      "failing": 2,
       "tier": 4,
       "detectors": {
         "subjective_assessment": {
           "potential": 10,
           "pass_rate": 0.667,
-          "failing": 3,
+          "failing": 2,
           "weighted_failures": 3.33,
           "assessment_score": 66.7,
           "placeholder": false,
