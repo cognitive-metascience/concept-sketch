@@ -1,0 +1,103 @@
+{
+  "batch": "api_surface_coherence",
+  "batch_index": 5,
+  "assessments": {"api_surface_coherence": 64.0},
+  "dimension_notes": {
+    "api_surface_coherence": {
+      "evidence": [
+        "handleFullSketchForType (surface branch) emits relation entries with keys {name, cql, collocate_pos_group, collocations} — no 'id', no 'total_matches'",
+        "handleRelationQueryForPattern (single surface relation) emits {id, name, collocations, total_matches} — no 'cql', no 'collocate_pos_group'",
+        "handleFullSketchForType (dep branch, via buildRelationResponse) emits {id, name, description, deprel, total_matches, collocations} — a third distinct shape",
+        "WordSketchApiServer constructor logs a warning when grammarConfig is null ('relation-based endpoints will return 500') yet immediately constructs ExplorationHandlers which throws IllegalArgumentException for null — the contract says degraded, the code crashes",
+        "/api/concordance/examples uses parameters word1/word2; /api/semantic-field/examples uses adjective/noun — both find example sentences for a word pair under different names",
+        "SemanticFieldExplorer.exploreByPattern has two public overloads: 3-arg (RelationConfig) and 5-arg (explicit strings) — both are public with no deprecation marker on the lower-level variant",
+        "QueryExecutor interface cleanly documents the distinction between findCollocations, executeQuery, executeBcqlQuery, and executeSurfacePattern with explicit @param contracts and cross-references",
+        "HttpApiUtils.requireParam follows a uniform null-return pattern and sendError/sendJsonResponse are used consistently throughout all handlers",
+        "buildBaseExploreResponse + buildExploreResponseBody are shared by both single-seed and multi-seed handlers, enforcing structural consistency for the exploration family"
+      ],
+      "impact_scope": "subsystem",
+      "fix_scope": "multi_file_refactor",
+      "confidence": "high"
+    }
+  },
+  "dimension_judgment": {
+    "api_surface_coherence": {
+      "strengths": [
+        "QueryExecutor interface is thoroughly documented with explicit distinctions between the four query methods, cross-references between related methods, and precise @param contracts — a developer can understand which method to call and why",
+        "HttpApiUtils provides uniform sendJsonResponse/sendError/requireParam helpers used consistently across all handlers, eliminating ad-hoc per-endpoint HTTP boilerplate",
+        "Single-seed and multi-seed explore responses share buildBaseExploreResponse and buildExploreResponseBody, producing structurally compatible JSON shapes that a client can handle with the same parsing code",
+        "Handler classes (SketchHandlers, ExplorationHandlers) have package-private visibility and clean delegation from WordSketchApiServer, keeping the public API boundary narrow"
+      ],
+      "issue_character": "Issues are concentrated in the sketch-endpoint response shape family and one constructor null-contract mismatch — they are not randomly distributed but stem from incremental feature growth (dep added after surface, null-optional config never fully resolved) without normalising the shared response contract.",
+      "score_rationale": "The exploration and utility layers are well-structured, but the HTTP API response shapes for the sketch family are visibly inconsistent: three distinct relation-entry schemas depending on which sketch variant you call, making client integration fragile. The constructor null contract for grammarConfig is actively misleading — it documents partial degradation but delivers an immediate crash. These are real developer-experience defects, not style nits. Against a global anchor of 80 for 'solid but uneven', the exploration cohesion and documented QueryExecutor pull upward while the multi-shape sketch responses and the false-safety constructor pull down to roughly 64."
+    }
+  },
+  "issues": [
+    {
+      "dimension": "api_surface_coherence",
+      "identifier": "sketch_response_shape_inconsistency",
+      "summary": "Three incompatible relation-entry shapes across the sketch endpoint family",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/api/SketchHandlers.java"
+      ],
+      "evidence": [
+        "Full surface sketch (handleFullSketchForType, surface branch): relation entry has {name, cql, collocate_pos_group, collocations} — no 'id', no 'total_matches'",
+        "Single surface relation (handleRelationQueryForPattern, SURFACE): relation entry has {id, name, collocations, total_matches} — no 'cql', no 'collocate_pos_group'",
+        "Full dep sketch (buildRelationResponse): entry has {id, name, description, deprel, total_matches, collocations} — a third distinct shape"
+      ],
+      "suggestion": "Define a canonical relation-entry shape (id, name, collocations, total_matches, and optionally cql/deprel) and use it in all three paths. Extract a static buildRelationEntry(RelationConfig, List<WordSketchResult>, List<Map<String,Object>>) helper in SketchHandlers that both handleFullSketchForType and handleRelationQueryForPattern call, so the JSON structure is guaranteed identical regardless of how the endpoint is invoked.",
+      "confidence": "high",
+      "impact_scope": "subsystem",
+      "fix_scope": "multi_file_refactor",
+      "root_cause_cluster": "sketch_api_shape"
+    },
+    {
+      "dimension": "api_surface_coherence",
+      "identifier": "constructor_null_contract_mismatch",
+      "summary": "WordSketchApiServer constructor misleadingly warns about null grammarConfig but immediately crashes",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/api/WordSketchApiServer.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/api/ExplorationHandlers.java"
+      ],
+      "evidence": [
+        "WordSketchApiServer constructor: if (grammarConfig == null) { logger.warn(\"...relation-based sketch/relations endpoints will return 500\") } — implies server starts in degraded mode",
+        "Same constructor, next line: this.explorationHandlers = new ExplorationHandlers(grammarConfig, semanticFieldExplorer) — ExplorationHandlers throws IllegalArgumentException for null grammarConfig",
+        "The warn message and the crash are mutually exclusive outcomes; the constructor cannot deliver on its stated contract"
+      ],
+      "suggestion": "Resolve the contract in one of two ways: (a) make grammarConfig a required parameter — replace the warn with Objects.requireNonNull(grammarConfig, \"grammarConfig is required\") and remove the null branch entirely; or (b) if null is genuinely intended to mean 'no grammar available', change ExplorationHandlers to also tolerate null by returning 503/501 from its handlers rather than throwing at construction time. Option (a) is simpler and matches how ExplorationHandlers already behaves.",
+      "confidence": "high",
+      "impact_scope": "module",
+      "fix_scope": "single_edit",
+      "root_cause_cluster": "null_config_contract"
+    },
+    {
+      "dimension": "api_surface_coherence",
+      "identifier": "examples_endpoint_param_naming",
+      "summary": "Two similar 'find examples for a word pair' endpoints use inconsistent parameter names",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/api/SketchHandlers.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/api/ExplorationHandlers.java"
+      ],
+      "evidence": [
+        "/api/concordance/examples requires word1 and word2 query parameters",
+        "/api/semantic-field/examples requires adjective and noun query parameters",
+        "Both endpoints retrieve corpus sentences illustrating a word-pair collocation; a client calling both must know a different parameter name for the same concept"
+      ],
+      "suggestion": "Standardise on a shared naming convention for the two-token input. The simplest option is to keep the domain-specific names (adjective/noun where the endpoint is explicitly about adjective-noun pairs, word1/word2 for the generic concordance) but document the asymmetry clearly in the endpoint comment. Alternatively, accept both word1/word2 and adjective/noun as aliases in the semantic-field/examples handler so callers can use the same parameterisation across endpoints.",
+      "confidence": "medium",
+      "impact_scope": "local",
+      "fix_scope": "single_edit"
+    }
+  ],
+  "retrospective": {
+    "root_causes": [
+      "The sketch endpoint family grew incrementally (surface first, then dep) without a normalisation pass to unify the relation-entry JSON shape, leaving three slightly different schemas in production",
+      "The grammarConfig null-tolerance contract was never resolved after ExplorationHandlers gained a hard null check, leaving the outer constructor comment and the inner behaviour contradictory"
+    ],
+    "likely_symptoms": [
+      "Client-side code that parses sketch responses will need shape-specific branches for surface-full vs surface-single vs dep-full",
+      "Any test that constructs WordSketchApiServer with a null grammarConfig and expects it to start will fail with IllegalArgumentException rather than the warned 500 responses"
+    ],
+    "possible_false_positives": []
+  }
+}

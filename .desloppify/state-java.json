@@ -1,17 +1,17 @@
 {
   "version": 1,
   "created": "2026-03-09T18:35:28+00:00",
-  "last_scan": "2026-03-11T00:20:41+00:00",
-  "scan_count": 35,
+  "last_scan": "2026-03-11T00:39:34+00:00",
+  "scan_count": 36,
   "overall_score": 73.8,
   "objective_score": 99.4,
   "strict_score": 73.8,
-  "verified_strict_score": 99.4,
+  "verified_strict_score": 98.2,
   "stats": {
     "total": 556,
-    "auto_resolved": 112,
+    "auto_resolved": 111,
     "false_positive": 0,
-    "fixed": 403,
+    "fixed": 404,
     "open": 5,
     "wontfix": 36,
     "by_tier": {
@@ -30,9 +30,9 @@
         "wontfix": 12
       },
       "3": {
-        "auto_resolved": 26,
+        "auto_resolved": 25,
         "false_positive": 0,
-        "fixed": 2,
+        "fixed": 3,
         "open": 0,
         "wontfix": 0
       },
@@ -146,26 +146,26 @@
       "file": "src/main/java/pl/marcinmilkowski/word_sketch/query/BlackLabQueryExecutor.java",
       "tier": 3,
       "confidence": "medium",
-      "summary": "Large file: large (546 LOC)",
+      "summary": "Large file: large (510 LOC)",
       "detail": {
-        "loc": 546
+        "loc": 510
       },
-      "status": "auto_resolved",
-      "note": "Disappeared from scan \u2014 likely fixed",
+      "status": "fixed",
+      "note": "Split BlackLabQueryExecutor (510 LOC) into BlackLabQueryExecutor (243 LOC) and CollocateQueryHelper (289 LOC). Extracted collocate search, scoring, and ranking logic into CollocateQueryHelper; executor now delegates.",
       "first_seen": "2026-03-09T18:35:34+00:00",
-      "last_seen": "2026-03-10T18:38:43+00:00",
-      "resolved_at": "2026-03-10T20:10:55+00:00",
-      "reopen_count": 1,
+      "last_seen": "2026-03-11T00:39:34+00:00",
+      "resolved_at": "2026-03-11T00:48:37+00:00",
+      "reopen_count": 2,
       "lang": "java",
       "zone": "production",
       "suppressed": false,
       "suppressed_at": null,
       "suppression_pattern": null,
       "resolution_attestation": {
-        "kind": "scan_verified",
-        "text": "Disappeared from detector output",
-        "attested_at": "2026-03-10T20:10:55+00:00",
-        "scan_verified": true
+        "kind": "manual",
+        "text": "I have actually Split BlackLabQueryExecutor (510 LOC) into BlackLabQueryExecutor (243 LOC) and CollocateQueryHelper (289 LOC). Extracted collocate search, scoring, and ranking logic into CollocateQueryHelper; executor now delegates. and I am not gaming the score.",
+        "attested_at": "2026-03-11T00:48:37+00:00",
+        "scan_verified": false
       }
     },
     "structural::src/main/java/pl/marcinmilkowski/word_sketch/config/GrammarConfigLoader.java": {
@@ -1560,7 +1560,7 @@
       "status": "open",
       "note": "Reopened (\u00d71) \u2014 reappeared in scan (was fixed)",
       "first_seen": "2026-03-09T18:36:05+00:00",
-      "last_seen": "2026-03-11T00:12:17+00:00",
+      "last_seen": "2026-03-11T00:39:34+00:00",
       "resolved_at": null,
       "reopen_count": 1,
       "lang": "java",
@@ -1582,7 +1582,7 @@
       "status": "open",
       "note": "Reopened (\u00d71) \u2014 reappeared in scan (was fixed)",
       "first_seen": "2026-03-09T18:36:05+00:00",
-      "last_seen": "2026-03-11T00:12:17+00:00",
+      "last_seen": "2026-03-11T00:39:34+00:00",
       "resolved_at": null,
       "reopen_count": 1,
       "lang": "java",
@@ -1604,7 +1604,7 @@
       "status": "open",
       "note": "Reopened (\u00d71) \u2014 reappeared in scan (was fixed)",
       "first_seen": "2026-03-09T18:36:05+00:00",
-      "last_seen": "2026-03-11T00:12:17+00:00",
+      "last_seen": "2026-03-11T00:39:34+00:00",
       "resolved_at": null,
       "reopen_count": 1,
       "lang": "java",
@@ -4967,7 +4967,7 @@
       "status": "open",
       "note": "Reopened (\u00d71) \u2014 reappeared in scan (was fixed)",
       "first_seen": "2026-03-09T22:34:43+00:00",
-      "last_seen": "2026-03-11T00:12:17+00:00",
+      "last_seen": "2026-03-11T00:39:34+00:00",
       "resolved_at": null,
       "reopen_count": 1,
       "lang": "java",
@@ -20045,13 +20045,13 @@
       "status": "open",
       "note": null,
       "first_seen": "2026-03-10T23:28:29+00:00",
-      "last_seen": "2026-03-11T00:12:17+00:00",
+      "last_seen": "2026-03-11T00:39:34+00:00",
       "resolved_at": null,
       "reopen_count": 0,
       "zone": "production",
       "lang": "java",
       "suppressed": true,
-      "suppressed_at": "2026-03-11T00:12:17+00:00",
+      "suppressed_at": "2026-03-11T00:39:34+00:00",
       "suppression_pattern": "security::src/main/java/pl/marcinmilkowski/word_sketch/indexer/blacklab/BlackLabConllUIndexer.java::security::log_sensitive::src/main/java/pl/marcinmilkowski/word_sketch/indexer/blacklab/BlackLabConllUIndexer.java::114"
     },
     "review::.::holistic::cross_module_architecture::pattern_substitution_in_api::8f9ad891": {
@@ -21780,7 +21780,7 @@
           "reason": "tool_failed_unparsed_output"
         }
       ],
-      "updated_at": "2026-03-11T00:12:17+00:00"
+      "updated_at": "2026-03-11T00:39:34+00:00"
     }
   },
   "score_confidence": {
@@ -21811,10 +21811,7 @@
     "cross_module_architecture": {
       "score": 61.9,
       "source": "holistic",
-      "assessed_at": "2026-03-11T00:20:41+00:00",
-      "needs_review_refresh": true,
-      "refresh_reason": "review_issue_wontfix",
-      "stale_since": "2026-03-11T00:24:37+00:00"
+      "assessed_at": "2026-03-11T00:20:41+00:00"
     },
     "ai_generated_debt": {
       "score": 56.1,
@@ -21839,10 +21836,7 @@
     "design_coherence": {
       "score": 51.4,
       "source": "holistic",
-      "assessed_at": "2026-03-11T00:20:41+00:00",
-      "needs_review_refresh": true,
-      "refresh_reason": "review_issue_fixed",
-      "stale_since": "2026-03-11T00:38:52+00:00"
+      "assessed_at": "2026-03-11T00:20:41+00:00"
     },
     "contract_coherence": {
       "score": 63.8,
@@ -21852,10 +21846,7 @@
     "logic_clarity": {
       "score": 72.4,
       "source": "holistic",
-      "assessed_at": "2026-03-11T00:20:41+00:00",
-      "needs_review_refresh": true,
-      "refresh_reason": "review_issue_fixed",
-      "stale_since": "2026-03-11T00:38:53+00:00"
+      "assessed_at": "2026-03-11T00:20:41+00:00"
     },
     "type_safety": {
       "score": 47.3,
@@ -21865,10 +21856,7 @@
     "api_surface_coherence": {
       "score": 45.1,
       "source": "holistic",
-      "assessed_at": "2026-03-11T00:20:41+00:00",
-      "needs_review_refresh": true,
-      "refresh_reason": "review_issue_wontfix",
-      "stale_since": "2026-03-11T00:24:39+00:00"
+      "assessed_at": "2026-03-11T00:20:41+00:00"
     },
     "authorization_consistency": {
       "score": 67.5,
@@ -21888,10 +21876,7 @@
     "convention_outlier": {
       "score": 84.8,
       "source": "holistic",
-      "assessed_at": "2026-03-11T00:20:41+00:00",
-      "needs_review_refresh": true,
-      "refresh_reason": "review_issue_fixed",
-      "stale_since": "2026-03-11T00:38:45+00:00"
+      "assessed_at": "2026-03-11T00:20:41+00:00"
     },
     "error_consistency": {
       "score": 59.3,
@@ -21901,10 +21886,7 @@
     "naming_quality": {
       "score": 76.5,
       "source": "holistic",
-      "assessed_at": "2026-03-11T00:20:41+00:00",
-      "needs_review_refresh": true,
-      "refresh_reason": "review_issue_fixed",
-      "stale_since": "2026-03-11T00:38:48+00:00"
+      "assessed_at": "2026-03-11T00:20:41+00:00"
     },
     "abstraction_fitness": {
       "score": 65.1,
@@ -21925,10 +21907,7 @@
         "Delegation Density": 95.0,
         "Definition Directness": 88.0,
         "Type Discipline": 92.0
-      },
-      "needs_review_refresh": true,
-      "refresh_reason": "review_issue_fixed",
-      "stale_since": "2026-03-11T00:38:51+00:00"
+      }
     },
     "dependency_health": {
       "score": 73.6,
@@ -21962,131 +21941,6 @@
     }
   },
   "scan_history": [
-    {
-      "timestamp": "2026-03-10T20:10:55+00:00",
-      "lang": "java",
-      "strict_score": 67.2,
-      "verified_strict_score": 96.5,
-      "objective_score": 98.8,
-      "overall_score": 68.2,
-      "open": 7,
-      "diff_new": 1,
-      "diff_resolved": 1,
-      "ignored": 0,
-      "raw_issues": 8,
-      "suppressed_pct": 0.0,
-      "ignore_patterns": 0,
-      "subjective_integrity": {
-        "status": "pass",
-        "matched_count": 0,
-        "reset_count": 0,
-        "target_score": 95.0
-      },
-      "score_confidence": {
-        "status": "reduced",
-        "confidence": 0.0,
-        "detector_count": 1,
-        "dimension_count": 0
-      },
-      "dimension_scores": {
-        "Code quality": {
-          "score": 100.0,
-          "strict": 100.0
-        },
-        "Security": {
-          "score": 97.6,
-          "strict": 97.6
-        },
-        "File health": {
-          "score": 100.0,
-          "strict": 95.2
-        },
-        "Duplication": {
-          "score": 65.0,
-          "strict": 65.0
-        },
-        "Naming quality": {
-          "score": 45.1,
-          "strict": 45.1
-        },
-        "Logic clarity": {
-          "score": 46.4,
-          "strict": 46.4
-        },
-        "Type safety": {
-          "score": 49.3,
-          "strict": 49.3
-        },
-        "Contracts": {
-          "score": 63.8,
-          "strict": 63.8
-        },
-        "Error consistency": {
-          "score": 40.8,
-          "strict": 40.8
-        },
-        "Abstraction fit": {
-          "score": 42.0,
-          "strict": 42.0
-        },
-        "AI generated debt": {
-          "score": 56.1,
-          "strict": 56.1
-        },
-        "High elegance": {
-          "score": 36.7,
-          "strict": 36.7
-        },
-        "Mid elegance": {
-          "score": 53.8,
-          "strict": 53.8
-        },
-        "Low elegance": {
-          "score": 48.1,
-          "strict": 48.1
-        },
-        "Cross-module arch": {
-          "score": 48.0,
-          "strict": 48.0
-        },
-        "Init coupling": {
-          "score": 64.9,
-          "strict": 64.9
-        },
-        "Convention drift": {
-          "score": 60.2,
-          "strict": 60.2
-        },
-        "Dep health": {
-          "score": 73.6,
-          "strict": 73.6
-        },
-        "Test strategy": {
-          "score": 12.3,
-          "strict": 12.3
-        },
-        "API coherence": {
-          "score": 37.0,
-          "strict": 37.0
-        },
-        "Auth consistency": {
-          "score": 67.5,
-          "strict": 67.5
-        },
-        "Stale migration": {
-          "score": 58.9,
-          "strict": 58.9
-        },
-        "Structure nav": {
-          "score": 55.1,
-          "strict": 55.1
-        },
-        "Design coherence": {
-          "score": 36.6,
-          "strict": 36.6
-        }
-      }
-    },
     {
       "timestamp": "2026-03-10T20:17:33+00:00",
       "lang": "java",
@@ -24665,6 +24519,143 @@
           "strict": 65.0
         }
       }
+    },
+    {
+      "timestamp": "2026-03-11T00:39:34+00:00",
+      "lang": "java",
+      "strict_score": 73.3,
+      "verified_strict_score": 98.2,
+      "objective_score": 98.2,
+      "overall_score": 73.3,
+      "open": 6,
+      "diff_new": 0,
+      "diff_resolved": 0,
+      "ignored": 1,
+      "raw_issues": 6,
+      "suppressed_pct": 16.7,
+      "ignore_patterns": 1,
+      "subjective_integrity": {
+        "status": "pass",
+        "matched_count": 0,
+        "reset_count": 0,
+        "target_score": 95.0
+      },
+      "score_confidence": {
+        "status": "reduced",
+        "confidence": 0.0,
+        "detector_count": 1,
+        "dimension_count": 0
+      },
+      "dimension_scores": {
+        "Code quality": {
+          "score": 100.0,
+          "strict": 100.0
+        },
+        "Security": {
+          "score": 100.0,
+          "strict": 100.0
+        },
+        "File health": {
+          "score": 97.7,
+          "strict": 97.7
+        },
+        "Naming quality": {
+          "score": 76.5,
+          "strict": 76.5
+        },
+        "Logic clarity": {
+          "score": 72.4,
+          "strict": 72.4
+        },
+        "Type safety": {
+          "score": 47.3,
+          "strict": 47.3
+        },
+        "Contracts": {
+          "score": 63.8,
+          "strict": 63.8
+        },
+        "Error consistency": {
+          "score": 59.3,
+          "strict": 59.3
+        },
+        "Abstraction fit": {
+          "score": 65.1,
+          "strict": 65.1
+        },
+        "AI generated debt": {
+          "score": 56.1,
+          "strict": 56.1
+        },
+        "High elegance": {
+          "score": 51.1,
+          "strict": 51.1
+        },
+        "Mid elegance": {
+          "score": 49.0,
+          "strict": 49.0
+        },
+        "Low elegance": {
+          "score": 67.4,
+          "strict": 67.4
+        },
+        "Cross-module arch": {
+          "score": 61.9,
+          "strict": 61.9
+        },
+        "Init coupling": {
+          "score": 64.9,
+          "strict": 64.9
+        },
+        "Convention drift": {
+          "score": 84.8,
+          "strict": 84.8
+        },
+        "Dep health": {
+          "score": 73.6,
+          "strict": 73.6
+        },
+        "Test strategy": {
+          "score": 48.8,
+          "strict": 48.8
+        },
+        "API coherence": {
+          "score": 45.1,
+          "strict": 45.1
+        },
+        "Auth consistency": {
+          "score": 67.5,
+          "strict": 67.5
+        },
+        "Stale migration": {
+          "score": 58.9,
+          "strict": 58.9
+        },
+        "Structure nav": {
+          "score": 55.1,
+          "strict": 55.1
+        },
+        "Design coherence": {
+          "score": 51.4,
+          "strict": 51.4
+        },
+        "Definition Directness": {
+          "score": 56.7,
+          "strict": 56.7
+        },
+        "Delegation Density": {
+          "score": 67.1,
+          "strict": 67.1
+        },
+        "Type Discipline": {
+          "score": 43.6,
+          "strict": 43.6
+        },
+        "Duplication": {
+          "score": 65.0,
+          "strict": 65.0
+        }
+      }
     }
   ],
   "lang_capabilities": {
@@ -24678,7 +24669,7 @@
     "test": 16
   },
   "tool_hash": "c108a62acd1d",
-  "scan_path": null,
+  "scan_path": ".",
   "scan_completeness": {
     "java": "full"
   },
@@ -24689,14 +24680,13 @@
       "security": 30,
       "boilerplate_duplication": 0,
       "dupes": 0,
-      "stale_wontfix": 0,
-      "review": 10
+      "stale_wontfix": 0
     }
   },
   "codebase_metrics": {
     "java": {
       "total_files": 46,
-      "total_loc": 6446,
+      "total_loc": 6450,
       "total_directories": 14
     }
   },
@@ -24736,7 +24726,7 @@
     "File health": {
       "score": 100.0,
       "strict": 100.0,
-      "verified_strict_score": 100.0,
+      "verified_strict_score": 97.7,
       "checks": 30,
       "failing": 0,
       "tier": 3,
@@ -25267,7 +25257,7 @@
   },
   "reminder_history": {
     "zone_classification": 3,
-    "report_scores": 11,
+    "report_scores": 12,
     "review_issues_pending": 3,
     "feedback_nudge": 3,
     "wontfix_growing": 1,

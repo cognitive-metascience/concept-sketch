@@ -1,0 +1,113 @@
+{
+  "batch": "abstraction_fitness",
+  "batch_index": 2,
+  "assessments": {
+    "abstraction_fitness": 73.0
+  },
+  "dimension_notes": {
+    "abstraction_fitness": {
+      "evidence": [
+        "QueryExecutor interface (query/QueryExecutor.java) has one concrete implementation (BlackLabQueryExecutor) but is legitimately used for mock injection in SemanticFieldExplorer constructor and test harnesses — the interface earns its keep.",
+        "CqlUtils.splitCqlTokens and CqlUtils.escapeForRegex are genuine shared primitives used by PatternSubstitution, RelationConfig, and GrammarConfigLoader, reducing real duplication across three classes.",
+        "HttpApiUtils enforces consistent policy (CORS headers, error JSON format, method validation) across all API handlers — not a pass-through, it provides uniform behavior.",
+        "RelationConfig contains a private static escapeForRegex(s) method at line 111-113 whose body is solely 'return CqlUtils.escapeForRegex(s)' — a pure pass-through wrapper with no added behavior.",
+        "PatternSubstitution.extractXposFromConstraint (lines 43-63) and RelationConfig.extractConstraintAttribute (lines 101-109) both parse CQL constraint strings to extract named attribute values (xpos/tag). PatternSubstitution uses indexOf string scanning; RelationConfig uses regex Pattern. These are parallel implementations of the same primitive that belong in CqlUtils.",
+        "SemanticFieldExplorer.getComparator() at line 289 exposes the internal CollocateProfileComparator collaborator directly; ExplorationHandlers reaches through it at line 177: 'semanticFieldExplorer.getComparator().compareCollocateProfiles(...)'. Callers bypass SemanticFieldExplorer's own interface to invoke the comparator.",
+        "ExplorationHandlers.buildExploreResponseBody and buildBaseExploreResponse are well-chosen private helpers that avoid response-building duplication across single-seed and multi-seed handlers — good consolidation.",
+        "Model classes (AdjectiveProfile, DiscoveredNoun, CoreCollocate records; ExplorationResult, ComparisonResult traditional classes) are appropriately scoped DTOs with no abstraction overhead. ExplorationResult and ComparisonResult include real derived-view methods (getFullyShared, getEdges, etc.) that justify their non-record form.",
+        "No delegation-heavy classes detected (mechanical scan confirms delegation_heavy_class_count = 0). No facade modules or typed-dict violations.",
+        "GrammarConfigLoader.deriveTokenPosition deliberately extends CqlUtils bracket-walking to handle numbered label prefixes (1:[...] 2:[...]) — documented extension, not duplication."
+      ],
+      "impact_scope": "module",
+      "fix_scope": "multi_file_refactor",
+      "confidence": "high",
+      "sub_axes": {
+        "abstraction_leverage": 80.0,
+        "indirection_cost": 78.0,
+        "interface_honesty": 82.0,
+        "delegation_density": 92.0,
+        "definition_directness": 68.0,
+        "type_discipline": 88.0
+      }
+    }
+  },
+  "dimension_judgment": {
+    "abstraction_fitness": {
+      "strengths": [
+        "CqlUtils is a genuine shared primitive used by three distinct callers (PatternSubstitution, RelationConfig, GrammarConfigLoader), reducing real duplication at the exact right granularity.",
+        "HttpApiUtils enforces consistent policy (CORS, error serialization, method validation) rather than just delegating — every API endpoint benefits uniformly.",
+        "QueryExecutor interface, though single-impl, is genuinely used for mock injection in testing and is richly documented with distinct per-method responsibilities that map cleanly to real use-cases.",
+        "ExplorationHandlers.buildExploreResponseBody and buildBaseExploreResponse eliminate response-building duplication across single-seed and multi-seed flows without over-generalising.",
+        "Model records (AdjectiveProfile, DiscoveredNoun, CoreCollocate) are right-sized, with no unnecessary wrapping layers between domain logic and serialization."
+      ],
+      "issue_character": "Issues are localized to CQL string-manipulation helpers: one pass-through private wrapper and two parallel implementations of the same attribute-extraction primitive, plus one exposed-internal-collaborator pattern that lets callers bypass SemanticFieldExplorer's interface — none systemic.",
+      "score_rationale": "The codebase's primary abstractions (QueryExecutor, GrammarConfigLoader, CqlUtils, HttpApiUtils, model layer) each deliver real leverage and pay for their indirection cost. The weaknesses are contained: RelationConfig.escapeForRegex is a no-value private wrapper, PatternSubstitution and RelationConfig independently implement CQL attribute parsing that belongs in CqlUtils, and SemanticFieldExplorer leaks its internal comparator. These reduce definition_directness locally but do not undermine the overall design. Against the global rubric (80 = solid but uneven), the score sits just below that threshold because the duplicated CQL attribute-extraction logic represents a missed abstraction opportunity in the one area (CQL string utilities) where shared infrastructure is actively being built."
+    }
+  },
+  "issues": [
+    {
+      "dimension": "abstraction_fitness",
+      "identifier": "cql_attr_extractor_duplication",
+      "summary": "CQL constraint attribute extraction is implemented twice with different strategies rather than once in CqlUtils",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/api/PatternSubstitution.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/config/RelationConfig.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/utils/CqlUtils.java"
+      ],
+      "evidence": [
+        "PatternSubstitution.extractXposFromConstraint (lines 43-63) uses indexOf string scanning to find 'xpos=\"...' or 'tag=\"...' and returns the raw attribute substring.",
+        "RelationConfig.extractConstraintAttribute (lines 101-109) uses java.util.regex.Pattern to match 'attrName=\"([^\"]*)\"' and returns 'attrName=\"value\"'.",
+        "Both methods serve the same purpose (parse a CQL bracket expression and extract a named attribute value) and are called from analogous lemma-merging methods in their respective classes.",
+        "CqlUtils already houses the shared bracket-splitting and escape primitives that both files depend on — it is the natural home for a shared extractConstraintAttribute utility."
+      ],
+      "suggestion": "Add a public static String extractConstraintAttribute(String constraint, String attrName) method to CqlUtils that handles both xpos/tag and any attribute name using regex, then replace PatternSubstitution.extractXposFromConstraint and RelationConfig.extractConstraintAttribute with calls to it.",
+      "confidence": "high",
+      "impact_scope": "module",
+      "fix_scope": "multi_file_refactor"
+    },
+    {
+      "dimension": "abstraction_fitness",
+      "identifier": "relation_config_escape_wrapper",
+      "summary": "RelationConfig.escapeForRegex is a private pass-through wrapper with no added behavior over CqlUtils.escapeForRegex",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/config/RelationConfig.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/utils/CqlUtils.java"
+      ],
+      "evidence": [
+        "RelationConfig lines 111-113: 'private static String escapeForRegex(String s) { return CqlUtils.escapeForRegex(s); }' — body is a single delegation, no added policy or translation.",
+        "The method is only called once internally (line 88: mergeLemmaConstraint). PatternSubstitution already calls CqlUtils.escapeForRegex directly without a wrapper (line 33).",
+        "The wrapper adds an indirection layer in the same package that already imports CqlUtils."
+      ],
+      "suggestion": "Remove RelationConfig.escapeForRegex and replace the single call site at line 88 with a direct call to CqlUtils.escapeForRegex(headword).",
+      "confidence": "high",
+      "impact_scope": "local",
+      "fix_scope": "single_edit"
+    },
+    {
+      "dimension": "abstraction_fitness",
+      "identifier": "explorer_comparator_leak",
+      "summary": "SemanticFieldExplorer.getComparator() exposes internal collaborator, letting callers bypass the explorer's own interface",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/exploration/SemanticFieldExplorer.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/api/ExplorationHandlers.java"
+      ],
+      "evidence": [
+        "SemanticFieldExplorer line 289: 'public CollocateProfileComparator getComparator() { return comparator; }' — raw accessor exposes the internal object.",
+        "ExplorationHandlers line 177: 'semanticFieldExplorer.getComparator().compareCollocateProfiles(nouns, minLogDice, maxPerNoun)' — callers chain through the accessor to invoke comparator behaviour directly, bypassing any centralised lifecycle or future policy SemanticFieldExplorer could apply.",
+        "The comparator was extracted from SemanticFieldExplorer to reduce class size (per JavaDoc), but the resulting design leaves ExplorationHandlers coupled to CollocateProfileComparator's interface unnecessarily."
+      ],
+      "suggestion": "Add a compareCollocateProfiles delegation method on SemanticFieldExplorer that calls this.comparator.compareCollocateProfiles(...) and remove the getComparator() accessor. ExplorationHandlers would then call semanticFieldExplorer.compareCollocateProfiles(...) without needing to know about CollocateProfileComparator.",
+      "confidence": "high",
+      "impact_scope": "module",
+      "fix_scope": "single_edit"
+    }
+  ],
+  "retrospective": {
+    "root_causes": [
+      "CQL string manipulation utilities grew organically: CqlUtils was introduced after PatternSubstitution and RelationConfig each had their own parsing helpers, leaving behind the older implementations rather than migrating callers.",
+      "CollocateProfileComparator was extracted from SemanticFieldExplorer purely for size reasons without a clean API boundary decision, resulting in a leaky accessor that exposes the internal split."
+    ],
+    "likely_symptoms": [],
+    "possible_false_positives": []
+  }
+}

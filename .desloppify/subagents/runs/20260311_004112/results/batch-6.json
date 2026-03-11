@@ -1,0 +1,77 @@
+{
+  "batch": "convention_outlier",
+  "batch_index": 6,
+  "assessments": {"convention_outlier": 74.0},
+  "dimension_notes": {
+    "convention_outlier": {
+      "evidence": [
+        "model package hosts standalone records/classes: AdjectiveProfile, DiscoveredNoun, CoreCollocate, Edge, ExploreOptions, ExplorationResult, ComparisonResult — but WordSketchResult, CollocateResult, KwicResult, SnippetResult are nested inside QueryResults in the query package, splitting domain value objects across two homes with no documented rationale",
+        "ExploreParams (private record at line 382 of ExplorationHandlers.java) near-duplicates ExploreOptions (public record in model package): both bundle topCollocates, minShared, minLogDice, and a per-seed noun limit; they diverge only on one field (includeExamples vs nounsPerSeed)",
+        "API handler classes (ExplorationHandlers, SketchHandlers, RelationUtils) are all package-private, while HttpApiUtils is public — a subtle access-modifier inconsistency among siblings in the same api package",
+        "ComparisonResult and ExplorationResult carry explicit Javadoc documenting the record-vs-class split as intentional; no equivalent rationale exists for why result types in QueryResults are nested rather than standalone"
+      ],
+      "impact_scope": "module",
+      "fix_scope": "multi_file_refactor",
+      "confidence": "high"
+    }
+  },
+  "dimension_judgment": {
+    "convention_outlier": {
+      "strengths": [
+        "Strict camelCase naming throughout all packages with zero snake_case drift — no naming convention collisions across the codebase",
+        "The intentional record-vs-class distinction in the model package is explicitly documented in ComparisonResult and ExplorationResult Javadoc, preventing false-positive confusion",
+        "All API handler siblings (ExplorationHandlers, SketchHandlers, RelationUtils) follow the same structural pattern: package-private class, private final fields set via constructor, no public state",
+        "Private nested records for implementation details (HitRecord, CollocateSearch in BlackLabQueryExecutor; ExploreParams in ExplorationHandlers) are consistently used as local value bundles without leaking to the API surface"
+      ],
+      "issue_character": "The convention issues are localized to two closely related phenomena: a split in where domain data types live (model package vs nested-in-QueryResults), and a partial duplication of an explore-parameters bundle record, suggesting the model package boundary was not revisited when QueryResults was introduced.",
+      "score_rationale": "The codebase is clean and consistent in naming, access modifiers, and structural patterns, placing it well above a 60 (significant drag) anchor. The main drag comes from a tangible split in where domain value objects live — result types in query.QueryResults vs the model package — which creates a navigation inconsistency developers will notice when adding new result types. The near-duplicate ExploreParams/ExploreOptions adds a second, smaller drift point. Together these pull the score below 80 (solid but uneven)."
+    }
+  },
+  "issues": [
+    {
+      "dimension": "convention_outlier",
+      "identifier": "query_results_split_model_home",
+      "summary": "Domain result records live in query.QueryResults instead of the model package, splitting data-type ownership across two homes",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/query/QueryResults.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/model/AdjectiveProfile.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/model/DiscoveredNoun.java"
+      ],
+      "evidence": [
+        "WordSketchResult, CollocateResult, KwicResult, SnippetResult are nested records inside QueryResults in the query package",
+        "AdjectiveProfile, DiscoveredNoun, CoreCollocate, Edge, ExploreOptions are standalone public records in the model package",
+        "No Javadoc or comment explains why query-layer results are co-located in QueryResults rather than placed in model like their siblings"
+      ],
+      "suggestion": "Move WordSketchResult, CollocateResult, KwicResult, and SnippetResult (and the ConcordanceResult sealed interface) to the model package as standalone top-level types, matching the convention established by AdjectiveProfile and DiscoveredNoun. Retain QueryResults only as a thin utility class or delete it.",
+      "confidence": "high",
+      "impact_scope": "module",
+      "fix_scope": "multi_file_refactor"
+    },
+    {
+      "dimension": "convention_outlier",
+      "identifier": "duplicate_explore_params_bundle",
+      "summary": "ExploreParams (private record in ExplorationHandlers) near-duplicates ExploreOptions (public record in model), both bundling the same exploration tuning parameters",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/api/ExplorationHandlers.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/model/ExploreOptions.java"
+      ],
+      "evidence": [
+        "ExploreParams at line 382 of ExplorationHandlers: record ExploreParams(int topCollocates, int minShared, double minLogDice, int nounsPerSeed)",
+        "ExploreOptions in model package: record ExploreOptions(int topCollocates, int nounsPerCollocate, double minLogDice, int minShared, boolean includeExamples)",
+        "Four of the five fields overlap; the handler converts ExploreParams into ExploreOptions before calling SemanticFieldExplorer"
+      ],
+      "suggestion": "Eliminate ExploreParams by having parseExploreParams return an ExploreOptions directly. Reconcile the one divergent field (nounsPerSeed vs nounsPerCollocate) in ExploreOptions and add the includeExamples default inline at the call site.",
+      "confidence": "high",
+      "impact_scope": "local",
+      "fix_scope": "single_edit"
+    }
+  ],
+  "retrospective": {
+    "root_causes": [
+      "QueryResults was created as a convenience namespace before the model package was established as the canonical home for domain value types; the boundary was never realigned",
+      "ExploreParams was added as a quick HTTP-parsing local bundle without checking that ExploreOptions in model already served the same purpose"
+    ],
+    "likely_symptoms": [],
+    "possible_false_positives": []
+  }
+}

@@ -1,0 +1,134 @@
+{
+  "batch": "naming_quality",
+  "batch_index": 7,
+  "assessments": {"naming_quality": 74.0},
+  "dimension_notes": {
+    "naming_quality": {
+      "evidence": [
+        "Class names are highly accurate throughout: BlackLabQueryExecutor, SemanticFieldExplorer, CollocateProfileComparator, GrammarConfigLoader, BlackLabSnippetParser all communicate their purpose precisely.",
+        "QueryExecutor interface precisely distinguishes findCollocations, executeSurfacePattern, executeDependencyPattern, executeBcqlQuery — each name conveys the specific behavioural difference.",
+        "Record field names in model types are expressive: DiscoveredNoun.sharedCollocates(), CoreCollocate.sharedByCount(), AdjectiveProfile.commonalityScore(), AdjectiveProfile.distinctivenessScore().",
+        "CollocateProfileComparator exclusively handles adjectives: constant is ADJECTIVE_PATTERN, internal map is adjectiveProfiles, return type is AdjectiveProfile, but the class is named for 'collocate profiles' — name/behaviour mismatch at class level.",
+        "SemanticFieldExplorer.rankByLogDice does NOT rank: it scores candidate nouns (DiscoveredNoun) and filters by minShared, returning an unsorted list. The caller sorts. Name implies sorting as the primary action.",
+        "SemanticFieldExplorer uses abbreviated 'seedCollocScores' (Map<String, Double>) locally but the same data persists as ExplorationResult.seedCollocates — inconsistent colloc/collocate abbreviation across the same module.",
+        "ExploreOptions.nounsPerCollocate() and ExploreParams.nounsPerSeed() name the same tuning parameter differently; ExplorationHandlers assigns one to the other: int nounsPerCollocate = exploreParams.nounsPerSeed().",
+        "SemanticFieldExplorer.buildCollocateIndex builds Map<noun, Map<collocate, logDice>> — 'index' suggests a search structure; the result is a reverse-lookup profile map, making the name slightly misleading.",
+        "BlackLabQueryExecutor.getTotalFrequency uses tfl for TermFrequencyList — unexplained abbreviation inconsistent with the codebase's general preference for full variable names.",
+        "findCollocations uses posMap, executeDependencyPattern uses lemmaPosMap for the same concept (lemma → POS mapping) — parallel methods with divergent local variable vocabulary."
+      ],
+      "impact_scope": "module",
+      "fix_scope": "multi_file_refactor",
+      "confidence": "high"
+    }
+  },
+  "dimension_judgment": {
+    "naming_quality": {
+      "strengths": [
+        "Class and interface names precisely reflect purpose: BlackLabQueryExecutor, SemanticFieldExplorer, GrammarConfigLoader, BlackLabSnippetParser are all self-documenting.",
+        "QueryExecutor interface method names clearly distinguish four distinct operations (findCollocations, executeSurfacePattern, executeDependencyPattern, executeBcqlQuery), with Javadoc explaining each difference.",
+        "Model record fields (DiscoveredNoun, CoreCollocate, AdjectiveProfile) use domain-accurate vocabulary: sharedByCount, commonalityScore, distinctivenessScore, seedLogDice.",
+        "The ComparisonResult Javadoc explicitly documents the get-prefix convention for non-record classes vs. record accessor convention, showing intentional naming consistency within types.",
+        "Phase helper methods in SemanticFieldExplorer (fetchSeedCollocates, buildCollocateIndex, identifyCoreCollocates) follow a consistent verb-object naming scheme that makes the exploration pipeline easy to trace."
+      ],
+      "issue_character": "Issues are concentrated in vocabulary divergence — the same concept receives different names across module boundaries (colloc vs collocate, nounsPerCollocate vs nounsPerSeed, collocate-profile vs adjective-profile) — rather than generic or meaningless names.",
+      "score_rationale": "The codebase clears the 80-point solid threshold at the class and interface level, where names are accurate and expressive. It is pulled below 80 by a consistent pattern of vocabulary drift across the exploration/comparison subsystem: CollocateProfileComparator is named for a broader abstraction than its adjective-only implementation, rankByLogDice misrepresents its primary behaviour (scoring and filtering, not sorting), and the colloc/collocate abbreviation splits the same concept across caller and callee in the same module. These issues are real friction for a developer navigating the exploration package but do not approach the pervasive problems that would justify a sub-70 score."
+    }
+  },
+  "issues": [
+    {
+      "dimension": "naming_quality",
+      "identifier": "collocate_comparator_adjective_mismatch",
+      "summary": "CollocateProfileComparator exclusively handles adjectives but its name implies generic collocate profiles",
+      "related_files": ["src/main/java/pl/marcinmilkowski/word_sketch/exploration/CollocateProfileComparator.java"],
+      "evidence": [
+        "ADJECTIVE_PATTERN constant '[xpos=\"JJ.*\"]' hard-codes adjective-only lookup",
+        "buildRawAdjectiveProfiles returns Map<adjective, Map<noun, logDice>> — no other POS is handled",
+        "compareCollocateProfiles returns ComparisonResult containing List<AdjectiveProfile>",
+        "Class name says 'Collocate' but implementation vocabulary is entirely 'Adjective'"
+      ],
+      "suggestion": "Rename the class to AdjectiveProfileComparator and its method to compareAdjectiveProfiles to match implementation vocabulary; or, if generic collocate comparison is planned, parameterise the POS pattern and update field names accordingly.",
+      "confidence": "high",
+      "impact_scope": "module",
+      "fix_scope": "multi_file_refactor",
+      "root_cause_cluster": "vocabulary_divergence"
+    },
+    {
+      "dimension": "naming_quality",
+      "identifier": "rank_by_log_dice_misrepresents_behaviour",
+      "summary": "SemanticFieldExplorer.rankByLogDice scores and filters candidates but does not rank them",
+      "related_files": ["src/main/java/pl/marcinmilkowski/word_sketch/exploration/SemanticFieldExplorer.java"],
+      "evidence": [
+        "Method body creates DiscoveredNoun objects with a similarityScore and filters by minShared threshold",
+        "Returns an unsorted List<DiscoveredNoun>; caller (exploreByPattern) performs sort after",
+        "Method name 'rankByLogDice' implies sorting as the primary action, but sort is delegated to caller"
+      ],
+      "suggestion": "Rename to scoreAndFilterCandidates or buildScoredNounCandidates to accurately describe scoring + filtering behaviour.",
+      "confidence": "high",
+      "impact_scope": "local",
+      "fix_scope": "single_edit",
+      "root_cause_cluster": "vocabulary_divergence"
+    },
+    {
+      "dimension": "naming_quality",
+      "identifier": "nouns_per_collocate_vs_nouns_per_seed",
+      "summary": "Same parameter named nounsPerCollocate in ExploreOptions but nounsPerSeed in ExploreParams, causing a cross-naming assignment",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/model/ExploreOptions.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/api/ExplorationHandlers.java"
+      ],
+      "evidence": [
+        "ExploreOptions record field: int nounsPerCollocate()",
+        "ExploreParams private record field: int nounsPerSeed()",
+        "ExplorationHandlers line: int nounsPerCollocate = exploreParams.nounsPerSeed() — explicit rename at boundary"
+      ],
+      "suggestion": "Align both records on one name. 'nounsPerCollocate' better describes the algorithmic meaning (nouns fetched per collocate in reverse-lookup phase); rename ExploreParams.nounsPerSeed to nounsPerCollocate.",
+      "confidence": "high",
+      "impact_scope": "module",
+      "fix_scope": "single_edit",
+      "root_cause_cluster": "vocabulary_divergence"
+    },
+    {
+      "dimension": "naming_quality",
+      "identifier": "colloc_abbreviation_inconsistency",
+      "summary": "Abbreviation 'colloc' used for local variables in SemanticFieldExplorer but 'collocate' used in persisted ExplorationResult fields for the same data",
+      "related_files": ["src/main/java/pl/marcinmilkowski/word_sketch/exploration/SemanticFieldExplorer.java"],
+      "evidence": [
+        "Local variables: seedCollocScores (Map<String,Double>), seedCollocFrequencies (Map<String,Long>)",
+        "ExplorationResult fields: seedCollocates, seedCollocateFrequencies — full word used",
+        "SemanticFieldExplorer.exploreByPattern: Map<String, Double> seedCollocScores; Map<String, Long> seedCollocFrequencies — then passed to ExplorationResult constructor which names them differently"
+      ],
+      "suggestion": "Rename local variables seedCollocScores → collocateScores (or seedCollocateScores) and seedCollocFrequencies → collocateFrequencies to match ExplorationResult field vocabulary.",
+      "confidence": "high",
+      "impact_scope": "local",
+      "fix_scope": "single_edit",
+      "root_cause_cluster": "vocabulary_divergence"
+    },
+    {
+      "dimension": "naming_quality",
+      "identifier": "build_collocate_index_misleading",
+      "summary": "SemanticFieldExplorer.buildCollocateIndex returns a Map<noun, Map<collocate, logDice>> but 'index' implies a search structure",
+      "related_files": ["src/main/java/pl/marcinmilkowski/word_sketch/exploration/SemanticFieldExplorer.java"],
+      "evidence": [
+        "Method signature: private Map<String, Map<String, Double>> buildCollocateIndex(...)",
+        "Method body builds a reverse-lookup map from noun to its collocate scores, not a search index",
+        "'Index' has an established meaning in this codebase (Lucene/BlackLab index); using it for a plain nested Map creates vocabulary collision"
+      ],
+      "suggestion": "Rename to buildNounCollocateProfiles or buildReverseCollocateMap to describe the data structure accurately.",
+      "confidence": "medium",
+      "impact_scope": "local",
+      "fix_scope": "single_edit",
+      "root_cause_cluster": "vocabulary_divergence"
+    }
+  ],
+  "retrospective": {
+    "root_causes": [
+      "Vocabulary drift between the exploration-algorithm layer (SemanticFieldExplorer) and the model/API layers: abbreviations and term choices were set independently at each layer without a shared glossary.",
+      "CollocateProfileComparator was initially designed as a general comparator but implemented only for adjectives; the class name was not updated to reflect the narrowed scope."
+    ],
+    "likely_symptoms": [
+      "collocate_comparator_adjective_mismatch",
+      "colloc_abbreviation_inconsistency"
+    ],
+    "possible_false_positives": []
+  }
+}

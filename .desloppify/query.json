@@ -1,25 +1,25 @@
 {
   "command": "resolve",
   "patterns": [
-    "f6159886"
+    "structural::src/main/java/pl/marcinmilkowski/word_sketch/query/BlackLabQueryExecutor.java"
   ],
   "status": "fixed",
   "resolved": [
-    "review::.::holistic::logic_clarity::radial_plot_signed_sort_mismatch::f6159886"
+    "structural::src/main/java/pl/marcinmilkowski/word_sketch/query/BlackLabQueryExecutor.java"
   ],
   "count": 1,
   "next_command": "desloppify next",
   "overall_score": 73.8,
   "objective_score": 99.4,
   "strict_score": 73.8,
-  "verified_strict_score": 99.4,
-  "prev_overall_score": 73.8,
-  "prev_objective_score": 99.4,
-  "prev_strict_score": 73.8,
-  "prev_verified_strict_score": 99.4,
-  "attestation": "I have actually Fixed RadialPlot signed-mode sort to use Math.abs(score) so top-30 selection matches the comment and circle-sizing formula. and I am not gaming the score.",
+  "verified_strict_score": 98.2,
+  "prev_overall_score": 73.3,
+  "prev_objective_score": 98.2,
+  "prev_strict_score": 73.3,
+  "prev_verified_strict_score": 98.2,
+  "attestation": "I have actually Split BlackLabQueryExecutor (510 LOC) into BlackLabQueryExecutor (243 LOC) and CollocateQueryHelper (289 LOC). Extracted collocate search, scoring, and ranking logic into CollocateQueryHelper; executor now delegates. and I am not gaming the score.",
   "narrative": {
-    "phase": "stagnation",
+    "phase": "middle_grind",
     "headline": "All T1 and T2 items cleared!",
     "dimensions": {
       "lowest_dimensions": [
@@ -57,11 +57,6 @@
         },
         {
           "name": "Security",
-          "strict": 100.0,
-          "stuck_scans": 5
-        },
-        {
-          "name": "File health",
           "strict": 100.0,
           "stuck_scans": 5
         },
@@ -185,7 +180,7 @@
         }
       },
       "can_parallelize": false,
-      "hint": "Try a different dimension to break the plateau."
+      "hint": "Work through actions in priority order. Rescan after each fix to track progress."
     },
     "tools": {
       "fixers": [],
@@ -218,7 +213,7 @@
       "command": "desloppify show stale_exclude --status open",
       "description": "5 stale_exclude issues \u2014 remove stale exclusion or verify it's still needed"
     },
-    "why_now": "Try a different dimension to break the plateau.",
+    "why_now": "Work through actions in priority order. Rescan after each fix to track progress.",
     "verification_step": {
       "command": "desloppify scan",
       "reason": "revalidate after changes"
@@ -255,7 +250,7 @@
     ],
     "reminder_history": {
       "zone_classification": 3,
-      "report_scores": 11,
+      "report_scores": 12,
       "review_issues_pending": 3,
       "feedback_nudge": 3,
       "wontfix_growing": 1,

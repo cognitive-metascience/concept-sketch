@@ -1,7 +1,7 @@
 {
   "version": 8,
   "created": "2026-03-09T18:36:05+00:00",
-  "updated": "2026-03-11T00:38:53+00:00",
+  "updated": "2026-03-11T00:48:37+00:00",
   "queue_order": [
     "review::.::holistic::test_strategy::api_handler_smoke_only::0654ef4e",
     "review::.::holistic::test_strategy::bcql_concordance_hardcoded_path::498feea7",
@@ -42662,6 +42662,55 @@
       "actor": "user",
       "note": null,
       "detail": {}
+    },
+    {
+      "timestamp": "2026-03-11T00:39:19+00:00",
+      "action": "commit_record",
+      "issue_ids": [
+        "review::.::holistic::api_surface_coherence::bcql_missing_status_field::c83163bc",
+        "review::.::holistic::design_coherence::handle_full_sketch_boolean_flag::48a8c2d9",
+        "review::.::holistic::convention_outlier::model_exploration_result_missing_class_vs_record_rationale::8d9402a4",
+        "review::.::holistic::logic_clarity::pattern_substitution_misleading_null_guard::13b612c1",
+        "review::.::holistic::naming_quality::counts_positional_array_main::254376af",
+        "review::.::holistic::naming_quality::ep_abbreviation_explore_params::ac1625dc",
+        "review::.::holistic::naming_quality::throw_missing_unconditional::d9f1b290",
+        "review::.::holistic::abstraction_fitness::explorer_comparator_passthrough::ba47b66d",
+        "review::.::holistic::abstraction_fitness::explorer_false_autocloseable::921982d8",
+        "review::.::holistic::design_coherence::collocate_search_setup_duplication::04a1e602",
+        "review::.::holistic::logic_clarity::radial_plot_signed_sort_mismatch::f6159886"
+      ],
+      "cluster_name": null,
+      "actor": "user",
+      "note": null,
+      "detail": {
+        "sha": "783119f5778f",
+        "branch": "desloppify/code-health"
+      }
+    },
+    {
+      "timestamp": "2026-03-11T00:48:37+00:00",
+      "action": "done",
+      "issue_ids": [
+        "structural::src/main/java/pl/marcinmilkowski/word_sketch/query/BlackLabQueryExecutor.java"
+      ],
+      "cluster_name": null,
+      "actor": "user",
+      "note": "Split BlackLabQueryExecutor (510 LOC) into BlackLabQueryExecutor (243 LOC) and CollocateQueryHelper (289 LOC). Extracted collocate search, scoring, and ranking logic into CollocateQueryHelper; executor now delegates.",
+      "detail": {}
+    },
+    {
+      "timestamp": "2026-03-11T00:48:37+00:00",
+      "action": "resolve",
+      "issue_ids": [
+        "structural::src/main/java/pl/marcinmilkowski/word_sketch/query/BlackLabQueryExecutor.java"
+      ],
+      "cluster_name": null,
+      "actor": "user",
+      "note": "Split BlackLabQueryExecutor (510 LOC) into BlackLabQueryExecutor (243 LOC) and CollocateQueryHelper (289 LOC). Extracted collocate search, scoring, and ranking logic into CollocateQueryHelper; executor now delegates.",
+      "detail": {
+        "status": "fixed",
+        "attestation": "I have actually Split BlackLabQueryExecutor (510 LOC) into BlackLabQueryExecutor (243 LOC) and CollocateQueryHelper (289 LOC). Extracted collocate search, scoring, and ranking logic into CollocateQueryHelper; executor now delegates. and I am not gaming the score."
+      }
     }
   ],
   "epic_triage_meta": {
@@ -43440,20 +43489,30 @@
       "recorded_at": "2026-03-11T00:11:57+00:00",
       "note": null,
       "cluster_name": null
+    },
+    {
+      "sha": "783119f5778f",
+      "branch": "desloppify/code-health",
+      "issue_ids": [
+        "review::.::holistic::api_surface_coherence::bcql_missing_status_field::c83163bc",
+        "review::.::holistic::design_coherence::handle_full_sketch_boolean_flag::48a8c2d9",
+        "review::.::holistic::convention_outlier::model_exploration_result_missing_class_vs_record_rationale::8d9402a4",
+        "review::.::holistic::logic_clarity::pattern_substitution_misleading_null_guard::13b612c1",
+        "review::.::holistic::naming_quality::counts_positional_array_main::254376af",
+        "review::.::holistic::naming_quality::ep_abbreviation_explore_params::ac1625dc",
+        "review::.::holistic::naming_quality::throw_missing_unconditional::d9f1b290",
+        "review::.::holistic::abstraction_fitness::explorer_comparator_passthrough::ba47b66d",
+        "review::.::holistic::abstraction_fitness::explorer_false_autocloseable::921982d8",
+        "review::.::holistic::design_coherence::collocate_search_setup_duplication::04a1e602",
+        "review::.::holistic::logic_clarity::radial_plot_signed_sort_mismatch::f6159886"
+      ],
+      "recorded_at": "2026-03-11T00:39:19+00:00",
+      "note": null,
+      "cluster_name": null
     }
   ],
   "uncommitted_issues": [
-    "review::.::holistic::api_surface_coherence::bcql_missing_status_field::c83163bc",
-    "review::.::holistic::design_coherence::handle_full_sketch_boolean_flag::48a8c2d9",
-    "review::.::holistic::convention_outlier::model_exploration_result_missing_class_vs_record_rationale::8d9402a4",
-    "review::.::holistic::logic_clarity::pattern_substitution_misleading_null_guard::13b612c1",
-    "review::.::holistic::naming_quality::counts_positional_array_main::254376af",
-    "review::.::holistic::naming_quality::ep_abbreviation_explore_params::ac1625dc",
-    "review::.::holistic::naming_quality::throw_missing_unconditional::d9f1b290",
-    "review::.::holistic::abstraction_fitness::explorer_comparator_passthrough::ba47b66d",
-    "review::.::holistic::abstraction_fitness::explorer_false_autocloseable::921982d8",
-    "review::.::holistic::design_coherence::collocate_search_setup_duplication::04a1e602",
-    "review::.::holistic::logic_clarity::radial_plot_signed_sort_mismatch::f6159886"
+    "structural::src/main/java/pl/marcinmilkowski/word_sketch/query/BlackLabQueryExecutor.java"
   ],
   "commit_tracking_branch": null,
   "scan_count_at_plan_start": 5
