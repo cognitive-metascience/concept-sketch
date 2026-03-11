@@ -1,7 +1,7 @@
 {
   "version": 8,
   "created": "2026-03-09T18:36:05+00:00",
-  "updated": "2026-03-11T04:05:25+00:00",
+  "updated": "2026-03-11T04:10:59+00:00",
   "queue_order": [
     "review::.::holistic::test_strategy::api_handler_smoke_only::0654ef4e",
     "review::.::holistic::test_strategy::bcql_concordance_hardcoded_path::498feea7",
@@ -838,6 +838,26 @@
       "created_at": "2026-03-11T04:03:32+00:00",
       "review_after": null,
       "skipped_at_scan": 45
+    },
+    "security::src/main/java/pl/marcinmilkowski/word_sketch/indexer/blacklab/BlackLabConllUIndexer.java::security::log_sensitive::src/main/java/pl/marcinmilkowski/word_sketch/indexer/blacklab/BlackLabConllUIndexer.java::118": {
+      "issue_id": "security::src/main/java/pl/marcinmilkowski/word_sketch/indexer/blacklab/BlackLabConllUIndexer.java::security::log_sensitive::src/main/java/pl/marcinmilkowski/word_sketch/indexer/blacklab/BlackLabConllUIndexer.java::118",
+      "kind": "permanent",
+      "reason": null,
+      "note": "False positive: logging document/token/error counts is operational metrics, not sensitive data",
+      "attestation": "I have actually reviewed this log statement and confirmed it only logs integer counts of documents indexed \u2014 not user data, credentials, or PII. I am not gaming the score.",
+      "created_at": "2026-03-11T04:09:22+00:00",
+      "review_after": null,
+      "skipped_at_scan": 46
+    },
+    "security::src/main/java/pl/marcinmilkowski/word_sketch/indexer/blacklab/BlackLabConllUIndexer.java::security::log_sensitive::src/main/java/pl/marcinmilkowski/word_sketch/indexer/blacklab/BlackLabConllUIndexer.java::65": {
+      "issue_id": "security::src/main/java/pl/marcinmilkowski/word_sketch/indexer/blacklab/BlackLabConllUIndexer.java::security::log_sensitive::src/main/java/pl/marcinmilkowski/word_sketch/indexer/blacklab/BlackLabConllUIndexer.java::65",
+      "kind": "permanent",
+      "reason": null,
+      "note": "False positive: logging file path and error message during corpus indexing is operational, not sensitive",
+      "attestation": "I have actually reviewed this log statement and confirmed it logs the corpus file path and exception message during batch indexing \u2014 no user credentials or PII. I am not gaming the score.",
+      "created_at": "2026-03-11T04:09:23+00:00",
+      "review_after": null,
+      "skipped_at_scan": 46
     }
   },
   "active_cluster": null,
@@ -54095,6 +54115,59 @@
       "actor": "user",
       "note": "Removed the broken @see reference to non-existent extractLemmaAt(String, int) from BlackLabSnippetParser.extractCollocateLemma Javadoc; the method does not exist in the class",
       "detail": {}
+    },
+    {
+      "timestamp": "2026-03-11T04:09:22+00:00",
+      "action": "skip",
+      "issue_ids": [
+        "security::src/main/java/pl/marcinmilkowski/word_sketch/indexer/blacklab/BlackLabConllUIndexer.java::security::log_sensitive::src/main/java/pl/marcinmilkowski/word_sketch/indexer/blacklab/BlackLabConllUIndexer.java::118"
+      ],
+      "cluster_name": null,
+      "actor": "user",
+      "note": "False positive: logging document/token/error counts is operational metrics, not sensitive data",
+      "detail": {
+        "kind": "permanent",
+        "reason": null
+      }
+    },
+    {
+      "timestamp": "2026-03-11T04:09:23+00:00",
+      "action": "skip",
+      "issue_ids": [
+        "security::src/main/java/pl/marcinmilkowski/word_sketch/indexer/blacklab/BlackLabConllUIndexer.java::security::log_sensitive::src/main/java/pl/marcinmilkowski/word_sketch/indexer/blacklab/BlackLabConllUIndexer.java::65"
+      ],
+      "cluster_name": null,
+      "actor": "user",
+      "note": "False positive: logging file path and error message during corpus indexing is operational, not sensitive",
+      "detail": {
+        "kind": "permanent",
+        "reason": null
+      }
+    },
+    {
+      "timestamp": "2026-03-11T04:10:58+00:00",
+      "action": "done",
+      "issue_ids": [
+        "boilerplate_duplication::src/main/java/pl/marcinmilkowski/word_sketch/model/ComparisonResult.java::6418a9a508f93be9"
+      ],
+      "cluster_name": null,
+      "actor": "user",
+      "note": "Extracted Edge.toMap(); both toMap() methods now use buildEdges().stream().map(Edge::toMap).toList()",
+      "detail": {}
+    },
+    {
+      "timestamp": "2026-03-11T04:10:59+00:00",
+      "action": "resolve",
+      "issue_ids": [
+        "boilerplate_duplication::src/main/java/pl/marcinmilkowski/word_sketch/model/ComparisonResult.java::6418a9a508f93be9"
+      ],
+      "cluster_name": null,
+      "actor": "user",
+      "note": "Extracted Edge.toMap(); both toMap() methods now use buildEdges().stream().map(Edge::toMap).toList()",
+      "detail": {
+        "status": "fixed",
+        "attestation": "I have actually Extracted Edge.toMap(); both toMap() methods now use buildEdges().stream().map(Edge::toMap).toList() and I am not gaming the score."
+      }
     }
   ],
   "epic_triage_meta": {
@@ -55113,7 +55186,9 @@
       "cluster_name": null
     }
   ],
-  "uncommitted_issues": [],
+  "uncommitted_issues": [
+    "boilerplate_duplication::src/main/java/pl/marcinmilkowski/word_sketch/model/ComparisonResult.java::6418a9a508f93be9"
+  ],
   "commit_tracking_branch": null,
   "scan_count_at_plan_start": 5
 }

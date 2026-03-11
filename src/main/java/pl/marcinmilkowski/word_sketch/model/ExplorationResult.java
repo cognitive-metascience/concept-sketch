@@ -134,16 +134,7 @@ public class ExplorationResult {
         }
         map.put("core_collocates", coreList);
 
-        List<Map<String, Object>> edgeList = new ArrayList<>();
-        for (Edge edge : buildEdges()) {
-            Map<String, Object> em = new HashMap<>();
-            em.put("source", edge.source());
-            em.put("target", edge.target());
-            em.put("log_dice", Math.round(edge.weight() * 100.0) / 100.0);
-            em.put("type", edge.type().label());
-            edgeList.add(em);
-        }
-        map.put("edges", edgeList);
+        map.put("edges", buildEdges().stream().map(Edge::toMap).toList());
         return map;
     }
 }
