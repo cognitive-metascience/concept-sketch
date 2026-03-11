@@ -325,8 +325,8 @@ class SketchHandlers {
             String center = obj.getString("center");
             if (center == null) center = "";
             logger.debug("Radial: center = {}", center);
-            int width = (!obj.containsKey("width") || obj.isNull("width")) ? 840 : obj.getIntValue("width");
-            int height = (!obj.containsKey("height") || obj.isNull("height")) ? 520 : obj.getIntValue("height");
+            int width = (!obj.containsKey("width") || obj.get("width") == null) ? 840 : obj.getIntValue("width");
+            int height = (!obj.containsKey("height") || obj.get("height") == null) ? 520 : obj.getIntValue("height");
 
             JSONArray itemsArr = obj.getJSONArray("items");
             List<RadialPlot.Item> items = new ArrayList<>();

@@ -9,7 +9,16 @@ class RelationUtils {
 
     private RelationUtils() {}
 
-    /** Canonical short-alias → grammar-config-ID mappings. */
+    /**
+     * Canonical short-alias → grammar-config-ID mappings.
+     *
+     * <p>Valid keys (case-insensitive): {@code adj_modifier}, {@code modifier},
+     * {@code adj_predicate}, {@code predicate}, {@code subject_of}, {@code subject},
+     * {@code object_of}, {@code object}. Any key not listed here is passed through
+     * unchanged (assumed to already be a canonical grammar-config ID).
+     *
+     * <p>If new relations are added to the grammar config, register their aliases here.
+     */
     private static final Map<String, String> RELATION_ALIASES = Map.of(
         "adj_modifier", "noun_modifiers",
         "modifier",     "noun_modifiers",

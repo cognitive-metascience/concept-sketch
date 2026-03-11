@@ -92,7 +92,11 @@
             <name>UFAL Maven Repository</name>
             <url>https://ufal.mff.cuni.cz/maven2</url>
         </repository>
-        <!-- BlackLab Repository -->
+        <!-- BlackLab Repository
+             NOTE: Resolved from a GitHub raw-content URL, which has no SLA and can become
+             unavailable (rate-limited, branch deleted, repo renamed). If this causes CI failures,
+             install the JAR locally with install-blacklab.sh and remove this repository entry,
+             or mirror the artifacts to a private registry. -->
         <repository>
             <id>blacklab</id>
             <name>BlackLab Maven Repository</name>
