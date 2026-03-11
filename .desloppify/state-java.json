@@ -1,19 +1,19 @@
 {
   "version": 1,
   "created": "2026-03-09T18:35:28+00:00",
-  "last_scan": "2026-03-11T05:25:53+00:00",
-  "scan_count": 48,
+  "last_scan": "2026-03-11T07:10:26+00:00",
+  "scan_count": 49,
   "overall_score": 72.5,
   "objective_score": 99.4,
-  "strict_score": 72.5,
-  "verified_strict_score": 99.4,
+  "strict_score": 72.1,
+  "verified_strict_score": 98.6,
   "stats": {
     "total": 774,
-    "auto_resolved": 122,
+    "auto_resolved": 120,
     "false_positive": 0,
     "fixed": 534,
     "open": 6,
-    "wontfix": 112,
+    "wontfix": 114,
     "by_tier": {
       "1": {
         "auto_resolved": 62,
@@ -23,11 +23,11 @@
         "wontfix": 76
       },
       "2": {
-        "auto_resolved": 32,
+        "auto_resolved": 30,
         "false_positive": 0,
         "fixed": 111,
         "open": 0,
-        "wontfix": 34
+        "wontfix": 36
       },
       "3": {
         "auto_resolved": 28,
@@ -1560,7 +1560,7 @@
       "status": "open",
       "note": "Reopened (\u00d71) \u2014 reappeared in scan (was fixed)",
       "first_seen": "2026-03-09T18:36:05+00:00",
-      "last_seen": "2026-03-11T05:16:00+00:00",
+      "last_seen": "2026-03-11T07:10:26+00:00",
       "resolved_at": null,
       "reopen_count": 1,
       "lang": "java",
@@ -1582,7 +1582,7 @@
       "status": "open",
       "note": "Reopened (\u00d71) \u2014 reappeared in scan (was fixed)",
       "first_seen": "2026-03-09T18:36:05+00:00",
-      "last_seen": "2026-03-11T05:16:00+00:00",
+      "last_seen": "2026-03-11T07:10:26+00:00",
       "resolved_at": null,
       "reopen_count": 1,
       "lang": "java",
@@ -1604,7 +1604,7 @@
       "status": "open",
       "note": "Reopened (\u00d71) \u2014 reappeared in scan (was fixed)",
       "first_seen": "2026-03-09T18:36:05+00:00",
-      "last_seen": "2026-03-11T05:16:00+00:00",
+      "last_seen": "2026-03-11T07:10:26+00:00",
       "resolved_at": null,
       "reopen_count": 1,
       "lang": "java",
@@ -4967,7 +4967,7 @@
       "status": "open",
       "note": "Reopened (\u00d71) \u2014 reappeared in scan (was fixed)",
       "first_seen": "2026-03-09T22:34:43+00:00",
-      "last_seen": "2026-03-11T05:16:00+00:00",
+      "last_seen": "2026-03-11T07:10:26+00:00",
       "resolved_at": null,
       "reopen_count": 1,
       "lang": "java",
@@ -25522,7 +25522,7 @@
       "status": "open",
       "note": "Reopened (\u00d71) \u2014 reappeared in scan (was auto_resolved)",
       "first_seen": "2026-03-11T03:15:21+00:00",
-      "last_seen": "2026-03-11T05:16:00+00:00",
+      "last_seen": "2026-03-11T07:10:26+00:00",
       "resolved_at": null,
       "reopen_count": 1,
       "lang": "java",
@@ -28792,27 +28792,21 @@
         "content": "                    logger.error(\"Indexing error in {} (error #{}, docs so far: {}, tokens so far: {}): {}\",",
         "remediation": "Remove sensitive data from log statements"
       },
-      "status": "auto_resolved",
-      "note": "Fixed despite wontfix \u2014 disappeared from scan (was wontfix)",
+      "status": "wontfix",
+      "note": "False positive: logs file path and error counts during indexing, not sensitive personal data.",
       "first_seen": "2026-03-11T04:08:34+00:00",
-      "last_seen": "2026-03-11T05:16:00+00:00",
-      "resolved_at": "2026-03-11T05:25:53+00:00",
-      "reopen_count": 0,
+      "last_seen": "2026-03-11T07:10:26+00:00",
+      "resolved_at": "2026-03-11T07:11:20+00:00",
+      "reopen_count": 1,
       "zone": "production",
       "lang": "java",
       "suppressed": false,
       "suppressed_at": null,
       "suppression_pattern": null,
-      "resolution_attestation": {
-        "kind": "scan_verified",
-        "text": "Disappeared from detector output",
-        "attested_at": "2026-03-11T05:25:53+00:00",
-        "scan_verified": true
-      },
-      "wontfix_scan_count": 46,
+      "wontfix_scan_count": 49,
       "wontfix_snapshot": {
-        "captured_at": "2026-03-11T04:09:23+00:00",
-        "scan_count": 46,
+        "captured_at": "2026-03-11T07:11:20+00:00",
+        "scan_count": 49,
         "tier": 2,
         "confidence": "medium",
         "detail": {
@@ -28822,6 +28816,12 @@
           "content": "                    logger.error(\"Indexing error in {} (error #{}, docs so far: {}, tokens so far: {}): {}\",",
           "remediation": "Remove sensitive data from log statements"
         }
+      },
+      "resolution_attestation": {
+        "kind": "manual",
+        "text": "I have actually read lines 63-68 of BlackLabConllUIndexer.java and confirmed it logs path, error count, document count, token count \u2014 operational metrics, not sensitive data. I am not gaming the score by resolving without fixing.",
+        "attested_at": "2026-03-11T07:11:20+00:00",
+        "scan_verified": false
       }
     },
     "security::src/main/java/pl/marcinmilkowski/word_sketch/indexer/blacklab/BlackLabConllUIndexer.java::security::log_sensitive::src/main/java/pl/marcinmilkowski/word_sketch/indexer/blacklab/BlackLabConllUIndexer.java::118": {
@@ -28838,27 +28838,21 @@
         "content": "            logger.info(\"Indexing complete! Documents: {}, Tokens: {}, Errors: {}\",",
         "remediation": "Remove sensitive data from log statements"
       },
-      "status": "auto_resolved",
-      "note": "Fixed despite wontfix \u2014 disappeared from scan (was wontfix)",
+      "status": "wontfix",
+      "note": "False positive: logs document count and token count, not sensitive personal data. Indexer tool context.",
       "first_seen": "2026-03-11T04:08:34+00:00",
-      "last_seen": "2026-03-11T05:16:00+00:00",
-      "resolved_at": "2026-03-11T05:25:53+00:00",
-      "reopen_count": 0,
+      "last_seen": "2026-03-11T07:10:26+00:00",
+      "resolved_at": "2026-03-11T07:11:20+00:00",
+      "reopen_count": 1,
       "zone": "production",
       "lang": "java",
       "suppressed": false,
       "suppressed_at": null,
       "suppression_pattern": null,
-      "resolution_attestation": {
-        "kind": "scan_verified",
-        "text": "Disappeared from detector output",
-        "attested_at": "2026-03-11T05:25:53+00:00",
-        "scan_verified": true
-      },
-      "wontfix_scan_count": 46,
+      "wontfix_scan_count": 49,
       "wontfix_snapshot": {
-        "captured_at": "2026-03-11T04:09:22+00:00",
-        "scan_count": 46,
+        "captured_at": "2026-03-11T07:11:20+00:00",
+        "scan_count": 49,
         "tier": 2,
         "confidence": "medium",
         "detail": {
@@ -28868,6 +28862,12 @@
           "content": "            logger.info(\"Indexing complete! Documents: {}, Tokens: {}, Errors: {}\",",
           "remediation": "Remove sensitive data from log statements"
         }
+      },
+      "resolution_attestation": {
+        "kind": "manual",
+        "text": "I have actually read lines 118 of BlackLabConllUIndexer.java and confirmed it logs documentCount.get() and tokenCount.get() \u2014 operational counters, not sensitive data. I am not gaming the score by resolving without fixing.",
+        "attested_at": "2026-03-11T07:11:20+00:00",
+        "scan_verified": false
       }
     },
     "boilerplate_duplication::src/main/java/pl/marcinmilkowski/word_sketch/model/ComparisonResult.java::6418a9a508f93be9": {
@@ -31886,7 +31886,7 @@
           "reason": "tool_failed_unparsed_output"
         }
       ],
-      "updated_at": "2026-03-11T05:16:00+00:00"
+      "updated_at": "2026-03-11T07:10:26+00:00"
     }
   },
   "score_confidence": {
@@ -31922,10 +31922,7 @@
     "ai_generated_debt": {
       "score": 43.5,
       "source": "holistic",
-      "assessed_at": "2026-03-11T05:25:53+00:00",
-      "needs_review_refresh": true,
-      "refresh_reason": "review_issue_fixed",
-      "stale_since": "2026-03-11T07:06:14+00:00"
+      "assessed_at": "2026-03-11T05:25:53+00:00"
     },
     "incomplete_migration": {
       "score": 66.5,
@@ -31945,10 +31942,7 @@
     "design_coherence": {
       "score": 59.9,
       "source": "holistic",
-      "assessed_at": "2026-03-11T05:25:53+00:00",
-      "needs_review_refresh": true,
-      "refresh_reason": "review_issue_fixed",
-      "stale_since": "2026-03-11T07:08:53+00:00"
+      "assessed_at": "2026-03-11T05:25:53+00:00"
     },
     "contract_coherence": {
       "score": 53.9,
@@ -32019,10 +32013,7 @@
         "Delegation Density": 58.0,
         "Definition Directness": 60.0,
         "Type Discipline": 75.0
-      },
-      "needs_review_refresh": true,
-      "refresh_reason": "review_issue_wontfix",
-      "stale_since": "2026-03-11T07:07:46+00:00"
+      }
     },
     "dependency_health": {
       "score": 70.3,
@@ -32037,10 +32028,7 @@
     "mid_level_elegance": {
       "score": 44.3,
       "source": "holistic",
-      "assessed_at": "2026-03-11T05:25:53+00:00",
-      "needs_review_refresh": true,
-      "refresh_reason": "review_issue_fixed",
-      "stale_since": "2026-03-11T07:06:13+00:00"
+      "assessed_at": "2026-03-11T05:25:53+00:00"
     },
     "definition_directness": {
       "score": 56.7,
@@ -32059,143 +32047,6 @@
     }
   },
   "scan_history": [
-    {
-      "timestamp": "2026-03-11T00:19:08+00:00",
-      "lang": "java",
-      "strict_score": 74.2,
-      "verified_strict_score": 99.4,
-      "objective_score": 99.4,
-      "overall_score": 74.2,
-      "open": 10,
-      "diff_new": 2,
-      "diff_resolved": 0,
-      "ignored": 0,
-      "raw_issues": 2,
-      "suppressed_pct": 0.0,
-      "ignore_patterns": 0,
-      "subjective_integrity": {
-        "status": "disabled",
-        "matched_count": 0,
-        "reset_count": 0,
-        "target_score": null
-      },
-      "score_confidence": {
-        "status": "reduced",
-        "confidence": 0.0,
-        "detector_count": 1,
-        "dimension_count": 0
-      },
-      "dimension_scores": {
-        "Code quality": {
-          "score": 100.0,
-          "strict": 100.0
-        },
-        "Security": {
-          "score": 100.0,
-          "strict": 100.0
-        },
-        "File health": {
-          "score": 100.0,
-          "strict": 100.0
-        },
-        "Naming quality": {
-          "score": 65.0,
-          "strict": 65.0
-        },
-        "Logic clarity": {
-          "score": 67.1,
-          "strict": 67.1
-        },
-        "Type safety": {
-          "score": 47.3,
-          "strict": 47.3
-        },
-        "Contracts": {
-          "score": 63.8,
-          "strict": 63.8
-        },
-        "Error consistency": {
-          "score": 59.3,
-          "strict": 59.3
-        },
-        "Abstraction fit": {
-          "score": 79.4,
-          "strict": 79.4
-        },
-        "AI generated debt": {
-          "score": 56.1,
-          "strict": 56.1
-        },
-        "High elegance": {
-          "score": 51.1,
-          "strict": 51.1
-        },
-        "Mid elegance": {
-          "score": 49.0,
-          "strict": 49.0
-        },
-        "Low elegance": {
-          "score": 67.4,
-          "strict": 67.4
-        },
-        "Cross-module arch": {
-          "score": 64.3,
-          "strict": 64.3
-        },
-        "Init coupling": {
-          "score": 64.9,
-          "strict": 64.9
-        },
-        "Convention drift": {
-          "score": 76.6,
-          "strict": 76.6
-        },
-        "Dep health": {
-          "score": 73.6,
-          "strict": 73.6
-        },
-        "Test strategy": {
-          "score": 48.8,
-          "strict": 48.8
-        },
-        "API coherence": {
-          "score": 49.0,
-          "strict": 49.0
-        },
-        "Auth consistency": {
-          "score": 67.5,
-          "strict": 67.5
-        },
-        "Stale migration": {
-          "score": 58.9,
-          "strict": 58.9
-        },
-        "Structure nav": {
-          "score": 55.1,
-          "strict": 55.1
-        },
-        "Design coherence": {
-          "score": 54.2,
-          "strict": 54.2
-        },
-        "Definition Directness": {
-          "score": 56.7,
-          "strict": 56.7
-        },
-        "Delegation Density": {
-          "score": 67.1,
-          "strict": 67.1
-        },
-        "Type Discipline": {
-          "score": 43.6,
-          "strict": 43.6
-        },
-        "Duplication": {
-          "score": 65.0,
-          "strict": 65.0
-        }
-      }
-    },
     {
       "timestamp": "2026-03-11T00:19:09+00:00",
       "lang": "java",
@@ -34798,6 +34649,143 @@
           "strict": 43.6
         }
       }
+    },
+    {
+      "timestamp": "2026-03-11T07:10:26+00:00",
+      "lang": "java",
+      "strict_score": 72.1,
+      "verified_strict_score": 98.6,
+      "objective_score": 98.6,
+      "overall_score": 72.1,
+      "open": 8,
+      "diff_new": 0,
+      "diff_resolved": 0,
+      "ignored": 0,
+      "raw_issues": 7,
+      "suppressed_pct": 0.0,
+      "ignore_patterns": 1,
+      "subjective_integrity": {
+        "status": "pass",
+        "matched_count": 0,
+        "reset_count": 0,
+        "target_score": 95.0
+      },
+      "score_confidence": {
+        "status": "reduced",
+        "confidence": 0.0,
+        "detector_count": 1,
+        "dimension_count": 0
+      },
+      "dimension_scores": {
+        "Code quality": {
+          "score": 100.0,
+          "strict": 100.0
+        },
+        "Security": {
+          "score": 96.8,
+          "strict": 96.8
+        },
+        "File health": {
+          "score": 100.0,
+          "strict": 100.0
+        },
+        "Duplication": {
+          "score": 65.0,
+          "strict": 65.0
+        },
+        "Naming quality": {
+          "score": 65.7,
+          "strict": 65.7
+        },
+        "Logic clarity": {
+          "score": 72.5,
+          "strict": 72.5
+        },
+        "Type safety": {
+          "score": 52.8,
+          "strict": 52.8
+        },
+        "Contracts": {
+          "score": 53.9,
+          "strict": 53.9
+        },
+        "Error consistency": {
+          "score": 54.6,
+          "strict": 54.6
+        },
+        "Abstraction fit": {
+          "score": 50.6,
+          "strict": 50.6
+        },
+        "AI generated debt": {
+          "score": 43.5,
+          "strict": 43.5
+        },
+        "High elegance": {
+          "score": 56.9,
+          "strict": 56.9
+        },
+        "Mid elegance": {
+          "score": 44.3,
+          "strict": 44.3
+        },
+        "Low elegance": {
+          "score": 49.5,
+          "strict": 49.5
+        },
+        "Cross-module arch": {
+          "score": 66.0,
+          "strict": 66.0
+        },
+        "Init coupling": {
+          "score": 71.0,
+          "strict": 71.0
+        },
+        "Convention drift": {
+          "score": 72.1,
+          "strict": 72.1
+        },
+        "Dep health": {
+          "score": 70.3,
+          "strict": 70.3
+        },
+        "Test strategy": {
+          "score": 35.8,
+          "strict": 35.8
+        },
+        "API coherence": {
+          "score": 48.2,
+          "strict": 48.2
+        },
+        "Auth consistency": {
+          "score": 73.6,
+          "strict": 73.6
+        },
+        "Stale migration": {
+          "score": 66.5,
+          "strict": 66.5
+        },
+        "Structure nav": {
+          "score": 63.3,
+          "strict": 63.3
+        },
+        "Design coherence": {
+          "score": 59.9,
+          "strict": 59.9
+        },
+        "Definition Directness": {
+          "score": 56.7,
+          "strict": 56.7
+        },
+        "Delegation Density": {
+          "score": 67.1,
+          "strict": 67.1
+        },
+        "Type Discipline": {
+          "score": 43.6,
+          "strict": 43.6
+        }
+      }
     }
   ],
   "lang_capabilities": {
@@ -34807,29 +34795,28 @@
     }
   },
   "zone_distribution": {
-    "production": 32,
+    "production": 31,
     "test": 21
   },
   "tool_hash": "c108a62acd1d",
-  "scan_path": null,
+  "scan_path": ".",
   "scan_completeness": {
     "java": "full"
   },
   "potentials": {
     "java": {
-      "structural": 32,
+      "structural": 31,
       "flat_dirs": 26,
-      "security": 32,
+      "security": 31,
       "boilerplate_duplication": 2,
       "dupes": 0,
-      "stale_wontfix": 2,
-      "review": 10
+      "stale_wontfix": 0
     }
   },
   "codebase_metrics": {
     "java": {
-      "total_files": 53,
-      "total_loc": 7269,
+      "total_files": 52,
+      "total_loc": 7013,
       "total_directories": 15
     }
   },
@@ -34852,14 +34839,14 @@
     },
     "Security": {
       "score": 100.0,
-      "strict": 100.0,
-      "verified_strict_score": 100.0,
-      "checks": 32,
+      "strict": 96.8,
+      "verified_strict_score": 96.8,
+      "checks": 31,
       "failing": 0,
       "tier": 4,
       "detectors": {
         "security": {
-          "potential": 32,
+          "potential": 31,
           "pass_rate": 1.0,
           "failing": 0,
           "weighted_failures": 0.0
@@ -34870,12 +34857,12 @@
       "score": 100.0,
       "strict": 100.0,
       "verified_strict_score": 100.0,
-      "checks": 32,
+      "checks": 31,
       "failing": 0,
       "tier": 3,
       "detectors": {
         "structural": {
-          "potential": 32,
+          "potential": 31,
           "pass_rate": 1.0,
           "failing": 0,
           "weighted_failures": 0.0
@@ -35399,7 +35386,7 @@
   },
   "reminder_history": {
     "zone_classification": 3,
-    "report_scores": 17,
+    "report_scores": 18,
     "review_issues_pending": 3,
     "feedback_nudge": 3,
     "wontfix_growing": 1,
