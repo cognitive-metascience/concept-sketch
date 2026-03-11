@@ -1,7 +1,7 @@
 {
   "version": 8,
   "created": "2026-03-09T18:36:05+00:00",
-  "updated": "2026-03-11T09:29:18+00:00",
+  "updated": "2026-03-11T09:40:51+00:00",
   "queue_order": [
     "review::.::holistic::test_strategy::api_handler_smoke_only::0654ef4e",
     "review::.::holistic::test_strategy::bcql_concordance_hardcoded_path::498feea7",
@@ -1476,56 +1476,6 @@
       "note": null,
       "attestation": null,
       "created_at": "2026-03-11T09:12:09+00:00",
-      "review_after": null,
-      "skipped_at_scan": 54
-    },
-    "review::.::holistic::cross_module_architecture::config_enums_cross_cutting::d86857c3": {
-      "issue_id": "review::.::holistic::cross_module_architecture::config_enums_cross_cutting::d86857c3",
-      "kind": "temporary",
-      "reason": null,
-      "note": null,
-      "attestation": null,
-      "created_at": "2026-03-11T09:12:40+00:00",
-      "review_after": null,
-      "skipped_at_scan": 54
-    },
-    "review::.::holistic::high_level_elegance::config_owns_domain_vocabulary::8d0c3067": {
-      "issue_id": "review::.::holistic::high_level_elegance::config_owns_domain_vocabulary::8d0c3067",
-      "kind": "temporary",
-      "reason": null,
-      "note": null,
-      "attestation": null,
-      "created_at": "2026-03-11T09:12:40+00:00",
-      "review_after": null,
-      "skipped_at_scan": 54
-    },
-    "review::.::holistic::package_organization::model_package_overload::3258607f": {
-      "issue_id": "review::.::holistic::package_organization::model_package_overload::3258607f",
-      "kind": "temporary",
-      "reason": null,
-      "note": null,
-      "attestation": null,
-      "created_at": "2026-03-11T09:12:40+00:00",
-      "review_after": null,
-      "skipped_at_scan": 54
-    },
-    "review::.::holistic::high_level_elegance::grammar_config_loader_mixed_role::aa30517e": {
-      "issue_id": "review::.::holistic::high_level_elegance::grammar_config_loader_mixed_role::aa30517e",
-      "kind": "temporary",
-      "reason": null,
-      "note": null,
-      "attestation": null,
-      "created_at": "2026-03-11T09:12:40+00:00",
-      "review_after": null,
-      "skipped_at_scan": 54
-    },
-    "review::.::holistic::package_organization::utils_package_heterogeneity::15b56180": {
-      "issue_id": "review::.::holistic::package_organization::utils_package_heterogeneity::15b56180",
-      "kind": "temporary",
-      "reason": null,
-      "note": null,
-      "attestation": null,
-      "created_at": "2026-03-11T09:12:40+00:00",
       "review_after": null,
       "skipped_at_scan": 54
     }
@@ -5747,32 +5697,32 @@
     "review::.::holistic::cross_module_architecture::config_enums_cross_cutting::d86857c3": {
       "issue_id": "review::.::holistic::cross_module_architecture::config_enums_cross_cutting::d86857c3",
       "created_at": "2026-03-11T08:40:46+00:00",
-      "cluster": "model-reorg",
-      "updated_at": "2026-03-11T08:40:46+00:00"
+      "cluster": null,
+      "updated_at": "2026-03-11T09:40:47+00:00"
     },
     "review::.::holistic::high_level_elegance::config_owns_domain_vocabulary::8d0c3067": {
       "issue_id": "review::.::holistic::high_level_elegance::config_owns_domain_vocabulary::8d0c3067",
       "created_at": "2026-03-11T08:40:46+00:00",
-      "cluster": "model-reorg",
-      "updated_at": "2026-03-11T08:40:46+00:00"
+      "cluster": null,
+      "updated_at": "2026-03-11T09:40:48+00:00"
     },
     "review::.::holistic::package_organization::model_package_overload::3258607f": {
       "issue_id": "review::.::holistic::package_organization::model_package_overload::3258607f",
       "created_at": "2026-03-11T08:40:46+00:00",
-      "cluster": "model-reorg",
-      "updated_at": "2026-03-11T08:40:46+00:00"
+      "cluster": null,
+      "updated_at": "2026-03-11T09:40:49+00:00"
     },
     "review::.::holistic::high_level_elegance::grammar_config_loader_mixed_role::aa30517e": {
       "issue_id": "review::.::holistic::high_level_elegance::grammar_config_loader_mixed_role::aa30517e",
       "created_at": "2026-03-11T08:40:46+00:00",
-      "cluster": "model-reorg",
-      "updated_at": "2026-03-11T08:40:46+00:00"
+      "cluster": null,
+      "updated_at": "2026-03-11T09:40:50+00:00"
     },
     "review::.::holistic::package_organization::utils_package_heterogeneity::15b56180": {
       "issue_id": "review::.::holistic::package_organization::utils_package_heterogeneity::15b56180",
       "created_at": "2026-03-11T08:40:46+00:00",
-      "cluster": "model-reorg",
-      "updated_at": "2026-03-11T08:40:46+00:00"
+      "cluster": null,
+      "updated_at": "2026-03-11T09:40:51+00:00"
     }
   },
   "clusters": {
@@ -11355,13 +11305,7 @@
     "model-reorg": {
       "name": "model-reorg",
       "description": "Reorganize package boundaries: move RelationType/PosGroup from config/ to model/ (domain vocabulary), stage model/ split moving ExploreOptions to exploration/ and Edge/RelationEdgeType to exploration/, extract GrammarConfig value object from GrammarConfigLoader, and move LongIntHashMap to a collections/ package",
-      "issue_ids": [
-        "review::.::holistic::cross_module_architecture::config_enums_cross_cutting::d86857c3",
-        "review::.::holistic::high_level_elegance::config_owns_domain_vocabulary::8d0c3067",
-        "review::.::holistic::package_organization::model_package_overload::3258607f",
-        "review::.::holistic::high_level_elegance::grammar_config_loader_mixed_role::aa30517e",
-        "review::.::holistic::package_organization::utils_package_heterogeneity::15b56180"
-      ],
+      "issue_ids": [],
       "created_at": "2026-03-11T08:40:14+00:00",
       "updated_at": "2026-03-11T09:03:05+00:00",
       "auto": false,
@@ -65147,6 +65091,156 @@
       "actor": "user",
       "note": null,
       "detail": {}
+    },
+    {
+      "timestamp": "2026-03-11T09:29:39+00:00",
+      "action": "commit_record",
+      "issue_ids": [
+        "review::.::holistic::convention_outlier::double_javadoc_requirenextarg::d43b78c7"
+      ],
+      "cluster_name": null,
+      "actor": "user",
+      "note": null,
+      "detail": {
+        "sha": "bb8f602da446",
+        "branch": "desloppify/code-health"
+      }
+    },
+    {
+      "timestamp": "2026-03-11T09:40:47+00:00",
+      "action": "done",
+      "issue_ids": [
+        "config_enums_cross_cutting"
+      ],
+      "cluster_name": null,
+      "actor": "user",
+      "note": "Moved RelationType and PosGroup from config/ to model/ package.",
+      "detail": {}
+    },
+    {
+      "timestamp": "2026-03-11T09:40:47+00:00",
+      "action": "resolve",
+      "issue_ids": [
+        "review::.::holistic::cross_module_architecture::config_enums_cross_cutting::d86857c3"
+      ],
+      "cluster_name": null,
+      "actor": "user",
+      "note": "Moved RelationType and PosGroup from config/ to model/ package.",
+      "detail": {
+        "status": "fixed",
+        "attestation": "I have actually Moved RelationType and PosGroup from config/ to model/ package. and I am not gaming the score."
+      }
+    },
+    {
+      "timestamp": "2026-03-11T09:40:48+00:00",
+      "action": "done",
+      "issue_ids": [
+        "config_owns_domain_vocabulary"
+      ],
+      "cluster_name": null,
+      "actor": "user",
+      "note": "Moved RelationType and PosGroup from config/ to model/ package.",
+      "detail": {}
+    },
+    {
+      "timestamp": "2026-03-11T09:40:48+00:00",
+      "action": "resolve",
+      "issue_ids": [
+        "review::.::holistic::high_level_elegance::config_owns_domain_vocabulary::8d0c3067"
+      ],
+      "cluster_name": null,
+      "actor": "user",
+      "note": "Moved RelationType and PosGroup from config/ to model/ package.",
+      "detail": {
+        "status": "fixed",
+        "attestation": "I have actually Moved RelationType and PosGroup from config/ to model/ package. and I am not gaming the score."
+      }
+    },
+    {
+      "timestamp": "2026-03-11T09:40:48+00:00",
+      "action": "done",
+      "issue_ids": [
+        "model_package_overload"
+      ],
+      "cluster_name": null,
+      "actor": "user",
+      "note": "Moved ExploreOptions, Edge, RelationEdgeType from model/ to exploration/ package.",
+      "detail": {}
+    },
+    {
+      "timestamp": "2026-03-11T09:40:49+00:00",
+      "action": "resolve",
+      "issue_ids": [
+        "review::.::holistic::package_organization::model_package_overload::3258607f"
+      ],
+      "cluster_name": null,
+      "actor": "user",
+      "note": "Moved ExploreOptions, Edge, RelationEdgeType from model/ to exploration/ package.",
+      "detail": {
+        "status": "fixed",
+        "attestation": "I have actually Moved ExploreOptions, Edge, RelationEdgeType from model/ to exploration/ package. and I am not gaming the score."
+      }
+    },
+    {
+      "timestamp": "2026-03-11T09:40:50+00:00",
+      "action": "done",
+      "issue_ids": [
+        "grammar_config_loader_mixed_role"
+      ],
+      "cluster_name": null,
+      "actor": "user",
+      "note": "Extracted GrammarConfig immutable value object; GrammarConfigLoader is now a pure static factory.",
+      "detail": {}
+    },
+    {
+      "timestamp": "2026-03-11T09:40:50+00:00",
+      "action": "resolve",
+      "issue_ids": [
+        "review::.::holistic::high_level_elegance::grammar_config_loader_mixed_role::aa30517e"
+      ],
+      "cluster_name": null,
+      "actor": "user",
+      "note": "Extracted GrammarConfig immutable value object; GrammarConfigLoader is now a pure static factory.",
+      "detail": {
+        "status": "fixed",
+        "attestation": "I have actually Extracted GrammarConfig immutable value object; GrammarConfigLoader is now a pure static factory. and I am not gaming the score."
+      }
+    },
+    {
+      "timestamp": "2026-03-11T09:40:51+00:00",
+      "action": "done",
+      "issue_ids": [
+        "utils_package_heterogeneity"
+      ],
+      "cluster_name": null,
+      "actor": "user",
+      "note": "Moved LongIntHashMap from utils/ to new collections/ package.",
+      "detail": {}
+    },
+    {
+      "timestamp": "2026-03-11T09:40:51+00:00",
+      "action": "resolve",
+      "issue_ids": [
+        "review::.::holistic::package_organization::utils_package_heterogeneity::15b56180"
+      ],
+      "cluster_name": null,
+      "actor": "user",
+      "note": "Moved LongIntHashMap from utils/ to new collections/ package.",
+      "detail": {
+        "status": "fixed",
+        "attestation": "I have actually Moved LongIntHashMap from utils/ to new collections/ package. and I am not gaming the score."
+      }
+    },
+    {
+      "timestamp": "2026-03-11T09:40:51+00:00",
+      "action": "cluster_done",
+      "issue_ids": [
+        "review::.::holistic::package_organization::utils_package_heterogeneity::15b56180"
+      ],
+      "cluster_name": "model-reorg",
+      "actor": "user",
+      "note": null,
+      "detail": {}
     }
   ],
   "epic_triage_meta": {
@@ -66340,10 +66434,24 @@
       "recorded_at": "2026-03-11T09:27:49+00:00",
       "note": null,
       "cluster_name": null
+    },
+    {
+      "sha": "bb8f602da446",
+      "branch": "desloppify/code-health",
+      "issue_ids": [
+        "review::.::holistic::convention_outlier::double_javadoc_requirenextarg::d43b78c7"
+      ],
+      "recorded_at": "2026-03-11T09:29:39+00:00",
+      "note": null,
+      "cluster_name": null
     }
   ],
   "uncommitted_issues": [
-    "review::.::holistic::convention_outlier::double_javadoc_requirenextarg::d43b78c7"
+    "review::.::holistic::cross_module_architecture::config_enums_cross_cutting::d86857c3",
+    "review::.::holistic::high_level_elegance::config_owns_domain_vocabulary::8d0c3067",
+    "review::.::holistic::package_organization::model_package_overload::3258607f",
+    "review::.::holistic::high_level_elegance::grammar_config_loader_mixed_role::aa30517e",
+    "review::.::holistic::package_organization::utils_package_heterogeneity::15b56180"
   ],
   "commit_tracking_branch": null,
   "scan_count_at_plan_start": 5

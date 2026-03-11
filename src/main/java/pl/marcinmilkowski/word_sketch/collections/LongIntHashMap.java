@@ -1,4 +1,4 @@
-package pl.marcinmilkowski.word_sketch.utils;
+package pl.marcinmilkowski.word_sketch.collections;
 
 /**
  * A memory-efficient open-addressing hash map from long keys to int values.

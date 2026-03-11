@@ -11,8 +11,8 @@
     "total": 876,
     "auto_resolved": 142,
     "false_positive": 0,
-    "fixed": 583,
-    "open": 14,
+    "fixed": 588,
+    "open": 9,
     "wontfix": 137,
     "by_tier": {
       "1": {
@@ -25,15 +25,15 @@
       "2": {
         "auto_resolved": 44,
         "false_positive": 0,
-        "fixed": 131,
-        "open": 5,
+        "fixed": 135,
+        "open": 1,
         "wontfix": 50
       },
       "3": {
         "auto_resolved": 30,
         "false_positive": 0,
-        "fixed": 7,
-        "open": 2,
+        "fixed": 8,
+        "open": 1,
         "wontfix": 3
       },
       "4": {
@@ -34045,16 +34045,22 @@
         "suggestion": "Staged reorg: (1) Move ExploreOptions to exploration/ alongside SemanticFieldExplorer; (2) Move Edge and RelationEdgeType to viz/ or exploration/ (they are only used by ExplorationResult.buildEdges and ComparisonResult.buildEdges); (3) Validate with: grep -r 'import.*model\\.Edge\\|import.*model\\.RelationEdge\\|import.*model\\.ExploreOptions' src/main/java/ to find and update all import statements.",
         "reasoning": ""
       },
-      "status": "open",
-      "note": null,
+      "status": "fixed",
+      "note": "Moved ExploreOptions, Edge, RelationEdgeType from model/ to exploration/ package.",
       "first_seen": "2026-03-11T08:11:41+00:00",
       "last_seen": "2026-03-11T08:21:52+00:00",
-      "resolved_at": null,
+      "resolved_at": "2026-03-11T09:40:49+00:00",
       "reopen_count": 0,
       "lang": "java",
       "suppressed": false,
       "suppressed_at": null,
-      "suppression_pattern": null
+      "suppression_pattern": null,
+      "resolution_attestation": {
+        "kind": "manual",
+        "text": "I have actually Moved ExploreOptions, Edge, RelationEdgeType from model/ to exploration/ package. and I am not gaming the score.",
+        "attested_at": "2026-03-11T09:40:49+00:00",
+        "scan_verified": false
+      }
     },
     "review::.::holistic::package_organization::utils_package_heterogeneity::15b56180": {
       "id": "review::.::holistic::package_organization::utils_package_heterogeneity::15b56180",
@@ -34078,16 +34084,22 @@
         "suggestion": "Move LongIntHashMap to a new collections/ package or to the package that most heavily uses it. Alternatively, keep utils/ but document its scope explicitly. Run: grep -r 'import.*utils\\.LongIntHashMap' src/main/java/ to identify the primary consumer and consider co-locating it there.",
         "reasoning": ""
       },
-      "status": "open",
-      "note": null,
+      "status": "fixed",
+      "note": "Moved LongIntHashMap from utils/ to new collections/ package.",
       "first_seen": "2026-03-11T08:11:41+00:00",
       "last_seen": "2026-03-11T08:21:52+00:00",
-      "resolved_at": null,
+      "resolved_at": "2026-03-11T09:40:51+00:00",
       "reopen_count": 0,
       "lang": "java",
       "suppressed": false,
       "suppressed_at": null,
-      "suppression_pattern": null
+      "suppression_pattern": null,
+      "resolution_attestation": {
+        "kind": "manual",
+        "text": "I have actually Moved LongIntHashMap from utils/ to new collections/ package. and I am not gaming the score.",
+        "attested_at": "2026-03-11T09:40:51+00:00",
+        "scan_verified": false
+      }
     },
     "review::.::holistic::contract_coherence::require_param_nullable_lie::401a1b8e": {
       "id": "review::.::holistic::contract_coherence::require_param_nullable_lie::401a1b8e",
@@ -35288,16 +35300,22 @@
         "suggestion": "Move RelationType and PosGroup to the model package where other domain vocabulary lives (QueryResults, ExploreOptions). The config package should contain only loading/parsing logic.",
         "reasoning": ""
       },
-      "status": "open",
-      "note": null,
+      "status": "fixed",
+      "note": "Moved RelationType and PosGroup from config/ to model/ package.",
       "first_seen": "2026-03-11T08:21:52+00:00",
       "last_seen": "2026-03-11T08:21:52+00:00",
-      "resolved_at": null,
+      "resolved_at": "2026-03-11T09:40:47+00:00",
       "reopen_count": 0,
       "lang": "java",
       "suppressed": false,
       "suppressed_at": null,
-      "suppression_pattern": null
+      "suppression_pattern": null,
+      "resolution_attestation": {
+        "kind": "manual",
+        "text": "I have actually Moved RelationType and PosGroup from config/ to model/ package. and I am not gaming the score.",
+        "attested_at": "2026-03-11T09:40:47+00:00",
+        "scan_verified": false
+      }
     },
     "review::.::holistic::high_level_elegance::config_owns_domain_vocabulary::8d0c3067": {
       "id": "review::.::holistic::high_level_elegance::config_owns_domain_vocabulary::8d0c3067",
@@ -35322,16 +35340,22 @@
         "suggestion": "Move RelationType and PosGroup to the model package. Keep config package focused on loading and parsing logic only (GrammarConfigLoader, RelationConfig).",
         "reasoning": ""
       },
-      "status": "open",
-      "note": null,
+      "status": "fixed",
+      "note": "Moved RelationType and PosGroup from config/ to model/ package.",
       "first_seen": "2026-03-11T08:21:52+00:00",
       "last_seen": "2026-03-11T08:21:52+00:00",
-      "resolved_at": null,
+      "resolved_at": "2026-03-11T09:40:48+00:00",
       "reopen_count": 0,
       "lang": "java",
       "suppressed": false,
       "suppressed_at": null,
-      "suppression_pattern": null
+      "suppression_pattern": null,
+      "resolution_attestation": {
+        "kind": "manual",
+        "text": "I have actually Moved RelationType and PosGroup from config/ to model/ package. and I am not gaming the score.",
+        "attested_at": "2026-03-11T09:40:48+00:00",
+        "scan_verified": false
+      }
     },
     "review::.::holistic::high_level_elegance::grammar_config_loader_mixed_role::aa30517e": {
       "id": "review::.::holistic::high_level_elegance::grammar_config_loader_mixed_role::aa30517e",
@@ -35354,16 +35378,22 @@
         "suggestion": "Extract the loaded state into a GrammarConfig value object (immutable, no I/O). Let GrammarConfigLoader be a pure factory that returns GrammarConfig. Consumers receive GrammarConfig, not the loader.",
         "reasoning": ""
       },
-      "status": "open",
-      "note": null,
+      "status": "fixed",
+      "note": "Extracted GrammarConfig immutable value object; GrammarConfigLoader is now a pure static factory.",
       "first_seen": "2026-03-11T08:21:52+00:00",
       "last_seen": "2026-03-11T08:21:52+00:00",
-      "resolved_at": null,
+      "resolved_at": "2026-03-11T09:40:50+00:00",
       "reopen_count": 0,
       "lang": "java",
       "suppressed": false,
       "suppressed_at": null,
-      "suppression_pattern": null
+      "suppression_pattern": null,
+      "resolution_attestation": {
+        "kind": "manual",
+        "text": "I have actually Extracted GrammarConfig immutable value object; GrammarConfigLoader is now a pure static factory. and I am not gaming the score.",
+        "attested_at": "2026-03-11T09:40:50+00:00",
+        "scan_verified": false
+      }
     },
     "review::.::holistic::convention_outlier::double_javadoc_requirenextarg::d43b78c7": {
       "id": "review::.::holistic::convention_outlier::double_javadoc_requirenextarg::d43b78c7",
@@ -36182,8 +36212,8 @@
       "source": "holistic",
       "assessed_at": "2026-03-11T08:21:52+00:00",
       "needs_review_refresh": true,
-      "refresh_reason": "review_issue_wontfix",
-      "stale_since": "2026-03-11T08:39:21+00:00"
+      "refresh_reason": "review_issue_fixed",
+      "stale_since": "2026-03-11T09:40:47+00:00"
     },
     "ai_generated_debt": {
       "score": 78.4,
@@ -36204,7 +36234,10 @@
     "package_organization": {
       "score": 69.3,
       "source": "holistic",
-      "assessed_at": "2026-03-11T08:21:52+00:00"
+      "assessed_at": "2026-03-11T08:21:52+00:00",
+      "needs_review_refresh": true,
+      "refresh_reason": "review_issue_fixed",
+      "stale_since": "2026-03-11T09:40:51+00:00"
     },
     "initialization_coupling": {
       "score": 72.6,
@@ -36265,7 +36298,10 @@
     "high_level_elegance": {
       "score": 69.8,
       "source": "holistic",
-      "assessed_at": "2026-03-11T08:21:52+00:00"
+      "assessed_at": "2026-03-11T08:21:52+00:00",
+      "needs_review_refresh": true,
+      "refresh_reason": "review_issue_fixed",
+      "stale_since": "2026-03-11T09:40:50+00:00"
     },
     "test_strategy": {
       "score": 51.5,
@@ -39370,13 +39406,13 @@
       "strict": 69.8,
       "verified_strict_score": 69.8,
       "checks": 10,
-      "failing": 2,
+      "failing": 0,
       "tier": 4,
       "detectors": {
         "subjective_assessment": {
           "potential": 10,
           "pass_rate": 0.698,
-          "failing": 2,
+          "failing": 0,
           "weighted_failures": 3.02,
           "assessment_score": 69.8,
           "placeholder": false,
@@ -39433,13 +39469,13 @@
       "strict": 73.9,
       "verified_strict_score": 73.9,
       "checks": 10,
-      "failing": 1,
+      "failing": 0,
       "tier": 4,
       "detectors": {
         "subjective_assessment": {
           "potential": 10,
           "pass_rate": 0.739,
-          "failing": 1,
+          "failing": 0,
           "weighted_failures": 2.61,
           "assessment_score": 73.9,
           "placeholder": false,
@@ -39601,13 +39637,13 @@
       "strict": 69.3,
       "verified_strict_score": 69.3,
       "checks": 10,
-      "failing": 2,
+      "failing": 0,
       "tier": 4,
       "detectors": {
         "subjective_assessment": {
           "potential": 10,
           "pass_rate": 0.693,
-          "failing": 2,
+          "failing": 0,
           "weighted_failures": 3.07,
           "assessment_score": 69.3,
           "placeholder": false,

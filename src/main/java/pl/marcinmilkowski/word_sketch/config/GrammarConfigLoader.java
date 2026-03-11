@@ -6,13 +6,13 @@ import com.alibaba.fastjson2.JSONArray;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import pl.marcinmilkowski.word_sketch.utils.CqlUtils;
+import pl.marcinmilkowski.word_sketch.model.RelationType;
 
 import java.io.IOException;
 import java.io.Reader;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
@@ -20,7 +20,11 @@ import java.util.Map;
 import java.util.Optional;
 
 /**
- * Loads and provides access to grammar configuration from JSON.
+ * Loads grammar configuration from JSON and produces {@link GrammarConfig} value objects.
+ *
+ * <p>This class is a pure loader: it handles all file-IO and JSON-parsing concerns and
+ * returns immutable {@link GrammarConfig} instances. Callers that only need to query the
+ * loaded data should accept {@link GrammarConfig} rather than this class.
  *
  * Expected JSON structure:
  * <pre>{@code
@@ -41,43 +45,42 @@ import java.util.Optional;
  * <p>The canonical field name for patterns is {@code pattern}.
  * Each relation must have a {@code pattern} field containing a labeled BCQL pattern.
  */
-public class GrammarConfigLoader {
+public final class GrammarConfigLoader {
     private static final Logger logger = LoggerFactory.getLogger(GrammarConfigLoader.class);
 
-    private final List<RelationConfig> relations;
-    private final Map<String, RelationConfig> relationsById;
-    private final String version;
-    private final Path configPath;
+    private GrammarConfigLoader() {}
 
     /**
      * Load grammar configuration from the specified path.
      *
      * @param configPath Path to the relations.json file
+     * @return immutable {@link GrammarConfig} with the parsed relations
      * @throws IOException if the file cannot be read or the config is invalid
      */
-    public GrammarConfigLoader(Path configPath) throws IOException {
-        this(readConfigFile(configPath), configPath);
+    public static GrammarConfig load(Path configPath) throws IOException {
+        return parse(readConfigFile(configPath), configPath);
     }
 
     /**
-     * Create a GrammarConfigLoader from a {@link Reader} — useful for testing without
+     * Load grammar configuration from a {@link Reader} — useful for testing without
      * touching the file system.
      *
      * <pre>{@code
      * try (Reader r = new StringReader(jsonContent)) {
-     *     GrammarConfigLoader config = GrammarConfigLoader.fromReader(r);
+     *     GrammarConfig config = GrammarConfigLoader.fromReader(r);
      * }
      * }</pre>
      *
      * @param reader  Reader over a valid grammar JSON document
+     * @return immutable {@link GrammarConfig} with the parsed relations
      * @throws IOException if the reader fails or the JSON is invalid
      */
-    public static GrammarConfigLoader fromReader(Reader reader) throws IOException {
+    public static GrammarConfig fromReader(Reader reader) throws IOException {
         char[] buf = new char[65536];
         StringBuilder sb = new StringBuilder();
         int n;
         while ((n = reader.read(buf)) != -1) sb.append(buf, 0, n);
-        return new GrammarConfigLoader(sb.toString(), null);
+        return parse(sb.toString(), null);
     }
 
     /** Reads config file content, throwing {@link java.io.FileNotFoundException} if the file does not exist. */
@@ -91,19 +94,17 @@ public class GrammarConfigLoader {
         return new java.io.FileNotFoundException("Grammar config file not found: " + p);
     }
 
-    /** Primary constructor: parses JSON content directly. */
-    private GrammarConfigLoader(String content, Path configPath) throws IOException {
-        this.configPath = configPath;
+    /** Parses JSON content and builds the {@link GrammarConfig} value object. */
+    private static GrammarConfig parse(String content, Path configPath) throws IOException {
         JSONObject root = JSON.parseObject(content);
-        this.version = parseAndValidateVersion(root);
+        String version = parseAndValidateVersion(root);
         validateNoLegacyKeys(root);
         List<RelationConfig> loadedRelations = new ArrayList<>();
         Map<String, RelationConfig> loadedRelationsById = new HashMap<>();
         parseRelations(root, loadedRelations, loadedRelationsById);
-        this.relations = Collections.unmodifiableList(loadedRelations);
-        this.relationsById = Collections.unmodifiableMap(loadedRelationsById);
         logger.info("Loaded grammar config version {}: {} relations{}",
-            version, relations.size(), configPath != null ? " from " + configPath : "");
+            version, loadedRelations.size(), configPath != null ? " from " + configPath : "");
+        return new GrammarConfig(loadedRelations, loadedRelationsById, version, configPath);
     }
 
     /** Extracts and validates the 'version' field from the root JSON object. */
@@ -205,12 +206,12 @@ public class GrammarConfigLoader {
      * <p>Wraps any {@link IOException} in an {@link IllegalStateException} with the
      * config path included in the message, so startup failures are immediately actionable.
      * Callers that need to distinguish config-not-found from other IO errors should
-     * use {@link #GrammarConfigLoader(Path)} directly and handle {@code IOException}.
+     * use {@link #load(Path)} directly and handle {@code IOException}.
      */
-    public static GrammarConfigLoader createDefaultEnglish() {
+    public static GrammarConfig createDefaultEnglish() {
         String path = System.getProperty("grammar.config", "grammars/relations.json");
         try {
-            return new GrammarConfigLoader(Path.of(path));
+            return load(Path.of(path));
         } catch (IOException e) {
             throw new IllegalStateException(
                 "Cannot load default grammar config from '" + path
@@ -278,37 +279,6 @@ public class GrammarConfigLoader {
             cursor += tokens.get(tokenIdx).length();
         }
         return defaultPos;
-    }
-
-    public List<RelationConfig> getRelations() {
-        return relations;
-    }
-
-    public Optional<RelationConfig> getRelation(String id) {
-        return Optional.ofNullable(relationsById.get(id));
-    }
-
-    public String getVersion() {
-        return version;
-    }
-
-    public Path getConfigPath() {
-        return configPath;
-    }
-
-    /**
-     * Export the loaded config as a JSONObject for API responses.
-     */
-    public JSONObject toJson() {
-        JSONObject root = new JSONObject();
-        root.put("version", version);
-        root.put("config_path", configPath != null ? configPath.toString() : null);
-        JSONArray relationsArray = new JSONArray();
-        for (RelationConfig rel : relations) {
-            relationsArray.add(rel.toJson());
-        }
-        root.put("relations", relationsArray);
-        return root;
     }
 
 }

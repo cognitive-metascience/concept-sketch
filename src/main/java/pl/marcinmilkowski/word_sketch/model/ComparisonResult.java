@@ -1,5 +1,8 @@
 package pl.marcinmilkowski.word_sketch.model;
 
+import pl.marcinmilkowski.word_sketch.exploration.Edge;
+import pl.marcinmilkowski.word_sketch.exploration.RelationEdgeType;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;

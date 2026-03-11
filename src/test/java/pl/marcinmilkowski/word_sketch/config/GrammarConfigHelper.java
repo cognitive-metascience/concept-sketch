@@ -9,15 +9,15 @@ import java.nio.file.Paths;
  */
 public class GrammarConfigHelper {
 
-    private static GrammarConfigLoader testConfig;
+    private static GrammarConfig testConfig;
 
     /**
      * Get the test grammar config. Loads on first call.
      */
-    public static GrammarConfigLoader getTestConfig() throws IOException {
+    public static GrammarConfig getTestConfig() throws IOException {
         if (testConfig == null) {
             Path testGrammarPath = Paths.get("src/test/resources/test-grammar.json");
-            testConfig = new GrammarConfigLoader(testGrammarPath);
+            testConfig = GrammarConfigLoader.load(testGrammarPath);
         }
         return testConfig;
     }
@@ -25,7 +25,7 @@ public class GrammarConfigHelper {
     /**
      * Get test config or throw if not available.
      */
-    public static GrammarConfigLoader requireTestConfig() {
+    public static GrammarConfig requireTestConfig() {
         try {
             return getTestConfig();
         } catch (IOException e) {

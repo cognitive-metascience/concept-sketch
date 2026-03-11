@@ -3,15 +3,15 @@ package pl.marcinmilkowski.word_sketch.api;
 import com.sun.net.httpserver.HttpExchange;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import pl.marcinmilkowski.word_sketch.config.GrammarConfigLoader;
+import pl.marcinmilkowski.word_sketch.config.GrammarConfig;
 import pl.marcinmilkowski.word_sketch.config.RelationConfig;
+import pl.marcinmilkowski.word_sketch.exploration.Edge;
+import pl.marcinmilkowski.word_sketch.exploration.ExploreOptions;
 import pl.marcinmilkowski.word_sketch.exploration.SemanticFieldExplorer;
 import pl.marcinmilkowski.word_sketch.model.AdjectiveProfile;
 import pl.marcinmilkowski.word_sketch.model.ComparisonResult;
 import pl.marcinmilkowski.word_sketch.model.CoreCollocate;
 import pl.marcinmilkowski.word_sketch.model.DiscoveredNoun;
-import pl.marcinmilkowski.word_sketch.model.Edge;
-import pl.marcinmilkowski.word_sketch.model.ExploreOptions;
 import pl.marcinmilkowski.word_sketch.model.ExplorationResult;
 
 import org.jspecify.annotations.Nullable;
@@ -31,10 +31,10 @@ class ExplorationHandlers {
 
     private static final Logger logger = LoggerFactory.getLogger(ExplorationHandlers.class);
 
-    private final GrammarConfigLoader grammarConfig;
+    private final GrammarConfig grammarConfig;
     private final SemanticFieldExplorer semanticFieldExplorer;
 
-    ExplorationHandlers(GrammarConfigLoader grammarConfig, SemanticFieldExplorer semanticFieldExplorer) {
+    ExplorationHandlers(GrammarConfig grammarConfig, SemanticFieldExplorer semanticFieldExplorer) {
         if (grammarConfig == null) {
             throw new IllegalArgumentException("grammarConfig must not be null; exploration endpoints require a loaded grammar configuration");
         }

@@ -1,6 +1,8 @@
 package pl.marcinmilkowski.word_sketch.config;
 
 import com.alibaba.fastjson2.JSONObject;
+import pl.marcinmilkowski.word_sketch.model.PosGroup;
+import pl.marcinmilkowski.word_sketch.model.RelationType;
 import pl.marcinmilkowski.word_sketch.utils.CqlUtils;
 
 import java.util.Locale;

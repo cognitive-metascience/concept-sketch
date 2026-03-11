@@ -1,11 +1,12 @@
-package pl.marcinmilkowski.word_sketch.model;
+package pl.marcinmilkowski.word_sketch.exploration;
 
 /**
  * Options for {@code SemanticFieldExplorer#exploreByPattern}, bundling the tuning parameters
  * that were previously spread across multiple method arguments.
  *
- * <p>Note: the {@code Explore} prefix (vs {@code Exploration} used by {@link ExplorationResult})
- * is historical; the asymmetry is intentional rather than a naming error.</p>
+ * <p>Note: the {@code Explore} prefix (vs {@code Exploration} used by {@link
+ * pl.marcinmilkowski.word_sketch.model.ExplorationResult}) is historical; the asymmetry is
+ * intentional rather than a naming error.</p>
  *
  * <p>{@code nounsPerSeed} is only applicable to single-seed exploration
  * ({@code exploreByPattern}). It is not used in multi-seed exploration

@@ -3,6 +3,7 @@ package pl.marcinmilkowski.word_sketch;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import pl.marcinmilkowski.word_sketch.api.WordSketchApiServer;
+import pl.marcinmilkowski.word_sketch.config.GrammarConfig;
 import pl.marcinmilkowski.word_sketch.config.GrammarConfigLoader;
 import pl.marcinmilkowski.word_sketch.indexer.blacklab.BlackLabConllUIndexer;
 import pl.marcinmilkowski.word_sketch.indexer.blacklab.ConlluConverter;
@@ -253,10 +254,10 @@ public class Main {
         // Load grammar configuration (required)
         // Override path via system property: -Dgrammar.config=path/to/relations.json
         String grammarConfigPath = System.getProperty("grammar.config", "grammars/relations.json");
-        GrammarConfigLoader grammarConfig;
+        GrammarConfig grammarConfig;
         try {
             var grammarPath = java.nio.file.Paths.get(grammarConfigPath);
-            grammarConfig = new GrammarConfigLoader(grammarPath);
+            grammarConfig = GrammarConfigLoader.load(grammarPath);
             System.out.println("Loaded grammar config: " + grammarConfig.getVersion());
         } catch (IOException e) {
             logger.error("Failed to load grammar config at '{}': {}", grammarConfigPath, e.getMessage());

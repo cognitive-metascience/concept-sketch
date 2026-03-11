@@ -1,7 +1,7 @@
 package pl.marcinmilkowski.word_sketch.utils;
 
 import org.junit.jupiter.api.Test;
-import pl.marcinmilkowski.word_sketch.utils.LongIntHashMap;
+import pl.marcinmilkowski.word_sketch.collections.LongIntHashMap;
 import static org.junit.jupiter.api.Assertions.*;
 
 public class LongIntHashMapTest {

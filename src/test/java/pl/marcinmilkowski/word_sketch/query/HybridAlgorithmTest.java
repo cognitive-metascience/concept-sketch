@@ -2,6 +2,7 @@ package pl.marcinmilkowski.word_sketch.query;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import pl.marcinmilkowski.word_sketch.config.GrammarConfig;
 import pl.marcinmilkowski.word_sketch.config.GrammarConfigLoader;
 import pl.marcinmilkowski.word_sketch.config.RelationConfig;
 
@@ -15,7 +16,7 @@ class HybridAlgorithmTest {
     @Test
     @DisplayName("Grammar config loads with new format")
     void testGrammarConfigLoads() {
-        GrammarConfigLoader grammarConfig = GrammarConfigLoader.createDefaultEnglish();
+        GrammarConfig grammarConfig = GrammarConfigLoader.createDefaultEnglish();
         assertNotNull(grammarConfig, "Grammar config should load");
         assertFalse(grammarConfig.getRelations().isEmpty(), "Should have relations");
 
@@ -30,7 +31,7 @@ class HybridAlgorithmTest {
     @Test
     @DisplayName("NOUN_MODIFIERS: Pattern should match adjectives")
     void testNounModifiersRelation() {
-        GrammarConfigLoader grammarConfig = GrammarConfigLoader.createDefaultEnglish();
+        GrammarConfig grammarConfig = GrammarConfigLoader.createDefaultEnglish();
 
         var rel = grammarConfig.getRelation("noun_modifiers").orElse(null);
         assertNotNull(rel, "noun_modifiers relation should exist");
@@ -44,7 +45,7 @@ class HybridAlgorithmTest {
     @Test
     @DisplayName("NOUN_ADJ_PREDICATES: Pattern should include copula lemmas")
     void testAdjPredicatesRelation() {
-        GrammarConfigLoader grammarConfig = GrammarConfigLoader.createDefaultEnglish();
+        GrammarConfig grammarConfig = GrammarConfigLoader.createDefaultEnglish();
 
         var rel = grammarConfig.getRelation("noun_adj_predicates").orElse(null);
         assertNotNull(rel, "noun_adj_predicates relation should exist");
@@ -59,7 +60,7 @@ class HybridAlgorithmTest {
     @Test
     @DisplayName("All relations have valid patterns")
     void testAllRelationsHavePatterns() {
-        GrammarConfigLoader grammarConfig = GrammarConfigLoader.createDefaultEnglish();
+        GrammarConfig grammarConfig = GrammarConfigLoader.createDefaultEnglish();
 
         for (RelationConfig rel : grammarConfig.getRelations()) {
             assertNotNull(rel.pattern(), "Relation " + rel.id() + " should have pattern");
@@ -70,7 +71,7 @@ class HybridAlgorithmTest {
     @Test
     @DisplayName("Relations have head and collocate positions")
     void testRelationsHavePositions() {
-        GrammarConfigLoader grammarConfig = GrammarConfigLoader.createDefaultEnglish();
+        GrammarConfig grammarConfig = GrammarConfigLoader.createDefaultEnglish();
 
         var rel = grammarConfig.getRelation("noun_adj_predicates").orElse(null);
         assertNotNull(rel, "noun_adj_predicates should exist");

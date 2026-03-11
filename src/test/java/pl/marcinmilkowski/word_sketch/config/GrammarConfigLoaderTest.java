@@ -32,7 +32,7 @@ class GrammarConfigLoaderTest {
     @Test
     @DisplayName("fromReader: loads relation names correctly")
     void fromReader_loadsRelationNames() throws IOException {
-        GrammarConfigLoader config = GrammarConfigLoader.fromReader(new StringReader(MINIMAL_JSON));
+        GrammarConfig config = GrammarConfigLoader.fromReader(new StringReader(MINIMAL_JSON));
 
         List<RelationConfig> relations = config.getRelations();
         assertEquals(2, relations.size());
@@ -47,7 +47,7 @@ class GrammarConfigLoaderTest {
     @Test
     @DisplayName("fromReader: getRelation by id returns correct entry")
     void fromReader_getRelationById() throws IOException {
-        GrammarConfigLoader config = GrammarConfigLoader.fromReader(new StringReader(MINIMAL_JSON));
+        GrammarConfig config = GrammarConfigLoader.fromReader(new StringReader(MINIMAL_JSON));
 
         assertTrue(config.getRelation("noun_adj_predicates").isPresent());
         assertTrue(config.getRelation("noun_modifiers").isPresent());
@@ -57,7 +57,7 @@ class GrammarConfigLoaderTest {
     @Test
     @DisplayName("toJson: does not throw when configPath is null (fromReader path)")
     void toJson_doesNotThrowWhenConfigPathIsNull() throws IOException {
-        GrammarConfigLoader config = GrammarConfigLoader.fromReader(new StringReader(MINIMAL_JSON));
+        GrammarConfig config = GrammarConfigLoader.fromReader(new StringReader(MINIMAL_JSON));
 
         assertDoesNotThrow(() -> {
             var json = config.toJson();
@@ -69,7 +69,7 @@ class GrammarConfigLoaderTest {
     @Test
     @DisplayName("toJson: config_path is null when loaded via fromReader")
     void toJson_configPathIsNullFromReader() throws IOException {
-        GrammarConfigLoader config = GrammarConfigLoader.fromReader(new StringReader(MINIMAL_JSON));
+        GrammarConfig config = GrammarConfigLoader.fromReader(new StringReader(MINIMAL_JSON));
 
         var json = config.toJson();
         assertNull(json.get("config_path"));

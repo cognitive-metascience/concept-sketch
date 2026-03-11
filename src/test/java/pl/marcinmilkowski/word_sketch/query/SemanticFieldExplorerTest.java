@@ -2,15 +2,15 @@ package pl.marcinmilkowski.word_sketch.query;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import pl.marcinmilkowski.word_sketch.exploration.Edge;
+import pl.marcinmilkowski.word_sketch.exploration.ExploreOptions;
 import pl.marcinmilkowski.word_sketch.exploration.SemanticFieldExplorer;
 import pl.marcinmilkowski.word_sketch.model.AdjectiveProfile;
-import pl.marcinmilkowski.word_sketch.model.QueryResults;
 import pl.marcinmilkowski.word_sketch.model.ComparisonResult;
 import pl.marcinmilkowski.word_sketch.model.CoreCollocate;
 import pl.marcinmilkowski.word_sketch.model.DiscoveredNoun;
-import pl.marcinmilkowski.word_sketch.model.Edge;
-import pl.marcinmilkowski.word_sketch.model.ExploreOptions;
 import pl.marcinmilkowski.word_sketch.model.ExplorationResult;
+import pl.marcinmilkowski.word_sketch.model.QueryResults;
 
 import java.io.IOException;
 import java.util.Arrays;
@@ -309,7 +309,7 @@ class SemanticFieldExplorerTest {
             new pl.marcinmilkowski.word_sketch.config.RelationConfig(
                 "test", "test", "test", "[xpos=\"NN.*\"] [xpos=\"JJ.*\"]",
                 1, 2, false, 0,
-                java.util.Optional.of(pl.marcinmilkowski.word_sketch.config.RelationType.SURFACE),
+                java.util.Optional.of(pl.marcinmilkowski.word_sketch.model.RelationType.SURFACE),
                 true),
             0.0, 10, 1);
 
@@ -331,7 +331,7 @@ class SemanticFieldExplorerTest {
             new pl.marcinmilkowski.word_sketch.config.RelationConfig(
                 "test", "test", "test", "[xpos=\"NN.*\"] [xpos=\"JJ.*\"]",
                 1, 2, false, 0,
-                java.util.Optional.of(pl.marcinmilkowski.word_sketch.config.RelationType.SURFACE),
+                java.util.Optional.of(pl.marcinmilkowski.word_sketch.model.RelationType.SURFACE),
                 true),
             0.0, 10, 2);
 

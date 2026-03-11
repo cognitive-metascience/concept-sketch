@@ -2,7 +2,7 @@ package pl.marcinmilkowski.word_sketch.api;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import pl.marcinmilkowski.word_sketch.config.GrammarConfigLoader;
+import pl.marcinmilkowski.word_sketch.config.GrammarConfig;
 import pl.marcinmilkowski.word_sketch.query.QueryExecutor;
 import pl.marcinmilkowski.word_sketch.exploration.SemanticFieldExplorer;
 
@@ -35,12 +35,12 @@ public class WordSketchApiServer {
 
     private static final Logger logger = LoggerFactory.getLogger(WordSketchApiServer.class);
     private final int port;
-    private final GrammarConfigLoader grammarConfig;
+    private final GrammarConfig grammarConfig;
     private final SketchHandlers sketchHandlers;
     private final ExplorationHandlers explorationHandlers;
     private final com.sun.net.httpserver.HttpServer server;
 
-    public WordSketchApiServer(QueryExecutor executor, int port, GrammarConfigLoader grammarConfig) throws IOException {
+    public WordSketchApiServer(QueryExecutor executor, int port, GrammarConfig grammarConfig) throws IOException {
         this.port = port;
         this.grammarConfig = Objects.requireNonNull(grammarConfig, "grammarConfig must not be null");
         SemanticFieldExplorer semanticFieldExplorer = new SemanticFieldExplorer(executor);

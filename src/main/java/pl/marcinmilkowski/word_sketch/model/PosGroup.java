@@ -1,4 +1,4 @@
-package pl.marcinmilkowski.word_sketch.config;
+package pl.marcinmilkowski.word_sketch.model;
 
 /**
  * POS group categories used across the query layer, taggers, and grammar config.
