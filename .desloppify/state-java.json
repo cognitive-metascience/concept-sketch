@@ -11,23 +11,23 @@
     "total": 1332,
     "auto_resolved": 263,
     "false_positive": 0,
-    "fixed": 873,
-    "open": 14,
-    "wontfix": 182,
+    "fixed": 876,
+    "open": 8,
+    "wontfix": 185,
     "by_tier": {
       "1": {
         "auto_resolved": 133,
         "false_positive": 0,
-        "fixed": 599,
-        "open": 2,
+        "fixed": 601,
+        "open": 0,
         "wontfix": 100
       },
       "2": {
         "auto_resolved": 90,
         "false_positive": 0,
-        "fixed": 256,
-        "open": 6,
-        "wontfix": 72
+        "fixed": 257,
+        "open": 2,
+        "wontfix": 75
       },
       "3": {
         "auto_resolved": 40,
@@ -53339,16 +53339,22 @@
         "suggestion": "Extract the pattern as a private static final field: 'private static final Pattern DEPREL_PATTERN = Pattern.compile(\"deprel=[\\\"']([^\\\"']+)[\\\"']\");' and reference it in computeDeprel().",
         "reasoning": ""
       },
-      "status": "open",
-      "note": null,
+      "status": "fixed",
+      "note": "Extracted Pattern.compile to private static final DEPREL_PATTERN field in RelationConfig",
       "first_seen": "2026-03-11T22:44:15+00:00",
       "last_seen": "2026-03-11T22:44:15+00:00",
-      "resolved_at": null,
+      "resolved_at": "2026-03-11T23:15:39+00:00",
       "reopen_count": 0,
       "lang": "java",
       "suppressed": false,
       "suppressed_at": null,
-      "suppression_pattern": null
+      "suppression_pattern": null,
+      "resolution_attestation": {
+        "kind": "manual",
+        "text": "I have actually Extracted Pattern.compile to private static final DEPREL_PATTERN field in RelationConfig and I am not gaming the score.",
+        "attested_at": "2026-03-11T23:15:39+00:00",
+        "scan_verified": false
+      }
     },
     "review::.::holistic::low_level_elegance::cql_utils_split_tokens_complex_index_management::9f6b697b": {
       "id": "review::.::holistic::low_level_elegance::cql_utils_split_tokens_complex_index_management::9f6b697b",
@@ -53371,16 +53377,43 @@
         "suggestion": "Extract a private helper method skipQuotedString(String pattern, int i) that advances past a quoted string and returns the new index. This isolates the quoting logic and makes the outer and inner loop bodies read as single-purpose sequences without interleaved increment management.",
         "reasoning": ""
       },
-      "status": "open",
-      "note": null,
+      "status": "wontfix",
+      "note": "CqlUtils.splitCqlTokens nested loop is complex but correct and well-tested; refactoring risks parser correctness for marginal readability gain",
       "first_seen": "2026-03-11T22:44:15+00:00",
       "last_seen": "2026-03-11T22:44:15+00:00",
-      "resolved_at": null,
+      "resolved_at": "2026-03-11T23:17:46+00:00",
       "reopen_count": 0,
       "lang": "java",
       "suppressed": false,
       "suppressed_at": null,
-      "suppression_pattern": null
+      "suppression_pattern": null,
+      "resolution_attestation": {
+        "kind": "manual",
+        "text": "I have actually reviewed the CqlUtils.splitCqlTokens implementation and confirmed it is tested and correct, and I am not gaming the score by skipping without justification.",
+        "attested_at": "2026-03-11T23:17:46+00:00",
+        "scan_verified": false
+      },
+      "wontfix_scan_count": 80,
+      "wontfix_snapshot": {
+        "captured_at": "2026-03-11T23:17:46+00:00",
+        "scan_count": 80,
+        "tier": 2,
+        "confidence": "medium",
+        "detail": {
+          "holistic": true,
+          "dimension": "low_level_elegance",
+          "related_files": [
+            "src/main/java/pl/marcinmilkowski/word_sketch/utils/CqlUtils.java"
+          ],
+          "evidence": [
+            "The outer while loop has three branches: '[' (enters inner while), '\"' (enters inner while), else (explicit i++). Only the else branch has an explicit i++ \u2014 the '[' and '\"' branches rely on inner loops to advance i",
+            "Inside the '[' inner while: the '\"' sub-branch increments i explicitly (skip opening quote, loop over content with i++, then falls through to inner i++ skipping the closing quote), while the '[' and ']' branches do not increment \u2014 all rely on the inner loop's trailing i++",
+            "When ']' closes at depth==0, code does 'i++; break' \u2014 then the outer while starts the next iteration from the advanced i without any additional increment. This is correct but requires tracing three levels of increment to verify"
+          ],
+          "suggestion": "Extract a private helper method skipQuotedString(String pattern, int i) that advances past a quoted string and returns the new index. This isolates the quoting logic and makes the outer and inner loop bodies read as single-purpose sequences without interleaved increment management.",
+          "reasoning": ""
+        }
+      }
     },
     "review::.::holistic::low_level_elegance::corpus_query_handlers_double_null_top_parse::fb93124a": {
       "id": "review::.::holistic::low_level_elegance::corpus_query_handlers_double_null_top_parse::fb93124a",
@@ -53441,16 +53474,44 @@
         "suggestion": "Change populateExploreResponse to return Map<String,Object> rather than mutating a parameter: 'public static Map<String,Object> buildExploreResponse(ExplorationResult result)'. Callers then merge the returned map into their response: 'response.putAll(ExploreResponseAssembler.buildExploreResponse(result))'. For populateComparisonResponse, move the seeds/topCollocates/minLogDice parameters to the caller \u2014 the assembler should only translate ComparisonResult to Map.",
         "reasoning": ""
       },
-      "status": "open",
-      "note": null,
+      "status": "wontfix",
+      "note": "ExploreResponseAssembler map mutation pattern is known T4 debt; returning new maps requires refactoring all callers and deferred with other assembler refactors",
       "first_seen": "2026-03-11T22:44:15+00:00",
       "last_seen": "2026-03-11T22:44:15+00:00",
-      "resolved_at": null,
+      "resolved_at": "2026-03-11T23:17:47+00:00",
       "reopen_count": 0,
       "lang": "java",
       "suppressed": false,
       "suppressed_at": null,
-      "suppression_pattern": null
+      "suppression_pattern": null,
+      "resolution_attestation": {
+        "kind": "manual",
+        "text": "I have actually reviewed the mutable accumulator pattern in ExploreResponseAssembler and accept this as known debt deferred with the broader assembler refactor, and I am not gaming the score.",
+        "attested_at": "2026-03-11T23:17:47+00:00",
+        "scan_verified": false
+      },
+      "wontfix_scan_count": 80,
+      "wontfix_snapshot": {
+        "captured_at": "2026-03-11T23:17:47+00:00",
+        "scan_count": 80,
+        "tier": 2,
+        "confidence": "medium",
+        "detail": {
+          "holistic": true,
+          "dimension": "mid_level_elegance",
+          "related_files": [
+            "src/main/java/pl/marcinmilkowski/word_sketch/api/ExploreResponseAssembler.java",
+            "src/main/java/pl/marcinmilkowski/word_sketch/api/ExplorationHandlers.java"
+          ],
+          "evidence": [
+            "populateExploreResponse(Map<String,Object> response, ExplorationResult result) \u2014 method signature takes the map to populate, implies the caller must have already built a base map",
+            "populateComparisonResponse(Map<String,Object> response, ComparisonResult result, Set<String> seeds, int topCollocates, double minLogDice) \u2014 same mutation pattern, plus HTTP-layer parameters (seeds, topCollocates, minLogDice) that should be derived from ComparisonResult or handled by the caller",
+            "In ExplorationHandlers.handleSemanticFieldComparison: caller creates new HashMap(), calls populateComparisonResponse with it \u2014 the implicit protocol 'create empty map, pass to populate' is not captured by the return type"
+          ],
+          "suggestion": "Change populateExploreResponse to return Map<String,Object> rather than mutating a parameter: 'public static Map<String,Object> buildExploreResponse(ExplorationResult result)'. Callers then merge the returned map into their response: 'response.putAll(ExploreResponseAssembler.buildExploreResponse(result))'. For populateComparisonResponse, move the seeds/topCollocates/minLogDice parameters to the caller \u2014 the assembler should only translate ComparisonResult to Map.",
+          "reasoning": ""
+        }
+      }
     },
     "review::.::holistic::mid_level_elegance::comparison_response_http_params_in_assembler::7eb1dd2e": {
       "id": "review::.::holistic::mid_level_elegance::comparison_response_http_params_in_assembler::7eb1dd2e",
@@ -53474,16 +53535,44 @@
         "suggestion": "Move the seeds/topCollocates/minLogDice response fields to ExplorationHandlers.handleSemanticFieldComparison after calling the assembler: 'response.put(\"seeds\", new ArrayList<>(seeds)); response.put(\"top_requested\", topCollocates); etc.' Reduce populateComparisonResponse signature to (Map<String,Object>, ComparisonResult).",
         "reasoning": ""
       },
-      "status": "open",
-      "note": null,
+      "status": "wontfix",
+      "note": "T4 architectural refactor of ExploreResponseAssembler to remove HTTP params deferred; assembler design is known debt accepted for this release",
       "first_seen": "2026-03-11T22:44:15+00:00",
       "last_seen": "2026-03-11T22:44:15+00:00",
-      "resolved_at": null,
+      "resolved_at": "2026-03-11T23:17:47+00:00",
       "reopen_count": 0,
       "lang": "java",
       "suppressed": false,
       "suppressed_at": null,
-      "suppression_pattern": null
+      "suppression_pattern": null,
+      "resolution_attestation": {
+        "kind": "manual",
+        "text": "I have actually reviewed the ExploreResponseAssembler and ExplorationHandlers coupling and accept this as known architectural debt for the current release, and I am not gaming the score.",
+        "attested_at": "2026-03-11T23:17:47+00:00",
+        "scan_verified": false
+      },
+      "wontfix_scan_count": 80,
+      "wontfix_snapshot": {
+        "captured_at": "2026-03-11T23:17:47+00:00",
+        "scan_count": 80,
+        "tier": 2,
+        "confidence": "medium",
+        "detail": {
+          "holistic": true,
+          "dimension": "mid_level_elegance",
+          "related_files": [
+            "src/main/java/pl/marcinmilkowski/word_sketch/api/ExploreResponseAssembler.java",
+            "src/main/java/pl/marcinmilkowski/word_sketch/api/ExplorationHandlers.java"
+          ],
+          "evidence": [
+            "populateComparisonResponse(Map<String,Object> response, ComparisonResult result, Set<String> seeds, int topCollocates, double minLogDice) \u2014 seeds, topCollocates, minLogDice are request parameters, not exploration results",
+            "The assembler adds 'seeds', 'top_requested', 'min_logdice' to the response map from these parameters \u2014 this is handler-layer knowledge (what parameters were requested) leaking into the assembler",
+            "populateExploreResponse by contrast only takes ExplorationResult \u2014 consistent with a pure model-to-JSON translator"
+          ],
+          "suggestion": "Move the seeds/topCollocates/minLogDice response fields to ExplorationHandlers.handleSemanticFieldComparison after calling the assembler: 'response.put(\"seeds\", new ArrayList<>(seeds)); response.put(\"top_requested\", topCollocates); etc.' Reduce populateComparisonResponse signature to (Map<String,Object>, ComparisonResult).",
+          "reasoning": ""
+        }
+      }
     },
     "review::.::holistic::ai_generated_debt::grammar_config_loader_restating_private_javadocs::cdb4bba8": {
       "id": "review::.::holistic::ai_generated_debt::grammar_config_loader_restating_private_javadocs::cdb4bba8",
@@ -53811,16 +53900,22 @@
         "suggestion": "Simplify to: 'if (specificDeprel != null)' \u2014 the isEmpty() check adds visual noise without protecting against any reachable condition.",
         "reasoning": ""
       },
-      "status": "open",
-      "note": null,
+      "status": "fixed",
+      "note": "Removed the redundant specificDeprel.isEmpty() check in SketchHandlers - the string from String.split is always non-empty at index 1 when non-null",
       "first_seen": "2026-03-11T22:44:15+00:00",
       "last_seen": "2026-03-11T22:44:15+00:00",
-      "resolved_at": null,
+      "resolved_at": "2026-03-11T23:16:47+00:00",
       "reopen_count": 0,
       "lang": "java",
       "suppressed": false,
       "suppressed_at": null,
-      "suppression_pattern": null
+      "suppression_pattern": null,
+      "resolution_attestation": {
+        "kind": "manual",
+        "text": "I have actually Removed the redundant specificDeprel.isEmpty() check in SketchHandlers - the string from String.split is always non-empty at index 1 when non-null and I am not gaming the score.",
+        "attested_at": "2026-03-11T23:16:47+00:00",
+        "scan_verified": false
+      }
     },
     "review::.::holistic::type_safety::hitrecord_collocatelemma_missing_nullable::19ab461d": {
       "id": "review::.::holistic::type_safety::hitrecord_collocatelemma_missing_nullable::19ab461d",
@@ -54138,16 +54233,22 @@
         "suggestion": "Standardise to 'top' across both endpoints: in ConcordanceHandlers, change response.put(\"top_requested\", req.top()) to response.put(\"top\", req.top()). Note this is a minor breaking change for clients reading that field.",
         "reasoning": ""
       },
-      "status": "open",
-      "note": null,
+      "status": "fixed",
+      "note": "Renamed top_requested to top in ConcordanceHandlers response to match the field name used in CorpusQueryHandlers BCQL response",
       "first_seen": "2026-03-11T22:44:15+00:00",
       "last_seen": "2026-03-11T22:44:15+00:00",
-      "resolved_at": null,
+      "resolved_at": "2026-03-11T23:17:43+00:00",
       "reopen_count": 0,
       "lang": "java",
       "suppressed": false,
       "suppressed_at": null,
-      "suppression_pattern": null
+      "suppression_pattern": null,
+      "resolution_attestation": {
+        "kind": "manual",
+        "text": "I have actually Renamed top_requested to top in ConcordanceHandlers response to match the field name used in CorpusQueryHandlers BCQL response and I am not gaming the score.",
+        "attested_at": "2026-03-11T23:17:43+00:00",
+        "scan_verified": false
+      }
     }
   },
   "scan_coverage": {
@@ -54275,7 +54376,7 @@
       "assessed_at": "2026-03-11T22:44:15+00:00",
       "needs_review_refresh": true,
       "refresh_reason": "review_issue_fixed",
-      "stale_since": "2026-03-11T23:08:27+00:00"
+      "stale_since": "2026-03-11T23:16:47+00:00"
     },
     "type_safety": {
       "score": 75.4,
@@ -54290,8 +54391,8 @@
       "source": "holistic",
       "assessed_at": "2026-03-11T22:44:15+00:00",
       "needs_review_refresh": true,
-      "refresh_reason": "review_issue_wontfix",
-      "stale_since": "2026-03-11T22:50:04+00:00"
+      "refresh_reason": "review_issue_fixed",
+      "stale_since": "2026-03-11T23:17:43+00:00"
     },
     "authorization_consistency": {
       "score": 91.0,
@@ -54372,13 +54473,16 @@
       "source": "holistic",
       "assessed_at": "2026-03-11T22:44:15+00:00",
       "needs_review_refresh": true,
-      "refresh_reason": "review_issue_fixed",
-      "stale_since": "2026-03-11T23:08:30+00:00"
+      "refresh_reason": "review_issue_wontfix",
+      "stale_since": "2026-03-11T23:17:46+00:00"
     },
     "mid_level_elegance": {
       "score": 75.6,
       "source": "holistic",
-      "assessed_at": "2026-03-11T22:44:15+00:00"
+      "assessed_at": "2026-03-11T22:44:15+00:00",
+      "needs_review_refresh": true,
+      "refresh_reason": "review_issue_wontfix",
+      "stale_since": "2026-03-11T23:17:47+00:00"
     },
     "definition_directness": {
       "score": 56.7,
@@ -57262,13 +57366,13 @@
       "strict": 75.4,
       "verified_strict_score": 75.4,
       "checks": 10,
-      "failing": 1,
+      "failing": 0,
       "tier": 4,
       "detectors": {
         "subjective_assessment": {
           "potential": 10,
           "pass_rate": 0.754,
-          "failing": 1,
+          "failing": 0,
           "weighted_failures": 2.46,
           "assessment_score": 75.4,
           "placeholder": false,
@@ -57424,13 +57528,13 @@
       "strict": 75.6,
       "verified_strict_score": 75.6,
       "checks": 10,
-      "failing": 2,
+      "failing": 0,
       "tier": 4,
       "detectors": {
         "subjective_assessment": {
           "potential": 10,
           "pass_rate": 0.756,
-          "failing": 2,
+          "failing": 0,
           "weighted_failures": 2.44,
           "assessment_score": 75.6,
           "placeholder": false,
@@ -57445,13 +57549,13 @@
       "strict": 71.4,
       "verified_strict_score": 71.4,
       "checks": 10,
-      "failing": 2,
+      "failing": 0,
       "tier": 4,
       "detectors": {
         "subjective_assessment": {
           "potential": 10,
           "pass_rate": 0.714,
-          "failing": 2,
+          "failing": 0,
           "weighted_failures": 2.86,
           "assessment_score": 71.4,
           "placeholder": false,
@@ -57571,13 +57675,13 @@
       "strict": 68.1,
       "verified_strict_score": 68.1,
       "checks": 10,
-      "failing": 1,
+      "failing": 0,
       "tier": 4,
       "detectors": {
         "subjective_assessment": {
           "potential": 10,
           "pass_rate": 0.681,
-          "failing": 1,
+          "failing": 0,
           "weighted_failures": 3.19,
           "assessment_score": 68.1,
           "placeholder": false,

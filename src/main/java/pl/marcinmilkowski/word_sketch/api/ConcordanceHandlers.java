@@ -76,7 +76,7 @@ class ConcordanceHandlers {
         response.put("relation", req.relation());
         response.put("bcql", bcqlQuery);
         response.put("fallback", fallback);
-        response.put("top_requested", req.top());
+        response.put("top", req.top());
         response.put("total_results", results.size());
 
         List<Map<String, Object>> examplesList = new ArrayList<>();
