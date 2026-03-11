@@ -1,6 +1,7 @@
 package pl.marcinmilkowski.word_sketch.api;
 
 import com.sun.net.httpserver.HttpExchange;
+import org.jspecify.annotations.NonNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import pl.marcinmilkowski.word_sketch.config.GrammarConfig;
@@ -33,7 +34,7 @@ class ExplorationHandlers {
     private final GrammarConfig grammarConfig;
     private final SemanticFieldExplorer semanticFieldExplorer;
 
-    ExplorationHandlers(GrammarConfig grammarConfig, SemanticFieldExplorer semanticFieldExplorer) {
+    ExplorationHandlers(@NonNull GrammarConfig grammarConfig, SemanticFieldExplorer semanticFieldExplorer) {
         this.grammarConfig = Objects.requireNonNull(grammarConfig,
             "grammarConfig must not be null; exploration endpoints require a loaded grammar configuration");
         this.semanticFieldExplorer = semanticFieldExplorer;

@@ -73,7 +73,7 @@ class HttpApiUtils {
     private HttpApiUtils() {}
 
     /**
-     * Sets the {@code Access-Control-Allow-Origin} response header to {@link #CORS_ALLOW_ORIGIN}.
+     * Sets the {@code Access-Control-Allow-Origin} response header using {@link #getCorsAllowOrigin()}.
      * Called by every response-sending method to ensure consistent CORS behaviour.
      */
     private static void setCorsHeader(HttpExchange exchange) {
@@ -186,7 +186,14 @@ class HttpApiUtils {
     }
 
     /**
+     * Parses a URL query string into a key-value parameter map.
      *
+     * <p>Splits on {@code &} and {@code =}, decodes percent-encoded values using UTF-8,
+     * and silently ignores parameter tokens with no {@code =} separator. Passing a
+     * {@code null} or empty query returns an empty map.</p>
+     *
+     * @param query the raw query string (may be null or empty); percent-encoded characters are decoded
+     * @return mutable map of decoded parameter names to decoded values; never null
      * @throws IllegalArgumentException if any key or value cannot be URL-decoded, so
      *         callers and {@code wrapHandler} can return a 400 Bad Request response rather than
      *         silently producing a malformed parameter map.

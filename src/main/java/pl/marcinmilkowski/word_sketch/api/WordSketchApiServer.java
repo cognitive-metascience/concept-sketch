@@ -15,6 +15,13 @@ import java.util.Objects;
 /**
  * REST API server for word sketch queries using BlackLab backend.
  *
+ * <p><strong>Security model:</strong> the server binds exclusively to the loopback address
+ * ({@code 127.0.0.1}) so it is never exposed on any external network interface.
+ * All endpoints are unauthenticated — access control is provided by the host firewall
+ * and the loopback-only bind. Any change to the bind address (e.g., to {@code 0.0.0.0}
+ * for container deployment) must be accompanied by an authentication or network-level
+ * access-control layer to prevent unauthorized access.</p>
+ *
  * Endpoints:
  * - GET  /health                            - Health check
  * - GET  /api/sketch/{lemma}                - Full word sketch (all grammatical relations)

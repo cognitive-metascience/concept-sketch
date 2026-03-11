@@ -31,18 +31,22 @@ public final class GrammarConfig {
         this.configPath = configPath;
     }
 
+    /** @return all grammar relations in declaration order; never null, may be empty */
     public List<RelationConfig> getRelations() {
         return relations;
     }
 
+    /** @return the relation config for the given ID, or empty if no relation with that ID is registered */
     public Optional<RelationConfig> getRelation(String id) {
         return Optional.ofNullable(relationsById.get(id));
     }
 
+    /** @return the grammar version string from the config file (e.g. {@code "1.0"}); may be null for legacy configs */
     public String getVersion() {
         return version;
     }
 
+    /** @return the path to the config file this grammar was loaded from, or null when loaded from the classpath */
     public @org.jspecify.annotations.Nullable Path getConfigPath() {
         return configPath;
     }
