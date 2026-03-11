@@ -8,6 +8,8 @@ import pl.marcinmilkowski.word_sketch.config.RelationConfig;
 import pl.marcinmilkowski.word_sketch.exploration.SemanticFieldExplorer;
 import pl.marcinmilkowski.word_sketch.model.AdjectiveProfile;
 import pl.marcinmilkowski.word_sketch.model.ComparisonResult;
+import pl.marcinmilkowski.word_sketch.model.CoreCollocate;
+import pl.marcinmilkowski.word_sketch.model.DiscoveredNoun;
 import pl.marcinmilkowski.word_sketch.model.Edge;
 import pl.marcinmilkowski.word_sketch.model.ExploreOptions;
 import pl.marcinmilkowski.word_sketch.model.ExplorationResult;
@@ -46,7 +48,7 @@ class ExplorationHandlers {
         String query = exchange.getRequestURI().getQuery();
         Map<String, String> params = HttpApiUtils.parseQueryParams(query);
 
-        String seed = HttpApiUtils.requireParam(exchange, params, "seeds");
+        String seed = HttpApiUtils.requireParam(exchange, params, "seed");
         if (seed == null) return;
 
         RelationConfig resolvedConfig = resolveRelationConfig(exchange, params);
@@ -184,8 +186,9 @@ class ExplorationHandlers {
         response.put("partially_shared_count", result.getPartiallyShared().size());
         response.put("specific_count", result.getSpecific().size());
 
-        response.put("edges", result.buildEdges().stream().map(Edge::toMap).toList());
-        response.put("edges_count", result.buildEdges().size());
+        List<Edge> edges = result.buildEdges();
+        response.put("edges", edges.stream().map(Edge::toMap).toList());
+        response.put("edges_count", edges.size());
 
         HttpApiUtils.sendJsonResponse(exchange, response);
     }
@@ -235,23 +238,46 @@ class ExplorationHandlers {
         HttpApiUtils.sendJsonResponse(exchange, response);
     }
 
-    @SuppressWarnings("unchecked")
     private void buildExploreResponseBody(Map<String, Object> response, ExplorationResult result) {
-        Map<String, Object> resultMap = result.toMap();
-
-        List<Map<String, Object>> seedCollocs = (List<Map<String, Object>>) resultMap.get("seed_collocates");
+        List<Map<String, Object>> seedCollocs = new ArrayList<>();
+        for (Map.Entry<String, Double> e : result.getSeedCollocates().entrySet()) {
+            Map<String, Object> c = new HashMap<>();
+            c.put("word", e.getKey());
+            c.put("log_dice", Math.round(e.getValue() * 100.0) / 100.0);
+            c.put("frequency", result.getSeedCollocateFrequencies().getOrDefault(e.getKey(), 0L));
+            seedCollocs.add(c);
+        }
         response.put("seed_collocates", seedCollocs);
         response.put("seed_collocates_count", seedCollocs.size());
 
-        List<Map<String, Object>> nouns = (List<Map<String, Object>>) resultMap.get("discovered_nouns");
+        List<Map<String, Object>> nouns = new ArrayList<>();
+        for (DiscoveredNoun n : result.getDiscoveredNouns()) {
+            Map<String, Object> nm = new HashMap<>();
+            nm.put("word", n.noun());
+            nm.put("shared_count", n.sharedCount());
+            nm.put("similarity_score", Math.round(n.combinedRelevanceScore() * 100.0) / 100.0);
+            nm.put("avg_logdice", Math.round(n.avgLogDice() * 100.0) / 100.0);
+            nm.put("shared_collocates", n.sharedCollocateList());
+            nouns.add(nm);
+        }
         response.put("discovered_nouns", nouns);
         response.put("discovered_nouns_count", nouns.size());
 
-        List<Map<String, Object>> coreCollocs = (List<Map<String, Object>>) resultMap.get("core_collocates");
+        List<Map<String, Object>> coreCollocs = new ArrayList<>();
+        for (CoreCollocate c : result.getCoreCollocates()) {
+            Map<String, Object> cm = new HashMap<>();
+            cm.put("word", c.collocate());
+            cm.put("shared_by_count", c.sharedByCount());
+            cm.put("total_nouns", c.totalNouns());
+            cm.put("coverage", Math.round(c.coverage() * 100.0) / 100.0);
+            cm.put("seed_logdice", Math.round(c.seedLogDice() * 100.0) / 100.0);
+            coreCollocs.add(cm);
+        }
         response.put("core_collocates", coreCollocs);
         response.put("core_collocates_count", coreCollocs.size());
 
-        response.put("edges", resultMap.get("edges"));
+        List<Edge> edges = result.buildEdges();
+        response.put("edges", edges.stream().map(Edge::toMap).toList());
     }
 
     /**

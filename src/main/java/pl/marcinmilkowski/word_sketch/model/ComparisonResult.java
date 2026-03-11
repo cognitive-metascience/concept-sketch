@@ -1,7 +1,6 @@
 package pl.marcinmilkowski.word_sketch.model;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -82,26 +81,4 @@ public class ComparisonResult {
             nouns.size(), adjectives.size(), shared, specific);
     }
 
-    /**
-     * Serialize this result to a plain map suitable for JSON serialization.
-     * Keeps serialization logic co-located with the data it describes.
-     */
-    public Map<String, Object> toMap() {
-        Map<String, Object> map = new HashMap<>();
-        map.put("nouns", new ArrayList<>(nouns));
-
-        List<Map<String, Object>> adjList = new ArrayList<>();
-        for (AdjectiveProfile adj : adjectives) {
-            Map<String, Object> am = new HashMap<>();
-            am.put("adjective", adj.adjective());
-            am.put("present_in_count", adj.presentInCount());
-            am.put("max_log_dice", Math.round(adj.maxLogDice() * 100.0) / 100.0);
-            am.put("noun_scores", adj.nounScores());
-            adjList.add(am);
-        }
-        map.put("adjectives", adjList);
-
-        map.put("edges", buildEdges().stream().map(Edge::toMap).toList());
-        return map;
-    }
 }

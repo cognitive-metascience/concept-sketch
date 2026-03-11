@@ -1,8 +1,6 @@
 package pl.marcinmilkowski.word_sketch.model;
 
 import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -86,49 +84,4 @@ public class ExplorationResult {
             seed, seedCollocates.size(), discoveredNouns.size(), coreCollocates.size());
     }
 
-    /**
-     * Serialize this result to a plain map suitable for JSON serialization.
-     * Keeps serialization logic co-located with the data it describes.
-     */
-    public Map<String, Object> toMap() {
-        Map<String, Object> map = new LinkedHashMap<>();
-        map.put("seed", seed);
-
-        List<Map<String, Object>> collocList = new ArrayList<>();
-        for (Map.Entry<String, Double> e : seedCollocates.entrySet()) {
-            Map<String, Object> c = new HashMap<>();
-            c.put("word", e.getKey());
-            c.put("log_dice", Math.round(e.getValue() * 100.0) / 100.0);
-            c.put("frequency", seedCollocateFrequencies.getOrDefault(e.getKey(), 0L));
-            collocList.add(c);
-        }
-        map.put("seed_collocates", collocList);
-
-        List<Map<String, Object>> nounList = new ArrayList<>();
-        for (DiscoveredNoun n : discoveredNouns) {
-            Map<String, Object> nm = new HashMap<>();
-            nm.put("word", n.noun());
-            nm.put("shared_count", n.sharedCount());
-            nm.put("similarity_score", Math.round(n.combinedRelevanceScore() * 100.0) / 100.0);
-            nm.put("avg_logdice", Math.round(n.avgLogDice() * 100.0) / 100.0);
-            nm.put("shared_collocates", n.sharedCollocateList());
-            nounList.add(nm);
-        }
-        map.put("discovered_nouns", nounList);
-
-        List<Map<String, Object>> coreList = new ArrayList<>();
-        for (CoreCollocate c : coreCollocates) {
-            Map<String, Object> cm = new HashMap<>();
-            cm.put("word", c.collocate());
-            cm.put("shared_by_count", c.sharedByCount());
-            cm.put("total_nouns", c.totalNouns());
-            cm.put("coverage", Math.round(c.coverage() * 100.0) / 100.0);
-            cm.put("seed_logdice", Math.round(c.seedLogDice() * 100.0) / 100.0);
-            coreList.add(cm);
-        }
-        map.put("core_collocates", coreList);
-
-        map.put("edges", buildEdges().stream().map(Edge::toMap).toList());
-        return map;
-    }
 }
