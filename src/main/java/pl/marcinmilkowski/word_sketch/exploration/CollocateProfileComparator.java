@@ -32,6 +32,13 @@ public class CollocateProfileComparator {
     private final QueryExecutor executor;
     private final String adjectivePattern;
 
+    /**
+     * @deprecated Prefer {@link #CollocateProfileComparator(QueryExecutor, GrammarConfig)} so
+     *             the adjective pattern is config-driven and not hard-coded in a fallback constant.
+     *             This overload falls back to {@code FALLBACK_ADJECTIVE_PATTERN}, bypassing
+     *             GrammarConfig and creating a parallel code path.
+     */
+    @Deprecated
     public CollocateProfileComparator(QueryExecutor executor) {
         this(executor, null);
     }

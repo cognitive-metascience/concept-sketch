@@ -145,6 +145,8 @@ class BlackLabSnippetParser {
      */
     @Nullable
     static String extractCollocateFromXmlByPosition(String xmlSnippet, int position) {
+        // The position < 1 guard is defensive: all current callers pass values from
+        // findLabelTokenIndex() which returns >= 1, or explicitly check > 0 before calling.
         if (xmlSnippet == null || xmlSnippet.isEmpty() || position < 1) {
             return null;
         }

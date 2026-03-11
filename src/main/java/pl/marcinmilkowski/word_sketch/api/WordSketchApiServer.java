@@ -38,7 +38,8 @@ public class WordSketchApiServer {
     private final GrammarConfig grammarConfig;
     private final SketchHandlers sketchHandlers;
     private final ExplorationHandlers explorationHandlers;
-    private final com.sun.net.httpserver.HttpServer server;
+    private final VisualizationHandlers visualizationHandlers;
+    private com.sun.net.httpserver.HttpServer server;
 
     public WordSketchApiServer(QueryExecutor executor, int port, GrammarConfig grammarConfig) throws IOException {
         this.port = port;
@@ -46,9 +47,9 @@ public class WordSketchApiServer {
         SemanticFieldExplorer semanticFieldExplorer = new SemanticFieldExplorer(executor, grammarConfig);
         this.sketchHandlers = new SketchHandlers(executor, grammarConfig);
         this.explorationHandlers = new ExplorationHandlers(grammarConfig, semanticFieldExplorer);
-        this.server = com.sun.net.httpserver.HttpServer.create(
-                new InetSocketAddress(InetAddress.getLoopbackAddress(), port), 0);
-        registerRoutes();
+        this.visualizationHandlers = new VisualizationHandlers();
+        // NOTE: Port binding is deferred to start() so that construction and network binding are separated.
+        // This lets callers construct the server and attach post-construction configuration before binding.
     }
 
     private void registerRoutes() {
@@ -84,7 +85,7 @@ public class WordSketchApiServer {
             wrapHandler(sketchHandlers::handleConcordanceExamples, "Concordance examples"));
 
         registerPostHandler(server, "/api/visual/radial",
-            wrapHandler(sketchHandlers::handleVisualRadial, "Radial plot"));
+            wrapHandler(visualizationHandlers::handleVisualRadial, "Radial plot"));
 
         // POST with JSON body to avoid URL encoding issues
         registerPostHandler(server, "/api/bcql",
@@ -92,6 +93,13 @@ public class WordSketchApiServer {
     }
 
     public void start() {
+        try {
+            this.server = com.sun.net.httpserver.HttpServer.create(
+                    new InetSocketAddress(InetAddress.getLoopbackAddress(), port), 0);
+        } catch (IOException e) {
+            throw new IllegalStateException("Failed to bind port " + port, e);
+        }
+        registerRoutes();
         server.setExecutor(null);
         server.start();
         logger.info("API server started on port {} — see class Javadoc for endpoint listing", port);
@@ -134,6 +142,7 @@ public class WordSketchApiServer {
 
     /**
      * Wraps an {@link com.sun.net.httpserver.HttpHandler} with uniform error handling.
+     * Catches {@link IllegalArgumentException} and sends a 400 response (client error).
      * Catches {@link IOException} and any other {@link Exception}, logs them, and sends a 500 response.
      */
     private com.sun.net.httpserver.HttpHandler wrapHandler(
@@ -141,6 +150,9 @@ public class WordSketchApiServer {
         return exchange -> {
             try {
                 handler.handle(exchange);
+            } catch (IllegalArgumentException e) {
+                logger.warn("{} client error", description, e);
+                HttpApiUtils.sendError(exchange, 400, "Bad request: " + e.getMessage());
             } catch (IOException e) {
                 logger.error("{} error", description, e);
                 HttpApiUtils.sendError(exchange, 500, description + " failed: " + e.getMessage());

@@ -2,8 +2,6 @@ package pl.marcinmilkowski.word_sketch.exploration;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -21,6 +19,7 @@ import pl.marcinmilkowski.word_sketch.model.DiscoveredNoun;
 import pl.marcinmilkowski.word_sketch.model.ExplorationResult;
 import pl.marcinmilkowski.word_sketch.model.PosGroup;
 import pl.marcinmilkowski.word_sketch.model.QueryResults;
+import pl.marcinmilkowski.word_sketch.model.RelationType;
 import pl.marcinmilkowski.word_sketch.query.QueryExecutor;
 
 /**
@@ -81,9 +80,16 @@ public class SemanticFieldExplorer {
 
     private final QueryExecutor executor;
     private final CollocateProfileComparator comparator;
+    private final MultiSeedExplorer multiSeedExplorer;
     private final String nounCqlConstraint;
 
-    // Constructor for testing with mock executor
+    /**
+     * @deprecated Prefer {@link #SemanticFieldExplorer(QueryExecutor, GrammarConfig)} so the
+     *             production code path is used and pattern derivation is config-driven.
+     *             This overload falls back to {@code FALLBACK_NOUN_CQL_CONSTRAINT}, which
+     *             bypasses grammar config and creates a parallel code path.
+     */
+    @Deprecated
     public SemanticFieldExplorer(QueryExecutor executor) {
         this(executor, null);
     }
@@ -92,15 +98,23 @@ public class SemanticFieldExplorer {
         this.executor = executor;
         this.nounCqlConstraint = deriveNounCqlConstraint(grammarConfig);
         this.comparator = new CollocateProfileComparator(executor, grammarConfig);
+        this.multiSeedExplorer = new MultiSeedExplorer(executor);
     }
 
     private static String deriveNounCqlConstraint(GrammarConfig grammarConfig) {
         if (grammarConfig == null) return FALLBACK_NOUN_CQL_CONSTRAINT;
+        // Use explicit relation_type filter rather than findFirst() to avoid implicit ordering dependency.
+        // OBJECT_OF has nouns as collocates and is the canonical noun-reverse-lookup relation.
         return grammarConfig.getRelations().stream()
-            .filter(r -> r.collocatePosGroup() == PosGroup.NOUN && r.relationType().isPresent())
+            .filter(r -> r.relationType().map(rt -> rt == RelationType.OBJECT_OF || rt == RelationType.SUBJECT_OF).orElse(false)
+                && r.collocatePosGroup() == PosGroup.NOUN)
             .findFirst()
-            .map(r -> r.collocateReversePattern())
-            .orElse(FALLBACK_NOUN_CQL_CONSTRAINT);
+            .map(RelationConfig::collocateReversePattern)
+            .orElseGet(() -> grammarConfig.getRelations().stream()
+                .filter(r -> r.collocatePosGroup() == PosGroup.NOUN && r.relationType().isPresent())
+                .findFirst()
+                .map(RelationConfig::collocateReversePattern)
+                .orElse(FALLBACK_NOUN_CQL_CONSTRAINT));
     }
 
     // ==================== EXPLORATION MODE ====================
@@ -125,7 +139,7 @@ public class SemanticFieldExplorer {
         return exploreByPattern(
             seed,
             relationConfig.name(),
-            relationConfig.getFullPattern(seed),
+            relationConfig.buildFullPattern(seed),
             relationConfig.collocateReversePattern(),
             opts);
     }
@@ -153,7 +167,7 @@ public class SemanticFieldExplorer {
         int minShared = opts.minShared();
 
         if (seed == null || seed.isEmpty()) {
-            return ExplorationResult.empty(seed);
+            return ExplorationResult.empty(seed != null ? seed : "");
         }
 
         seed = seed.toLowerCase().trim();
@@ -291,13 +305,21 @@ public class SemanticFieldExplorer {
      * adjectives are shared across seeds (semantic core) and which are distinctive to
      * individual seeds.
      *
-     * @param seedNouns   Nouns to compare (e.g., "theory", "model", "hypothesis")
+     * <p>Policy: requires at least 2 non-blank seed nouns so the comparison is meaningful.
+     * Delegates computation to {@link CollocateProfileComparator}.</p>
+     *
+     * @param seedNouns   Nouns to compare (e.g., "theory", "model", "hypothesis"); must not be null or empty
      * @param minLogDice  Minimum logDice score for adjective-noun pairs
      * @param maxPerNoun  Maximum adjectives to retrieve per noun
      * @return ComparisonResult with graded adjective profiles
+     * @throws IllegalArgumentException if fewer than 2 seed nouns are provided
      */
     public ComparisonResult compareCollocateProfiles(
             Set<String> seedNouns, double minLogDice, int maxPerNoun) throws IOException {
+        if (seedNouns == null || seedNouns.size() < 2) {
+            throw new IllegalArgumentException(
+                "compareCollocateProfiles requires at least 2 seed nouns for a meaningful comparison");
+        }
         return comparator.compareCollocateProfiles(seedNouns, minLogDice, maxPerNoun);
     }
 
@@ -312,7 +334,7 @@ public class SemanticFieldExplorer {
      */
     public List<String> fetchExamples(String adjective, String noun, RelationConfig relationConfig, int maxExamples)
             throws IOException {
-        String bcqlQuery = relationConfig.getFullPattern(noun.toLowerCase(), adjective.toLowerCase());
+        String bcqlQuery = relationConfig.buildFullPattern(noun.toLowerCase(), adjective.toLowerCase());
 
         List<QueryResults.CollocateResult> results = executor.executeBcqlQuery(bcqlQuery, maxExamples);
 
@@ -324,18 +346,14 @@ public class SemanticFieldExplorer {
     }
 
     /**
-     * Fetches collocates for each seed using the given relation and maps the results into an
-     * {@link ExplorationResult}.  Seeds become the {@code discoveredNouns} (each carrying their
-     * common collocates as shared-collocate set); the collocate intersection becomes
-     * {@code coreCollocates}; and the aggregate collocate map becomes {@code seedCollocates}.
+     * Multi-seed semantic field exploration: finds collocates shared across multiple seeds.
+     * Delegates to {@link MultiSeedExplorer} which owns the multi-seed algorithm.
      *
      * @param seeds          ordered seed words (at least 2)
      * @param relationConfig grammar relation to use for collocate lookup
      * @param minLogDice     minimum logDice threshold for inclusion
      * @param topCollocates  maximum collocates to fetch per seed
-     * @param minShared      minimum number of seeds a collocate must appear in to be
-     *                       included in the core set; use {@code seeds.size()}
-     *                       to require presence in all seeds
+     * @param minShared      minimum number of seeds a collocate must appear in
      * @return ExplorationResult mapping multi-seed data into the shared exploration model
      */
     public ExplorationResult exploreMultiSeed(
@@ -344,71 +362,7 @@ public class SemanticFieldExplorer {
             double minLogDice,
             int topCollocates,
             int minShared) throws IOException {
-        Map<String, List<QueryResults.WordSketchResult>> seedCollocateMap = new LinkedHashMap<>();
-        Map<String, Integer> collocateSharedCount = new HashMap<>();
-
-        for (String seed : seeds) {
-            String bcqlPattern = relationConfig.getFullPattern(seed);
-            List<QueryResults.WordSketchResult> collocates = executor.executeSurfacePattern(
-                seed, bcqlPattern,
-                minLogDice, topCollocates);
-            seedCollocateMap.put(seed, collocates);
-
-            for (QueryResults.WordSketchResult wsr : collocates) {
-                collocateSharedCount.merge(wsr.lemma(), 1, Integer::sum);
-            }
-        }
-
-        int threshold = Math.min(minShared, seeds.size());
-        Set<String> commonCollocates = new HashSet<>();
-        for (Map.Entry<String, Integer> entry : collocateSharedCount.entrySet()) {
-            if (entry.getValue() >= threshold) {
-                commonCollocates.add(entry.getKey());
-            }
-        }
-
-        Map<String, Double> seedCollocScores = new LinkedHashMap<>();
-        Map<String, Long> seedCollocFreqs = new LinkedHashMap<>();
-        for (List<QueryResults.WordSketchResult> collocs : seedCollocateMap.values()) {
-            for (QueryResults.WordSketchResult wsr : collocs) {
-                seedCollocScores.merge(wsr.lemma(), wsr.logDice(), Math::max);
-                seedCollocFreqs.merge(wsr.lemma(), wsr.frequency(), Long::sum);
-            }
-        }
-
-        int numSeeds = seeds.size();
-        List<DiscoveredNoun> discoveredNounsList = new ArrayList<>();
-        for (String seed : seeds) {
-            List<QueryResults.WordSketchResult> collocs = seedCollocateMap.getOrDefault(seed, List.of());
-            Map<String, Double> sharedCollocs = new LinkedHashMap<>();
-            for (QueryResults.WordSketchResult wsr : collocs) {
-                if (commonCollocates.contains(wsr.lemma())) {
-                    sharedCollocs.put(wsr.lemma(), wsr.logDice());
-                }
-            }
-            int count = sharedCollocs.size();
-            double avg = sharedCollocs.isEmpty() ? 0.0
-                : sharedCollocs.values().stream().mapToDouble(Double::doubleValue).average().orElse(0.0);
-            double sum = sharedCollocs.values().stream().mapToDouble(Double::doubleValue).sum();
-            discoveredNounsList.add(new DiscoveredNoun(seed, sharedCollocs, count, sum, avg));
-        }
-
-        List<CoreCollocate> coreCollocatesList = new ArrayList<>();
-        for (String c : commonCollocates) {
-            int sharedBy = collocateSharedCount.getOrDefault(c, 0);
-            double avgLd = seedCollocateMap.values().stream()
-                .flatMap(List::stream)
-                .filter(wsr -> c.equals(wsr.lemma()))
-                .mapToDouble(QueryResults.WordSketchResult::logDice)
-                .average().orElse(0.0);
-            double seedLd = seedCollocScores.getOrDefault(c, 0.0);
-            coreCollocatesList.add(new CoreCollocate(c, sharedBy, numSeeds, seedLd, avgLd));
-        }
-
-        return new ExplorationResult(
-            String.join(",", seeds),
-            seedCollocScores, seedCollocFreqs,
-            discoveredNounsList, coreCollocatesList);
+        return multiSeedExplorer.explore(seeds, relationConfig, minLogDice, topCollocates, minShared);
     }
 
 }

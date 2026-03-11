@@ -21,11 +21,14 @@ class HttpApiUtils {
     private static final Logger logger = LoggerFactory.getLogger(HttpApiUtils.class);
 
     /**
-     * Allowed CORS origin. Defaults to {@code http://localhost:3000} for development.
+     * Allowed CORS origin. Read at use time via {@link #getCorsAllowOrigin()} so that
+     * the system property is evaluated when the response is sent, not at class-load time.
      * Override at runtime via the {@code cors.allow.origin} JVM system property:
      * {@code -Dcors.allow.origin=https://myapp.example.com}
      */
-    static final String CORS_ALLOW_ORIGIN = System.getProperty("cors.allow.origin", "http://localhost:3000");
+    private static String getCorsAllowOrigin() {
+        return System.getProperty("cors.allow.origin", "http://localhost:3000");
+    }
 
     private HttpApiUtils() {}
 
@@ -34,7 +37,7 @@ class HttpApiUtils {
      * Called by every response-sending method to ensure consistent CORS behaviour.
      */
     private static void setCorsHeader(HttpExchange exchange) {
-        exchange.getResponseHeaders().set("Access-Control-Allow-Origin", CORS_ALLOW_ORIGIN);
+        exchange.getResponseHeaders().set("Access-Control-Allow-Origin", getCorsAllowOrigin());
     }
 
     public static void sendJsonResponse(HttpExchange exchange, Object data) throws IOException {
@@ -113,6 +116,13 @@ class HttpApiUtils {
         return v;
     }
 
+    /**
+     * Parses query string key-value pairs, URL-decoding both keys and values.
+     *
+     * @throws IllegalArgumentException if any key or value cannot be URL-decoded, so
+     *         callers and {@code wrapHandler} can return a 400 Bad Request response rather than
+     *         silently producing a malformed parameter map.
+     */
     public static Map<String, String> parseQueryParams(String query) {
         Map<String, String> params = new HashMap<>();
         if (query == null || query.isEmpty()) {
@@ -128,8 +138,11 @@ class HttpApiUtils {
                         java.net.URLDecoder.decode(keyValue[0], "UTF-8"),
                         java.net.URLDecoder.decode(keyValue[1], "UTF-8")
                     );
-                } catch (Exception e) {
-                    logger.warn("Failed to decode query parameter '{}': {}", pair, e.getMessage(), e);
+                } catch (java.io.UnsupportedEncodingException e) {
+                    // UTF-8 is always supported; this branch is unreachable in practice.
+                    throw new IllegalArgumentException("Unsupported encoding decoding parameter '" + keyValue[0] + "'", e);
+                } catch (IllegalArgumentException e) {
+                    throw new IllegalArgumentException("Malformed URL encoding in parameter '" + keyValue[0] + "': " + e.getMessage(), e);
                 }
             }
         }

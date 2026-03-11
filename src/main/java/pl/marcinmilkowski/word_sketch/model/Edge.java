@@ -1,4 +1,4 @@
-package pl.marcinmilkowski.word_sketch.exploration;
+package pl.marcinmilkowski.word_sketch.model;
 
 import java.util.HashMap;
 import java.util.Map;

@@ -1,0 +1,107 @@
+{
+  "batch": "abstraction_fitness",
+  "batch_index": 3,
+  "assessments": {"abstraction_fitness": 78.0},
+  "dimension_notes": {
+    "abstraction_fitness": {
+      "evidence": [
+        "QueryExecutor interface has 7 methods and one production implementation (BlackLabQueryExecutor). However, it is an adapter isolating the external BlackLab library — a justified one-impl interface.",
+        "SemanticFieldExplorer.compareCollocateProfiles delegates entirely to comparator.compareCollocateProfiles — a pure pass-through. The method exists to keep the public explorer API stable, but the delegation adds an indirection hop with no policy.",
+        "ExploreResponseBuilder.buildEdges is a single-purpose static utility that does real translation work — the abstraction pays its cost.",
+        "HttpApiUtils is a tightly scoped static utility for HTTP mechanics (CORS, JSON response, param parsing) — well-bounded, not a dumping ground.",
+        "GrammarConfig.toJson() embeds JSON serialization logic inside the data object. The method uses fastjson2 JSONObject construction directly in the model class, mixing persistence/presentation concerns with data.",
+        "RelationConfig.collocatePosGroup() performs inline string scanning across the pattern field rather than operating on a structured intermediate representation. This is abstraction bypass: callers depend on a parsed POS group but the Config record exposes raw pattern scanning each call.",
+        "ExploreOptions bundles 4 parameters (topCollocates, nounsPerSeed, minLogDice, minShared). nounsPerSeed is documented as inapplicable to multi-seed paths — the single bag is slightly overfitted to single-seed, with dead weight for multi-seed callers.",
+        "The SemanticFieldExplorer null-GrammarConfig constructor (for testing) means CollocateProfileComparator also accepts null GrammarConfig, creating two parallel code paths (config-derived vs. hardcoded fallback). The fallback abstraction is never exercised in production but still exists as maintained code."
+      ],
+      "impact_scope": "module",
+      "fix_scope": "multi_file_refactor",
+      "confidence": "high",
+      "sub_axes": {
+        "abstraction_leverage": 80.0,
+        "indirection_cost": 72.0,
+        "interface_honesty": 82.0,
+        "delegation_density": 88.0,
+        "definition_directness": 72.0,
+        "type_discipline": 82.0
+      }
+    }
+  },
+  "dimension_judgment": {
+    "abstraction_fitness": {
+      "strengths": [
+        "QueryExecutor interface is a textbook external-adapter abstraction — it isolates a complex third-party library (BlackLab) behind a clean, testable seam.",
+        "ExploreResponseBuilder is a focused translator with genuine logic (model-to-graph conversion), not a pass-through.",
+        "CqlUtils and LogDiceCalculator are small, coherent utility classes with no mixed concerns.",
+        "HttpApiUtils is a well-bounded static helper covering exactly the HTTP mechanics needed without becoming a catch-all."
+      ],
+      "issue_character": "Issues are localised: one pure-delegation pass-through (compareCollocateProfiles), one concern-mixing in a data object (GrammarConfig.toJson), and one inline computation that should be a derived property (collocatePosGroup pattern scanning).",
+      "score_rationale": "The codebase earns credit for the disciplined QueryExecutor adapter and the focused utility classes. Two abstractions don't fully pay their cost: compareCollocateProfiles in SemanticFieldExplorer adds an indirection hop that delivers no policy, and GrammarConfig.toJson mixes serialization into a data object. RelationConfig.collocatePosGroup re-scans the raw pattern string on every call rather than parsing to a richer intermediate, which is a leaky abstraction (callers ask for the parsed group but the record has no parsed state). These are real but fixable issues, keeping the score in the functional-but-uneven range rather than the solid band."
+    }
+  },
+  "issues": [
+    {
+      "dimension": "abstraction_fitness",
+      "identifier": "compare-collocates-passthrough",
+      "summary": "SemanticFieldExplorer.compareCollocateProfiles is a pure delegation with no added policy",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/exploration/SemanticFieldExplorer.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/exploration/CollocateProfileComparator.java"
+      ],
+      "evidence": [
+        "public ComparisonResult compareCollocateProfiles(Set<String> seedNouns, double minLogDice, int maxPerNoun) throws IOException { return comparator.compareCollocateProfiles(seedNouns, minLogDice, maxPerNoun); }",
+        "The method signature, parameter names, and return type are identical to CollocateProfileComparator.compareCollocateProfiles. No validation, caching, logging, or transformation is added."
+      ],
+      "suggestion": "Either expose CollocateProfileComparator directly to callers (ExplorationHandlers), or add a genuine responsibility to SemanticFieldExplorer.compareCollocateProfiles (e.g., input validation, logging at the explorer level, or post-processing). A zero-addition delegation wrapper bloats the call graph without benefit.",
+      "confidence": "high",
+      "impact_scope": "module",
+      "fix_scope": "multi_file_refactor",
+      "root_cause_cluster": "passthrough_delegation"
+    },
+    {
+      "dimension": "abstraction_fitness",
+      "identifier": "grammar-config-serialization-mixing",
+      "summary": "GrammarConfig.toJson() embeds fastjson2 serialization logic in a data object",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/config/GrammarConfig.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/config/RelationConfig.java"
+      ],
+      "evidence": [
+        "GrammarConfig.toJson() directly constructs a JSONObject and JSONArray, coupling the model class to fastjson2.",
+        "RelationConfig.toJson() is similarly embedded in the record.",
+        "The serialization concern is only needed by SketchHandlers for the /api/relations endpoint; the config objects are used in many other places without needing JSON output."
+      ],
+      "suggestion": "Extract serialization to a GrammarConfigSerializer utility in the api or config package that accepts a GrammarConfig and returns JSONObject. This removes the fastjson2 import from config objects and allows changing the serialization format without touching the domain model.",
+      "confidence": "medium",
+      "impact_scope": "module",
+      "fix_scope": "multi_file_refactor",
+      "root_cause_cluster": "mixed_concerns"
+    },
+    {
+      "dimension": "abstraction_fitness",
+      "identifier": "collocate-pos-group-rescan",
+      "summary": "RelationConfig.collocatePosGroup() re-scans the raw pattern string on every call with no parsed cache",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/config/RelationConfig.java"
+      ],
+      "evidence": [
+        "collocatePosGroup() calls extractLabelContent() and posGroupFromConstraint() which scan the pattern string with string operations each invocation.",
+        "RelationConfig is a record (immutable), so the result of collocatePosGroup() is deterministic and could be computed once at construction time.",
+        "SemanticFieldExplorer.deriveNounCqlConstraint() calls collocatePosGroup() in a stream filter across all relations — repeated scanning for each element."
+      ],
+      "suggestion": "Add collocatePosGroup as a computed field derived in a static factory or add it as a constructor parameter in RelationConfig so it is parsed once. Alternatively, cache it lazily inside a wrapper object. This makes the derived nature of PosGroup explicit in the type rather than hiding it in a method body.",
+      "confidence": "medium",
+      "impact_scope": "local",
+      "fix_scope": "single_edit",
+      "root_cause_cluster": "leaky_abstraction"
+    }
+  ],
+  "retrospective": {
+    "root_causes": [
+      "The compareCollocateProfiles delegation was added when CollocateProfileComparator was extracted but the public API of SemanticFieldExplorer was preserved for callers; the delegation wrapper was not cleaned up.",
+      "toJson() methods were added early in development when config objects were also the serialization source; the responsibility split was deferred."
+    ],
+    "likely_symptoms": [],
+    "possible_false_positives": []
+  }
+}

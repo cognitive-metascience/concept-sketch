@@ -1,0 +1,80 @@
+{
+  "batch": "cross_module_architecture",
+  "batch_index": 1,
+  "assessments": {"cross_module_architecture": 82.0},
+  "dimension_notes": {
+    "cross_module_architecture": {
+      "evidence": [
+        "Clear five-layer dependency direction: model → config → query → exploration → api. No upward references observed from lower layers into api.",
+        "collections/LongIntHashMap has zero cross-package dependencies — properly isolated utility.",
+        "exploration package imports from query (QueryExecutor, QueryResults) and model — both legitimate downward dependencies.",
+        "api package imports exploration types Edge and RelationEdgeType for JSON serialization in ExploreResponseBuilder. These graph types live in exploration rather than model, meaning the api layer reaches into an internal exploration sub-concern.",
+        "RelationUtils in api owns the alias-to-grammar-config-ID mapping (RELATION_ALIASES map). This knowledge could alternatively live in GrammarConfig/config layer but is primarily an HTTP URL parameter concern, so placement is defensible.",
+        "SemanticFieldExplorer contains a static FALLBACK_NOUN_CQL_CONSTRAINT constant ('[xpos=\"NN.*\"]') that duplicates the hardcoded-POS pattern style. This is only reached when GrammarConfig is null (test constructor), not in production paths.",
+        "No circular imports or hub modules found. WordSketchApiServer wires everything at startup and is the single composition root.",
+        "indexer/blacklab is correctly isolated; nothing outside Main.java references the indexer package."
+      ],
+      "impact_scope": "module",
+      "fix_scope": "multi_file_refactor",
+      "confidence": "high"
+    }
+  },
+  "dimension_judgment": {
+    "cross_module_architecture": {
+      "strengths": [
+        "Five-layer dependency DAG (model→config→query→exploration→api) is strict and consistently observed across all 34 source files.",
+        "WordSketchApiServer acts as a single composition root with no logic, keeping wiring concerns centralized.",
+        "indexer/blacklab is correctly isolated from the query and api layers; only Main.java references it.",
+        "collections/LongIntHashMap carries zero cross-package imports — a genuinely standalone utility.",
+        "No circular dependency cycles detected anywhere in the codebase."
+      ],
+      "issue_character": "Issues are minor boundary-placement questions (graph types in exploration vs model) rather than structural violations or hub-module problems.",
+      "score_rationale": "The architecture is well-executed for a project of this size — layer direction is enforced, the composition root is clean, and no cycles exist. The one real tension is that Edge and RelationEdgeType live in the exploration package yet are consumed by the api layer for pure JSON serialization; moving them to model would tighten the boundary. The FALLBACK constant in SemanticFieldExplorer is a minor code smell limited to the null-GrammarConfig test path. These are small improvements, not structural failures, placing the score clearly in the solid-but-uneven band."
+    }
+  },
+  "issues": [
+    {
+      "dimension": "cross_module_architecture",
+      "identifier": "edge-types-in-wrong-package",
+      "summary": "Edge and RelationEdgeType live in exploration but are presentation-layer graph types used only by api",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/exploration/Edge.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/exploration/RelationEdgeType.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/api/ExploreResponseBuilder.java"
+      ],
+      "evidence": [
+        "Edge and RelationEdgeType are created only in ExploreResponseBuilder (api package) and serialised to JSON; SemanticFieldExplorer never instantiates them.",
+        "Moving these types to model or api would remove the api→exploration import for graph construction while keeping exploration free of presentation concerns."
+      ],
+      "suggestion": "Move Edge and RelationEdgeType to the model package (alongside AdjectiveProfile, DiscoveredNoun, etc.) since they are data-transfer objects, then update ExploreResponseBuilder imports. This removes the api→exploration dependency for graph types and makes the exploration package contain only computation logic.",
+      "confidence": "medium",
+      "impact_scope": "module",
+      "fix_scope": "multi_file_refactor",
+      "root_cause_cluster": "package_placement"
+    },
+    {
+      "dimension": "cross_module_architecture",
+      "identifier": "fallback-pos-constant-bypasses-config",
+      "summary": "FALLBACK_NOUN_CQL_CONSTRAINT in SemanticFieldExplorer hard-codes a POS pattern that bypasses GrammarConfig",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/exploration/SemanticFieldExplorer.java"
+      ],
+      "evidence": [
+        "private static final String FALLBACK_NOUN_CQL_CONSTRAINT = \"[xpos=\\\"NN.*\\\"]\"; is used when grammarConfig is null.",
+        "The same pattern style was already migrated out of CollocateProfileComparator (FALLBACK_ADJECTIVE_PATTERN) but the dual null-constructor path keeps the fallback alive in both classes."
+      ],
+      "suggestion": "Remove the null-GrammarConfig constructor overload in SemanticFieldExplorer and CollocateProfileComparator, requiring tests to pass a minimal GrammarConfig fixture. This eliminates the parallel fallback path and ensures the config-derived pattern is the only code path.",
+      "confidence": "medium",
+      "impact_scope": "module",
+      "fix_scope": "multi_file_refactor",
+      "root_cause_cluster": "hardcoded_pos_residue"
+    }
+  ],
+  "retrospective": {
+    "root_causes": [
+      "Graph presentation types (Edge, RelationEdgeType) were initially placed in exploration during early development before the api layer's ExploreResponseBuilder owned edge construction; they were never migrated after the model-cycle-fix refactor."
+    ],
+    "likely_symptoms": [],
+    "possible_false_positives": []
+  }
+}

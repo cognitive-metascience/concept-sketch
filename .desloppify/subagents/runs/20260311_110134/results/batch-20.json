@@ -1,0 +1,95 @@
+{
+  "batch": "design_coherence",
+  "batch_index": 20,
+  "assessments": {"design_coherence": 69.0},
+  "dimension_notes": {
+    "design_coherence": {
+      "evidence": [
+        "SketchHandlers contains five distinct concerns: surface sketch queries, dependency sketch queries, concordance examples, SVG radial-plot rendering (binary output via a viz library), and arbitrary BCQL queries — the radial-plot handler stands out as structurally different (POST, binary response, JSON body parsing) and unrelated to word-sketch collocates",
+        "ExplorationHandlers has four handlers with a shared three-step validation preamble (parseBaseExploreRequest → resolveRelationConfig → resolveExploreParams) repeated in handleSemanticFieldExplore, handleSemanticFieldExploreMulti, and handleSemanticFieldComparison — a shared request-validation pipeline would eliminate the repetition",
+        "SemanticFieldExplorer.exploreByPattern phases are cleanly extracted: fetchSeedCollocates, buildCollocateToNounsMap, filterCandidates, identifyCoreCollocates — each phase has a single responsibility and is clearly named",
+        "CollocateQueryHelper.executeBcqlQuery similarly extracts collectHits, scoreHits phases with a final sort — clean single-pass decomposition",
+        "handleSemanticFieldExamples does NOT call resolveExploreParams (it uses its own 'max' parameter) — the inconsistency means one handler skips the shared preamble, making the four handlers feel like 3+1 rather than a coherent group",
+        "SketchHandlers.handleBcqlQueryPost is 50+ lines with 4 try-catch blocks, JSON body parsing, validation, execution, and response formatting all in one method — multiple concerns but all BCQL-related; borderline",
+        "iterateRelations uses a BiFunction callback to share the relation-iteration loop — appropriate abstraction that eliminates duplication between surface and dependency sketch paths",
+        "WordSketchApiServer.registerRoutes is a flat list of handler registrations — clean, no nesting",
+        "The response-building helpers (formatSeedCollocates, formatDiscoveredNouns, formatCoreCollocates) are small, focused, and correctly extracted"
+      ],
+      "impact_scope": "subsystem",
+      "fix_scope": "multi_file_refactor",
+      "confidence": "high"
+    }
+  },
+  "dimension_judgment": {
+    "design_coherence": {
+      "strengths": [
+        "SemanticFieldExplorer.exploreByPattern phases are cleanly separated into named private helpers, each with a single algorithmic responsibility",
+        "CollocateQueryHelper three-phase BCQL pipeline (collect → score → rank) is correctly decomposed",
+        "iterateRelations uses a BiFunction callback to deduplicate the surface/dependency relation-iteration loops",
+        "Response-building helpers in ExplorationHandlers (formatSeedCollocates, formatDiscoveredNouns, formatCoreCollocates) are small and focused"
+      ],
+      "issue_character": "The main coherence issue is SketchHandlers accumulating responsibilities across very different domains (text queries vs SVG rendering vs arbitrary corpus queries), and ExplorationHandlers repeating a three-step validation preamble across three handlers that should share a request-pipeline abstraction.",
+      "score_rationale": "The algorithmic core (SemanticFieldExplorer, CollocateQueryHelper) shows strong design coherence with well-extracted phases. The API layer is where coherence breaks down: SketchHandlers is a responsibility collector that has grown to include binary-SVG rendering alongside text queries, and the exploration handlers repeat validation boilerplate that would benefit from a shared request pipeline. These are real structural issues that make the file harder to navigate and extend, pulling the score to the upper end of the 60s."
+    }
+  },
+  "issues": [
+    {
+      "dimension": "design_coherence",
+      "identifier": "sketch-handlers-svg-responsibility",
+      "summary": "SketchHandlers mixes corpus-query handlers with binary SVG rendering (handleVisualRadial), diluting the class's focus",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/api/SketchHandlers.java"
+      ],
+      "evidence": [
+        "handleVisualRadial: parses POST JSON body, calls RadialPlot.renderFromItems(), sends binary image/svg+xml response — structurally different from all other sketch handlers that query the index and return JSON",
+        "SketchHandlers is 20KB; the radial handler is ~30 lines of unrelated concern (JSON parse, viz library call, binary response)",
+        "WordSketchApiServer registers the radial handler via sketchHandlers::handleVisualRadial — it belongs in a VisualizationHandlers class or RadialHandlers class"
+      ],
+      "suggestion": "Extract handleVisualRadial into a VisualizationHandlers class (or RadialHandlers) that takes only the viz dependency; register it in WordSketchApiServer separately from SketchHandlers",
+      "confidence": "high",
+      "impact_scope": "module",
+      "fix_scope": "multi_file_refactor"
+    },
+    {
+      "dimension": "design_coherence",
+      "identifier": "explore-handler-validation-preamble-repeated",
+      "summary": "ExplorationHandlers repeats a three-step validation preamble in three of four handlers instead of sharing a request-pipeline abstraction",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/api/ExplorationHandlers.java"
+      ],
+      "evidence": [
+        "handleSemanticFieldExplore, handleSemanticFieldExploreMulti, handleSemanticFieldComparison each repeat: parseBaseExploreRequest → resolveRelationConfig → resolveExploreParams",
+        "handleSemanticFieldExamples follows a different path (only resolveRelationConfig, custom 'max' param) — the 3+1 structure is never made explicit",
+        "Each handler copies the same null-check-and-return pattern for each resolved parameter"
+      ],
+      "suggestion": "Extract a shared ExploreRequestContext record containing the resolved relationType, topCollocates, minShared, minLogDice, and nounsPerSeed; create a resolveExploreContext(HttpExchange, Map) factory that encapsulates the three-step preamble and returns null on validation failure; each handler then calls resolveExploreContext and checks for null once",
+      "confidence": "high",
+      "impact_scope": "module",
+      "fix_scope": "multi_file_refactor"
+    },
+    {
+      "dimension": "design_coherence",
+      "identifier": "bcql-post-handler-multi-concern",
+      "summary": "handleBcqlQueryPost concentrates JSON body parsing, validation, execution, and response formatting in one 50-line method",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/api/SketchHandlers.java"
+      ],
+      "evidence": [
+        "handleBcqlQueryPost: reads body bytes, checks size, parses JSON, validates query/limit, calls executeBcqlQuery, builds response list, formats each result — 4 distinct stages in one method",
+        "4 catch blocks for different exception types adds nesting and makes the method hard to scan"
+      ],
+      "suggestion": "Extract parseBcqlRequest(byte[]) that validates body size and returns a typed BcqlRequest record (or throws for 400/413), and formatBcqlResults(List<CollocateResult>) that builds the response list; the handler body becomes: parse → execute → format → respond",
+      "confidence": "medium",
+      "impact_scope": "local",
+      "fix_scope": "single_edit"
+    }
+  ],
+  "retrospective": {
+    "root_causes": [
+      "SketchHandlers grew by accretion — each new endpoint was added to the existing handler class without evaluating whether it belonged there",
+      "ExplorationHandlers validation preamble was extracted into helper methods but not into a shared request-pipeline object, leaving callers to sequence the helpers manually"
+    ],
+    "likely_symptoms": ["sketch-handlers-svg-responsibility", "explore-handler-validation-preamble-repeated"],
+    "possible_false_positives": []
+  }
+}

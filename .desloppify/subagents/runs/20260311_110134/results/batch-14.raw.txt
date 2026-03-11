@@ -1,0 +1,79 @@
+{
+  "batch": "error_consistency",
+  "batch_index": 14,
+  "assessments": {"error_consistency": 63.0},
+  "dimension_notes": {
+    "error_consistency": {
+      "evidence": [
+        "HttpApiUtils.parseQueryParams catches Exception during URL decoding and only logs a warning — the parameter is silently dropped from the map, which later manifests as a mysterious '400 Missing required parameter' with no indication that decoding failed",
+        "WordSketchApiServer.wrapHandler has two catch blocks: IOException -> 500, Exception -> 500; IllegalArgumentException from parameter validation would be caught by the generic Exception branch and return 500, but handlers like ExplorationHandlers.handleSemanticFieldExplore already catch IllegalArgumentException locally and return 400 — same exception type maps to different HTTP codes depending on which handler was called",
+        "SketchHandlers.handleBcqlQueryPost has 4 catch blocks: IOException->500, JSONException|IllegalArgumentException->400, Exception->500 — this is the most granular handler and inconsistent with others that only have IOException->500 or no local catch at all",
+        "CollocateQueryHelper.getTotalFrequency wraps RuntimeException in IOException — consistent with QueryExecutor interface contract of declaring IOException, good wrapping pattern",
+        "SketchHandlers.iterateRelations catches IOException | RuntimeException per relation and accumulates in relationErrors rather than aborting — intentional boundary design, well-suited for partial results",
+        "Main.handleBlackLabServerCommand: explicit IOException catch for grammarConfig load with immediate executor.close() and return — good cleanup boundary",
+        "GrammarConfigLoader: throws IOException with specific messages for each validation failure (missing version, duplicate id, missing pattern) — consistent and informative",
+        "ExplorationHandlers handlers consistently catch IOException->500 and IllegalArgumentException->400 — but this is only true for the exploration handlers; SketchHandlers does not have this pattern for most handlers"
+      ],
+      "impact_scope": "subsystem",
+      "fix_scope": "multi_file_refactor",
+      "confidence": "high"
+    }
+  },
+  "dimension_judgment": {
+    "error_consistency": {
+      "strengths": [
+        "GrammarConfigLoader throws IOException with specific diagnostic messages for each config validation failure",
+        "CollocateQueryHelper.getTotalFrequency wraps RuntimeException in IOException to maintain the interface's checked-exception contract",
+        "SketchHandlers.iterateRelations intentionally accumulates relation-level errors rather than aborting — a well-designed partial-results boundary",
+        "Main.handleBlackLabServerCommand correctly sequences cleanup on config load failure"
+      ],
+      "issue_character": "The inconsistency is structural: exploration handlers carefully map IllegalArgumentException to 400 and IOException to 500, but sketch handlers delegate all unhandled exceptions to wrapHandler which maps everything to 500; the two handler families have different error granularity with no documented rationale.",
+      "score_rationale": "The domain layer has consistent IOException propagation and the config layer has good diagnostic errors. The API layer is split: ExplorationHandlers has deliberate exception-to-status mapping, SketchHandlers (except handleBcqlQueryPost) does not. The silent swallow in parseQueryParams is the most user-visible problem — a bad URL-encoded parameter causes a confusing downstream 400 rather than a clear decoding error. These combined issues place the score meaningfully below 70."
+    }
+  },
+  "issues": [
+    {
+      "dimension": "error_consistency",
+      "identifier": "silent-decode-swallow",
+      "summary": "HttpApiUtils.parseQueryParams silently swallows URL-decoding failures, causing confusing downstream 400 errors",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/api/HttpApiUtils.java"
+      ],
+      "evidence": [
+        "parseQueryParams catch block: `catch (Exception e) { logger.warn(\"Failed to decode query parameter '{}': {}\", pair, e.getMessage(), e); }` — parameter is not added to map",
+        "Callers use requireParam which returns null and sends '400 Missing required parameter' — the decode failure is invisible to the API client"
+      ],
+      "suggestion": "On decoding failure, either add the raw (un-decoded) value to the map so partial decoding succeeds, or immediately send a 400 with message 'Malformed query parameter: <name>' — the current approach hides the root cause",
+      "confidence": "high",
+      "impact_scope": "subsystem",
+      "fix_scope": "single_edit"
+    },
+    {
+      "dimension": "error_consistency",
+      "identifier": "inconsistent-exception-to-status-mapping",
+      "summary": "IllegalArgumentException maps to 400 in ExplorationHandlers but to 500 via wrapHandler in SketchHandlers",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/api/WordSketchApiServer.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/api/ExplorationHandlers.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/api/SketchHandlers.java"
+      ],
+      "evidence": [
+        "ExplorationHandlers.handleSemanticFieldExplore: `catch (IllegalArgumentException e) { HttpApiUtils.sendError(exchange, 400, ...)` — explicit 400 mapping",
+        "WordSketchApiServer.wrapHandler: `catch (Exception e) { HttpApiUtils.sendError(exchange, 500, \"Unexpected error: \" + e.getMessage()) }` — IllegalArgumentException from any SketchHandler method becomes 500",
+        "SketchHandlers.handleBcqlQueryPost has its own `catch (JSONException | IllegalArgumentException e)` that returns 400 — inconsistent with other sketch handlers"
+      ],
+      "suggestion": "Add `catch (IllegalArgumentException e) { sendError(exchange, 400, e.getMessage()); }` to wrapHandler between the IOException and generic Exception catches, giving all handlers the same IllegalArgumentException→400 mapping",
+      "confidence": "high",
+      "impact_scope": "subsystem",
+      "fix_scope": "single_edit"
+    }
+  ],
+  "retrospective": {
+    "root_causes": [
+      "Error strategy developed per-handler rather than through a shared contract: each handler chose its own exception mapping, resulting in inconsistency across the API surface",
+      "parseQueryParams was designed as a utility function that cannot fail, so failures were logged and swallowed rather than propagated"
+    ],
+    "likely_symptoms": ["silent-decode-swallow", "inconsistent-exception-to-status-mapping"],
+    "possible_false_positives": []
+  }
+}

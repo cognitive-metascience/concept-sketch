@@ -11,7 +11,6 @@ import pl.marcinmilkowski.word_sketch.model.RelationType;
 import pl.marcinmilkowski.word_sketch.query.QueryExecutor;
 import pl.marcinmilkowski.word_sketch.model.QueryResults;
 import pl.marcinmilkowski.word_sketch.utils.CqlUtils;
-import pl.marcinmilkowski.word_sketch.viz.RadialPlot;
 
 import com.alibaba.fastjson2.JSONException;
 
@@ -121,7 +120,7 @@ class SketchHandlers {
         Map<String, Object> byRelation = new HashMap<>();
         List<String> relationErrors = new ArrayList<>();
 
-        iterateRelations(relationType, rel -> true, lemma, byRelation, relationErrors, (rel, sketch) -> {
+        executeRelationQueries(relationType, rel -> true, lemma, byRelation, relationErrors, (rel, sketch) -> {
             Map<String, Object> relData = new HashMap<>();
             relData.put("name", rel.name());
             relData.put("cql", rel.pattern());
@@ -149,7 +148,7 @@ class SketchHandlers {
         Map<String, Object> byRelation = new HashMap<>();
         List<String> relationErrors = new ArrayList<>();
 
-        iterateRelations(RelationType.DEP, rel -> rel.getDeprel() != null, lemma, byRelation, relationErrors,
+        executeRelationQueries(RelationType.DEP, rel -> rel.getDeprel() != null, lemma, byRelation, relationErrors,
             (rel, sketch) -> buildRelationResponse(rel, sketch.results(), sketch.collocations()));
 
         Map<String, Object> response = new HashMap<>();
@@ -176,7 +175,7 @@ class SketchHandlers {
      * @param relationErrors  accumulator list for error strings
      * @param builder         callback that converts a relation config + executed sketch into the JSON-ready map
      */
-    private void iterateRelations(
+    private void executeRelationQueries(
             RelationType relationType,
             Predicate<pl.marcinmilkowski.word_sketch.config.RelationConfig> extraFilter,
             String lemma,
@@ -216,7 +215,7 @@ class SketchHandlers {
 
         List<QueryResults.WordSketchResult> results;
         try {
-            String fullPattern = rel.getFullPattern(lemma);
+            String fullPattern = rel.buildFullPattern(lemma);
             results = executor.executeSurfacePattern(
                 lemma, fullPattern,
                 0.0, 50);
@@ -254,7 +253,7 @@ class SketchHandlers {
      */
     private ExecutedSketch executeAndFormatCollocations(String lemma,
             pl.marcinmilkowski.word_sketch.config.RelationConfig rel) throws IOException {
-        String fullPattern = rel.getFullPattern(lemma);
+        String fullPattern = rel.buildFullPattern(lemma);
         List<QueryResults.WordSketchResult> results = executor.executeSurfacePattern(lemma, fullPattern, 0.0, 20);
         if (results.isEmpty()) return null;
         List<Map<String, Object>> collocations = new ArrayList<>();
@@ -321,7 +320,7 @@ class SketchHandlers {
         String bcqlQuery = null;
         var rel = grammarConfig.getRelation(relation);
         if (rel.isPresent()) {
-            String patternWithHead = rel.get().getFullPattern(noun);
+            String patternWithHead = rel.get().buildFullPattern(noun);
             bcqlQuery = CqlUtils.substituteAtPosition(patternWithHead, adjective, rel.get().collocatePosition());
         }
 
@@ -357,52 +356,11 @@ class SketchHandlers {
         HttpApiUtils.sendJsonResponse(exchange, response);
     }
 
-    /**
-     * Render radial plot.
-     * POST /api/visual/radial
-     * Body JSON: { center: "word", width: 840, height: 520, items: [{label:"", score: 3.2}, ...] }
-     * Returns: image/svg+xml
-     */
-    void handleVisualRadial(HttpExchange exchange) throws IOException {
-        try {
-            byte[] bodyBytes = exchange.getRequestBody().readNBytes(MAX_REQUEST_BODY_BYTES + 1);
-            if (bodyBytes.length > MAX_REQUEST_BODY_BYTES) {
-                HttpApiUtils.sendError(exchange, 413, "Request body too large");
-                return;
-            }
-            String body = new String(bodyBytes, StandardCharsets.UTF_8);
-            logger.debug("Radial: body = {}", body);
-            JSONObject obj = JSON.parseObject(body);
-            String center = obj.getString("center");
-            if (center == null) center = "";
-            logger.debug("Radial: center = {}", center);
-            int width = (obj.get("width") == null) ? 840 : obj.getIntValue("width");
-            int height = (obj.get("height") == null) ? 520 : obj.getIntValue("height");
-
-            JSONArray itemsArr = obj.getJSONArray("items");
-            List<RadialPlot.Item> items = new ArrayList<>();
-            if (itemsArr != null) {
-                int limit = Math.min(40, itemsArr.size());
-                for (int i = 0; i < limit; i++) {
-                    JSONObject it = itemsArr.getJSONObject(i);
-                    String label = it.getString("label");
-                    double score = it.getDoubleValue("score");
-                    items.add(new RadialPlot.Item(label, score));
-                }
-            }
-            String mode = obj.getString("mode");
-
-            String svg = RadialPlot.renderFromItems(center, items, width, height, mode);
-            byte[] bytes = svg.getBytes(StandardCharsets.UTF_8);
-            HttpApiUtils.sendBinaryResponse(exchange, "image/svg+xml; charset=utf-8", bytes);
-        } catch (Exception e) {
-            logger.error("Error rendering radial", e);
-            HttpApiUtils.sendError(exchange, 500, "Failed to render radial: " + e.getMessage());
-        }
-    }
-
     /** Maximum length (chars) accepted for a BCQL pattern. */
     private static final int MAX_BCQL_PATTERN_LENGTH = 1024;
+
+    /** Maximum number of {@code [} bracket tokens accepted in a BCQL pattern (complexity limit). */
+    private static final int MAX_BCQL_BRACKET_DEPTH = 20;
 
     /**
      * Handle arbitrary BCQL query (POST with JSON body to avoid URL encoding issues).
@@ -410,51 +368,13 @@ class SketchHandlers {
      */
     void handleBcqlQueryPost(HttpExchange exchange) throws IOException {
         try {
-            byte[] bodyBytes = exchange.getRequestBody().readNBytes(MAX_REQUEST_BODY_BYTES + 1);
-            if (bodyBytes.length > MAX_REQUEST_BODY_BYTES) {
-                HttpApiUtils.sendError(exchange, 413, "Request body too large");
-                return;
-            }
-            String body = new String(bodyBytes, StandardCharsets.UTF_8);
-            JSONObject obj = JSON.parseObject(body);
-            String bcqlQuery = obj.getString("query");
-            if (bcqlQuery == null || bcqlQuery.isBlank()) {
-                HttpApiUtils.sendError(exchange, 400, "Missing required parameter: query");
-                return;
-            }
-            if (bcqlQuery.length() > MAX_BCQL_PATTERN_LENGTH) {
-                HttpApiUtils.sendError(exchange, 400,
-                        "Pattern too long: " + bcqlQuery.length() + " chars (max " + MAX_BCQL_PATTERN_LENGTH + ")");
-                return;
-            }
-            int limit = obj.getIntValue("limit");
-            if (limit <= 0) limit = 10;
+            BcqlRequest req = parseBcqlRequest(exchange);
+            if (req == null) return;  // error already sent
 
-            logger.debug("BCQL query: {}", bcqlQuery);
+            logger.debug("BCQL query: {}", req.query());
 
-            List<QueryResults.CollocateResult> results = executor.executeBcqlQuery(bcqlQuery, limit);
-
-            Map<String, Object> response = new HashMap<>();
-            response.put("status", "ok");
-            response.put("query", bcqlQuery);
-            response.put("total_results", results.size());
-            response.put("limit", limit);
-
-            List<Map<String, Object>> resultsList = new ArrayList<>();
-            for (QueryResults.CollocateResult r : results) {
-                Map<String, Object> resultMap = new HashMap<>();
-                resultMap.put("sentence", r.getSentence());
-                resultMap.put("raw", r.rawXml() != null ? r.rawXml() : "");
-                resultMap.put("match_start", r.getStartOffset());
-                resultMap.put("match_end", r.getEndOffset());
-                resultMap.put("collocate_lemma", r.collocateLemma() != null ? r.collocateLemma() : "");
-                resultMap.put("frequency", r.frequency());
-                resultMap.put("log_dice", r.logDice());
-                resultsList.add(resultMap);
-            }
-            response.put("results", resultsList);
-
-            HttpApiUtils.sendJsonResponse(exchange, response);
+            List<QueryResults.CollocateResult> results = executor.executeBcqlQuery(req.query(), req.limit());
+            HttpApiUtils.sendJsonResponse(exchange, buildBcqlResponse(req, results));
         } catch (IOException e) {
             logger.error("BCQL query I/O error", e);
             HttpApiUtils.sendError(exchange, 500, "BCQL query failed: " + e.getMessage());
@@ -465,5 +385,61 @@ class SketchHandlers {
             logger.error("BCQL query unexpected error", e);
             HttpApiUtils.sendError(exchange, 500, "BCQL query internal error: " + e.getMessage());
         }
+    }
+
+    private record BcqlRequest(String query, int limit) {}
+
+    /** Parse and validate the BCQL POST body; returns null and sends an error if invalid. */
+    private BcqlRequest parseBcqlRequest(HttpExchange exchange) throws IOException {
+        byte[] bodyBytes = exchange.getRequestBody().readNBytes(MAX_REQUEST_BODY_BYTES + 1);
+        if (bodyBytes.length > MAX_REQUEST_BODY_BYTES) {
+            HttpApiUtils.sendError(exchange, 413, "Request body too large");
+            return null;
+        }
+        String body = new String(bodyBytes, StandardCharsets.UTF_8);
+        JSONObject obj = JSON.parseObject(body);
+        String bcqlQuery = obj.getString("query");
+        if (bcqlQuery == null || bcqlQuery.isBlank()) {
+            HttpApiUtils.sendError(exchange, 400, "Missing required parameter: query");
+            return null;
+        }
+        if (bcqlQuery.length() > MAX_BCQL_PATTERN_LENGTH) {
+            HttpApiUtils.sendError(exchange, 400,
+                    "Pattern too long: " + bcqlQuery.length() + " chars (max " + MAX_BCQL_PATTERN_LENGTH + ")");
+            return null;
+        }
+        long bracketCount = bcqlQuery.chars().filter(c -> c == '[').count();
+        if (bracketCount > MAX_BCQL_BRACKET_DEPTH) {
+            HttpApiUtils.sendError(exchange, 400,
+                    "Pattern too complex: " + bracketCount + " token constraints (max " + MAX_BCQL_BRACKET_DEPTH + ")");
+            return null;
+        }
+        int limit = obj.getIntValue("limit");
+        if (limit <= 0) limit = 10;
+        return new BcqlRequest(bcqlQuery, limit);
+    }
+
+    /** Build the BCQL query JSON response map from the parsed request and results. */
+    private static Map<String, Object> buildBcqlResponse(BcqlRequest req, List<QueryResults.CollocateResult> results) {
+        Map<String, Object> response = new HashMap<>();
+        response.put("status", "ok");
+        response.put("query", req.query());
+        response.put("total_results", results.size());
+        response.put("limit", req.limit());
+
+        List<Map<String, Object>> resultsList = new ArrayList<>();
+        for (QueryResults.CollocateResult r : results) {
+            Map<String, Object> resultMap = new HashMap<>();
+            resultMap.put("sentence", r.getSentence());
+            resultMap.put("raw", r.rawXml() != null ? r.rawXml() : "");
+            resultMap.put("match_start", r.getStartOffset());
+            resultMap.put("match_end", r.getEndOffset());
+            resultMap.put("collocate_lemma", r.collocateLemma() != null ? r.collocateLemma() : "");
+            resultMap.put("frequency", r.frequency());
+            resultMap.put("log_dice", r.logDice());
+            resultsList.add(resultMap);
+        }
+        response.put("results", resultsList);
+        return response;
     }
 }

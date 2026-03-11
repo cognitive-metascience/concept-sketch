@@ -1,0 +1,82 @@
+{
+  "batch": "ai_generated_debt",
+  "batch_index": 7,
+  "assessments": {"ai_generated_debt": 83.0},
+  "dimension_notes": {
+    "ai_generated_debt": {
+      "evidence": [
+        "RelationEdgeType.toString() has an explicit intent comment explaining why it overrides toString() — the comment adds non-obvious rationale (prevent logging frameworks from emitting Java enum names), not a restatement of the code.",
+        "ExploreOptions Javadoc calls out the Explore vs Exploration naming asymmetry as intentional — this is contextual WHY documentation rather than AI boilerplate.",
+        "model/package-info.java documents the getX vs record accessor naming convention distinction — genuinely useful for new contributors.",
+        "LogDiceCalculator.compute has a constant UNCOMPUTABLE = Double.NaN with Javadoc explaining why NaN was chosen over a magic number like -1 — informative.",
+        "CollocateQueryHelper.scoreHits contains: 'logger.debug(\"No joint frequency found for collocate '{}' — logDice will be 0\", collocateLemma);' inside the per-hit scoring loop. This debug log fires once per hit record where the collocate has no frequency, which in a corpus of millions of hits could produce millions of log entries at DEBUG level — nosy debug logging in a hot loop.",
+        "ExplorationResult.getSeed(), getDiscoveredNouns(), etc. all have @return JavaDoc that restate the obvious: '@return the seed word this result was built from; never null'. The 'never null' contract is the only useful information; the rest restates the method name.",
+        "Main.java emits 'System.out.println(\"====...\")' startup banners at the top level — these are UI, not debug logs, but they bypass the logging framework entirely.",
+        "GrammarConfigLoader has Javadoc on private helper methods (readConfigFile, missingConfigException) that explain the logic via prose what the method name already conveys.",
+        "The comment '// safe: min ensures result <= maxResults * OVER_FETCH_FACTOR' in CollocateQueryHelper.executeBcqlQuery explains a non-obvious narrowing cast — genuinely useful."
+      ],
+      "impact_scope": "local",
+      "fix_scope": "single_edit",
+      "confidence": "high",
+      "issues_preventing_higher_score": "The per-hit debug log in scoreHits and the accessor-restating @return comments are minor but real AI-hallmark patterns found across several files."
+    }
+  },
+  "dimension_judgment": {
+    "ai_generated_debt": {
+      "strengths": [
+        "Comments throughout explain non-obvious intent: RelationEdgeType.toString() intent comment, UNCOMPUTABLE sentinel rationale, ExploreOptions naming asymmetry note.",
+        "No verbatim copy-paste error handling boilerplate — each handler has contextually specific error messages.",
+        "No pass-through wrapper functions with no added logic (QueryExecutor adapter methods are justified adapters, not AI boilerplate wrappers).",
+        "No generic names in domain code — method names like exploreByPattern, buildCollocateToNounsMap, identifyCoreCollocates use domain vocabulary."
+      ],
+      "issue_character": "Issues are isolated to a debug log in a hot path and some accessor-restating @return Javadoc rather than systemic AI-boilerplate patterns.",
+      "score_rationale": "The codebase shows clear evidence of intentional, informative documentation — a high bar. The vast majority of comments add genuine insight. Two patterns bring the score down slightly: the per-hit debug log in CollocateQueryHelper.scoreHits could produce severe log noise in production at DEBUG level (a hallmark of AI-generated 'log everything' instrumentation), and several @return Javadoc entries on simple accessors (ExplorationResult, ComparisonResult) restate the method name without adding the contract information that would justify the Javadoc presence. These are minor and localised, placing the score solidly in the good-but-not-exemplary band."
+    }
+  },
+  "issues": [
+    {
+      "dimension": "ai_generated_debt",
+      "identifier": "per-hit-debug-log-in-loop",
+      "summary": "logger.debug in CollocateQueryHelper.scoreHits fires once per hit record with no-frequency collocate — potential log flood in hot path",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/query/CollocateQueryHelper.java"
+      ],
+      "evidence": [
+        "Inside the per-hit scoring loop: 'if (jointFreq == 0L) { logger.debug(\"No joint frequency found for collocate '{}' — logDice will be 0\", collocateLemma); }'",
+        "The loop iterates up to maxResults * OVER_FETCH_FACTOR (e.g. 3 * 100 = 300) records; a corpus query returning many zero-frequency hits would emit hundreds of log lines at DEBUG."
+      ],
+      "suggestion": "Remove or change to TRACE level, or aggregate: count zero-frequency collocates and log a single summary at DEBUG after the loop ('N hit records had no joint frequency'). This preserves diagnostics without flooding the log.",
+      "confidence": "high",
+      "impact_scope": "local",
+      "fix_scope": "single_edit",
+      "root_cause_cluster": "noisy_debug_logging"
+    },
+    {
+      "dimension": "ai_generated_debt",
+      "identifier": "restating-return-javadoc",
+      "summary": "Accessor @return Javadoc on ExplorationResult and ComparisonResult restates the method name without adding contract information",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/model/ExplorationResult.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/model/ComparisonResult.java"
+      ],
+      "evidence": [
+        "ExplorationResult: '/** @return the seed word this result was built from; never null */' on getSeed() — 'never null' is useful, 'the seed word this result was built from' restates getSeed.",
+        "ComparisonResult: '/** @return the seed nouns this comparison was built from; never null */' on getNouns() — same pattern.",
+        "The useful contract information (never null) would be better expressed as a @NonNull annotation or a brief @return {@code null}-safe contract note."
+      ],
+      "suggestion": "Replace full-sentence @return prose that restates the method name with either (a) a @NonNull or @Nullable annotation from jspecify (already a project dependency) for the null contract, or (b) a contract-only note like '@return non-null; empty list when no data was found'. Remove the method-name restatement.",
+      "confidence": "medium",
+      "impact_scope": "local",
+      "fix_scope": "single_edit",
+      "root_cause_cluster": "boilerplate_javadoc"
+    }
+  ],
+  "retrospective": {
+    "root_causes": [
+      "The per-hit debug log is a diagnostic aid that was likely added during development and not cleaned up before production readiness.",
+      "Accessor @return prose on data-model getters follows a verbose Javadoc-everything style that does not distinguish between informative and redundant documentation."
+    ],
+    "likely_symptoms": [],
+    "possible_false_positives": []
+  }
+}

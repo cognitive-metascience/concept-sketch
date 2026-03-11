@@ -1,0 +1,59 @@
+{
+  "batch": "authorization_consistency",
+  "batch_index": 19,
+  "assessments": {"authorization_consistency": 90.0},
+  "dimension_notes": {
+    "authorization_consistency": {
+      "evidence": [
+        "WordSketchApiServer constructor binds to InetAddress.getLoopbackAddress() (127.0.0.1) — all access is network-level restricted to the local machine; no external traffic can reach any endpoint",
+        "All endpoints are unauthenticated by design: the tool is a read-only corpus search engine with no user accounts, no write operations, and no sensitive data beyond the corpus index",
+        "/health, /api/sketch/*, /api/semantic-field/*, /api/concordance/examples, /api/visual/radial, /api/bcql are all public — this is consistent and matches the tool's design intent",
+        "/api/bcql accepts arbitrary BCQL patterns with a length guard (MAX_BCQL_PATTERN_LENGTH = 1024) but no query-complexity limit — a deeply nested or highly branching pattern could trigger expensive Lucene execution",
+        "CORS is configured via CORS_ALLOW_ORIGIN (default localhost:3000) and applied consistently via the shared setCorsHeader() helper across all response paths — no endpoint bypasses CORS handling",
+        "No permission strings, no role checks, no auth decorators — this is consistent with the tool's single-user local research design",
+        "No audit logging exists, but this is appropriate for a read-only local tool with no access-sensitive operations"
+      ],
+      "impact_scope": "codebase",
+      "fix_scope": "single_edit",
+      "confidence": "high",
+      "issues_preventing_higher_score": "The /api/bcql endpoint accepts arbitrary corpus queries without query-complexity limits beyond string length; a maliciously crafted pattern could cause a resource-exhausting Lucene query."
+    }
+  },
+  "dimension_judgment": {
+    "authorization_consistency": {
+      "strengths": [
+        "Loopback-only binding provides consistent network-level access control for all endpoints without per-endpoint auth logic",
+        "CORS configuration is centralized in HttpApiUtils.setCorsHeader() and applied consistently to every response",
+        "All endpoints are consistently unauthenticated, matching the tool's design as a local, single-user corpus research instrument",
+        "Read-only access pattern: no endpoint writes to the corpus, so there is no privileged operation that requires elevated access"
+      ],
+      "issue_character": "Authorization is not applicable in the traditional sense for this tool; the one operational concern is the BCQL endpoint's lack of query-complexity limits, which is a DoS risk rather than an authorization gap.",
+      "score_rationale": "For a local, read-only, single-user corpus search tool binding to loopback, the authorization model is correctly and consistently applied: everything is unauthenticated, all endpoints are equally open, and CORS is centralized. The small deduction is for the BCQL endpoint accepting arbitrary patterns without complexity budgeting. This is not an authorization failure but a resource-control gap that could be abused locally."
+    }
+  },
+  "issues": [
+    {
+      "dimension": "authorization_consistency",
+      "identifier": "bcql-no-complexity-limit",
+      "summary": "/api/bcql endpoint lacks query-complexity limits beyond string length, enabling expensive Lucene queries",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/api/SketchHandlers.java"
+      ],
+      "evidence": [
+        "handleBcqlQueryPost: pattern length is checked (MAX_BCQL_PATTERN_LENGTH = 1024) but no structural complexity check — a pattern like `[]{0,100} []{0,100} []{0,100}` fits within 1024 chars but could cause combinatorial Lucene expansion",
+        "No timeout is set on the executor.executeBcqlQuery() call"
+      ],
+      "suggestion": "Add a server-side timeout (e.g., via ExecutorService.submit + Future.get(timeout)) for BCQL query execution, or add basic pattern complexity checks (e.g., limit on `{0,N}` wildcards with large N); document the intended limits in the API endpoint comment",
+      "confidence": "medium",
+      "impact_scope": "local",
+      "fix_scope": "single_edit"
+    }
+  ],
+  "retrospective": {
+    "root_causes": [
+      "Authorization is intentionally absent by design — this is a local research tool, not a multi-user service"
+    ],
+    "likely_symptoms": [],
+    "possible_false_positives": ["any finding about missing authentication — not applicable to a loopback-only local tool"]
+  }
+}

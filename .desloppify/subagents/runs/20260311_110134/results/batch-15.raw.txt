@@ -1,0 +1,77 @@
+{
+  "batch": "initialization_coupling",
+  "batch_index": 15,
+  "assessments": {"initialization_coupling": 82.0},
+  "dimension_notes": {
+    "initialization_coupling": {
+      "evidence": [
+        "HttpApiUtils.CORS_ALLOW_ORIGIN is a static final field computed at class-load time from System.getProperty('cors.allow.origin', 'http://localhost:3000') — any test that changes this property after HttpApiUtils is loaded will not see the change; the class must be reloaded for the property to take effect",
+        "WordSketchApiServer constructor creates a com.sun.net.httpserver.HttpServer and binds to the loopback port (side effect: socket allocation) before the constructor returns — if registerRoutes() throws, the port is already bound but the server object is not usable",
+        "SemanticFieldExplorer constructor: derives nounCqlConstraint from grammarConfig via pure computation, then creates CollocateProfileComparator — no I/O, no network calls, clean initialization",
+        "CollocateProfileComparator constructor: derives adjectivePattern from grammarConfig via pure computation — no side effects",
+        "BlackLabQueryExecutor constructor opens the index from disk — I/O side effect in constructor; callers must handle IOException at construction time, not at first use",
+        "Main.handleBlackLabServerCommand: executor is created first, then grammarConfig is loaded — if grammarConfig fails, executor.close() is called explicitly; the ordering is correct and the cleanup is explicit",
+        "GrammarConfigLoader.createDefaultEnglish(): reads System.getProperty('grammar.config') at call time, not at class load — this is a getter pattern, not a static initializer, so it is testable",
+        "No circular initialization dependencies found: api layer depends on query/exploration layers; exploration depends on query; query depends on utils; no cycles"
+      ],
+      "impact_scope": "module",
+      "fix_scope": "single_edit",
+      "confidence": "high",
+      "issues_preventing_higher_score": "HttpApiUtils.CORS_ALLOW_ORIGIN is frozen at class load from a system property, making it fragile in in-process test scenarios; WordSketchApiServer constructor has a port-binding side effect that can leave the system in a partially-initialized state on construction failure."
+    }
+  },
+  "dimension_judgment": {
+    "initialization_coupling": {
+      "strengths": [
+        "SemanticFieldExplorer and CollocateProfileComparator constructors perform only pure config-derived computation — no I/O or network side effects",
+        "Main.handleBlackLabServerCommand correctly sequences resource acquisition and cleanup: executor opened first, grammarConfig loaded second, with explicit cleanup path if loading fails",
+        "No circular initialization dependencies exist across the module hierarchy",
+        "GrammarConfigLoader.createDefaultEnglish() reads the system property at call time rather than class-load time, making it override-friendly"
+      ],
+      "issue_character": "Issues are isolated: one static final computed from a system property at class load (HttpApiUtils.CORS_ALLOW_ORIGIN) and one constructor with a socket-binding side effect (WordSketchApiServer) — both are common Java patterns but create friction in testing.",
+      "score_rationale": "The initialization model is well-structured overall: constructors take dependencies as parameters, no module-level DB connections, and resource cleanup is explicit. The two deductions are both real: the static CORS property cannot be changed in-process after class load (a testing friction), and the WordSketchApiServer constructor binds a port before the object is fully initialized. Neither is severe enough to pull below 80, but both prevent reaching 90."
+    }
+  },
+  "issues": [
+    {
+      "dimension": "initialization_coupling",
+      "identifier": "cors-static-classload",
+      "summary": "HttpApiUtils.CORS_ALLOW_ORIGIN is computed from a system property at class load, making it impossible to override in in-process tests",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/api/HttpApiUtils.java"
+      ],
+      "evidence": [
+        "static final String CORS_ALLOW_ORIGIN = System.getProperty(\"cors.allow.origin\", \"http://localhost:3000\") — evaluated once when the class loads",
+        "If a test sets System.setProperty(\"cors.allow.origin\", ...) after HttpApiUtils is loaded, the change has no effect on CORS_ALLOW_ORIGIN"
+      ],
+      "suggestion": "Change CORS_ALLOW_ORIGIN to a non-final field initialized lazily or read inside setCorsHeader() each time, or accept the limitation and document it; for tests, set the system property before the test class is loaded (e.g., via @BeforeAll with class reloading or JVM argument)",
+      "confidence": "medium",
+      "impact_scope": "local",
+      "fix_scope": "single_edit"
+    },
+    {
+      "dimension": "initialization_coupling",
+      "identifier": "server-constructor-side-effect",
+      "summary": "WordSketchApiServer constructor binds a TCP port (socket allocation) before the object is fully constructed",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/api/WordSketchApiServer.java"
+      ],
+      "evidence": [
+        "WordSketchApiServer constructor: `this.server = com.sun.net.httpserver.HttpServer.create(new InetSocketAddress(InetAddress.getLoopbackAddress(), port), 0); registerRoutes();`",
+        "If registerRoutes() threw, the port would already be bound but the object would not be usable — callers have no way to release the port without the object"
+      ],
+      "suggestion": "Move HttpServer.create() to the start() method, or wrap the entire constructor body in a try-catch that closes the server if any post-creation step fails, to ensure the port is never left bound without a usable server object",
+      "confidence": "medium",
+      "impact_scope": "local",
+      "fix_scope": "single_edit"
+    }
+  ],
+  "retrospective": {
+    "root_causes": [
+      "Static-final-from-system-property is a common Java pattern for configuration constants but is hostile to in-process testing",
+      "Constructor side effects (port binding) are a Java idiom for RAII but create partial-initialization risk"
+    ],
+    "likely_symptoms": [],
+    "possible_false_positives": []
+  }
+}

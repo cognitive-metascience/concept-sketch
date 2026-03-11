@@ -1,0 +1,78 @@
+{
+  "batch": "type_safety",
+  "batch_index": 12,
+  "assessments": {"type_safety": 79.0},
+  "dimension_notes": {
+    "type_safety": {
+      "evidence": [
+        "org.jspecify @Nullable is used consistently on return types that can be null: BlackLabSnippetParser.extractLemmaFromMatch, extractPosFromMatch, extractCollocateFromXmlByPosition, extractHeadword, extractPlainTextTokenAt; HttpApiUtils.requireParam; ExplorationHandlers.resolveRelationConfig; ExplorationHandlers.resolveExploreParams",
+        "QueryExecutor interface uses Closeable and declares checked IOException on all methods — type contracts align with implementation",
+        "ExplorationResult.empty(String seed) Javadoc states '@param seed the seed word; must not be null' but the calling code in SemanticFieldExplorer.exploreByPattern passes null explicitly: `if (seed == null || seed.isEmpty()) { return ExplorationResult.empty(seed); }` — contract violated at the call site",
+        "GrammarConfig.getConfigPath() is annotated @Nullable, consistent with the constructor accepting null for configPath when parsing from a Reader",
+        "RelationConfig uses Optional<RelationType> for the relationType field, and callers consistently check isEmpty()/orElseThrow() before use",
+        "CollocateQueryHelper constructor receives BlackLabIndex as a parameter with no null annotation; in tests it is passed null and the field is used in methods that are overridden — an invisible null-safety contract",
+        "SketchHandlers.handleRelationsForType calls rel.relationType().orElseThrow() inside a branch guarded by rel.relationType().orElse(null) == relationType — the Optional type does not capture the now-guaranteed non-empty state, so orElseThrow carries a misleading failure semantics",
+        "Map<String, Object> used extensively for HTTP response building — no typed response DTOs; type information is entirely lost at the serialization boundary"
+      ],
+      "impact_scope": "module",
+      "fix_scope": "multi_file_refactor",
+      "confidence": "high"
+    }
+  },
+  "dimension_judgment": {
+    "type_safety": {
+      "strengths": [
+        "@Nullable annotations from org.jspecify applied consistently on all public methods with nullable returns in BlackLabSnippetParser and HttpApiUtils",
+        "Optional<RelationType> used for the relationType relation config field, with consistent isEmpty()/orElseThrow() call patterns at use sites",
+        "QueryExecutor interface declares all exceptions (IOException), giving callers reliable type-level failure contracts",
+        "GrammarConfig.getConfigPath() correctly annotated @Nullable matching the constructor semantics"
+      ],
+      "issue_character": "Issues are concentrated around two patterns: a null contract violation in ExplorationResult.empty() where the documented precondition is immediately broken by the only caller passing null, and untyped Map<String,Object> response objects that erase type safety at the serialization boundary.",
+      "score_rationale": "The codebase applies Java's available nullability tooling (jspecify @Nullable, Optional) consistently across the core API. The main deduction comes from the ExplorationResult.empty(null) contract breach, which is a correctness concern, and the pervasive use of Map<String,Object> for response construction that sacrifices type safety at the HTTP boundary. These are meaningful gaps but not systemic — most of the type surface is well-annotated."
+    }
+  },
+  "issues": [
+    {
+      "dimension": "type_safety",
+      "identifier": "empty-null-contract",
+      "summary": "ExplorationResult.empty() documents 'must not be null' but its only call site passes null",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/model/ExplorationResult.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/exploration/SemanticFieldExplorer.java"
+      ],
+      "evidence": [
+        "ExplorationResult.empty Javadoc: '@param seed the seed word; must not be null'",
+        "SemanticFieldExplorer.exploreByPattern: `if (seed == null || seed.isEmpty()) { return ExplorationResult.empty(seed); }` — passes null when seed is null"
+      ],
+      "suggestion": "Either annotate the empty() parameter with @Nullable and remove the 'must not be null' constraint, or add a null check inside empty() that substitutes an empty string, and update exploreByPattern to pass an empty string instead of null",
+      "confidence": "high",
+      "impact_scope": "local",
+      "fix_scope": "single_edit"
+    },
+    {
+      "dimension": "type_safety",
+      "identifier": "unannotated-nullable-index",
+      "summary": "CollocateQueryHelper constructor accepts BlackLabIndex without @Nullable, but tests pass null",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/query/CollocateQueryHelper.java",
+        "src/test/java/pl/marcinmilkowski/word_sketch/query/CollocateQueryHelperTest.java"
+      ],
+      "evidence": [
+        "CollocateQueryHelper constructor: `CollocateQueryHelper(BlackLabIndex index)` — no @Nullable annotation",
+        "Test stub: `new CollocateQueryHelper(null) { @Override long getTotalFrequency(...) { ... } }` — relies on overriding methods that use the field"
+      ],
+      "suggestion": "Add @Nullable to the BlackLabIndex constructor parameter, or split into a test-only subclass / add a package-private constructor that does not require an index; annotating the field helps static analysis tools warn if a non-overriding method attempts to use it",
+      "confidence": "medium",
+      "impact_scope": "local",
+      "fix_scope": "single_edit"
+    }
+  ],
+  "retrospective": {
+    "root_causes": [
+      "Null-contract drift: ExplorationResult.empty() Javadoc precondition was written with non-null intent but the calling pattern requires null-tolerance",
+      "Untyped response maps: HTTP response DTOs were never formalized, leaving Map<String,Object> as the de-facto response type across the API layer"
+    ],
+    "likely_symptoms": ["empty-null-contract"],
+    "possible_false_positives": []
+  }
+}

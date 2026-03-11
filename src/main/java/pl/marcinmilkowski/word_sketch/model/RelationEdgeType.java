@@ -1,4 +1,4 @@
-package pl.marcinmilkowski.word_sketch.exploration;
+package pl.marcinmilkowski.word_sketch.model;
 
 /**
  * Type of an {@link Edge} in a semantic-field exploration graph.

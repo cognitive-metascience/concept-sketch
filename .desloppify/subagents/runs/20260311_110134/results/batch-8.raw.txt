@@ -1,0 +1,64 @@
+{
+  "batch": "incomplete_migration",
+  "batch_index": 8,
+  "assessments": {"incomplete_migration": 88.0},
+  "dimension_notes": {
+    "incomplete_migration": {
+      "evidence": [
+        "RelationConfig.posGroupFromConstraint has a 'tag= fallback supports legacy grammar files' comment explicitly documenting that the fallback is intentional for backward compatibility with older grammar configs not yet migrated to xpos=. This is not incomplete migration — it is deliberate compatibility.",
+        "GrammarConfigLoader.validateNoLegacyKeys actively rejects the 'copulas' key with a clear error message explaining the migration: copulas must now be embedded in CQL patterns. This is a completed migration with a guardrail.",
+        "GrammarConfigLoader: 'Canonical field name is pattern; cql_pattern is no longer supported' is a comment indicating a completed migration from cql_pattern to pattern.",
+        "No TODO, FIXME, HACK, or deprecated-but-called symbols found across the reviewed files.",
+        "No @Deprecated annotations on any method or class that are still called by active code.",
+        "RelationConfig.getFullPattern still uses getX naming — the task description notes 'getFullPattern→buildPattern renamed across 6 callers' as a recent improvement, but the actual code retains getFullPattern. Either this rename was not applied to this snapshot, or the task description describes a planned improvement. The actual code is consistent — all callers use getFullPattern — so there is no partial migration state.",
+        "The codebase is entirely Java 21+ with records, sealed interfaces, and modern stream APIs. No mixed Java version patterns observed.",
+        "No mixed JS/TS or old/new API coexistence patterns — the server uses com.sun.net.httpserver throughout with no competing HTTP server framework."
+      ],
+      "impact_scope": "codebase",
+      "fix_scope": "single_edit",
+      "confidence": "high",
+      "issues_preventing_higher_score": "The tag= fallback code path is retained for 'legacy grammar files' but there is no evidence any such files still exist in the test suite or production configuration. The backward compatibility may be orphaned."
+    }
+  },
+  "dimension_judgment": {
+    "incomplete_migration": {
+      "strengths": [
+        "validateNoLegacyKeys in GrammarConfigLoader hard-fails on the deprecated 'copulas' key with a migration-guiding error message — the completed migration is enforced, not just hoped for.",
+        "The cql_pattern→pattern migration is completed and the old field name is explicitly rejected.",
+        "No @Deprecated symbols called by active code anywhere in the reviewed files.",
+        "The entire codebase uses a single HTTP server API (com.sun.net.httpserver) with no competing framework remnants."
+      ],
+      "issue_character": "The only potential issue is a retained tag= fallback code path whose active consumers may no longer exist — a possible orphaned compatibility shim rather than an in-flight migration.",
+      "score_rationale": "The codebase has successfully completed several migrations (copulas→CQL patterns, cql_pattern→pattern, hardcoded POS→GrammarConfig-derived) and has left guardrails where appropriate. The score lands just below exemplary because the tag= compatibility path in RelationConfig is retained without a test exercising a tag=-format grammar file, making it a possible dead compatibility shim. This is a minor concern, not a systemic incomplete-migration problem."
+    }
+  },
+  "issues": [
+    {
+      "dimension": "incomplete_migration",
+      "identifier": "tag-fallback-possibly-orphaned",
+      "summary": "tag= POS attribute fallback in RelationConfig may be a dead compatibility shim with no active consumers",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/config/RelationConfig.java"
+      ],
+      "evidence": [
+        "posGroupFromConstraint falls back to posGroupForPrefix(s, \"tag=\") after trying xpos=, with comment 'Kept to remain compatible with older grammar configs not yet migrated to xpos='.",
+        "The test suite and production grammar config (sketchgrammar.wsdef.m4 / relations.json) appear to use xpos= exclusively — no tag= grammar file is referenced in reviewed source.",
+        "The 'not yet migrated' comment implies in-flight migration, but no migration tracking issue or TODO is linked."
+      ],
+      "suggestion": "Search the test suite and production config for any grammar files using tag= attribute syntax. If none exist, remove the tag= fallback branch and its associated posGroupForPrefix logic for the tag= attr, converting the comment into a confirmed completed migration. If tag= files are still used, add a test that validates tag= grammar loading.",
+      "confidence": "low",
+      "impact_scope": "local",
+      "fix_scope": "single_edit",
+      "root_cause_cluster": "orphaned_compatibility_shim"
+    }
+  ],
+  "retrospective": {
+    "root_causes": [
+      "The tag= fallback was retained during the xpos= migration as a safety net; the migration completion check (verifying no active consumers) was not performed."
+    ],
+    "likely_symptoms": [],
+    "possible_false_positives": [
+      "The getFullPattern→buildPattern rename described in the task context does not appear to have been applied in this code snapshot — all callers use getFullPattern consistently. This is internal consistency, not an incomplete migration."
+    ]
+  }
+}

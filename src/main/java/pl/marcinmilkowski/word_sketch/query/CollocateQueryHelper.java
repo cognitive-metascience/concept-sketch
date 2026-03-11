@@ -93,11 +93,13 @@ class CollocateQueryHelper {
      * Parses {@code bcqlPattern}, executes the search, and returns headword frequency together
      * with grouped hits.
      *
+     * @param lemma          the headword lemma used to fetch total corpus frequency
+     * @param bcqlPattern    the BCQL pattern to search
      * @param withStoredHits pass {@code true} to use {@code groupWithStoredHits} (needed when
      *                       the iteration logic reads stored XML fields), {@code false} for
      *                       the lighter {@code group} variant.
      */
-    CollocateSearch executeCollocateSearch(String bcqlPattern, String lemma, boolean withStoredHits)
+    CollocateSearch executeCollocateSearch(String lemma, String bcqlPattern, boolean withStoredHits)
             throws IOException {
         try {
             TextPattern pattern = nl.inl.blacklab.queryParser.corpusql.CorpusQueryLanguageParser
@@ -122,13 +124,20 @@ class CollocateQueryHelper {
 
     /**
      * Build and rank collocate results from a frequency map using logDice scoring.
+     *
+     * @param freqMap       joint co-occurrence frequencies (collocate lemma → count)
+     * @param headwordFreq  total corpus frequency of the headword
+     * @param minLogDice    minimum logDice threshold; results below this are discarded
+     * @param maxResults    maximum number of results to return
+     * @param posMap        optional collocate-lemma → POS tag map; pass {@code null} when POS
+     *                      information is unavailable (placed last as it is optional)
      */
     List<QueryResults.WordSketchResult> buildAndRankCollocates(
             Map<String, Long> freqMap,
-            @Nullable Map<String, String> posMap,
             long headwordFreq,
             double minLogDice,
-            int maxResults) throws IOException {
+            int maxResults,
+            @Nullable Map<String, String> posMap) throws IOException {
         List<QueryResults.WordSketchResult> results = new ArrayList<>();
         for (Map.Entry<String, Long> entry : freqMap.entrySet()) {
             String collocateLemma = entry.getKey();
@@ -243,9 +252,17 @@ class CollocateQueryHelper {
 
     /**
      * Phase 2 — score each hit with logDice using corpus frequencies.
+     * Frequencies for each unique collocate are pre-fetched once and cached in a local map
+     * to avoid redundant {@link #getTotalFrequency} calls for the same lemma.
      */
     private List<QueryResults.CollocateResult> scoreHits(List<HitRecord> records,
             Map<String, Long> collocateFreqMap, long headwordFreq, int maxResults) throws IOException {
+        // Pre-compute corpus frequency for each unique collocate to avoid one call per hit.
+        Map<String, Long> collocateCorpusFreqs = new HashMap<>();
+        for (String collocate : collocateFreqMap.keySet()) {
+            collocateCorpusFreqs.put(collocate, getTotalFrequency(collocate));
+        }
+
         List<QueryResults.CollocateResult> results = new ArrayList<>();
         int limit = (int) Math.min((long) maxResults * OVER_FETCH_FACTOR, (long) records.size());
 
@@ -258,10 +275,12 @@ class CollocateQueryHelper {
             if (validCollocate) {
                 jointFreq = collocateFreqMap.getOrDefault(collocateLemma.toLowerCase(), 0L);
                 if (jointFreq == 0L) {
-                    logger.debug("No joint frequency found for collocate '{}' — logDice will be 0", collocateLemma);
+                    // Trace-level: this fires once per hit in a hot loop; debug would flood logs.
+                    logger.trace("No joint frequency found for collocate '{}' — logDice will be 0", collocateLemma);
                 }
             }
-            long collocateFreq = validCollocate ? getTotalFrequency(collocateLemma) : 0L;
+            long collocateFreq = validCollocate
+                    ? collocateCorpusFreqs.getOrDefault(collocateLemma.toLowerCase(), 0L) : 0L;
 
             double rawLogDice = (headwordFreq > 0 && collocateFreq > 0)
                     ? LogDiceCalculator.compute(jointFreq, headwordFreq, collocateFreq) : 0.0;

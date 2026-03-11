@@ -1,0 +1,67 @@
+{
+  "batch": "package_organization",
+  "batch_index": 9,
+  "assessments": {"package_organization": 79.0},
+  "dimension_notes": {
+    "package_organization": {
+      "evidence": [
+        "Directory profiles: api/6 files, collections/1, config/3, exploration/5, indexer/blacklab/2, model/7, query/4, utils/2, viz/1 — no directory exceeds 7 files, no flat-dir overload flagged.",
+        "api package (6 files, 1278 LOC) is the largest; all files are HTTP handlers or HTTP utilities — high cohesion within the package.",
+        "model package (7 files) holds AdjectiveProfile, ComparisonResult, CoreCollocate, DiscoveredNoun, ExplorationResult, PosGroup, RelationType, QueryResults, package-info — all are domain data types. Cohesion is high.",
+        "exploration package holds SemanticFieldExplorer, CollocateProfileComparator (computation), ExploreOptions (option bag), Edge, RelationEdgeType (graph DTOs). Two of five files (Edge, RelationEdgeType) are data-transfer types consumed only by api, not by any exploration computation class — import-affinity mismatch.",
+        "query package holds QueryExecutor (interface), BlackLabQueryExecutor, CollocateQueryHelper, BlackLabSnippetParser — all tightly coupled to the BlackLab query execution pipeline. Cohesion is high.",
+        "config package (3 files): GrammarConfig (data), GrammarConfigLoader (loader), RelationConfig (config record) — appropriately grouped.",
+        "collections/LongIntHashMap is a single file. At one file, the package is thin but the class is genuinely specialized and used by the indexer.",
+        "viz/RadialPlot is a single file that generates SVG output. It has no coupling into the api or exploration packages and is called only via SketchHandlers.handleVisualRadial — correct placement.",
+        "utils/CqlUtils and LogDiceCalculator are correctly placed shared utilities used by config, query, and exploration packages.",
+        "RelationUtils in api package resolves URL parameter aliases to grammar config IDs — it is primarily an HTTP-layer concern and belongs in api."
+      ],
+      "impact_scope": "module",
+      "fix_scope": "multi_file_refactor",
+      "confidence": "high",
+      "issues_preventing_higher_score": "Edge and RelationEdgeType in exploration are consumed only by the api package, creating an import-affinity mismatch. Their placement in exploration blurs the package's computation identity."
+    }
+  },
+  "dimension_judgment": {
+    "package_organization": {
+      "strengths": [
+        "No directory exceeds 7 files — no flat-dir overload concern.",
+        "api, config, query, model packages each have high internal cohesion — all files share a clear domain concern.",
+        "indexer/blacklab is isolated in a sub-package, correctly separating corpus-building from corpus-querying concerns.",
+        "utils contains only genuinely shared primitive utilities (CQL parsing, logDice math) with no dumping-ground creep."
+      ],
+      "issue_character": "The primary issue is two presentation-layer types (Edge, RelationEdgeType) placed in the computation-oriented exploration package, creating an import-affinity mismatch with the api package that consumes them.",
+      "score_rationale": "The package layout is well-organized and navigable — a new engineer can find most things by reasoning from domain terms to package names. The score is kept from the 85+ range by the Edge/RelationEdgeType placement: these two files live in exploration but their only consumers are in api, and exploration computation classes (SemanticFieldExplorer, CollocateProfileComparator) never instantiate them. This is the definition of an import-affinity mismatch. Moving them to model would align the exploration package cleanly as 'computation' and the model package as 'all domain data types'. The fix is a small two-file move."
+    }
+  },
+  "issues": [
+    {
+      "dimension": "package_organization",
+      "identifier": "edge-types-import-affinity-mismatch",
+      "summary": "Edge and RelationEdgeType in exploration/ are consumed only by api/, not by any exploration computation class",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/exploration/Edge.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/exploration/RelationEdgeType.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/api/ExploreResponseBuilder.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/api/ExplorationHandlers.java"
+      ],
+      "evidence": [
+        "Edge and RelationEdgeType are only instantiated in ExploreResponseBuilder (api package) and referenced in ExplorationHandlers (api package).",
+        "SemanticFieldExplorer, CollocateProfileComparator, and ExploreOptions (the three computation files in exploration) never reference Edge or RelationEdgeType.",
+        "Import affinity for Edge and RelationEdgeType: 100% from api/, 0% from exploration/ peers."
+      ],
+      "suggestion": "Staged reorg plan: (1) Move Edge.java and RelationEdgeType.java from exploration/ to model/ (alongside AdjectiveProfile, CoreCollocate, DiscoveredNoun). (2) Update imports in ExploreResponseBuilder and ExplorationHandlers to use model.Edge and model.RelationEdgeType. (3) Validate with: mvn compile -q. (4) Run mvn test to confirm no regressions. This two-file move takes under 10 minutes and aligns the exploration package as a pure computation package.",
+      "confidence": "high",
+      "impact_scope": "module",
+      "fix_scope": "multi_file_refactor",
+      "root_cause_cluster": "package_placement"
+    }
+  ],
+  "retrospective": {
+    "root_causes": [
+      "Edge and RelationEdgeType were created alongside SemanticFieldExplorer in the exploration package before the model-cycle-fix refactor moved edge construction to ExploreResponseBuilder in api. The types were not relocated after the refactor."
+    ],
+    "likely_symptoms": [],
+    "possible_false_positives": []
+  }
+}

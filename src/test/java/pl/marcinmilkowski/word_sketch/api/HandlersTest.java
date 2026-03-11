@@ -252,7 +252,7 @@ class HandlersTest {
 
     @Test
     void handleVisualRadial_withValidJsonBody_returnsSvg() throws Exception {
-        SketchHandlers handlers = new SketchHandlers(null, GrammarConfigHelper.requireTestConfig());
+        VisualizationHandlers handlers = new VisualizationHandlers();
         String body = "{\"center\":\"theory\",\"width\":400,\"height\":300," +
                 "\"items\":[{\"label\":\"elegant\",\"score\":7.5},{\"label\":\"modern\",\"score\":5.0}]}";
         MockPostBodyExchange ex = new MockPostBodyExchange("/api/visual/radial", body);

@@ -74,7 +74,7 @@ public class BlackLabQueryExecutor implements QueryExecutor {
             throw new IOException("Invalid CQL pattern for lemma '" + lemma + "': " + e.getMessage(), e);
         }
 
-        CollocateQueryHelper.CollocateSearch collocateSearch = collocateQueryHelper.executeCollocateSearch(bcql, lemma, true);
+        CollocateQueryHelper.CollocateSearch collocateSearch = collocateQueryHelper.executeCollocateSearch(lemma, bcql, true);
         long headwordFreq = collocateSearch.headwordFreq();
         HitGroups groups = collocateSearch.groups();
 
@@ -86,7 +86,7 @@ public class BlackLabQueryExecutor implements QueryExecutor {
             return collocateLemma.isEmpty() ? null : collocateLemma;
         }, freqMap, lemmaPosMap);
 
-        return collocateQueryHelper.buildAndRankCollocates(freqMap, lemmaPosMap, headwordFreq, minLogDice, maxResults);
+        return collocateQueryHelper.buildAndRankCollocates(freqMap, headwordFreq, minLogDice, maxResults, lemmaPosMap);
     }
 
     @Override
@@ -175,7 +175,7 @@ public class BlackLabQueryExecutor implements QueryExecutor {
 
     private List<QueryResults.WordSketchResult> collectDependencyFrequencies(
             String bcql, String lemma, double minLogDice, int maxResults) throws IOException {
-        CollocateQueryHelper.CollocateSearch collocateSearch = collocateQueryHelper.executeCollocateSearch(bcql, lemma, true);
+        CollocateQueryHelper.CollocateSearch collocateSearch = collocateQueryHelper.executeCollocateSearch(lemma, bcql, true);
         long headwordFreq = collocateSearch.headwordFreq();
         HitGroups groups = collocateSearch.groups();
 
@@ -186,7 +186,7 @@ public class BlackLabQueryExecutor implements QueryExecutor {
             BlackLabSnippetParser::extractCollocateLemma,
             freqMap, lemmaPosMap);
 
-        return collocateQueryHelper.buildAndRankCollocates(freqMap, lemmaPosMap, headwordFreq, minLogDice, maxResults);
+        return collocateQueryHelper.buildAndRankCollocates(freqMap, headwordFreq, minLogDice, maxResults, lemmaPosMap);
     }
 
     /**
@@ -225,7 +225,7 @@ public class BlackLabQueryExecutor implements QueryExecutor {
         }
 
         int collocatePos = BlackLabSnippetParser.findLabelTokenIndex(bcqlPattern, 2);
-        CollocateQueryHelper.CollocateSearch collocateSearch = collocateQueryHelper.executeCollocateSearch(bcqlPattern, lemma, false);
+        CollocateQueryHelper.CollocateSearch collocateSearch = collocateQueryHelper.executeCollocateSearch(lemma, bcqlPattern, false);
         long headwordFreq = collocateSearch.headwordFreq();
         HitGroups groups = collocateSearch.groups();
 
@@ -242,7 +242,7 @@ public class BlackLabQueryExecutor implements QueryExecutor {
                 },
                 freqMap, lemmaPosMap);
 
-        return collocateQueryHelper.buildAndRankCollocates(freqMap, lemmaPosMap.isEmpty() ? null : lemmaPosMap, headwordFreq, minLogDice, maxResults);
+        return collocateQueryHelper.buildAndRankCollocates(freqMap, headwordFreq, minLogDice, maxResults, lemmaPosMap.isEmpty() ? null : lemmaPosMap);
     }
 
     @Override

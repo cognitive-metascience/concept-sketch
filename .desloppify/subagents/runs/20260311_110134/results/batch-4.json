@@ -1,0 +1,44 @@
+{
+  "batch": "dependency_health",
+  "batch_index": 4,
+  "assessments": {"dependency_health": 88.0},
+  "dimension_notes": {
+    "dependency_health": {
+      "evidence": [
+        "pom.xml declares: blacklab-engine, blacklab-query-parser (INL BlackLab), fastjson2 (2.0.57), slf4j-api (2.0.7), logback-classic (1.5.18), jspecify (1.0.0), junit-jupiter-api/engine, junit-platform-launcher.",
+        "Exactly one JSON library in use (fastjson2 2.0.57). No competing JSON libraries (no Jackson, no Gson, no org.json).",
+        "Logging stack is the canonical SLF4J + Logback pair. No competing logging frameworks.",
+        "jspecify 1.0.0 is the current stable release of the JSpecify nullability annotation library — correctly pinned.",
+        "fastjson2 version is 2.0.57 per the task's improvement notes confirming it was upgraded. This is current as of the review period.",
+        "BlackLab (blacklab-engine + blacklab-query-parser) is a specialized corpus search library that is the core engine of the project; its use is fully justified.",
+        "No duplicate purpose observed: no moment+dayjs style duplication.",
+        "No heavy dependency used for a trivial purpose (e.g., Guava pulled in for one utility method).",
+        "The com.sun.net.httpserver.HttpServer is used directly from the JDK for the REST server — no embedded HTTP server library dependency (Jetty/Undertow) is introduced. This is intentionally lightweight.",
+        "Maven shade plugin is used to produce a fat JAR — appropriate for a standalone server deployment."
+      ],
+      "impact_scope": "codebase",
+      "fix_scope": "single_edit",
+      "confidence": "high",
+      "issues_preventing_higher_score": "slf4j-api version 2.0.7 was released in 2023; logback-classic 1.5.18 is current. These are not mismatches but the slf4j-api pin could be bumped to 2.0.16 to stay current. Minor version drift is the only gap preventing a near-perfect score."
+    }
+  },
+  "dimension_judgment": {
+    "dependency_health": {
+      "strengths": [
+        "Single JSON library (fastjson2 2.0.57) — no competing JSON library duplication.",
+        "Canonical SLF4J + Logback logging stack with no competing frameworks.",
+        "JDK HttpServer used instead of adding an embedded server dependency — the project uses zero HTTP framework deps.",
+        "jspecify 1.0.0 pinned at the current stable release.",
+        "Dependency set is minimal and purpose-driven: every dependency maps to a distinct, central concern (corpus search, JSON, logging, nullability, testing)."
+      ],
+      "issue_character": "There are no meaningful dependency health issues; the only possible finding is minor version drift on slf4j-api, which is cosmetic.",
+      "score_rationale": "The project's dependency graph is among the cleanest possible for a Java project of this complexity: five runtime dependencies all serving distinct, non-overlapping purposes, no version conflicts, no duplicate-purpose libraries, and the fastjson2 library was already upgraded to 2.0.57. The score lands in the high-solid band rather than exemplary only because slf4j-api could be pinned more aggressively to the latest minor and there is no documented BOM for managing BlackLab version alignment explicitly."
+    }
+  },
+  "issues": [],
+  "retrospective": {
+    "root_causes": [],
+    "likely_symptoms": [],
+    "possible_false_positives": []
+  }
+}
