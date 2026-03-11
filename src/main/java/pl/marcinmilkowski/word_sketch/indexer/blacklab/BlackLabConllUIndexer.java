@@ -75,7 +75,12 @@ public class BlackLabConllUIndexer implements AutoCloseable {
     }
 
     /**
-     * Index a single CoNLL-U file.
+     * Index a CoNLL-U file or directory path.
+     *
+     * <p>When given a directory path, BlackLab's {@link Indexer#index(File)} recurses into it
+     * and indexes all matching documents. When given a regular file path, it indexes that file
+     * directly. The method name is kept for API compatibility; prefer {@link #indexDirectory}
+     * when the intent is explicitly to walk a directory with a glob pattern.
      */
     public void indexFile(String conlluPath) throws IOException {
         Path path = Paths.get(conlluPath);
@@ -91,7 +96,7 @@ public class BlackLabConllUIndexer implements AutoCloseable {
     /**
      * Index all CoNLL-U files in a directory.
      */
-    public void indexDirectory(String dirPath, String pattern) throws IOException {
+    private void indexDirectory(String dirPath, String pattern) throws IOException {
         Path dir = Paths.get(dirPath);
 
         if (!Files.isDirectory(dir)) {

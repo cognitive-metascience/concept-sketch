@@ -70,8 +70,9 @@ public class ConlluConverter {
             } finally {
                 if (writer != null) {
                     try (BufferedWriter toClose = writer) {
-                        chunks++;
+                        // close the writer; increment happens after close succeeds
                     }
+                    chunks++;
                 }
             }
         }

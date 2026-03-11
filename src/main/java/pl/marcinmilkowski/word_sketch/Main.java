@@ -17,6 +17,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * Main entry point for ConceptSketch using BlackLab backend.
@@ -267,10 +268,11 @@ public class Main {
 
         // Register the shutdown hook before constructing the server so the executor is
         // always closed even if server construction throws.
-        WordSketchApiServer[] serverHolder = new WordSketchApiServer[1];
+        AtomicReference<WordSketchApiServer> serverHolder = new AtomicReference<>();
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
             System.out.println("\nShutting down...");
-            if (serverHolder[0] != null) serverHolder[0].stop();
+            WordSketchApiServer s = serverHolder.get();
+            if (s != null) s.stop();
             try {
                 executor.close();
             } catch (IOException e) {
@@ -279,7 +281,7 @@ public class Main {
         }));
 
         WordSketchApiServer server = new WordSketchApiServer(executor, port, grammarConfig);
-        serverHolder[0] = server;
+        serverHolder.set(server);
 
         server.start();
 

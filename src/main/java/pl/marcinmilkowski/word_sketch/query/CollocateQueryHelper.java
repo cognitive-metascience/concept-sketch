@@ -247,7 +247,7 @@ class CollocateQueryHelper {
     private List<QueryResults.CollocateResult> scoreHits(List<HitRecord> records,
             Map<String, Long> collocateFreqMap, long headwordFreq, int maxResults) throws IOException {
         List<QueryResults.CollocateResult> results = new ArrayList<>();
-        int limit = Math.min(maxResults * OVER_FETCH_FACTOR, records.size());
+        int limit = (int) Math.min((long) maxResults * OVER_FETCH_FACTOR, (long) records.size());
 
         for (int i = 0; i < limit; i++) {
             HitRecord rec = records.get(i);
