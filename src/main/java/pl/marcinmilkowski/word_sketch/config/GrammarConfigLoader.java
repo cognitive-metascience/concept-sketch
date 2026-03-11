@@ -203,13 +203,20 @@ public class GrammarConfigLoader {
     /**
      * Create the default grammar config, resolving the path from the
      * {@code grammar.config} system property (default: {@code grammars/relations.json}).
+     *
+     * <p>Wraps any {@link IOException} in an {@link IllegalStateException} with the
+     * config path included in the message, so startup failures are immediately actionable.
+     * Callers that need to distinguish config-not-found from other IO errors should
+     * use {@link #GrammarConfigLoader(Path)} directly and handle {@code IOException}.
      */
     public static GrammarConfigLoader createDefaultEnglish() {
         String path = System.getProperty("grammar.config", "grammars/relations.json");
         try {
             return new GrammarConfigLoader(Path.of(path));
         } catch (IOException e) {
-            throw new IllegalStateException("Failed to load default grammar config: " + path, e);
+            throw new IllegalStateException(
+                "Cannot load default grammar config from '" + path
+                    + "'. Set -Dgrammar.config=<path> to override.", e);
         }
     }
 

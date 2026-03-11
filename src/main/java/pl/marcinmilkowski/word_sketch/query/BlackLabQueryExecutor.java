@@ -9,6 +9,9 @@ import nl.inl.blacklab.search.results.Concordances;
 import nl.inl.blacklab.search.results.ContextSize;
 import nl.inl.blacklab.search.results.Hit;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import pl.marcinmilkowski.word_sketch.model.QueryResults;
 import nl.inl.blacklab.search.results.HitGroup;
 import nl.inl.blacklab.search.results.HitGroups;
@@ -36,6 +39,8 @@ import java.util.function.Function;
  */
 public class BlackLabQueryExecutor implements QueryExecutor {
 
+    private static final Logger logger = LoggerFactory.getLogger(BlackLabQueryExecutor.class);
+
     private final BlackLabIndex blackLabIndex;
     private final String indexPath;
     private final CollocateQueryHelper collocateQueryHelper;
@@ -58,10 +63,16 @@ public class BlackLabQueryExecutor implements QueryExecutor {
             int maxResults) throws IOException {
 
         if (lemma == null || lemma.isEmpty()) {
+            logger.debug("findCollocations: skipping query — lemma is null or empty");
             return Collections.emptyList();
         }
 
-        String bcql = buildBcqlWithLemmaSubstitution(cqlPattern, lemma);
+        String bcql;
+        try {
+            bcql = buildBcqlWithLemmaSubstitution(cqlPattern, lemma);
+        } catch (IllegalArgumentException e) {
+            throw new IOException("Invalid CQL pattern for lemma '" + lemma + "': " + e.getMessage(), e);
+        }
 
         CollocateQueryHelper.CollocateSearch collocateSearch = collocateQueryHelper.executeCollocateSearch(bcql, lemma, true);
         long headwordFreq = collocateSearch.headwordFreq();
@@ -132,6 +143,7 @@ public class BlackLabQueryExecutor implements QueryExecutor {
             int maxResults) throws IOException {
 
         if (lemma == null || lemma.isEmpty() || deprel == null) {
+            logger.debug("executeDependencyPattern: skipping query — lemma or deprel is null/empty");
             return Collections.emptyList();
         }
 
@@ -152,6 +164,7 @@ public class BlackLabQueryExecutor implements QueryExecutor {
             String headPosConstraint) throws IOException {
 
         if (lemma == null || lemma.isEmpty() || deprel == null) {
+            logger.debug("executeDependencyPatternWithPos: skipping query — lemma or deprel is null/empty");
             return Collections.emptyList();
         }
 
@@ -207,6 +220,7 @@ public class BlackLabQueryExecutor implements QueryExecutor {
             double minLogDice, int maxResults) throws IOException {
 
         if (lemma == null || lemma.isEmpty()) {
+            logger.debug("executeSurfacePattern: skipping query — lemma is null or empty");
             return Collections.emptyList();
         }
 

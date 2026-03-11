@@ -11,22 +11,22 @@
     "total": 826,
     "auto_resolved": 122,
     "false_positive": 0,
-    "fixed": 551,
-    "open": 30,
+    "fixed": 555,
+    "open": 26,
     "wontfix": 123,
     "by_tier": {
       "1": {
         "auto_resolved": 62,
         "false_positive": 0,
-        "fixed": 427,
-        "open": 9,
+        "fixed": 430,
+        "open": 6,
         "wontfix": 82
       },
       "2": {
         "auto_resolved": 32,
         "false_positive": 0,
-        "fixed": 119,
-        "open": 13,
+        "fixed": 120,
+        "open": 12,
         "wontfix": 39
       },
       "3": {
@@ -32190,16 +32190,22 @@
         "suggestion": "Add a logger.debug or logger.warn call before returning empty, e.g. logger.debug('findCollocations called with null/empty lemma, returning empty'); this preserves the guard behavior while giving operators visibility.",
         "reasoning": ""
       },
-      "status": "open",
-      "note": null,
+      "status": "fixed",
+      "note": "Added logger.debug calls to null/empty lemma guards in findCollocations, executeSurfacePattern, and dependency methods",
       "first_seen": "2026-03-11T07:24:51+00:00",
       "last_seen": "2026-03-11T07:24:51+00:00",
-      "resolved_at": null,
+      "resolved_at": "2026-03-11T07:55:21+00:00",
       "reopen_count": 0,
       "lang": "java",
       "suppressed": false,
       "suppressed_at": null,
-      "suppression_pattern": null
+      "suppression_pattern": null,
+      "resolution_attestation": {
+        "kind": "manual",
+        "text": "I have actually Added logger.debug calls to null/empty lemma guards in findCollocations, executeSurfacePattern, and dependency methods and I am not gaming the score.",
+        "attested_at": "2026-03-11T07:55:21+00:00",
+        "scan_verified": false
+      }
     },
     "review::.::holistic::error_consistency::illegal_argument_escapes_io_contract::109c5008": {
       "id": "review::.::holistic::error_consistency::illegal_argument_escapes_io_contract::109c5008",
@@ -32221,16 +32227,22 @@
         "suggestion": "Either convert the throw to IOException('Unrecognized CQL pattern format: ...', null) to keep it in the checked contract, or document the IllegalArgumentException in each public method's @throws Javadoc so callers know to handle it.",
         "reasoning": ""
       },
-      "status": "open",
-      "note": null,
+      "status": "fixed",
+      "note": "Wrapped IllegalArgumentException from buildBcqlWithLemmaSubstitution into IOException at findCollocations boundary",
       "first_seen": "2026-03-11T07:24:51+00:00",
       "last_seen": "2026-03-11T07:24:51+00:00",
-      "resolved_at": null,
+      "resolved_at": "2026-03-11T07:55:15+00:00",
       "reopen_count": 0,
       "lang": "java",
       "suppressed": false,
       "suppressed_at": null,
-      "suppression_pattern": null
+      "suppression_pattern": null,
+      "resolution_attestation": {
+        "kind": "manual",
+        "text": "I have actually Wrapped IllegalArgumentException from buildBcqlWithLemmaSubstitution into IOException at findCollocations boundary and I am not gaming the score.",
+        "attested_at": "2026-03-11T07:55:15+00:00",
+        "scan_verified": false
+      }
     },
     "review::.::holistic::error_consistency::scoring_loop_abandons_partial_results::1e514e9d": {
       "id": "review::.::holistic::error_consistency::scoring_loop_abandons_partial_results::1e514e9d",
@@ -33076,16 +33088,22 @@
         "suggestion": "Either (a) change createDefaultEnglish() to return Optional<GrammarConfigLoader> and propagate IOException \u2014 callers decide how to handle it, or (b) keep the unchecked wrapping but document it explicitly in Javadoc: '@throws IllegalStateException wrapping IOException if the config file is missing or unreadable'. Option (b) is the minimal fix if no callers want to recover from this.",
         "reasoning": ""
       },
-      "status": "open",
-      "note": null,
+      "status": "fixed",
+      "note": "Improved exception wrapping in createDefaultEnglish with clear message, cause, and override hint",
       "first_seen": "2026-03-11T07:24:51+00:00",
       "last_seen": "2026-03-11T07:24:51+00:00",
-      "resolved_at": null,
+      "resolved_at": "2026-03-11T07:55:12+00:00",
       "reopen_count": 0,
       "lang": "java",
       "suppressed": false,
       "suppressed_at": null,
-      "suppression_pattern": null
+      "suppression_pattern": null,
+      "resolution_attestation": {
+        "kind": "manual",
+        "text": "I have actually Improved exception wrapping in createDefaultEnglish with clear message, cause, and override hint and I am not gaming the score.",
+        "attested_at": "2026-03-11T07:55:12+00:00",
+        "scan_verified": false
+      }
     },
     "review::.::holistic::contract_coherence::require_next_arg_exits_jvm::53331dd0": {
       "id": "review::.::holistic::contract_coherence::require_next_arg_exits_jvm::53331dd0",
@@ -33108,16 +33126,22 @@
         "suggestion": "Add a Javadoc comment: '@throws IllegalArgumentException (via System.exit) when the argument is missing' \u2014 or better, throw a checked exception and let the main() catch block handle the message-and-exit pattern. This makes the contract visible to future maintainers.",
         "reasoning": ""
       },
-      "status": "open",
-      "note": null,
+      "status": "fixed",
+      "note": "Added Javadoc to requireNextArg documenting System.exit behavior, restricted to CLI main methods",
       "first_seen": "2026-03-11T07:24:51+00:00",
       "last_seen": "2026-03-11T07:24:51+00:00",
-      "resolved_at": null,
+      "resolved_at": "2026-03-11T07:55:13+00:00",
       "reopen_count": 0,
       "lang": "java",
       "suppressed": false,
       "suppressed_at": null,
-      "suppression_pattern": null
+      "suppression_pattern": null,
+      "resolution_attestation": {
+        "kind": "manual",
+        "text": "I have actually Added Javadoc to requireNextArg documenting System.exit behavior, restricted to CLI main methods and I am not gaming the score.",
+        "attested_at": "2026-03-11T07:55:13+00:00",
+        "scan_verified": false
+      }
     },
     "review::.::holistic::contract_coherence::getdeprel_undocumented_null::b21e54f1": {
       "id": "review::.::holistic::contract_coherence::getdeprel_undocumented_null::b21e54f1",
@@ -34038,7 +34062,7 @@
       "assessed_at": "2026-03-11T07:24:51+00:00",
       "needs_review_refresh": true,
       "refresh_reason": "review_issue_fixed",
-      "stale_since": "2026-03-11T07:46:58+00:00"
+      "stale_since": "2026-03-11T07:55:13+00:00"
     },
     "logic_clarity": {
       "score": 74.9,
@@ -34099,7 +34123,10 @@
     "error_consistency": {
       "score": 63.1,
       "source": "holistic",
-      "assessed_at": "2026-03-11T07:24:51+00:00"
+      "assessed_at": "2026-03-11T07:24:51+00:00",
+      "needs_review_refresh": true,
+      "refresh_reason": "review_issue_fixed",
+      "stale_since": "2026-03-11T07:55:21+00:00"
     },
     "naming_quality": {
       "score": 77.3,
@@ -37078,13 +37105,13 @@
       "strict": 61.7,
       "verified_strict_score": 61.7,
       "checks": 10,
-      "failing": 2,
+      "failing": 0,
       "tier": 4,
       "detectors": {
         "subjective_assessment": {
           "potential": 10,
           "pass_rate": 0.617,
-          "failing": 2,
+          "failing": 0,
           "weighted_failures": 3.83,
           "assessment_score": 61.7,
           "placeholder": false,
@@ -37099,13 +37126,13 @@
       "strict": 63.1,
       "verified_strict_score": 63.1,
       "checks": 10,
-      "failing": 3,
+      "failing": 1,
       "tier": 4,
       "detectors": {
         "subjective_assessment": {
           "potential": 10,
           "pass_rate": 0.631,
-          "failing": 3,
+          "failing": 1,
           "weighted_failures": 3.69,
           "assessment_score": 63.1,
           "placeholder": false,
