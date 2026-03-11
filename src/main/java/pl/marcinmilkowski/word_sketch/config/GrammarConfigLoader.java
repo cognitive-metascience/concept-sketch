@@ -211,12 +211,17 @@ public final class GrammarConfigLoader {
      */
     public static GrammarConfig createDefaultEnglish() {
         String path = System.getProperty("grammar.config", "grammars/relations.json");
+        Path configPath = Path.of(path);
         try {
-            return load(Path.of(path));
+            return load(configPath);
+        } catch (java.io.FileNotFoundException e) {
+            throw new IllegalStateException(
+                "Grammar config file not found: '" + path
+                    + "'. Set -Dgrammar.config=<path> to override.", e);
         } catch (IOException e) {
             throw new IllegalStateException(
-                "Cannot load default grammar config from '" + path
-                    + "'. Set -Dgrammar.config=<path> to override.", e);
+                "Cannot load grammar config from '" + path
+                    + "' (malformed JSON or I/O error). Set -Dgrammar.config=<path> to override.", e);
         }
     }
 
@@ -259,27 +264,29 @@ public final class GrammarConfigLoader {
     }
 
     /**
-     * Shared logic for deriving a token position from a numbered label in a CQL pattern.
-     * Delegates bracket-walking to {@link CqlUtils#splitCqlTokens} and only performs
-     * a simple label-prefix check ({@code 1:[...]} or {@code 2:[...]}) without
-     * duplicating the bracket-counting logic.
+     * Derives the 1-based token position of the labeled position (e.g. {@code 1:[...]} or {@code 2:[...]})
+     * in a single pass over the raw pattern string. Counts complete {@code [...]} bracket groups
+     * before the first occurrence of {@code targetLabel:} to determine the token index.
      */
     private static int deriveTokenPosition(String pattern, char targetLabel, int defaultPos) {
         if (pattern == null || pattern.isBlank()) return defaultPos;
-        List<String> tokens = CqlUtils.splitCqlTokens(pattern);
-        if (tokens.isEmpty()) return defaultPos;
-        int cursor = 0;
-        for (int tokenIdx = 0; tokenIdx < tokens.size(); tokenIdx++) {
-            while (cursor < pattern.length() && Character.isWhitespace(pattern.charAt(cursor))) cursor++;
-            if (cursor + 1 < pattern.length()
-                    && pattern.charAt(cursor) == targetLabel
-                    && pattern.charAt(cursor + 1) == ':') {
-                return tokenIdx + 1;
+        int labelIdx = -1;
+        for (int i = 0; i + 1 < pattern.length(); i++) {
+            if (pattern.charAt(i) == targetLabel && pattern.charAt(i + 1) == ':') {
+                labelIdx = i;
+                break;
             }
-            while (cursor < pattern.length() && pattern.charAt(cursor) != '[') cursor++;
-            cursor += tokens.get(tokenIdx).length();
         }
-        return defaultPos;
+        if (labelIdx < 0) return defaultPos;
+        // Count complete [...] tokens before the label position
+        int tokenCount = 0;
+        int depth = 0;
+        for (int i = 0; i < labelIdx; i++) {
+            char c = pattern.charAt(i);
+            if (c == '[') depth++;
+            else if (c == ']') { depth--; if (depth == 0) tokenCount++; }
+        }
+        return tokenCount + 1;
     }
 
 }

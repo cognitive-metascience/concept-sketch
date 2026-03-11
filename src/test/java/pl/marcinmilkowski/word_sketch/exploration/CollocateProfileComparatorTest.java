@@ -43,7 +43,7 @@ class CollocateProfileComparatorTest {
 
     @Test
     void compareCollocateProfiles_emptySeeds_returnsEmpty() throws IOException {
-        CollocateProfileComparator comparator = new CollocateProfileComparator(stubExecutor(Collections.emptyMap()));
+        CollocateProfileComparator comparator = new CollocateProfileComparator(stubExecutor(Collections.emptyMap()), null);
         ComparisonResult result = comparator.compareCollocateProfiles(Collections.emptySet(), 0.0, 10);
 
         assertNotNull(result);
@@ -53,7 +53,7 @@ class CollocateProfileComparatorTest {
 
     @Test
     void compareCollocateProfiles_nullSeeds_returnsEmpty() throws IOException {
-        CollocateProfileComparator comparator = new CollocateProfileComparator(stubExecutor(Collections.emptyMap()));
+        CollocateProfileComparator comparator = new CollocateProfileComparator(stubExecutor(Collections.emptyMap()), null);
         ComparisonResult result = comparator.compareCollocateProfiles(null, 0.0, 10);
 
         assertNotNull(result);
@@ -71,7 +71,7 @@ class CollocateProfileComparatorTest {
         data.put("theory", List.of(wsr("important", 8.0), wsr("novel", 5.0)));
         data.put("model",  List.of(wsr("important", 7.0)));
 
-        CollocateProfileComparator comparator = new CollocateProfileComparator(stubExecutor(data));
+        CollocateProfileComparator comparator = new CollocateProfileComparator(stubExecutor(data), null);
         ComparisonResult result = comparator.compareCollocateProfiles(Set.of("theory", "model"), 0.0, 10);
 
         List<AdjectiveProfile> adjectives = result.getAllAdjectives();
@@ -94,7 +94,7 @@ class CollocateProfileComparatorTest {
         data.put("model",      List.of(wsr("important", 8.0), wsr("recent", 5.0)));
         data.put("hypothesis", List.of(wsr("important", 7.0), wsr("large",  4.0)));
 
-        CollocateProfileComparator comparator = new CollocateProfileComparator(stubExecutor(data));
+        CollocateProfileComparator comparator = new CollocateProfileComparator(stubExecutor(data), null);
         ComparisonResult result = comparator.compareCollocateProfiles(
                 Set.of("theory", "model", "hypothesis"), 0.0, 10);
 

@@ -157,7 +157,7 @@ class HandlersTest {
     @Test
     void handleSemanticFieldExplore_validSeed_returns200() throws Exception {
         QueryExecutor executor = emptyExecutor();
-        SemanticFieldExplorer explorer = new SemanticFieldExplorer(executor);
+        SemanticFieldExplorer explorer = new SemanticFieldExplorer(executor, null);
         ExplorationHandlers handlers = new ExplorationHandlers(GrammarConfigHelper.requireTestConfig(), explorer);
         MockExchange ex = new MockExchange(
                 "http://localhost/api/semantic-field/explore?seeds=theory&relation=noun_adj_predicates");
@@ -173,7 +173,7 @@ class HandlersTest {
     @Test
     void handleSemanticFieldExplore_validSeeds_returns200() throws Exception {
         QueryExecutor executor = emptyExecutor();
-        SemanticFieldExplorer explorer = new SemanticFieldExplorer(executor);
+        SemanticFieldExplorer explorer = new SemanticFieldExplorer(executor, null);
         ExplorationHandlers handlers = new ExplorationHandlers(GrammarConfigHelper.requireTestConfig(), explorer);
         MockExchange ex = new MockExchange(
                 "http://localhost/api/semantic-field/explore-multi?seeds=theory,model&relation=noun_adj_predicates");
@@ -196,7 +196,7 @@ class HandlersTest {
     @Test
     void handleSemanticFieldComparison_validSeeds_returns200() throws Exception {
         QueryExecutor executor = emptyExecutor();
-        SemanticFieldExplorer explorer = new SemanticFieldExplorer(executor);
+        SemanticFieldExplorer explorer = new SemanticFieldExplorer(executor, null);
         ExplorationHandlers handlers = new ExplorationHandlers(GrammarConfigHelper.requireTestConfig(), explorer);
         MockExchange ex = new MockExchange(
                 "http://localhost/api/semantic-field?seeds=theory,model&min_logdice=3.0");
@@ -214,7 +214,7 @@ class HandlersTest {
         ExplorationHandlers handlers = new ExplorationHandlers(GrammarConfigHelper.requireTestConfig(), null);
         MockExchange ex = new MockExchange(
                 "http://localhost/api/semantic-field?seeds=theory,model&min_logdice=notanumber");
-        handlers.handleSemanticFieldComparison(ex);
+        HttpApiUtils.wrapWithErrorHandling(handlers::handleSemanticFieldComparison, "test").handle(ex);
         assertEquals(400, ex.statusCode);
     }
 
@@ -237,7 +237,7 @@ class HandlersTest {
     @Test
     void handleSemanticFieldExamples_validParams_returns200() throws Exception {
         QueryExecutor executor = emptyExecutor();
-        SemanticFieldExplorer explorer = new SemanticFieldExplorer(executor);
+        SemanticFieldExplorer explorer = new SemanticFieldExplorer(executor, null);
         ExplorationHandlers handlers = new ExplorationHandlers(GrammarConfigHelper.requireTestConfig(), explorer);
         MockExchange ex = new MockExchange(
                 "http://localhost/api/semantic-field/examples?adjective=important&noun=theory&relation=noun_adj_predicates");
@@ -313,9 +313,9 @@ class HandlersTest {
             "theory", List.of(wsr("abstract", 9.0)),
             "model",  List.of(wsr("abstract", 6.0))
         ));
-        SemanticFieldExplorer explorer = new SemanticFieldExplorer(executor);
+        SemanticFieldExplorer explorer = new SemanticFieldExplorer(executor, null);
         ComparisonResult result =
-            explorer.compareCollocateProfiles(java.util.Set.of("theory", "model"), 0.0, 50);
+            explorer.compareCollocateProfiles(java.util.Set.of("theory", "model"), new pl.marcinmilkowski.word_sketch.exploration.ExploreOptions(50, 0.0, 1));
 
         List<Edge> edges = ExploreResponseAssembler.buildEdges(result);
         assertFalse(edges.isEmpty(), "Should have edges");

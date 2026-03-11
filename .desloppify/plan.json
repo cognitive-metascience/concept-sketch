@@ -1,7 +1,7 @@
 {
   "version": 8,
   "created": "2026-03-09T18:36:05+00:00",
-  "updated": "2026-03-11T15:04:06+00:00",
+  "updated": "2026-03-11T15:15:31+00:00",
   "queue_order": [
     "review::.::holistic::test_strategy::api_handler_smoke_only::0654ef4e",
     "review::.::holistic::test_strategy::bcql_concordance_hardcoded_path::498feea7",
@@ -80994,6 +80994,334 @@
       "actor": "user",
       "note": null,
       "detail": {}
+    },
+    {
+      "timestamp": "2026-03-11T15:06:37+00:00",
+      "action": "commit_record",
+      "issue_ids": [
+        "review::.::holistic::design_coherence::sketch-handlers-mixed-concerns::a73a8516",
+        "review::.::holistic::package_organization::queryresults-wrong-package::6f0a9d47",
+        "review::.::holistic::package_organization::radialplot-api-package::dfb4cace",
+        "review::.::holistic::test_strategy::blacklab-indexer-untested::bd26a03e",
+        "review::.::holistic::high_level_elegance::queryresults-model-affinity::67d85ece",
+        "review::.::holistic::high_level_elegance::radialplot-api-placement::92bdccbf",
+        "review::.::holistic::test_strategy::no-integration-e2e-tests::fd8fd482"
+      ],
+      "cluster_name": null,
+      "actor": "user",
+      "note": "query-results-move, radialplot-fix, test-indexer clusters completed; 226 tests pass",
+      "detail": {
+        "sha": "35db5c94f681",
+        "branch": "desloppify/code-health"
+      }
+    },
+    {
+      "timestamp": "2026-03-11T15:13:58+00:00",
+      "action": "done",
+      "issue_ids": [
+        "review::.::holistic::abstraction_fitness::deprecated-bypass-constructors::7ab5e1f5"
+      ],
+      "cluster_name": null,
+      "actor": "user",
+      "note": "Deprecated constructors and exploreMultiSeed 5-arg overload removed; callers updated to 2-arg constructors and ExploreOptions-based API",
+      "detail": {}
+    },
+    {
+      "timestamp": "2026-03-11T15:13:58+00:00",
+      "action": "done",
+      "issue_ids": [
+        "review::.::holistic::abstraction_fitness::deprecated-passthrough-overload::ea475716"
+      ],
+      "cluster_name": null,
+      "actor": "user",
+      "note": "Deprecated constructors and exploreMultiSeed 5-arg overload removed; callers updated to 2-arg constructors and ExploreOptions-based API",
+      "detail": {}
+    },
+    {
+      "timestamp": "2026-03-11T15:13:59+00:00",
+      "action": "done",
+      "issue_ids": [
+        "review::.::holistic::api_surface_coherence::deprecated-5param-exploreMultiSeed-public::639f1745"
+      ],
+      "cluster_name": null,
+      "actor": "user",
+      "note": "Deprecated constructors and exploreMultiSeed 5-arg overload removed; callers updated to 2-arg constructors and ExploreOptions-based API",
+      "detail": {}
+    },
+    {
+      "timestamp": "2026-03-11T15:14:00+00:00",
+      "action": "done",
+      "issue_ids": [
+        "review::.::holistic::incomplete_migration::deprecated-triad-no-removal-schedule::27e5efaa"
+      ],
+      "cluster_name": null,
+      "actor": "user",
+      "note": "Deprecated constructors and exploreMultiSeed 5-arg overload removed; callers updated to 2-arg constructors and ExploreOptions-based API",
+      "detail": {}
+    },
+    {
+      "timestamp": "2026-03-11T15:14:00+00:00",
+      "action": "done",
+      "issue_ids": [
+        "review::.::holistic::initialization_coupling::deprecated-fallback-constructors-parallel-path::9c2f9305"
+      ],
+      "cluster_name": null,
+      "actor": "user",
+      "note": "Deprecated constructors and exploreMultiSeed 5-arg overload removed; callers updated to 2-arg constructors and ExploreOptions-based API",
+      "detail": {}
+    },
+    {
+      "timestamp": "2026-03-11T15:14:12+00:00",
+      "action": "done",
+      "issue_ids": [
+        "review::.::holistic::convention_outlier::explore-response-builder-pattern-mismatch::04e02a42"
+      ],
+      "cluster_name": null,
+      "actor": "user",
+      "note": "Renamed ExploreResponseBuilder to ExploreResponseAssembler (static utility); renamed getDeprel() to computeDeprel(); renamed collocateReversePattern() to buildCollocateReversePattern(); renamed filterCandidates to filterByMinShared; all callers updated throughout codebase",
+      "detail": {}
+    },
+    {
+      "timestamp": "2026-03-11T15:14:13+00:00",
+      "action": "done",
+      "issue_ids": [
+        "review::.::holistic::naming_quality::explore-response-builder-misnomer::252bfa77"
+      ],
+      "cluster_name": null,
+      "actor": "user",
+      "note": "Renamed ExploreResponseBuilder to ExploreResponseAssembler (static utility); renamed getDeprel() to computeDeprel(); renamed collocateReversePattern() to buildCollocateReversePattern(); renamed filterCandidates to filterByMinShared; all callers updated throughout codebase",
+      "detail": {}
+    },
+    {
+      "timestamp": "2026-03-11T15:14:13+00:00",
+      "action": "done",
+      "issue_ids": [
+        "review::.::holistic::naming_quality::getdeprel-computational-getter::9f35e9a1"
+      ],
+      "cluster_name": null,
+      "actor": "user",
+      "note": "Renamed ExploreResponseBuilder to ExploreResponseAssembler (static utility); renamed getDeprel() to computeDeprel(); renamed collocateReversePattern() to buildCollocateReversePattern(); renamed filterCandidates to filterByMinShared; all callers updated throughout codebase",
+      "detail": {}
+    },
+    {
+      "timestamp": "2026-03-11T15:14:14+00:00",
+      "action": "done",
+      "issue_ids": [
+        "review::.::holistic::naming_quality::filter-candidates-vague::b79a71b0"
+      ],
+      "cluster_name": null,
+      "actor": "user",
+      "note": "Renamed ExploreResponseBuilder to ExploreResponseAssembler (static utility); renamed getDeprel() to computeDeprel(); renamed collocateReversePattern() to buildCollocateReversePattern(); renamed filterCandidates to filterByMinShared; all callers updated throughout codebase",
+      "detail": {}
+    },
+    {
+      "timestamp": "2026-03-11T15:14:28+00:00",
+      "action": "done",
+      "issue_ids": [
+        "review::.::holistic::contract_coherence::buildfullpattern-silent-passthrough::addc2063"
+      ],
+      "cluster_name": null,
+      "actor": "user",
+      "note": "RelationConfig method naming standardized: collocateReversePattern() renamed to buildCollocateReversePattern(); buildFullPattern() documented with explicit null-passthrough contract; getDeprel() renamed to computeDeprel(); GrammarConfigLoader.createDefaultEnglish() now preserves FileNotFoundException vs generic IOException; deriveTokenPosition simplified to single-pass traversal",
+      "detail": {}
+    },
+    {
+      "timestamp": "2026-03-11T15:14:29+00:00",
+      "action": "done",
+      "issue_ids": [
+        "review::.::holistic::error_handling_quality::createdefaultenglish-exception-erasure::92b8385a"
+      ],
+      "cluster_name": null,
+      "actor": "user",
+      "note": "RelationConfig method naming standardized: collocateReversePattern() renamed to buildCollocateReversePattern(); buildFullPattern() documented with explicit null-passthrough contract; getDeprel() renamed to computeDeprel(); GrammarConfigLoader.createDefaultEnglish() now preserves FileNotFoundException vs generic IOException; deriveTokenPosition simplified to single-pass traversal",
+      "detail": {}
+    },
+    {
+      "timestamp": "2026-03-11T15:14:30+00:00",
+      "action": "done",
+      "issue_ids": [
+        "review::.::holistic::naming_quality::relation-config-mixed-naming-conventions::3cb7449a"
+      ],
+      "cluster_name": null,
+      "actor": "user",
+      "note": "RelationConfig method naming standardized: collocateReversePattern() renamed to buildCollocateReversePattern(); buildFullPattern() documented with explicit null-passthrough contract; getDeprel() renamed to computeDeprel(); GrammarConfigLoader.createDefaultEnglish() now preserves FileNotFoundException vs generic IOException; deriveTokenPosition simplified to single-pass traversal",
+      "detail": {}
+    },
+    {
+      "timestamp": "2026-03-11T15:14:45+00:00",
+      "action": "done",
+      "issue_ids": [
+        "review::.::holistic::contract_coherence::parsedoubleparam-sentinel-contract::5e089cb2"
+      ],
+      "cluster_name": null,
+      "actor": "user",
+      "note": "parseIntParam and parseDoubleParam promoted from private ExplorationHandlers methods to static package-accessible methods in HttpApiUtils; both now throw IllegalArgumentException instead of returning -1 sentinel; ConcordanceHandlers now uses HttpApiUtils.parseIntParam; GrammarConfigLoader.deriveTokenPosition refactored to single-pass traversal; resolveExploreParams no longer needs sentinel checks",
+      "detail": {}
+    },
+    {
+      "timestamp": "2026-03-11T15:14:46+00:00",
+      "action": "done",
+      "issue_ids": [
+        "review::.::holistic::api_surface_coherence::concordancehandlers-inline-parse-vs-helper::d9835cc8"
+      ],
+      "cluster_name": null,
+      "actor": "user",
+      "note": "parseIntParam and parseDoubleParam promoted from private ExplorationHandlers methods to static package-accessible methods in HttpApiUtils; both now throw IllegalArgumentException instead of returning -1 sentinel; ConcordanceHandlers now uses HttpApiUtils.parseIntParam; GrammarConfigLoader.deriveTokenPosition refactored to single-pass traversal; resolveExploreParams no longer needs sentinel checks",
+      "detail": {}
+    },
+    {
+      "timestamp": "2026-03-11T15:14:47+00:00",
+      "action": "done",
+      "issue_ids": [
+        "review::.::holistic::contract_coherence::parseintparam-sentinel-negative::4696c722"
+      ],
+      "cluster_name": null,
+      "actor": "user",
+      "note": "parseIntParam and parseDoubleParam promoted from private ExplorationHandlers methods to static package-accessible methods in HttpApiUtils; both now throw IllegalArgumentException instead of returning -1 sentinel; ConcordanceHandlers now uses HttpApiUtils.parseIntParam; GrammarConfigLoader.deriveTokenPosition refactored to single-pass traversal; resolveExploreParams no longer needs sentinel checks",
+      "detail": {}
+    },
+    {
+      "timestamp": "2026-03-11T15:14:47+00:00",
+      "action": "done",
+      "issue_ids": [
+        "review::.::holistic::logic_clarity::deriveTokenPosition-dual-traversal::7c0ad513"
+      ],
+      "cluster_name": null,
+      "actor": "user",
+      "note": "parseIntParam and parseDoubleParam promoted from private ExplorationHandlers methods to static package-accessible methods in HttpApiUtils; both now throw IllegalArgumentException instead of returning -1 sentinel; ConcordanceHandlers now uses HttpApiUtils.parseIntParam; GrammarConfigLoader.deriveTokenPosition refactored to single-pass traversal; resolveExploreParams no longer needs sentinel checks",
+      "detail": {}
+    },
+    {
+      "timestamp": "2026-03-11T15:14:48+00:00",
+      "action": "done",
+      "issue_ids": [
+        "review::.::holistic::contract_coherence::parsedoubleparam-sentinel-negative-threshold::2b310519"
+      ],
+      "cluster_name": null,
+      "actor": "user",
+      "note": "parseIntParam and parseDoubleParam promoted from private ExplorationHandlers methods to static package-accessible methods in HttpApiUtils; both now throw IllegalArgumentException instead of returning -1 sentinel; ConcordanceHandlers now uses HttpApiUtils.parseIntParam; GrammarConfigLoader.deriveTokenPosition refactored to single-pass traversal; resolveExploreParams no longer needs sentinel checks",
+      "detail": {}
+    },
+    {
+      "timestamp": "2026-03-11T15:14:49+00:00",
+      "action": "done",
+      "issue_ids": [
+        "review::.::holistic::api_surface_coherence::param-parsing-private-scope::f316f5dd"
+      ],
+      "cluster_name": null,
+      "actor": "user",
+      "note": "parseIntParam and parseDoubleParam promoted from private ExplorationHandlers methods to static package-accessible methods in HttpApiUtils; both now throw IllegalArgumentException instead of returning -1 sentinel; ConcordanceHandlers now uses HttpApiUtils.parseIntParam; GrammarConfigLoader.deriveTokenPosition refactored to single-pass traversal; resolveExploreParams no longer needs sentinel checks",
+      "detail": {}
+    },
+    {
+      "timestamp": "2026-03-11T15:14:50+00:00",
+      "action": "done",
+      "issue_ids": [
+        "review::.::holistic::api_surface_coherence::numeric-param-parsing-not-shared::291eed32"
+      ],
+      "cluster_name": null,
+      "actor": "user",
+      "note": "parseIntParam and parseDoubleParam promoted from private ExplorationHandlers methods to static package-accessible methods in HttpApiUtils; both now throw IllegalArgumentException instead of returning -1 sentinel; ConcordanceHandlers now uses HttpApiUtils.parseIntParam; GrammarConfigLoader.deriveTokenPosition refactored to single-pass traversal; resolveExploreParams no longer needs sentinel checks",
+      "detail": {}
+    },
+    {
+      "timestamp": "2026-03-11T15:15:02+00:00",
+      "action": "done",
+      "issue_ids": [
+        "review::.::holistic::logic_clarity::redundant-orelsethrow-after-guard::b7f5b3e0"
+      ],
+      "cluster_name": null,
+      "actor": "user",
+      "note": "Vacuous orElseThrow in SketchHandlers.handleRelationsForType replaced by extracting relationType once at the guard; Optional.get() calls in ExplorationHandlers replaced with orElseThrow with meaningful messages; CollocateQueryHelper.extractCollocateLemma annotated with @Nullable to document possible null return",
+      "detail": {}
+    },
+    {
+      "timestamp": "2026-03-11T15:15:03+00:00",
+      "action": "done",
+      "issue_ids": [
+        "review::.::holistic::logic_clarity::extractcollocatelemma-nullable-undocumented::535c093b"
+      ],
+      "cluster_name": null,
+      "actor": "user",
+      "note": "Vacuous orElseThrow in SketchHandlers.handleRelationsForType replaced by extracting relationType once at the guard; Optional.get() calls in ExplorationHandlers replaced with orElseThrow with meaningful messages; CollocateQueryHelper.extractCollocateLemma annotated with @Nullable to document possible null return",
+      "detail": {}
+    },
+    {
+      "timestamp": "2026-03-11T15:15:03+00:00",
+      "action": "done",
+      "issue_ids": [
+        "review::.::holistic::logic_clarity::optional-get-without-guard::b5659f49"
+      ],
+      "cluster_name": null,
+      "actor": "user",
+      "note": "Vacuous orElseThrow in SketchHandlers.handleRelationsForType replaced by extracting relationType once at the guard; Optional.get() calls in ExplorationHandlers replaced with orElseThrow with meaningful messages; CollocateQueryHelper.extractCollocateLemma annotated with @Nullable to document possible null return",
+      "detail": {}
+    },
+    {
+      "timestamp": "2026-03-11T15:15:14+00:00",
+      "action": "done",
+      "issue_ids": [
+        "review::.::holistic::ai_generated_debt::null-guard-inconsistency::822fc7a1"
+      ],
+      "cluster_name": null,
+      "actor": "user",
+      "note": "Manual if-null-throw guard in ExplorationHandlers constructor replaced with Objects.requireNonNull to match established pattern; two selective Received-request INFO log lines removed from WordSketchApiServer exploration routes (handlers now registered as direct method references, consistent with other routes)",
+      "detail": {}
+    },
+    {
+      "timestamp": "2026-03-11T15:15:15+00:00",
+      "action": "done",
+      "issue_ids": [
+        "review::.::holistic::ai_generated_debt::selective-request-logging-inconsistency::7ea98547"
+      ],
+      "cluster_name": null,
+      "actor": "user",
+      "note": "Manual if-null-throw guard in ExplorationHandlers constructor replaced with Objects.requireNonNull to match established pattern; two selective Received-request INFO log lines removed from WordSketchApiServer exploration routes (handlers now registered as direct method references, consistent with other routes)",
+      "detail": {}
+    },
+    {
+      "timestamp": "2026-03-11T15:15:29+00:00",
+      "action": "done",
+      "issue_ids": [
+        "review::.::holistic::api_surface_coherence::compare-profiles-raw-params-vs-explore-options::e039a50b"
+      ],
+      "cluster_name": null,
+      "actor": "user",
+      "note": "ExploreOptions split: base ExploreOptions(topCollocates, minLogDice, minShared) for multi-seed and comparison; new SingleSeedExploreOptions(topCollocates, nounsPerCollocate, minLogDice, minShared) for single-seed exploration; compareCollocateProfiles migrated to accept ExploreOptions; exploreByPattern migrated to accept SingleSeedExploreOptions; ExplorationHandlers updated; all tests updated",
+      "detail": {}
+    },
+    {
+      "timestamp": "2026-03-11T15:15:30+00:00",
+      "action": "done",
+      "issue_ids": [
+        "review::.::holistic::api_surface_coherence::comparecollocateprofiles-raw-params::90fc08e3"
+      ],
+      "cluster_name": null,
+      "actor": "user",
+      "note": "ExploreOptions split: base ExploreOptions(topCollocates, minLogDice, minShared) for multi-seed and comparison; new SingleSeedExploreOptions(topCollocates, nounsPerCollocate, minLogDice, minShared) for single-seed exploration; compareCollocateProfiles migrated to accept ExploreOptions; exploreByPattern migrated to accept SingleSeedExploreOptions; ExplorationHandlers updated; all tests updated",
+      "detail": {}
+    },
+    {
+      "timestamp": "2026-03-11T15:15:31+00:00",
+      "action": "done",
+      "issue_ids": [
+        "review::.::holistic::design_coherence::exploreOptions-nounsPerCollocate-multi-seed-leakage::8fc738a1"
+      ],
+      "cluster_name": null,
+      "actor": "user",
+      "note": "ExploreOptions split: base ExploreOptions(topCollocates, minLogDice, minShared) for multi-seed and comparison; new SingleSeedExploreOptions(topCollocates, nounsPerCollocate, minLogDice, minShared) for single-seed exploration; compareCollocateProfiles migrated to accept ExploreOptions; exploreByPattern migrated to accept SingleSeedExploreOptions; ExplorationHandlers updated; all tests updated",
+      "detail": {}
+    },
+    {
+      "timestamp": "2026-03-11T15:15:31+00:00",
+      "action": "done",
+      "issue_ids": [
+        "review::.::holistic::design_coherence::handlesemanticfieldcomparison-partial-preamble::441d5775"
+      ],
+      "cluster_name": null,
+      "actor": "user",
+      "note": "ExploreOptions split: base ExploreOptions(topCollocates, minLogDice, minShared) for multi-seed and comparison; new SingleSeedExploreOptions(topCollocates, nounsPerCollocate, minLogDice, minShared) for single-seed exploration; compareCollocateProfiles migrated to accept ExploreOptions; exploreByPattern migrated to accept SingleSeedExploreOptions; ExplorationHandlers updated; all tests updated",
+      "detail": {}
     }
   ],
   "epic_triage_meta": {
@@ -82324,17 +82652,25 @@
       "recorded_at": "2026-03-11T14:13:24+00:00",
       "note": "All 10 desloppify clusters implemented",
       "cluster_name": null
+    },
+    {
+      "sha": "35db5c94f681",
+      "branch": "desloppify/code-health",
+      "issue_ids": [
+        "review::.::holistic::design_coherence::sketch-handlers-mixed-concerns::a73a8516",
+        "review::.::holistic::package_organization::queryresults-wrong-package::6f0a9d47",
+        "review::.::holistic::package_organization::radialplot-api-package::dfb4cace",
+        "review::.::holistic::test_strategy::blacklab-indexer-untested::bd26a03e",
+        "review::.::holistic::high_level_elegance::queryresults-model-affinity::67d85ece",
+        "review::.::holistic::high_level_elegance::radialplot-api-placement::92bdccbf",
+        "review::.::holistic::test_strategy::no-integration-e2e-tests::fd8fd482"
+      ],
+      "recorded_at": "2026-03-11T15:06:37+00:00",
+      "note": "query-results-move, radialplot-fix, test-indexer clusters completed; 226 tests pass",
+      "cluster_name": null
     }
   ],
-  "uncommitted_issues": [
-    "review::.::holistic::design_coherence::sketch-handlers-mixed-concerns::a73a8516",
-    "review::.::holistic::package_organization::queryresults-wrong-package::6f0a9d47",
-    "review::.::holistic::package_organization::radialplot-api-package::dfb4cace",
-    "review::.::holistic::test_strategy::blacklab-indexer-untested::bd26a03e",
-    "review::.::holistic::high_level_elegance::queryresults-model-affinity::67d85ece",
-    "review::.::holistic::high_level_elegance::radialplot-api-placement::92bdccbf",
-    "review::.::holistic::test_strategy::no-integration-e2e-tests::fd8fd482"
-  ],
+  "uncommitted_issues": [],
   "commit_tracking_branch": null,
   "scan_count_at_plan_start": 5
 }

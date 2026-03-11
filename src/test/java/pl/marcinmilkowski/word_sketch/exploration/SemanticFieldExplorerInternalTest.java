@@ -104,8 +104,8 @@ class SemanticFieldExplorerInternalTest {
         StubExecutor executor = new StubExecutor(Map.of(
             "theory", List.of(wsr("empirical", 8.0), wsr("scientific", 7.0))
         ));
-        SemanticFieldExplorer explorer = new SemanticFieldExplorer(executor);
-        ExploreOptions opts = new ExploreOptions(10, 5, 0.0, 1);
+        SemanticFieldExplorer explorer = new SemanticFieldExplorer(executor, null);
+        SingleSeedExploreOptions opts = new SingleSeedExploreOptions(10, 5, 0.0, 1);
         ExplorationResult result = explorer.exploreByPattern(
             "theory", "test-relation",
             "[lemma=\"theory\"] [xpos=\"JJ.*\"]",
@@ -121,8 +121,8 @@ class SemanticFieldExplorerInternalTest {
         StubExecutor executor = new StubExecutor(Map.of(
             "theory", List.of(wsr("empirical", 8.0), wsr("scientific", 7.0))
         ));
-        SemanticFieldExplorer explorer = new SemanticFieldExplorer(executor);
-        ExploreOptions opts = new ExploreOptions(10, 5, 0.0, 1);
+        SemanticFieldExplorer explorer = new SemanticFieldExplorer(executor, null);
+        SingleSeedExploreOptions opts = new SingleSeedExploreOptions(10, 5, 0.0, 1);
         ExplorationResult result = explorer.exploreByPattern(
             "theory", "test-relation",
             "[lemma=\"theory\"] [xpos=\"JJ.*\"]",
@@ -140,7 +140,7 @@ class SemanticFieldExplorerInternalTest {
         ));
         // null GrammarConfig → fallback noun constraint
         SemanticFieldExplorer explorer = new SemanticFieldExplorer(executor, null);
-        ExploreOptions opts = new ExploreOptions(10, 1, 0.0, 5);
+        SingleSeedExploreOptions opts = new SingleSeedExploreOptions(10, 1, 0.0, 5);
 
         explorer.exploreByPattern(
             "theory", "test-relation",
@@ -179,7 +179,7 @@ class SemanticFieldExplorerInternalTest {
             "theory", List.of(wsr("important", 8.0))
         ));
         SemanticFieldExplorer explorer = new SemanticFieldExplorer(executor, config);
-        ExploreOptions opts = new ExploreOptions(10, 1, 0.0, 5);
+        SingleSeedExploreOptions opts = new SingleSeedExploreOptions(10, 1, 0.0, 5);
 
         explorer.exploreByPattern(
             "theory", "test-relation",

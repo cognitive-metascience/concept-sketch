@@ -75,15 +75,11 @@ public class WordSketchApiServer {
         registerGetHandler(server, "/api/relations/dep",
             wrapHandler(sketchHandlers::handleDepRelations, "Dependency relations"));
 
-        registerGetHandler(server, "/api/semantic-field/explore", wrapHandler(exchange -> {
-            logger.info("Received request: {}", exchange.getRequestURI());
-            explorationHandlers.handleSemanticFieldExplore(exchange);
-        }, "Semantic field explore"));
+        registerGetHandler(server, "/api/semantic-field/explore",
+            wrapHandler(explorationHandlers::handleSemanticFieldExplore, "Semantic field explore"));
 
-        registerGetHandler(server, "/api/semantic-field/explore-multi", wrapHandler(exchange -> {
-            logger.info("Received request: {}", exchange.getRequestURI());
-            explorationHandlers.handleSemanticFieldExploreMulti(exchange);
-        }, "Multi-seed exploration"));
+        registerGetHandler(server, "/api/semantic-field/explore-multi",
+            wrapHandler(explorationHandlers::handleSemanticFieldExploreMulti, "Multi-seed exploration"));
 
         registerGetHandler(server, "/api/semantic-field",
             wrapHandler(explorationHandlers::handleSemanticFieldComparison, "Semantic field comparison"));
