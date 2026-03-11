@@ -1,0 +1,92 @@
+{
+  "batch": "cross_module_architecture",
+  "batch_index": 1,
+  "assessments": {
+    "cross_module_architecture": 64.0
+  },
+  "dimension_notes": {
+    "cross_module_architecture": {
+      "evidence": [
+        "model.ExplorationResult imports exploration.Edge and exploration.RelationEdgeType: 'import pl.marcinmilkowski.word_sketch.exploration.Edge; import pl.marcinmilkowski.word_sketch.exploration.RelationEdgeType;'",
+        "model.ComparisonResult imports exploration.Edge and exploration.RelationEdgeType — same cross-package inward import as ExplorationResult",
+        "exploration.CollocateProfileComparator imports model.AdjectiveProfile, model.ComparisonResult, model.QueryResults — creating the return direction of the cycle",
+        "exploration.SemanticFieldExplorer imports model.CoreCollocate, model.DiscoveredNoun, model.ExplorationResult, model.PosGroup, model.QueryResults — confirming the bidirectional coupling",
+        "The net result is a genuine model ↔ exploration package cycle: two packages each importing types from the other",
+        "Edge and RelationEdgeType live in exploration/ even though they are consumed by model DTOs; moving them to model/ would break the cycle at zero cost",
+        "All other dependency directions are clean: api → {exploration, config, model, query}; query → model; config → {model, utils}; collections is a leaf",
+        "LongIntHashMap in collections/ is a pure leaf with no outward imports — correct placement post model-reorg",
+        "SemanticFieldExplorer hardcodes NOUN_CQL_CONSTRAINT = \"[xpos=\\\"NN.*\\\"]\"; CollocateProfileComparator hardcodes ADJECTIVE_PATTERN = \"[xpos=\\\"JJ.*\\\"]\"; both carry TODOs noting the grammar config should supply these — the cross-module coordination is deferred to future wiring"
+      ],
+      "impact_scope": "subsystem",
+      "fix_scope": "multi_file_refactor",
+      "confidence": "high"
+    }
+  },
+  "dimension_judgment": {
+    "cross_module_architecture": {
+      "strengths": [
+        "Package decomposition broadly mirrors domain capabilities: api, config, exploration, indexer, model, query, utils, collections, viz are all purposeful and non-overlapping",
+        "Dependency directions are correct in most directions: api depends on all subsystems; query, config, and exploration depend on model; collections is a true leaf",
+        "LongIntHashMap was properly relocated to a dedicated collections/ package rather than polluting utils/",
+        "Handler split (SketchHandlers, ExplorationHandlers) keeps the api/ package focused without creating a god class",
+        "GrammarConfig extraction into a value object separate from GrammarConfigLoader demonstrates correct loader/data separation"
+      ],
+      "issue_character": "A single structural cycle — model ↔ exploration — where model DTOs import graph-edge types from the exploration package while exploration classes import model DTOs in return; this is a two-class cluster problem, not a diffuse systemic smell.",
+      "score_rationale": "The architecture is clearly intentional and mostly correct — packages are domain-aligned and dependency directions are clean in 7 of the 9 packages. However the bidirectional model ↔ exploration import creates a genuine package cycle: model.ExplorationResult and model.ComparisonResult import Edge and RelationEdgeType from the exploration package while the entire exploration package depends on model. This is a non-trivial structural defect because it couples the model package to a specific graph-edge representation that belongs in either the exploration or model package exclusively. The fix is straightforward (move Edge/RelationEdgeType to model/) but its absence keeps this from scoring as 'solid'."
+    }
+  },
+  "issues": [
+    {
+      "dimension": "cross_module_architecture",
+      "identifier": "model_exploration_cycle",
+      "summary": "Bidirectional package cycle: model.ExplorationResult/ComparisonResult import from exploration/ while all of exploration/ imports from model/",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/model/ExplorationResult.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/model/ComparisonResult.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/exploration/Edge.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/exploration/RelationEdgeType.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/exploration/SemanticFieldExplorer.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/exploration/CollocateProfileComparator.java"
+      ],
+      "evidence": [
+        "ExplorationResult.java: 'import pl.marcinmilkowski.word_sketch.exploration.Edge; import pl.marcinmilkowski.word_sketch.exploration.RelationEdgeType;'",
+        "ComparisonResult.java: same two imports from exploration package",
+        "SemanticFieldExplorer imports model.ExplorationResult, model.CoreCollocate, model.DiscoveredNoun, model.PosGroup, model.QueryResults",
+        "model/ contains domain data; exploration/ contains algorithms — graph edge types belong to model/ or a shared graph-types package, not to exploration/"
+      ],
+      "suggestion": "Move Edge.java and RelationEdgeType.java from exploration/ to model/. Update all imports. This breaks the cycle with minimal collateral change and places graph-edge value types where model-layer DTOs can import them without a circular dependency.",
+      "confidence": "high",
+      "impact_scope": "subsystem",
+      "fix_scope": "multi_file_refactor"
+    },
+    {
+      "dimension": "cross_module_architecture",
+      "identifier": "hardcoded_pos_constraints_cross_module",
+      "summary": "SemanticFieldExplorer and CollocateProfileComparator hardcode English POS tag patterns instead of deriving them from RelationConfig, violating the config-driven boundary",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/exploration/SemanticFieldExplorer.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/exploration/CollocateProfileComparator.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/config/RelationConfig.java"
+      ],
+      "evidence": [
+        "SemanticFieldExplorer: 'private static final String NOUN_CQL_CONSTRAINT = \"[xpos=\\\"NN.*\\\"]\";' with TODO noting it should come from config",
+        "CollocateProfileComparator: 'private static final String ADJECTIVE_PATTERN = \"[xpos=\\\"JJ.*\\\"]\";' with same TODO",
+        "RelationConfig.collocateReversePattern() already provides the right pattern per PosGroup — but this method is not injected into CollocateProfileComparator or SemanticFieldExplorer's reverse-lookup path"
+      ],
+      "suggestion": "Pass the appropriate RelationConfig (or its collocateReversePattern() result) into CollocateProfileComparator at construction time and into the phase-2 buildCollocateToNounsMap call in SemanticFieldExplorer. This removes the hardcoded English-only constraint and completes the config-driven boundary intent.",
+      "confidence": "high",
+      "impact_scope": "subsystem",
+      "fix_scope": "multi_file_refactor"
+    }
+  ],
+  "retrospective": {
+    "root_causes": [
+      "Graph edge types (Edge, RelationEdgeType) were placed in exploration/ because they were first used there; the later addition of buildEdges() to model DTOs created the cycle without a corrective refactor",
+      "Config-injection for POS constraints was deferred with TODOs rather than completed during the exploration feature build"
+    ],
+    "likely_symptoms": [
+      "Any new model DTO that needs to produce graph edges must import exploration/, deepening the cycle over time"
+    ],
+    "possible_false_positives": []
+  }
+}

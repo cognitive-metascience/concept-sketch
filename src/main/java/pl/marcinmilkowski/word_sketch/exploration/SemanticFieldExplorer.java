@@ -14,6 +14,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import pl.marcinmilkowski.word_sketch.config.RelationConfig;
+import pl.marcinmilkowski.word_sketch.model.ComparisonResult;
 import pl.marcinmilkowski.word_sketch.model.CoreCollocate;
 import pl.marcinmilkowski.word_sketch.model.DiscoveredNoun;
 import pl.marcinmilkowski.word_sketch.model.ExplorationResult;
@@ -113,7 +114,7 @@ public class SemanticFieldExplorer {
         return exploreByPattern(
             seed,
             relationConfig.name(),
-            relationConfig.getFullPattern(seed),
+            relationConfig.buildPattern(seed),
             relationConfig.collocateReversePattern(),
             opts);
     }
@@ -275,12 +276,18 @@ public class SemanticFieldExplorer {
     // ==================== COMPARISON MODE ====================
 
     /**
-     * Returns the {@link CollocateProfileComparator} that compares collocate profiles across
-     * multiple seed nouns. Callers that need {@code compareCollocateProfiles} should invoke it
-     * directly on the comparator rather than going through this class.
+     * Compares adjective collocate profiles across a set of seed nouns, revealing which
+     * adjectives are shared across seeds (semantic core) and which are distinctive to
+     * individual seeds.
+     *
+     * @param seedNouns   Nouns to compare (e.g., "theory", "model", "hypothesis")
+     * @param minLogDice  Minimum logDice score for adjective-noun pairs
+     * @param maxPerNoun  Maximum adjectives to retrieve per noun
+     * @return ComparisonResult with graded adjective profiles
      */
-    public CollocateProfileComparator getComparator() {
-        return comparator;
+    public ComparisonResult compareCollocateProfiles(
+            Set<String> seedNouns, double minLogDice, int maxPerNoun) throws IOException {
+        return comparator.compareCollocateProfiles(seedNouns, minLogDice, maxPerNoun);
     }
 
     /**
@@ -294,7 +301,7 @@ public class SemanticFieldExplorer {
      */
     public List<String> fetchExamples(String adjective, String noun, RelationConfig relationConfig, int maxExamples)
             throws IOException {
-        String bcqlQuery = relationConfig.getFullPattern(noun.toLowerCase(), adjective.toLowerCase());
+        String bcqlQuery = relationConfig.buildPattern(noun.toLowerCase(), adjective.toLowerCase());
 
         List<QueryResults.CollocateResult> results = executor.executeBcqlQuery(bcqlQuery, maxExamples);
 
@@ -330,7 +337,7 @@ public class SemanticFieldExplorer {
         Map<String, Integer> collocateSharedCount = new HashMap<>();
 
         for (String seed : seeds) {
-            String bcqlPattern = relationConfig.getFullPattern(seed);
+            String bcqlPattern = relationConfig.buildPattern(seed);
             List<QueryResults.WordSketchResult> collocates = executor.executeSurfacePattern(
                 seed, bcqlPattern,
                 minLogDice, topCollocates);

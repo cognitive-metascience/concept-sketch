@@ -1,0 +1,65 @@
+{
+  "batch": "logic_clarity",
+  "batch_index": 14,
+  "assessments": {"logic_clarity": 82.0},
+  "dimension_notes": {
+    "logic_clarity": {
+      "evidence": [
+        "GrammarConfigLoader.validatePositions() skips validation when pattern contains '{head}' or '{deprel}' placeholders — the skip condition is an OR of two string-contains checks, clearly expressed and correct.",
+        "BlackLabQueryExecutor.buildBcqlWithLemmaSubstitution() throws IllegalArgumentException for patterns not starting with '[' — clean guard clause, no dead code after the throw.",
+        "CollocateQueryHelper.scoreHits(): 'int limit = (int) Math.min((long) maxResults * OVER_FETCH_FACTOR, (long) records.size());' — the casts to long before multiply were added to fix a previous integer overflow; logic is correct and the comment explains intent.",
+        "ConlluConverter.convertConlluToWplChunks() has a nested try/finally with a try-with-resources trick to close the writer: 'try (BufferedWriter toClose = writer) { // close }' — this works but is an unusual pattern; the 'chunks++' increment happens outside the finally after the close, which is correct but the flow requires careful reading.",
+        "HttpApiUtils.requireMethod() returns boolean and callers must check the return; this is documented but the boolean could be missed — however the logic itself (equals check then 405 + return false) is correct and non-redundant.",
+        "SketchHandlers.handleSketchRequest(): path-based dispatch using array parts is clear; no identical branches.",
+        "ExplorationHandlers.handleSemanticFieldExploreMulti(): checks params.containsKey('nouns_per') BEFORE calling resolveExploreParams() which would parse 'nouns_per' anyway — the reject-first check is correct because it provides a specific 400 message before parsing happens.",
+        "SemanticFieldExplorer has no async code and no synchronous-wrapped-async issues.",
+        "LogDiceCalculator.compute(): dice <= 0 path returns 0.0 rather than the formula result — this is a deliberate edge-case guard with a comment, not an always-false condition.",
+        "RelationConfig.collocatePosGroup(): switch expression on PosGroup enum covers all cases and has a default throw — no dead branches."
+      ],
+      "impact_scope": "module",
+      "fix_scope": "single_edit",
+      "confidence": "high"
+    }
+  },
+  "dimension_judgment": {
+    "logic_clarity": {
+      "strengths": [
+        "Guard clauses are used consistently throughout handlers: early returns on null, empty string, or invalid state before the main logic.",
+        "No identical if/else branches or dead code after unconditional returns observed across the reviewed files.",
+        "Enum switch expressions use exhaustive coverage with throw-on-default rather than silent fall-through.",
+        "Integer overflow fix in scoreHits() is correct and the cast-to-long strategy is clear."
+      ],
+      "issue_character": "Issues are isolated to one unusual control-flow pattern in ConlluConverter (nested try/finally + try-with-resources writer close) that is correct but requires extra reading to verify — not a systemic logic problem.",
+      "score_rationale": "The logic is generally clear with consistent guard-clause style and no duplicate branches. The ConlluConverter writer-close pattern (try-with-resources inside finally, increment after) is the most confusing flow in the codebase; it is correct but a developer maintaining it must trace the control flow carefully. This, plus the boolean-return requireMethod() that relies on caller discipline, keeps the score around 82 rather than higher. There are no always-true/always-false conditions or dead code paths."
+    }
+  },
+  "issues": [
+    {
+      "dimension": "logic_clarity",
+      "identifier": "conllu_writer_close_unusual_pattern",
+      "summary": "ConlluConverter uses an unusual nested try-with-resources inside finally to close the writer, making control flow hard to verify",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/indexer/blacklab/ConlluConverter.java"
+      ],
+      "evidence": [
+        "finally block contains: 'try (BufferedWriter toClose = writer) { // close }' followed by 'chunks++;' outside the inner try",
+        "The chunks++ happens after the close, which is correct, but the empty try body and the outer-finally structure obscure why"
+      ],
+      "suggestion": "Replace the inner try-with-resources with a direct writer.close() call and wrap with a catch for IOException to log/rethrow, or refactor the entire method to use explicit chunk management with a helper that encapsulates open/close. This removes the unusual pattern and makes the 'chunks++' post-condition visible.",
+      "confidence": "medium",
+      "impact_scope": "local",
+      "fix_scope": "single_edit"
+    }
+  ],
+  "retrospective": {
+    "root_causes": [
+      "The ConlluConverter writer-close pattern likely evolved from an attempt to ensure the writer was closed before the chunk count incremented, but the idiom chosen is non-standard for Java."
+    ],
+    "likely_symptoms": [
+      "conllu_writer_close_unusual_pattern"
+    ],
+    "possible_false_positives": [
+      "requireMethod() boolean return — this is intentional design (handler-chain pattern), not a logic clarity issue"
+    ]
+  }
+}

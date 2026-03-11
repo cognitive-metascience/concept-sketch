@@ -1,9 +1,6 @@
 package pl.marcinmilkowski.word_sketch.model;
 
-import pl.marcinmilkowski.word_sketch.exploration.Edge;
-import pl.marcinmilkowski.word_sketch.exploration.RelationEdgeType;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -52,20 +49,6 @@ public class ComparisonResult {
             .filter(a -> a.presentInCount() == 1 && a.nounScores().getOrDefault(noun, 0.0) > 0)
             .sorted((x, y) -> Double.compare(y.maxLogDice(), x.maxLogDice()))
             .collect(Collectors.toList());
-    }
-
-    /** Build edges for visualization — performs list construction on every call. */
-    public List<Edge> buildEdges() {
-        List<Edge> edges = new ArrayList<>();
-        for (AdjectiveProfile adj : adjectives) {
-            for (Map.Entry<String, Double> entry : adj.nounScores().entrySet()) {
-                if (entry.getValue() > 0) {
-                    edges.add(new Edge(adj.adjective(), entry.getKey(),
-                        entry.getValue(), RelationEdgeType.MODIFIER));
-                }
-            }
-        }
-        return edges;
     }
 
     @Override

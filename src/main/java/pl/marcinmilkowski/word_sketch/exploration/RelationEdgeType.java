@@ -29,6 +29,12 @@ public enum RelationEdgeType {
         return label;
     }
 
+    /**
+     * Returns the stable label, identical to {@link #label()}.
+     * Overriding {@code Object.toString()} ensures that logging frameworks, template engines,
+     * and string concatenation emit the API-safe label (e.g. {@code "seed_adj"}) rather than
+     * the Java enum constant name (e.g. {@code "SEED_ADJ"}).
+     */
     @Override
     public String toString() {
         return label;

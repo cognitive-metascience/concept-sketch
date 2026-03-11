@@ -1,0 +1,66 @@
+{
+  "batch": "initialization_coupling",
+  "batch_index": 17,
+  "assessments": {"initialization_coupling": 85.0},
+  "dimension_notes": {
+    "initialization_coupling": {
+      "evidence": [
+        "HttpApiUtils.CORS_ALLOW_ORIGIN is a module-level static final computed at class-load time via System.getProperty(); this is a configuration read at import time — technically an initialization-coupling concern, but the value is a simple string with a safe default ('http://localhost:3000') and the system property is stable once the JVM starts.",
+        "Main.handleBlackLabServerCommand() wires up the full object graph: BlackLabQueryExecutor, GrammarConfig, SemanticFieldExplorer, SketchHandlers, ExplorationHandlers, WordSketchApiServer in one constructor chain — no ordering dependencies exist because construction is explicit and sequential.",
+        "WordSketchApiServer constructor takes QueryExecutor and GrammarConfig as constructor arguments — no global singleton dependencies.",
+        "BlackLabQueryExecutor constructor opens the BlackLab index file and creates CollocateQueryHelper — all state is instance-owned, not global.",
+        "SemanticFieldExplorer and CollocateProfileComparator store a QueryExecutor reference passed via constructor — no static initialization side effects.",
+        "GrammarConfigLoader is stateless (all static methods, private constructor) — loading is triggered explicitly by callers, never at class load time.",
+        "No module-level DB connections, file I/O, or network calls at class scope (except the CORS property read, which is safe).",
+        "No circular init dependencies observed.",
+        "LongIntHashMap initializes its arrays in the constructor, not statically.",
+        "The AtomicReference<WordSketchApiServer> serverHolder in Main is used specifically to avoid a race between shutdown-hook registration and server construction — this is a correct pattern for shutdown-hook initialization ordering."
+      ],
+      "impact_scope": "local",
+      "fix_scope": "single_edit",
+      "confidence": "high",
+      "issues_preventing_higher_score": "The only concern is HttpApiUtils.CORS_ALLOW_ORIGIN being read at class-load time, which makes it impossible to set the system property after the class is loaded (e.g., in test setup). While this is documented and provides a safe default, it is a minor initialization-coupling issue."
+    }
+  },
+  "dimension_judgment": {
+    "initialization_coupling": {
+      "strengths": [
+        "The entire object graph is constructed explicitly in Main.handleBlackLabServerCommand() with no hidden singletons or order-dependent module-level state.",
+        "GrammarConfigLoader is fully stateless and side-effect-free — loading is always explicit.",
+        "Constructor injection is used throughout: WordSketchApiServer, SketchHandlers, ExplorationHandlers, SemanticFieldExplorer all receive their dependencies via constructor.",
+        "The AtomicReference shutdown-hook pattern correctly handles the ordering between hook registration and server construction."
+      ],
+      "issue_character": "The only initialization-coupling issue is the single System.getProperty() call at class-load time in HttpApiUtils, which is a minor but real constraint on test flexibility.",
+      "score_rationale": "This codebase scores well above the 80 anchor for initialization coupling. The dependency graph is explicit, constructor-injected, and has no hidden singletons or import-time side effects beyond the documented CORS property read. The CORS_ALLOW_ORIGIN static final is the only thing preventing a higher score: it makes the CORS origin impossible to change after class loading, which affects test isolation. This is a small, localized concern."
+    }
+  },
+  "issues": [
+    {
+      "dimension": "initialization_coupling",
+      "identifier": "cors_static_init_time_read",
+      "summary": "HttpApiUtils.CORS_ALLOW_ORIGIN is read at class-load time via System.getProperty(), preventing test-time override",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/api/HttpApiUtils.java"
+      ],
+      "evidence": [
+        "static final String CORS_ALLOW_ORIGIN = System.getProperty(\"cors.allow.origin\", \"http://localhost:3000\"); — evaluated once at class load",
+        "Tests that want to set a different CORS origin cannot do so after the class has been loaded for the first time in the JVM"
+      ],
+      "suggestion": "Either (a) convert CORS_ALLOW_ORIGIN to a dynamic getter that reads the system property on each request (minimal change, tiny perf cost), or (b) inject the CORS origin into WordSketchApiServer and thread it into HttpApiUtils calls. Option (b) aligns with the constructor-injection pattern already used elsewhere. Either way, add a test that verifies the CORS header value.",
+      "confidence": "medium",
+      "impact_scope": "local",
+      "fix_scope": "single_edit"
+    }
+  ],
+  "retrospective": {
+    "root_causes": [
+      "The CORS system-property approach was added as a quick configurable override; it was not designed with test isolation in mind."
+    ],
+    "likely_symptoms": [
+      "cors_static_init_time_read"
+    ],
+    "possible_false_positives": [
+      "AtomicReference<WordSketchApiServer> in Main — this is correct shutdown-hook initialization ordering, not a singleton concern"
+    ]
+  }
+}

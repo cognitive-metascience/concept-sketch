@@ -1,0 +1,88 @@
+{
+  "batch": "error_consistency",
+  "batch_index": 4,
+  "assessments": {
+    "error_consistency": 67.0
+  },
+  "dimension_notes": {
+    "error_consistency": {
+      "evidence": [
+        "Query layer uses IOException consistently as the single checked exception type for index-access failures: findCollocations, executeSurfacePattern, executeBcqlQuery, executeCqlQuery, getTotalFrequency all declare 'throws IOException'",
+        "BlackLabQueryExecutor constructor wraps all open-index failures: 'throw new IOException(\"Failed to open index: \" + e.getMessage(), e)' — context preserved with cause chained",
+        "CollocateQueryHelper.executeCollocateSearch wraps InvalidQuery: 'throw new IOException(\"BCQL parse error: \" + e.getMessage(), e)' — consistent wrapping pattern",
+        "ExplorationHandlers separates IOException (HTTP 500) from IllegalArgumentException (HTTP 400) at the API boundary — correct semantic classification after recent error-handling fix",
+        "HttpApiUtils.parseQueryParams swallows URL decode failures: 'catch (Exception e) { logger.warn(...) }' — the failing key-value pair is silently dropped; caller receives an incomplete parameter map with no indication",
+        "ExplorationHandlers uses null-return as an error-signaling mechanism alongside exception throwing: requireParam/resolveRelationConfig/resolveExploreParams return null and send the HTTP error internally, then callers check 'if (x == null) return' — this is a second error channel running parallel to exceptions",
+        "SemanticFieldExplorer.exploreByPattern catches nothing; throws IOException and IllegalArgumentException — consistent with the query layer contract",
+        "Main.java catches the generic Exception at the top-level switch: 'catch (Exception e) { logger.error(\"Application error\", e); }' — acceptable as a last-resort handler at the CLI entry point",
+        "GrammarConfigLoader throws IOException with specific messages for each validation failure (missing version, missing id, duplicate id, etc.) — good context preservation throughout the parsing path",
+        "CollocateQueryHelper.buildAndRankCollocates calls getTotalFrequency per collocate in a loop, each potentially throwing IOException — no batching or partial-failure handling; one failed frequency lookup aborts the entire ranking"
+      ],
+      "impact_scope": "subsystem",
+      "fix_scope": "multi_file_refactor",
+      "confidence": "high"
+    }
+  },
+  "dimension_judgment": {
+    "error_consistency": {
+      "strengths": [
+        "IOException is used uniformly as the checked boundary type across the entire query layer — no mix of checked/unchecked or multiple competing exception types",
+        "All BlackLab exception wrapping preserves the original cause via chained exceptions — context is not lost at the library boundary",
+        "API handlers correctly distinguish 400 (bad input) from 500 (execution failure) with separate catch blocks — the recent fix for HTTP error misclassification is reflected",
+        "GrammarConfigLoader uses targeted IOException messages that identify the specific config error by field/index — actionable error context for operators"
+      ],
+      "issue_character": "Two structural inconsistencies: a null-return error channel in handlers that runs parallel to the exception channel used elsewhere, and a silent swallow of URL-decode failures in parseQueryParams; both are contained to the API layer but affect predictability.",
+      "score_rationale": "The query and config layers have strong, consistent error handling: IOException as the single checked type, cause-chained wrapping at library boundaries, and specific messages throughout. The API layer introduces two inconsistencies that pull the score down: parseQueryParams silently drops malformed query parameters (callers can't distinguish 'param missing' from 'param malformed'), and the null-return pattern used by requireParam/resolveRelationConfig/resolveExploreParams runs as a parallel non-exception error channel alongside the IOException approach used everywhere else. Neither is catastrophic, but they create predictability debt for developers extending the handler layer."
+    }
+  },
+  "issues": [
+    {
+      "dimension": "error_consistency",
+      "identifier": "query_param_silent_swallow",
+      "summary": "HttpApiUtils.parseQueryParams silently drops malformed URL-encoded parameters, returning an incomplete map with no indication of the parse failure",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/api/HttpApiUtils.java"
+      ],
+      "evidence": [
+        "parseQueryParams: 'catch (Exception e) { logger.warn(\"Failed to decode query parameter '{}': {}\", pair, e.getMessage(), e); }' — loop continues after the warning",
+        "The resulting params map silently omits the malformed key; requireParam will then report 'Missing required parameter' rather than 'Malformed parameter value', obscuring the real cause",
+        "All four exploration handlers call parseBaseExploreRequest which delegates to this method without any way to detect partial parse failures"
+      ],
+      "suggestion": "When a parameter decode fails, either include the raw (un-decoded) value in the map under its raw key, or propagate a warning to the caller via a separate return type (e.g. a record containing the params map and a list of decode errors). At minimum, log the full pair and consider returning an error response if the failing key matches a required parameter.",
+      "confidence": "high",
+      "impact_scope": "module",
+      "fix_scope": "single_edit"
+    },
+    {
+      "dimension": "error_consistency",
+      "identifier": "null_return_error_channel",
+      "summary": "Handler helper methods (requireParam, resolveRelationConfig, resolveExploreParams) signal errors via null return plus side-effectful HTTP response, creating a dual error channel alongside the IOException pattern used elsewhere",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/api/HttpApiUtils.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/api/ExplorationHandlers.java"
+      ],
+      "evidence": [
+        "HttpApiUtils.requireParam: returns @Nullable String; 'if (v.isEmpty()) { sendError(exchange, 400, ...); return null; }'",
+        "ExplorationHandlers: 'String seed = HttpApiUtils.requireParam(...); if (seed == null) return;' — null-return check required at every call site",
+        "resolveRelationConfig and resolveExploreParams follow the same side-effectful null-return pattern",
+        "The query layer exclusively uses exceptions; this null-return style is an inconsistent error-propagation mechanism confined to the API layer"
+      ],
+      "suggestion": "Consider extracting a sealed result type or checked exception for handler-level validation failures, so the error channel is uniform. If null-return is kept for brevity, at minimum document the contract clearly at the method level and ensure all handlers consistently follow the 'if (x == null) return' pattern (currently they do, but the pattern is fragile for new contributors).",
+      "confidence": "medium",
+      "impact_scope": "module",
+      "fix_scope": "multi_file_refactor"
+    }
+  ],
+  "retrospective": {
+    "root_causes": [
+      "The null-return pattern in handlers was likely chosen to avoid checked exceptions at the HTTP layer, but the resulting dual-channel design was not standardised with a documented pattern",
+      "parseQueryParams uses a broad catch to tolerate malformed client input, but the silent-drop semantics were not reconsidered when requireParam was introduced as the downstream caller"
+    ],
+    "likely_symptoms": [
+      "query_param_silent_swallow can cause misleading 'Missing required parameter' errors when the actual problem is URL encoding"
+    ],
+    "possible_false_positives": [
+      "Main.java top-level Exception catch is an intentional last-resort handler — not an error_consistency defect"
+    ]
+  }
+}

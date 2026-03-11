@@ -169,7 +169,7 @@ class ExplorationHandlers {
 
         ComparisonResult result;
         try {
-            result = semanticFieldExplorer.getComparator().compareCollocateProfiles(seeds, minLogDice, topCollocates);
+            result = semanticFieldExplorer.compareCollocateProfiles(seeds, minLogDice, topCollocates);
         } catch (IOException e) {
             HttpApiUtils.sendError(exchange, 500, "Comparison failed: " + e.getMessage());
             return;
@@ -198,7 +198,7 @@ class ExplorationHandlers {
         response.put("partially_shared_count", result.getPartiallyShared().size());
         response.put("specific_count", result.getSpecific().size());
 
-        List<Edge> edges = result.buildEdges();
+        List<Edge> edges = ExploreResponseBuilder.buildEdges(result);
         response.put("edges", edges.stream().map(Edge::toMap).toList());
         response.put("edges_count", edges.size());
 
@@ -287,7 +287,7 @@ class ExplorationHandlers {
         response.put("core_collocates", coreCollocs);
         response.put("core_collocates_count", coreCollocs.size());
 
-        List<Edge> edges = result.buildEdges();
+        List<Edge> edges = ExploreResponseBuilder.buildEdges(result);
         response.put("edges", edges.stream().map(Edge::toMap).toList());
     }
 

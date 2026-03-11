@@ -1,0 +1,88 @@
+{
+  "batch": "low_level_elegance",
+  "batch_index": 8,
+  "assessments": {
+    "low_level_elegance": 68.0
+  },
+  "dimension_notes": {
+    "low_level_elegance": {
+      "evidence": [
+        "SemanticFieldExplorer.exploreByPattern decomposes exploration into four private phase methods (fetchSeedCollocates, buildCollocateToNounsMap, filterCandidates, identifyCoreCollocates) — each phase is focused and bounded, with the orchestrating method reading as a linear pipeline",
+        "CollocateQueryHelper.executeBcqlQuery similarly divides into three phases (collectHits, scoreHits, ranking stream) with explicit comments marking each phase boundary",
+        "Guard clauses are used consistently in BlackLabQueryExecutor: null/empty lemma checks at the top of all public methods return early before any query construction",
+        "collectFrequenciesFromGroups in BlackLabQueryExecutor extracts a loop+map pattern shared across three callers with a Function<String,String> extractor parameter — correct extraction at the right level of abstraction",
+        "ExplorationHandlers uses consistent guard-clause pattern: 'String x = requireParam(...); if (x == null) return;' repeated at each validation point — direct and intention-revealing",
+        "buildExploreResponseBody in ExplorationHandlers is a 40+ line method assembling three list structures (seedCollocs, nouns, coreCollocs) via imperative forEach loops and Map.put() chains — the method does too many things for its level of extraction",
+        "formatAdjectiveProfile is 25 lines of Map.put() calls with an embedded switch-equivalent for the category field — would be clearer as a record with JSON serialization, or at least split into field-group helpers",
+        "Main.java mixes System.out.println for banner output and user-facing messages with logger calls for operational events — the split is reasonable (System.out for CLI output, logger for operational) but not visually consistent and could confuse developers new to the class",
+        "handleBlackLabIndexCommand in Main.java (approximately 60 lines) combines argument parsing, temp-directory setup, shutdown hook registration, format registration, and indexer invocation — several of these steps could be extracted into named methods for clarity",
+        "identifyCoreCollocates in SemanticFieldExplorer builds three maps in a single loop (collocFrequency, collocTotalScore) then iterates seedCollocScores separately — the data flow is correct but the method's two-phase structure is not marked or extracted, unlike the other phase methods",
+        "CqlUtils.splitCqlTokens uses a hand-written bracket-depth scanner with inline string-scanning logic — the control flow is non-trivial but the algorithm is correct and the method's scope is well-bounded",
+        "LongIntHashMap is precise and well-structured: linear probing, EMPTY_KEY sentinel documented, rehash boundary validated, nextPowerOfTwo utility extracted"
+      ],
+      "impact_scope": "module",
+      "fix_scope": "multi_file_refactor",
+      "confidence": "high"
+    }
+  },
+  "dimension_judgment": {
+    "low_level_elegance": {
+      "strengths": [
+        "Four-phase decomposition in SemanticFieldExplorer.exploreByPattern with named private methods for each phase makes the algorithm traceable at a glance",
+        "Guard clauses at the top of BlackLabQueryExecutor methods eliminate nesting — control flow is direct and branches are necessary",
+        "collectFrequenciesFromGroups extraction with a Function parameter correctly unifies three near-identical loops without over-abstracting",
+        "LongIntHashMap implementation is precise: sentinel is documented, rehash threshold is enforced, the API matches exactly what callers need"
+      ],
+      "issue_character": "A few methods in the API layer (buildExploreResponseBody, formatAdjectiveProfile, handleBlackLabIndexCommand) are monolithic assemblers that do several things in sequence without sub-extraction, while the algorithmic layer (SemanticFieldExplorer, CollocateQueryHelper) is well-decomposed — the elegance is uneven across layers.",
+      "score_rationale": "The core algorithmic code (exploration phases, collocate ranking pipeline, CQL utilities) is clean, well-decomposed, and direct. The API response-building layer is noticeably less refined: buildExploreResponseBody assembles three different list structures and their counts in one 40-line method, formatAdjectiveProfile packs a classification judgment and 9 map entries into 25 imperative lines, and handleBlackLabIndexCommand mixes argument parsing and multi-step orchestration without sub-extraction. The asymmetry between layers places this at 'solid in the algorithmic core, significant drag in the API layer'."
+    }
+  },
+  "issues": [
+    {
+      "dimension": "low_level_elegance",
+      "identifier": "build_explore_response_body_monolith",
+      "summary": "buildExploreResponseBody assembles three distinct data structures (seed collocates, discovered nouns, core collocates) in a single 40+ line method without sub-extraction",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/api/ExplorationHandlers.java"
+      ],
+      "evidence": [
+        "buildExploreResponseBody iterates result.getSeedCollocates() to build seedCollocs list, then result.getDiscoveredNouns() to build nouns list, then result.getCoreCollocates() to build coreCollocs list — three independent list-building loops in one method",
+        "Each loop has its own local variable, its own Map.put() chains, and its own response.put() call",
+        "The edges section is appended at the end with a stream-to-list pipeline"
+      ],
+      "suggestion": "Extract three private methods: buildSeedCollocateList(ExplorationResult), buildDiscoveredNounList(ExplorationResult), buildCoreCollocateList(ExplorationResult). Each returns a List<Map<String,Object>>. buildExploreResponseBody becomes four response.put() calls that read as a structure declaration.",
+      "confidence": "high",
+      "impact_scope": "local",
+      "fix_scope": "single_edit"
+    },
+    {
+      "dimension": "low_level_elegance",
+      "identifier": "handle_index_command_mixed_concerns",
+      "summary": "handleBlackLabIndexCommand in Main.java mixes argument parsing, temp-directory lifecycle management, format registration, and multi-step indexer orchestration in one 60-line method",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/Main.java"
+      ],
+      "evidence": [
+        "The method: parses --input/--output/--format-dir args in a for-loop, creates temp directory, registers shutdown hook for cleanup, calls ConlluConverter, calls DocumentFormats.addConfigFormatsInDirectories, creates and uses BlackLabConllUIndexer",
+        "Step descriptions are embedded as System.out.println comments rather than being encoded as extracted method names",
+        "The shutdown hook lambda captures wplTempDir, creating a non-obvious closure side effect in the middle of linear flow"
+      ],
+      "suggestion": "Extract at minimum: convertCorpus(Path input, Path outputDir) and registerTempDirCleanup(Path dir) as named helpers. This makes the three-step orchestration (convert, register format, index) legible as a sequence of named operations rather than an inline script.",
+      "confidence": "medium",
+      "impact_scope": "local",
+      "fix_scope": "single_edit"
+    }
+  ],
+  "retrospective": {
+    "root_causes": [
+      "Response assembly methods grew organically as new fields were added to the API response; no refactoring was applied after they exceeded a single logical concern",
+      "Main.java command handlers were written as flat scripts, which is common for CLI entry points but does not scale well as each command's orchestration grows"
+    ],
+    "likely_symptoms": [
+      "buildExploreResponseBody is a symptom of the broader response_map_inline_assembly issue identified in abstraction_fitness"
+    ],
+    "possible_false_positives": [
+      "CqlUtils.splitCqlTokens' hand-written scanner is non-trivial but not a low_level_elegance defect — it is correctly scoped and the algorithm is inherently stateful"
+    ]
+  }
+}

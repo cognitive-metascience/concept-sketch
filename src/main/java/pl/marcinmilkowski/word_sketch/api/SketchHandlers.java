@@ -216,7 +216,7 @@ class SketchHandlers {
 
         List<QueryResults.WordSketchResult> results;
         try {
-            String fullPattern = rel.getFullPattern(lemma);
+            String fullPattern = rel.buildPattern(lemma);
             results = executor.executeSurfacePattern(
                 lemma, fullPattern,
                 0.0, 50);
@@ -254,7 +254,7 @@ class SketchHandlers {
      */
     private ExecutedSketch executeAndFormatCollocations(String lemma,
             pl.marcinmilkowski.word_sketch.config.RelationConfig rel) throws IOException {
-        String fullPattern = rel.getFullPattern(lemma);
+        String fullPattern = rel.buildPattern(lemma);
         List<QueryResults.WordSketchResult> results = executor.executeSurfacePattern(lemma, fullPattern, 0.0, 20);
         if (results.isEmpty()) return null;
         List<Map<String, Object>> collocations = new ArrayList<>();
@@ -297,7 +297,7 @@ class SketchHandlers {
 
     /**
      * Handle concordance examples.
-     * GET /api/concordance/examples?word1=theory&word2=good&relation=noun_adj_predicates&limit=10
+     * GET /api/concordance/examples?word1=theory&word2=good&relation=noun_adj_predicates&top=10
      * Uses BCQL pattern from relations.json for the specified relation.
      */
     void handleConcordanceExamples(HttpExchange exchange) throws IOException {
@@ -310,18 +310,18 @@ class SketchHandlers {
         if (adjective == null) return;
         String relation = params.getOrDefault("relation", "noun_adj_predicates");
 
-        int limit;
+        int top;
         try {
-            limit = Integer.parseInt(params.getOrDefault("limit", "10"));
+            top = Integer.parseInt(params.getOrDefault("top", "10"));
         } catch (NumberFormatException e) {
-            HttpApiUtils.sendError(exchange, 400, "Invalid numeric parameter: limit");
+            HttpApiUtils.sendError(exchange, 400, "Invalid numeric parameter: top");
             return;
         }
 
         String bcqlQuery = null;
         var rel = grammarConfig.getRelation(relation);
         if (rel.isPresent()) {
-            String patternWithHead = rel.get().getFullPattern(noun);
+            String patternWithHead = rel.get().buildPattern(noun);
             bcqlQuery = CqlUtils.substituteAtPosition(patternWithHead, adjective, rel.get().collocatePosition());
         }
 
@@ -333,7 +333,7 @@ class SketchHandlers {
             logger.warn("Relation '{}' not resolved to a BCQL pattern; using proximity fallback: {}", relation, bcqlQuery);
         }
 
-        List<QueryResults.CollocateResult> results = executor.executeBcqlQuery(bcqlQuery, limit);
+        List<QueryResults.CollocateResult> results = executor.executeBcqlQuery(bcqlQuery, top);
 
         Map<String, Object> response = new HashMap<>();
         response.put("status", "ok");
@@ -342,7 +342,7 @@ class SketchHandlers {
         response.put("relation", relation);
         response.put("bcql", bcqlQuery);
         response.put("fallback", fallback);
-        response.put("limit_requested", limit);
+        response.put("top_requested", top);
         response.put("total_results", results.size());
 
         List<Map<String, Object>> examplesList = new ArrayList<>();

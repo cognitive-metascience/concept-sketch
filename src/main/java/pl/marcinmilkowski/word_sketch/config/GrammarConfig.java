@@ -43,7 +43,7 @@ public final class GrammarConfig {
         return version;
     }
 
-    public Path getConfigPath() {
+    public @org.jspecify.annotations.Nullable Path getConfigPath() {
         return configPath;
     }
 

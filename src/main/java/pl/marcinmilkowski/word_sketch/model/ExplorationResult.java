@@ -1,9 +1,6 @@
 package pl.marcinmilkowski.word_sketch.model;
 
-import pl.marcinmilkowski.word_sketch.exploration.Edge;
-import pl.marcinmilkowski.word_sketch.exploration.RelationEdgeType;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -50,25 +47,6 @@ public class ExplorationResult {
         return discoveredNouns.stream()
             .filter(n -> n.sharedCount() >= minShared)
             .collect(Collectors.toList());
-    }
-
-    /** Build edges for visualization — performs list construction on every call. */
-    public List<Edge> buildEdges() {
-        List<Edge> edges = new ArrayList<>();
-
-        // Edges from seed to its collocates
-        for (Map.Entry<String, Double> colloc : seedCollocates.entrySet()) {
-            edges.add(new Edge(seed, colloc.getKey(), colloc.getValue(), RelationEdgeType.SEED_ADJ));
-        }
-
-        // Edges from discovered nouns to shared collocates
-        for (DiscoveredNoun noun : discoveredNouns) {
-            for (Map.Entry<String, Double> colloc : noun.sharedCollocates().entrySet()) {
-                edges.add(new Edge(noun.noun(), colloc.getKey(), colloc.getValue(), RelationEdgeType.DISCOVERED_ADJ));
-            }
-        }
-
-        return edges;
     }
 
     @Override

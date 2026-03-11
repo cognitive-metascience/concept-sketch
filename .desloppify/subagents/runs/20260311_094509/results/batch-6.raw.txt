@@ -1,0 +1,132 @@
+{
+  "batch": "abstraction_fitness",
+  "batch_index": 6,
+  "assessments": {
+    "abstraction_fitness": 64.0
+  },
+  "dimension_notes": {
+    "abstraction_fitness": {
+      "evidence": [
+        "QueryExecutor interface has 7 methods; BlackLabQueryExecutor implements all 7 and is the only implementation — a single-implementation interface that does not reduce duplication or isolate external volatility beyond testability",
+        "SemanticFieldExplorer.getComparator() is a pure delegation accessor: callers must chain explorer.getComparator().compareCollocateProfiles(...) — the indirection buys nothing; the comparator is an internal implementation detail",
+        "RelationConfig.substituteHeadword is a private 1-line method whose entire body is 'return CqlUtils.substituteAtPosition(pattern, headword, headPosition)' — no added behavior, policy, or translation",
+        "ExploreOptions declares 5 fields including includeExamples which is never read in SemanticFieldExplorer or any production code path — the abstraction promises a configurable behavior (example inclusion) that does not exist",
+        "buildEdges() on ExplorationResult and ComparisonResult — graph-edge construction logic embedded in data DTOs; callers must call result.buildEdges() to get a list created fresh on every call, with no caching or lazy semantics",
+        "ExplorationHandlers.buildExploreResponseBody and buildBaseExploreResponse manually assemble Map<String,Object> structures for every response field — the HTTP response shape is defined implicitly through scattered .put() calls rather than through a typed DTO or serializer abstraction",
+        "CollocateQueryHelper is package-private and tightly coupled to BlackLabIndex — it is an implementation-detail helper that correctly does not expose itself beyond its package",
+        "GrammarConfigLoader is a static-method factory producing GrammarConfig — clean separation of loading from data, abstraction pays for itself by isolating file-IO from all consumers",
+        "CqlUtils.splitCqlTokens, substituteAtPosition, mergeLemmaConstraint, escapeForRegex — each primitive method is self-contained and reused across GrammarConfigLoader, RelationConfig, and BlackLabQueryExecutor; the utility abstraction earns its keep",
+        "HttpApiUtils static methods (sendJsonResponse, sendError, sendOptionsResponse, sendBinaryResponse) are used by both SketchHandlers and ExplorationHandlers — the abstraction consolidates CORS and content-type boilerplate and pays for itself"
+      ],
+      "impact_scope": "subsystem",
+      "fix_scope": "multi_file_refactor",
+      "confidence": "high",
+      "sub_axes": {
+        "abstraction_leverage": 62.0,
+        "indirection_cost": 55.0,
+        "interface_honesty": 60.0,
+        "delegation_density": 58.0,
+        "definition_directness": 70.0,
+        "type_discipline": 58.0
+      }
+    }
+  },
+  "dimension_judgment": {
+    "abstraction_fitness": {
+      "strengths": [
+        "CqlUtils provides well-leveraged primitives: splitCqlTokens, substituteAtPosition, and escapeForRegex are each used in 2-3 callers and eliminate real duplication",
+        "GrammarConfigLoader/GrammarConfig separation cleanly isolates file-IO from all data consumers — clear abstraction pay-off",
+        "HttpApiUtils consolidates CORS-header and content-type boilerplate for all handlers with zero redundancy — the helper earns its existence",
+        "CollocateQueryHelper is package-private, preventing abstraction leakage to unintended consumers"
+      ],
+      "issue_character": "A cluster of low-leverage indirections: a single-implementation interface (QueryExecutor), a pass-through accessor (getComparator), a 1-line wrapper method (substituteHeadword), a dead field in an options record (includeExamples), and graph-construction logic embedded in data DTOs — each individually minor but together indicating a pattern of adding abstraction layers without verifying they pay off.",
+      "score_rationale": "The codebase has several genuine high-leverage abstractions (CqlUtils, GrammarConfigLoader/Config split, HttpApiUtils) that justify their existence. However it also carries a recurring pattern of thin or unearned indirections: getComparator() exposes an internal object; substituteHeadword delegates to CqlUtils with no additional semantics; QueryExecutor has one concrete implementation; ExploreOptions carries a field that does nothing; and HTTP response bodies are assembled via scattered Map.put() calls rather than typed structures. At the 'significant drag' threshold, this sits above 60 because the core utilities are fit, but the unearned indirections are numerous enough to affect maintainability."
+    }
+  },
+  "issues": [
+    {
+      "dimension": "abstraction_fitness",
+      "identifier": "explore_options_dead_field",
+      "summary": "ExploreOptions.includeExamples field is declared and passed at every call site but never read, creating a false abstraction promise",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/exploration/ExploreOptions.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/api/ExplorationHandlers.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/exploration/SemanticFieldExplorer.java"
+      ],
+      "evidence": [
+        "ExploreOptions record: 'boolean includeExamples' as the fifth component",
+        "ExplorationHandlers: 'new ExploreOptions(topCollocates, nounsPerSeed, minLogDice, minShared, false)' — hardcoded false at every construction site",
+        "SemanticFieldExplorer.exploreByPattern: accepts ExploreOptions opts but never calls opts.includeExamples()"
+      ],
+      "suggestion": "Remove includeExamples from ExploreOptions until the feature is implemented. If the intent is to add it later, add a TODO comment in ExploreOptions explaining the planned behavior and the API changes needed to activate it.",
+      "confidence": "high",
+      "impact_scope": "local",
+      "fix_scope": "single_edit"
+    },
+    {
+      "dimension": "abstraction_fitness",
+      "identifier": "substitute_headword_passthrough",
+      "summary": "RelationConfig.substituteHeadword is a private 1-line method with no added behavior, policy, or translation — a textbook pass-through wrapper",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/config/RelationConfig.java"
+      ],
+      "evidence": [
+        "substituteHeadword: 'private static String substituteHeadword(String pattern, String headword, int headPosition) { return CqlUtils.substituteAtPosition(pattern, headword, headPosition); }'",
+        "Called only from getFullPattern(String) — a single caller with identical parameter mapping",
+        "No precondition check, no null guard, no logging, no semantic enrichment"
+      ],
+      "suggestion": "Remove substituteHeadword and inline the CqlUtils.substituteAtPosition call directly in getFullPattern. The method adds navigational overhead without adding clarity.",
+      "confidence": "high",
+      "impact_scope": "local",
+      "fix_scope": "single_edit"
+    },
+    {
+      "dimension": "abstraction_fitness",
+      "identifier": "get_comparator_delegation_leak",
+      "summary": "SemanticFieldExplorer.getComparator() exposes an internal collaborator, requiring callers to chain through two objects to reach a single semantic operation",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/exploration/SemanticFieldExplorer.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/api/ExplorationHandlers.java"
+      ],
+      "evidence": [
+        "SemanticFieldExplorer: 'public CollocateProfileComparator getComparator() { return comparator; }' — pure field exposure",
+        "ExplorationHandlers: 'semanticFieldExplorer.getComparator().compareCollocateProfiles(seeds, minLogDice, topCollocates)' — two-hop chain",
+        "CollocateProfileComparator is a private implementation detail of SemanticFieldExplorer, not a separately managed service"
+      ],
+      "suggestion": "Add a compareCollocateProfiles delegation method on SemanticFieldExplorer and remove getComparator(). This restores the explorer as a single cohesive service for all exploration operations, hiding the internal decomposition.",
+      "confidence": "high",
+      "impact_scope": "module",
+      "fix_scope": "multi_file_refactor"
+    },
+    {
+      "dimension": "abstraction_fitness",
+      "identifier": "response_map_inline_assembly",
+      "summary": "HTTP response bodies in ExplorationHandlers are assembled through scattered Map.put() chains rather than typed response objects, leaking serialization concerns into handler logic",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/api/ExplorationHandlers.java"
+      ],
+      "evidence": [
+        "buildExploreResponseBody assembles 8+ fields via seedCollocs.add/nouns.add/coreCollocs.add/.put() loops — the response structure is implicit",
+        "formatAdjectiveProfile builds a 9-field map with explicit string keys and hand-rounded doubles — any schema change requires updating both this method and client code",
+        "No DTO or record models the explore/comparison response shapes; the contract lives entirely in string literals"
+      ],
+      "suggestion": "Define response record types (e.g. ExploreResponse, AdjectiveProfileResponse) and use fastjson2's direct serialization. This makes the API contract visible in code and eliminates the scattered .put() pattern.",
+      "confidence": "medium",
+      "impact_scope": "module",
+      "fix_scope": "multi_file_refactor"
+    }
+  ],
+  "retrospective": {
+    "root_causes": [
+      "QueryExecutor interface and getComparator() accessor reflect a pattern of adding indirection for anticipated future flexibility that was not realized — the codebase has one concrete executor and one comparator consumer",
+      "ExploreOptions.includeExamples and substituteHeadword are artefacts of incremental development where placeholder or convenience additions were not cleaned up",
+      "The Map<String,Object> response assembly pattern is a pragmatic choice that trades type safety for serialization flexibility, common in small codebases but accumulates as the API surface grows"
+    ],
+    "likely_symptoms": [
+      "explore_options_dead_field, substitute_headword_passthrough, and get_comparator_delegation_leak are symptom-level expressions of a single root cause: adding abstraction before verifying pay-off"
+    ],
+    "possible_false_positives": [
+      "QueryExecutor as a single-implementation interface may be justified by testability (mock injection in tests) — check test code before removing the interface"
+    ]
+  }
+}

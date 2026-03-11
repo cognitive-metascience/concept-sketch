@@ -1,0 +1,87 @@
+{
+  "batch": "naming_quality",
+  "batch_index": 5,
+  "assessments": {
+    "naming_quality": 74.0
+  },
+  "dimension_notes": {
+    "naming_quality": {
+      "evidence": [
+        "QueryExecutor interface method names precisely differentiate four distinct execution modes: findCollocations (headword+CQL), executeCqlQuery (general concordance), executeBcqlQuery (scored BCQL), executeSurfacePattern (labeled-position sketch) — each name communicates both mechanism and result type",
+        "collectFrequenciesFromGroups, buildAndRankCollocates, executeCollocateSearch, scoreHits, collectHits in CollocateQueryHelper — all convey operation and data flow without generic verbs",
+        "requireParam, sendJsonResponse, sendError, parseQueryParams, sendOptionsResponse in HttpApiUtils — clear imperative names matching exactly what each method does",
+        "exploreByPattern, exploreMultiSeed, fetchExamples, compareCollocateProfiles — domain-vocabulary names that read as domain actions",
+        "resolveRelationConfig, resolveRelationAlias — the 'resolve' verb accurately signals a lookup-or-null operation, consistent across both uses",
+        "RelationConfig.getFullPattern(headword) performs pattern generation (CqlUtils.substituteAtPosition) but is named as a getter — 'buildPattern' or 'substituteHeadword' would better signal mutation/construction",
+        "RelationConfig.substituteHeadword is a private 1-line wrapper for CqlUtils.substituteAtPosition with no additional meaning — both the outer and inner method name describe the same operation redundantly",
+        "posGroupForPrefix in RelationConfig — 'forPrefix' is ambiguous; 'fromConstraint' or 'detectPosGroupIn' would better communicate intent (it scans a CQL constraint string to classify POS)",
+        "ExploreOptions.includeExamples — clearly named but never used in production code; the name promises a feature that is not implemented",
+        "buildBaseExploreResponse, buildExploreResponseBody, formatAdjectiveProfile, buildRelationResponse — the build/format prefix distinction between these four is inconsistent: buildBaseExploreResponse and buildExploreResponseBody are both constructing response maps; format implies display transformation whereas build implies assembly; the vocabulary should be unified",
+        "CORS_ALLOW_ORIGIN in HttpApiUtils — constant naming is SCREAMING_SNAKE_CASE as expected; the name correctly describes what it is",
+        "findLabelTokenIndex (renamed from findLabelPosition in naming-minor fix) — the new name is more precise about returning a token index rather than a character position"
+      ],
+      "impact_scope": "local",
+      "fix_scope": "single_edit",
+      "confidence": "high",
+      "issues_preventing_higher_score": "getFullPattern implies retrieval but the method performs substitution/construction; posGroupForPrefix is ambiguous; build/format naming inconsistency in ExplorationHandlers response-assembly methods."
+    }
+  },
+  "dimension_judgment": {
+    "naming_quality": {
+      "strengths": [
+        "QueryExecutor's four method names precisely distinguish four different execution semantics, preventing the vocabulary collapse that commonly occurs when similar-but-distinct operations exist",
+        "Domain-vocabulary names throughout: exploreByPattern, exploreMultiSeed, compareCollocateProfiles, fetchExamples — these read as domain sentences",
+        "The 'handle*' prefix convention applied consistently to all HTTP handler methods makes the API entry points immediately identifiable",
+        "findLabelTokenIndex correctly renamed from findLabelPosition, and LEMMA_ATTR_RELAXED renamed from LEMMA_ATTR_ANY — recent improvements show active naming hygiene"
+      ],
+      "issue_character": "A small cluster of naming mismatches — one method that performs construction but is named as a getter, one ambiguous 'forPrefix' helper name, and an inconsistent build/format vocabulary in a single class — rather than any systemic pattern.",
+      "score_rationale": "Naming quality across the codebase is above average: domain terms are used accurately, the most-trafficked interfaces have precise discriminating names, and recent naming fixes demonstrate intentional improvement. The defects are narrow: getFullPattern() misrepresents a construction operation as a retrieval, posGroupForPrefix communicates neither its input (a CQL constraint) nor its output (a PosGroup) clearly, and the build/format prefix mixture in ExplorationHandlers creates a small vocabulary inconsistency. These are genuine naming issues but confined to a few files, not systemic across the codebase."
+    }
+  },
+  "issues": [
+    {
+      "dimension": "naming_quality",
+      "identifier": "get_full_pattern_misleading",
+      "summary": "RelationConfig.getFullPattern() performs CQL substitution/construction but is named as a getter, creating a name/behavior mismatch",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/config/RelationConfig.java"
+      ],
+      "evidence": [
+        "getFullPattern(String headword) calls CqlUtils.substituteAtPosition to generate a new string — it constructs output, not retrieves stored state",
+        "getFullPattern(String headword, String collocateLemma) also delegates to getFullPattern(headword) then calls substituteAtPosition again",
+        "Java convention: get* names imply field retrieval with no side effects; this method produces a derived value requiring non-trivial computation"
+      ],
+      "suggestion": "Rename to buildPattern(String headword) / buildPattern(String headword, String collocate) or substitutePattern(String headword). This aligns the name with the method's construction semantics and differentiates it from plain field accessors like id(), name(), pattern().",
+      "confidence": "high",
+      "impact_scope": "module",
+      "fix_scope": "multi_file_refactor"
+    },
+    {
+      "dimension": "naming_quality",
+      "identifier": "pos_group_for_prefix_ambiguous",
+      "summary": "RelationConfig.posGroupForPrefix(String s, String attr) name does not communicate that 's' is a CQL constraint string or that the method classifies POS groups",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/config/RelationConfig.java"
+      ],
+      "evidence": [
+        "Method signature: 'private static PosGroup posGroupForPrefix(String s, String attr)' — 's' is a full lowercased CQL constraint string, 'attr' is e.g. 'xpos=' or 'tag='",
+        "'forPrefix' describes the lookup key but not the operation (POS classification) or the input type (CQL constraint)",
+        "Callers: posGroupFromConstraint calls posGroupForPrefix(s, \"xpos=\") then posGroupForPrefix(s, \"tag=\") for fallback — a 'detect' or 'classify' verb would be clearer"
+      ],
+      "suggestion": "Rename to detectPosGroupInConstraint(String constraint, String attrPrefix) — 'detect' communicates scanning/classification, 'InConstraint' identifies the input type, 'attrPrefix' makes the second parameter's role clear.",
+      "confidence": "medium",
+      "impact_scope": "local",
+      "fix_scope": "single_edit"
+    }
+  ],
+  "retrospective": {
+    "root_causes": [
+      "getFullPattern was named during initial development when pattern retrieval and substitution were not yet clearly distinguished; once the pattern became parameterised, the name was not updated",
+      "posGroupForPrefix was written as an internal detail with minimal naming attention given its private scope"
+    ],
+    "likely_symptoms": [],
+    "possible_false_positives": [
+      "buildBaseExploreResponse vs formatAdjectiveProfile — the inconsistency is real but minor; both are internal helpers, and the naming difference reflects a slight semantic distinction (assembly vs formatting)"
+    ]
+  }
+}

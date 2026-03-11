@@ -1,23 +1,9 @@
 {
-  "command": "resolve",
-  "patterns": [
-    "boilerplate_duplication::src/main/java/pl/marcinmilkowski/word_sketch/model/ComparisonResult.java::e2efffa61117ba94"
-  ],
-  "status": "fixed",
-  "resolved": [
-    "boilerplate_duplication::src/main/java/pl/marcinmilkowski/word_sketch/model/ComparisonResult.java::e2efffa61117ba94"
-  ],
-  "count": 1,
-  "next_command": "desloppify next",
-  "overall_score": 80.1,
-  "objective_score": 99.5,
-  "strict_score": 79.8,
-  "verified_strict_score": 98.1,
-  "prev_overall_score": 79.9,
-  "prev_objective_score": 98.9,
-  "prev_strict_score": 79.6,
-  "prev_verified_strict_score": 98.1,
-  "attestation": "I have actually Extracted shared naming-convention Javadoc to package-info.java; shortened duplicate Javadoc in ComparisonResult and ExplorationResult to single-line summaries. and I am not gaming the score.",
+  "command": "show",
+  "query": "model-cycle-fix",
+  "status_filter": "open",
+  "total": 0,
+  "issues": [],
   "narrative": {
     "phase": "middle_grind",
     "headline": "9 issues open. API coherence (41.7%) needs attention \u2014 run `desloppify next` to start. (3 review issues \u2014 run `desloppify show review --status open`)",
@@ -275,31 +261,14 @@
       "state": "below",
       "warning": null
     },
-    "reminders": [
-      {
-        "type": "rereview_needed",
-        "message": "Subjective results may be stale after resolve. Re-run `desloppify review --prepare` to refresh, or reset with `desloppify scan --reset-subjective` before a clean rerun.",
-        "command": "desloppify review --prepare",
-        "priority": 1,
-        "severity": "high"
-      },
-      {
-        "type": "rescan_needed",
-        "message": "Rescan to verify \u2014 cascading effects may create new issues.",
-        "command": "desloppify scan",
-        "priority": 1,
-        "severity": "high"
-      }
-    ],
+    "reminders": [],
     "reminder_history": {
       "zone_classification": 3,
       "report_scores": 19,
       "review_issues_pending": 3,
       "feedback_nudge": 3,
       "wontfix_growing": 1,
-      "stagnant_nudge": 5,
-      "rereview_needed": 1,
-      "rescan_needed": 1
+      "stagnant_nudge": 5
     }
   },
   "config": {

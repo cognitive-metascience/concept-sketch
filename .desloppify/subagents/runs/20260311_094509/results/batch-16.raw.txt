@@ -1,0 +1,65 @@
+{
+  "batch": "design_coherence",
+  "batch_index": 16,
+  "assessments": {"design_coherence": 79.0},
+  "dimension_notes": {
+    "design_coherence": {
+      "evidence": [
+        "BlackLabQueryExecutor.java and CollocateQueryHelper.java share a boilerplate block (import structure, TextPattern parsing, index.find(query) calls) — the mechanical detector correctly identified this; however, on reading, the duplicated block is in the two-phase pipeline (CollocateQueryHelper.executeCollocateSearch and executeBcqlQuery), not literally copy-pasted logic. The structural similarity is high but the two methods have distinct responsibilities: one groups hits for collocate ranking, the other collects per-hit concordances for BCQL output.",
+        "CollocateQueryHelper handles 5 distinct concerns: frequency lookup, grouped collocate search, collocate ranking, BCQL hit collection (phase 1), and BCQL hit scoring (phase 2). This is 920 LOC in a single class; there is a genuine design-coherence tension here.",
+        "SketchHandlers.iterateRelations() successfully extracted the shared grammar-relation iteration loop; the BiFunction callback pattern is correct and avoids duplication between surface and dependency sketch paths.",
+        "ExplorationHandlers.parseBaseExploreRequest() extraction is clean; all four handlers share the preamble.",
+        "ExplorationHandlers.buildBaseExploreResponse() correctly extracts response-building boilerplate shared by explore and explore-multi.",
+        "The HTTP handler classes (SketchHandlers, ExplorationHandlers) are focused: SketchHandlers handles sketch/concordance/BCQL/radial; ExplorationHandlers handles semantic field exploration. There is no obvious concern mixing between them.",
+        "WordSketchApiServer.registerHandler() correctly abstracts GET/POST registration with method enforcement, avoiding duplication across 11 route registrations.",
+        "GrammarConfigLoader is decomposed into small private helpers (parseAndValidateVersion, validateNoLegacyKeys, parseRelations, parseRelation, validatePositions, deriveHeadPositionFromPattern) — focused, single-responsibility methods.",
+        "SemanticFieldExplorer has a comment-delimited section structure (EXPLORATION MODE / COMPARISON MODE) that is appropriate for a single class managing related algorithms.",
+        "Parameter lists in the API layer do not exceed 5 for public-facing methods; internal helpers occasionally take 6+ arguments (e.g. iterateRelations with 6 parameters) but this is justified by the extraction refactor."
+      ],
+      "impact_scope": "module",
+      "fix_scope": "multi_file_refactor",
+      "confidence": "medium"
+    }
+  },
+  "dimension_judgment": {
+    "design_coherence": {
+      "strengths": [
+        "iterateRelations() in SketchHandlers is a well-designed extraction: a callback-based loop that removes two near-identical iteration blocks.",
+        "GrammarConfigLoader is cleanly decomposed into small, named private helpers with single responsibilities.",
+        "WordSketchApiServer.registerHandler() abstracts CORS and method enforcement into one place for all 11 routes.",
+        "The two-phase BCQL pipeline in CollocateQueryHelper (collectHits / scoreHits) is clearly named and separated."
+      ],
+      "issue_character": "The primary design-coherence issue is CollocateQueryHelper accumulating five distinct concerns (frequency lookup, grouped search, collocate ranking, hit collection, hit scoring) in one class — it is coherent within each phase but the phases together make the class responsible for too much.",
+      "score_rationale": "The score sits around 79: the recent sketch-dedup refactor (iterateRelations, parseBaseExploreRequest) cleanly removed duplication. The remaining structural issue is CollocateQueryHelper's broad responsibility scope — it is not a god class (each phase is delegated cleanly) but splitting it into CollocateSearchHelper and BcqlScoringHelper would improve navigability. The boilerplate duplication flagged by the mechanical detector is low-severity on inspection: the two methods have different responsibilities and the structural similarity does not represent a missed extraction opportunity."
+    }
+  },
+  "issues": [
+    {
+      "dimension": "design_coherence",
+      "identifier": "collocate_query_helper_broad_responsibility",
+      "summary": "CollocateQueryHelper handles five distinct concerns (freq lookup, grouped search, ranking, hit collection, hit scoring) making it a wide-responsibility class",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/query/CollocateQueryHelper.java"
+      ],
+      "evidence": [
+        "Class is 920 LOC with sections: frequency lookup (getTotalFrequency), grouped collocate search (executeCollocateSearch), collocate ranking (buildAndRankCollocates), BCQL hit collection (collectHits), BCQL hit scoring (scoreHits), BCQL orchestration (executeBcqlQuery)",
+        "The BCQL pipeline (collectHits + scoreHits + executeBcqlQuery) is a self-contained concern distinct from the grouped-search pipeline used by findCollocations/executeSurfacePattern/executeDependencyPattern"
+      ],
+      "suggestion": "Extract the BCQL two-phase pipeline (collectHits, scoreHits, executeBcqlQuery) into a separate BcqlQueryPipeline class. CollocateQueryHelper retains grouped-search, frequency lookup, and ranking. This gives each class a single coherent responsibility and makes the BCQL pipeline independently testable.",
+      "confidence": "medium",
+      "impact_scope": "module",
+      "fix_scope": "multi_file_refactor"
+    }
+  ],
+  "retrospective": {
+    "root_causes": [
+      "CollocateQueryHelper was created to hold extracted shared logic from BlackLabQueryExecutor; as the BCQL pipeline grew, it accumulated into the same class without a second extraction step."
+    ],
+    "likely_symptoms": [
+      "collocate_query_helper_broad_responsibility"
+    ],
+    "possible_false_positives": [
+      "boilerplate_duplication between BlackLabQueryExecutor and CollocateQueryHelper — on close reading the structural similarity is in different-purpose methods, not duplicated logic"
+    ]
+  }
+}

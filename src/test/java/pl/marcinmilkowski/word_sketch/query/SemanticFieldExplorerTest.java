@@ -2,6 +2,7 @@ package pl.marcinmilkowski.word_sketch.query;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import pl.marcinmilkowski.word_sketch.api.ExploreResponseBuilder;
 import pl.marcinmilkowski.word_sketch.exploration.Edge;
 import pl.marcinmilkowski.word_sketch.exploration.ExploreOptions;
 import pl.marcinmilkowski.word_sketch.exploration.SemanticFieldExplorer;
@@ -105,7 +106,7 @@ class SemanticFieldExplorerTest {
 
         SemanticFieldExplorer explorer = new SemanticFieldExplorer(executor);
         ComparisonResult result =
-            explorer.getComparator().compareCollocateProfiles(Set.of("theory", "model", "hypothesis"), 0.0, 50);
+            explorer.compareCollocateProfiles(Set.of("theory", "model", "hypothesis"), 0.0, 50);
 
         List<AdjectiveProfile> fullyShared = result.getFullyShared();
         List<String> sharedNames = fullyShared.stream()
@@ -127,7 +128,7 @@ class SemanticFieldExplorerTest {
 
         SemanticFieldExplorer explorer = new SemanticFieldExplorer(executor);
         ComparisonResult result =
-            explorer.getComparator().compareCollocateProfiles(Set.of("theory", "model"), 0.0, 50);
+            explorer.compareCollocateProfiles(Set.of("theory", "model"), 0.0, 50);
 
         List<AdjectiveProfile> specific = result.getSpecific();
         List<String> specificNames = specific.stream().map(p -> p.adjective()).toList();
@@ -145,7 +146,7 @@ class SemanticFieldExplorerTest {
 
         SemanticFieldExplorer explorer = new SemanticFieldExplorer(executor);
         ComparisonResult result =
-            explorer.getComparator().compareCollocateProfiles(Collections.emptySet(), 0.0, 50);
+            explorer.compareCollocateProfiles(Collections.emptySet(), 0.0, 50);
 
         assertNotNull(result);
         assertTrue(result.getNouns().isEmpty(), "Expected no nouns in empty result");
@@ -161,7 +162,7 @@ class SemanticFieldExplorerTest {
 
         SemanticFieldExplorer explorer = new SemanticFieldExplorer(executor);
         ComparisonResult result =
-            explorer.getComparator().compareCollocateProfiles(Set.of("theory"), 0.0, 50);
+            explorer.compareCollocateProfiles(Set.of("theory"), 0.0, 50);
 
         assertNotNull(result);
         assertEquals(1, result.getNouns().size());
@@ -181,7 +182,7 @@ class SemanticFieldExplorerTest {
 
         SemanticFieldExplorer explorer = new SemanticFieldExplorer(executor);
         ComparisonResult result =
-            explorer.getComparator().compareCollocateProfiles(Set.of("theory", "model"), 0.0, 50);
+            explorer.compareCollocateProfiles(Set.of("theory", "model"), 0.0, 50);
 
         // empirical is specific to theory (model has no adjectives)
         List<String> specificNames = result.getSpecific().stream()
@@ -197,7 +198,7 @@ class SemanticFieldExplorerTest {
 
         SemanticFieldExplorer explorer = new SemanticFieldExplorer(executor);
         ComparisonResult result =
-            explorer.getComparator().compareCollocateProfiles(null, 0.0, 50);
+            explorer.compareCollocateProfiles(null, 0.0, 50);
 
         assertNotNull(result);
         assertTrue(result.getNouns().isEmpty());
@@ -217,7 +218,7 @@ class SemanticFieldExplorerTest {
 
         SemanticFieldExplorer explorer = new SemanticFieldExplorer(executor);
         ComparisonResult result =
-            explorer.getComparator().compareCollocateProfiles(Set.of("theory", "model", "hypothesis"), 0.0, 50);
+            explorer.compareCollocateProfiles(Set.of("theory", "model", "hypothesis"), 0.0, 50);
 
         List<String> partialNames = result.getPartiallyShared().stream()
             .map(p -> p.adjective()).toList();
@@ -236,9 +237,9 @@ class SemanticFieldExplorerTest {
 
         SemanticFieldExplorer explorer = new SemanticFieldExplorer(executor);
         ComparisonResult result =
-            explorer.getComparator().compareCollocateProfiles(Set.of("theory", "model"), 0.0, 50);
+            explorer.compareCollocateProfiles(Set.of("theory", "model"), 0.0, 50);
 
-        List<Edge> edges = result.buildEdges();
+        List<Edge> edges = ExploreResponseBuilder.buildEdges(result);
         assertFalse(edges.isEmpty(), "Should have edges");
 
         // Edge from abstract → theory should have weight ~9.0

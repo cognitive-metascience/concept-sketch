@@ -1,7 +1,7 @@
 {
   "version": 8,
   "created": "2026-03-09T18:36:05+00:00",
-  "updated": "2026-03-11T09:44:26+00:00",
+  "updated": "2026-03-11T10:43:22+00:00",
   "queue_order": [
     "review::.::holistic::test_strategy::api_handler_smoke_only::0654ef4e",
     "review::.::holistic::test_strategy::bcql_concordance_hardcoded_path::498feea7",
@@ -65322,6 +65322,17 @@
         "status": "fixed",
         "attestation": "I have actually Extracted shared naming-convention Javadoc to package-info.java; shortened duplicate Javadoc in ComparisonResult and ExplorationResult to single-line summaries. and I am not gaming the score."
       }
+    },
+    {
+      "timestamp": "2026-03-11T10:43:22+00:00",
+      "action": "done",
+      "issue_ids": [
+        "model-cycle-fix"
+      ],
+      "cluster_name": null,
+      "actor": "user",
+      "note": "Moved buildEdges() to ExplorationHandlers (or new class), breaking the model\u2194exploration package cycle. Removed exploration imports from ExplorationResult and ComparisonResult.",
+      "detail": {}
     }
   ],
   "epic_triage_meta": {
