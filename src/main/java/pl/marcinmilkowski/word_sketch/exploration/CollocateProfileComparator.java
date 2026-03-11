@@ -51,10 +51,8 @@ public class CollocateProfileComparator {
 
         List<String> nounList = new ArrayList<>(seedNouns);
 
-        logger.debug("\n=== SEMANTIC FIELD COMPARISON ===");
         logger.debug("Nouns: {}", seedNouns);
         logger.debug("Min logDice: {}", minLogDice);
-        logger.debug("------------------------------------------------------------");
 
         Map<String, Map<String, Double>> rawProfiles = buildRawAdjectiveProfiles(nounList, minLogDice, maxPerNoun);
         List<AdjectiveProfile> profiles = buildAdjectiveProfileList(nounList, rawProfiles);
@@ -64,7 +62,6 @@ public class CollocateProfileComparator {
 
         logger.debug("Total unique adjectives: {}", profiles.size());
         logTopProfiles(profiles);
-        logger.debug("------------------------------------------------------------");
 
         return new ComparisonResult(nounList, profiles);
     }
@@ -103,7 +100,6 @@ public class CollocateProfileComparator {
             Map<String, Map<String, Double>> adjectiveProfiles) {
 
         int nounCount = nounList.size();
-        logger.debug("\n--- Building Comparison Profiles ---");
         List<AdjectiveProfile> profiles = new ArrayList<>();
 
         for (Map.Entry<String, Map<String, Double>> entry : adjectiveProfiles.entrySet()) {
@@ -143,14 +139,12 @@ public class CollocateProfileComparator {
     }
 
     private void logTopProfiles(List<AdjectiveProfile> profiles) {
-        logger.debug("\nTop SHARED (high commonality):");
         profiles.stream()
             .filter(p -> p.presentInCount() >= 2)
             .limit(10)
             .forEach(p -> logger.debug("  {} (in {}/{} nouns, avg={})", p.adjective(),
                 p.presentInCount(), p.totalNouns(), String.format("%.2f", p.avgLogDice())));
 
-        logger.debug("\nTop DISTINCTIVE (specific to 1 noun):");
         profiles.stream()
             .filter(p -> p.presentInCount() == 1)
             .sorted((a, b) -> Double.compare(b.maxLogDice(), a.maxLogDice()))

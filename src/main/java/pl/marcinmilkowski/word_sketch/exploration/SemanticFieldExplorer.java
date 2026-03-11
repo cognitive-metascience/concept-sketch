@@ -156,7 +156,6 @@ public class SemanticFieldExplorer {
             return ExplorationResult.empty(seed);
         }
 
-        logger.debug("Found {} collocates for seed '{}'", seedRelations.size(), seed);
 
         // Build map: collocate -> logDice with seed
         Map<String, Double> seedCollocScores = new LinkedHashMap<>();
@@ -169,12 +168,10 @@ public class SemanticFieldExplorer {
         // Step 2: For each collocate, find nouns it collocates with
         Map<String, Map<String, Double>> nounProfiles = buildCollocateToNounsMap(
             seedCollocScores, seed, minLogDice, nounsPerPredicate);
-        logger.debug("  Total candidate nouns: {}", nounProfiles.size());
 
         // Step 3: Score nouns by shared collocate count
         List<DiscoveredNoun> discoveredNouns = filterCandidates(nounProfiles, minShared);
         discoveredNouns.sort((a, b) -> Double.compare(b.combinedRelevanceScore(), a.combinedRelevanceScore()));
-        logger.debug("  Nouns with {}+ shared: {}", minShared, discoveredNouns.size());
 
         // Step 4: Identify core collocates
         List<CoreCollocate> coreCollocates = identifyCoreCollocates(seedCollocScores, discoveredNouns);
@@ -212,7 +209,6 @@ public class SemanticFieldExplorer {
         for (String collocate : seedCollocScores.keySet()) {
             List<QueryResults.WordSketchResult> nouns = executor.findCollocations(
                 collocate, NOUN_CQL_CONSTRAINT, minLogDice, nounsPerPredicate);
-            logger.debug("  {}: {} nouns", collocate, nouns.size());
             for (QueryResults.WordSketchResult r : nouns) {
                 String noun = r.lemma().toLowerCase();
                 if (noun.equals(seed)) continue;
