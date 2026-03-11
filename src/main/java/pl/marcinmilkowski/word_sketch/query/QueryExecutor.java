@@ -81,6 +81,12 @@ public interface QueryExecutor extends Closeable {
      * Execute a surface pattern query for word sketches using a labeled BCQL pattern.
      * The collocate position is inferred from the {@code 2:} label in {@code bcqlPattern}.
      *
+     * <p>Both {@code lemma} and {@code bcqlPattern} are required even though {@code lemma}
+     * has already been substituted into {@code bcqlPattern}: {@code lemma} is used to look
+     * up the head-word's total corpus frequency for logDice scoring, while {@code bcqlPattern}
+     * drives the Lucene span search. Separating them avoids re-parsing the pattern to recover
+     * the headword and keeps the scoring path free of string manipulation.
+     *
      * @param lemma             The head lemma (already substituted into {@code bcqlPattern})
      * @param bcqlPattern       BCQL pattern with labeled positions (1: head, 2: collocate)
      * @param minLogDice        Minimum logDice score threshold (0 for no minimum)

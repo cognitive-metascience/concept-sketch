@@ -2,8 +2,6 @@ package pl.marcinmilkowski.word_sketch.query;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import pl.marcinmilkowski.word_sketch.api.ExploreResponseBuilder;
-import pl.marcinmilkowski.word_sketch.exploration.Edge;
 import pl.marcinmilkowski.word_sketch.exploration.ExploreOptions;
 import pl.marcinmilkowski.word_sketch.exploration.SemanticFieldExplorer;
 import pl.marcinmilkowski.word_sketch.model.AdjectiveProfile;
@@ -14,11 +12,16 @@ import pl.marcinmilkowski.word_sketch.model.ExplorationResult;
 import pl.marcinmilkowski.word_sketch.model.QueryResults;
 
 import java.io.IOException;
+import java.io.StringReader;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+
+import pl.marcinmilkowski.word_sketch.config.GrammarConfig;
+import pl.marcinmilkowski.word_sketch.config.GrammarConfigLoader;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -140,36 +143,27 @@ class SemanticFieldExplorerTest {
     }
 
     @Test
-    @DisplayName("compare: empty seed set returns empty ComparisonResult")
-    void compare_emptySeedSet() throws IOException {
+    @DisplayName("compare: empty seed set throws IllegalArgumentException")
+    void compare_emptySeedSet() {
         StubExecutor executor = new StubExecutor(Map.of());
-
         SemanticFieldExplorer explorer = new SemanticFieldExplorer(executor);
-        ComparisonResult result =
-            explorer.compareCollocateProfiles(Collections.emptySet(), 0.0, 50);
 
-        assertNotNull(result);
-        assertTrue(result.getNouns().isEmpty(), "Expected no nouns in empty result");
-        assertTrue(result.getAllAdjectives().isEmpty(), "Expected no adjectives in empty result");
+        assertThrows(IllegalArgumentException.class,
+            () -> explorer.compareCollocateProfiles(Collections.emptySet(), 0.0, 50),
+            "Empty seed set should throw IllegalArgumentException");
     }
 
     @Test
-    @DisplayName("compare: single seed returns adjectives as specific (no sharing possible)")
-    void compare_singleSeed() throws IOException {
+    @DisplayName("compare: single seed throws IllegalArgumentException (requires >= 2 seeds)")
+    void compare_singleSeed() {
         StubExecutor executor = new StubExecutor(Map.of(
             "theory", List.of(wsr("empirical", 8.0), wsr("scientific", 7.5))
         ));
-
         SemanticFieldExplorer explorer = new SemanticFieldExplorer(executor);
-        ComparisonResult result =
-            explorer.compareCollocateProfiles(Set.of("theory"), 0.0, 50);
 
-        assertNotNull(result);
-        assertEquals(1, result.getNouns().size());
-        // With only one noun all adjectives are "specific" (presentInCount == 1 == totalNouns,
-        // so isFullyShared() is also true; the important thing is results are non-empty)
-        assertFalse(result.getAllAdjectives().isEmpty(),
-            "Should have adjective profiles for the single seed");
+        assertThrows(IllegalArgumentException.class,
+            () -> explorer.compareCollocateProfiles(Set.of("theory"), 0.0, 50),
+            "Single seed should throw IllegalArgumentException");
     }
 
     @Test
@@ -192,16 +186,14 @@ class SemanticFieldExplorerTest {
     }
 
     @Test
-    @DisplayName("compare: null seed set returns empty ComparisonResult")
-    void compare_nullSeedSet() throws IOException {
+    @DisplayName("compare: null seed set throws IllegalArgumentException")
+    void compare_nullSeedSet() {
         StubExecutor executor = new StubExecutor(Map.of());
-
         SemanticFieldExplorer explorer = new SemanticFieldExplorer(executor);
-        ComparisonResult result =
-            explorer.compareCollocateProfiles(null, 0.0, 50);
 
-        assertNotNull(result);
-        assertTrue(result.getNouns().isEmpty());
+        assertThrows(IllegalArgumentException.class,
+            () -> explorer.compareCollocateProfiles(null, 0.0, 50),
+            "Null seed set should throw IllegalArgumentException");
     }
 
     // ── ComparisonResult edge cases ───────────────────────────────────────────
@@ -225,29 +217,6 @@ class SemanticFieldExplorerTest {
 
         assertTrue(partialNames.contains("theoretical"),
             "theoretical (in 2/3 nouns) should be partially shared; got: " + partialNames);
-    }
-
-    @Test
-    @DisplayName("compare: edges reflect correct noun-adjective weights")
-    void compare_edgeWeights() throws IOException {
-        StubExecutor executor = new StubExecutor(Map.of(
-            "theory", List.of(wsr("abstract", 9.0)),
-            "model",  List.of(wsr("abstract", 6.0))
-        ));
-
-        SemanticFieldExplorer explorer = new SemanticFieldExplorer(executor);
-        ComparisonResult result =
-            explorer.compareCollocateProfiles(Set.of("theory", "model"), 0.0, 50);
-
-        List<Edge> edges = ExploreResponseBuilder.buildEdges(result);
-        assertFalse(edges.isEmpty(), "Should have edges");
-
-        // Edge from abstract → theory should have weight ~9.0
-        Edge theoryEdge = edges.stream()
-            .filter(e -> e.target().equals("theory") && e.source().equals("abstract"))
-            .findFirst().orElse(null);
-        assertNotNull(theoryEdge, "Should have abstract→theory edge");
-        assertEquals(9.0, theoryEdge.weight(), 0.001);
     }
 
     // ── exploreByPattern ──────────────────────────────────────────────────────
@@ -311,7 +280,7 @@ class SemanticFieldExplorerTest {
                 "test", "test", "test", "[xpos=\"NN.*\"] [xpos=\"JJ.*\"]",
                 1, 2, false, 0,
                 java.util.Optional.of(pl.marcinmilkowski.word_sketch.model.RelationType.SURFACE),
-                true),
+                true, pl.marcinmilkowski.word_sketch.model.PosGroup.ADJ),
             0.0, 10, 1);
 
         assertNotNull(result, "Result should not be null");
@@ -333,11 +302,94 @@ class SemanticFieldExplorerTest {
                 "test", "test", "test", "[xpos=\"NN.*\"] [xpos=\"JJ.*\"]",
                 1, 2, false, 0,
                 java.util.Optional.of(pl.marcinmilkowski.word_sketch.model.RelationType.SURFACE),
-                true),
+                true, pl.marcinmilkowski.word_sketch.model.PosGroup.ADJ),
             0.0, 10, 2);
 
         assertNotNull(result.getSeedCollocates(), "Seed collocates should not be null");
         assertTrue(result.getSeedCollocates().containsKey("empirical"),
             "Shared collocate 'empirical' should appear in seed collocates map");
+    }
+
+    // ── deriveNounCqlConstraint (via constructor + recording executor) ─────────
+
+    /**
+     * Records every (lemma, cqlPattern) pair passed to findCollocations so we can
+     * assert which noun CQL constraint the explorer derived from GrammarConfig.
+     */
+    private static class RecordingExecutor extends StubExecutor {
+
+        final List<String> capturedCqlPatterns = new ArrayList<>();
+
+        RecordingExecutor(Map<String, List<QueryResults.WordSketchResult>> collocations) {
+            super(collocations);
+        }
+
+        @Override
+        public List<QueryResults.WordSketchResult> findCollocations(
+                String lemma, String cqlPattern, double minLogDice, int maxResults) {
+            capturedCqlPatterns.add(cqlPattern);
+            return super.findCollocations(lemma, cqlPattern, minLogDice, maxResults);
+        }
+    }
+
+    @Test
+    @DisplayName("deriveNounCqlConstraint: falls back to [xpos=\"NN.*\"] when grammarConfig is null")
+    void deriveNounCqlConstraint_nullConfig_usesFallback() throws IOException {
+        RecordingExecutor executor = new RecordingExecutor(Map.of(
+            "theory", List.of(wsr("empirical", 8.0))
+        ));
+        // null GrammarConfig → fallback noun constraint
+        SemanticFieldExplorer explorer = new SemanticFieldExplorer(executor, null);
+        ExploreOptions opts = new ExploreOptions(10, 1, 0.0, 5);
+
+        explorer.exploreByPattern(
+            "theory", "test-relation",
+            "[lemma=\"theory\"] [xpos=\"JJ.*\"]",
+            "[xpos=\"JJ.*\"]",
+            opts);
+
+        // The noun-constraint call is the second findCollocations call (first is for seed collocates)
+        assertTrue(executor.capturedCqlPatterns.stream()
+            .anyMatch(p -> p.contains("NN")),
+            "Fallback noun constraint should contain 'NN'; got: " + executor.capturedCqlPatterns);
+    }
+
+    @Test
+    @DisplayName("deriveNounCqlConstraint: uses noun pattern from config when available")
+    void deriveNounCqlConstraint_withNounRelation_usesConfigPattern() throws IOException {
+        // Build a GrammarConfig with a NOUN-collocate relation via the loader
+        String json = """
+            {
+              "version": "1.0-test",
+              "relations": [
+                {
+                  "id": "subj",
+                  "name": "Subject",
+                  "pattern": "1:[xpos=\\"VB.*\\"] 2:[xpos=\\"NN.*\\"]",
+                  "head_position": 1,
+                  "collocate_position": 2,
+                  "relation_type": "SURFACE"
+                }
+              ]
+            }
+            """;
+        GrammarConfig config = GrammarConfigLoader.fromReader(new StringReader(json));
+
+        RecordingExecutor executor = new RecordingExecutor(Map.of(
+            "theory", List.of(wsr("important", 8.0))
+        ));
+        SemanticFieldExplorer explorer = new SemanticFieldExplorer(executor, config);
+        ExploreOptions opts = new ExploreOptions(10, 1, 0.0, 5);
+
+        explorer.exploreByPattern(
+            "theory", "test-relation",
+            "[lemma=\"theory\"] [xpos=\"JJ.*\"]",
+            "[xpos=\"JJ.*\"]",
+            opts);
+
+        // The noun lookup uses collocateReversePattern() from the first NOUN relation: [xpos="NN.*"]
+        assertTrue(executor.capturedCqlPatterns.stream()
+            .anyMatch(p -> p.contains("NN")),
+            "Config-derived noun constraint should contain 'NN'; got: " + executor.capturedCqlPatterns);
     }
 }

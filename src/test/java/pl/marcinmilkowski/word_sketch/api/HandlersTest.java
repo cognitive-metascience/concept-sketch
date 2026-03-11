@@ -8,7 +8,9 @@ import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpPrincipal;
 import org.junit.jupiter.api.Test;
 import pl.marcinmilkowski.word_sketch.config.GrammarConfigHelper;
+import pl.marcinmilkowski.word_sketch.model.Edge;
 import pl.marcinmilkowski.word_sketch.exploration.SemanticFieldExplorer;
+import pl.marcinmilkowski.word_sketch.model.ComparisonResult;
 import pl.marcinmilkowski.word_sketch.model.QueryResults;
 import pl.marcinmilkowski.word_sketch.query.QueryExecutor;
 
@@ -274,6 +276,84 @@ class HandlersTest {
         }
 
         @Override public String getRequestMethod() { return "POST"; }
+    }
+
+    // ── Cluster 1: compare_edgeWeights (moved from SemanticFieldExplorerTest) ──
+
+    /** Stub executor returning fixed collocations by noun key. */
+    private static QueryExecutor collocatingExecutor(java.util.Map<String, List<QueryResults.WordSketchResult>> map) {
+        return new QueryExecutor() {
+            @Override public List<QueryResults.WordSketchResult> findCollocations(
+                    String lemma, String cqlPattern, double minLogDice, int maxResults) {
+                return map.getOrDefault(lemma.toLowerCase(), List.of());
+            }
+            @Override public List<QueryResults.ConcordanceResult> executeCqlQuery(String p, int m) { return List.of(); }
+            @Override public List<QueryResults.CollocateResult> executeBcqlQuery(String p, int m) { return List.of(); }
+            @Override public long getTotalFrequency(String lemma) { return 0; }
+            @Override public List<QueryResults.WordSketchResult> executeSurfacePattern(
+                    String lemma, String pattern, double minLogDice, int maxResults) {
+                return map.getOrDefault(lemma.toLowerCase(), List.of());
+            }
+            @Override public List<QueryResults.WordSketchResult> executeDependencyPattern(
+                    String lemma, String deprel, double minLogDice, int maxResults) { return List.of(); }
+            @Override public List<QueryResults.WordSketchResult> executeDependencyPatternWithPos(
+                    String lemma, String deprel, double minLogDice, int maxResults,
+                    String headPosConstraint) { return List.of(); }
+            @Override public void close() {}
+        };
+    }
+
+    private static QueryResults.WordSketchResult wsr(String lemma, double logDice) {
+        return new QueryResults.WordSketchResult(lemma, "JJ", 10, logDice, 0.0, List.of());
+    }
+
+    @Test
+    void compare_edgeWeights_abstractHasCorrectWeightToTheory() throws Exception {
+        QueryExecutor executor = collocatingExecutor(java.util.Map.of(
+            "theory", List.of(wsr("abstract", 9.0)),
+            "model",  List.of(wsr("abstract", 6.0))
+        ));
+        SemanticFieldExplorer explorer = new SemanticFieldExplorer(executor);
+        ComparisonResult result =
+            explorer.compareCollocateProfiles(java.util.Set.of("theory", "model"), 0.0, 50);
+
+        List<Edge> edges = ExploreResponseBuilder.buildEdges(result);
+        assertFalse(edges.isEmpty(), "Should have edges");
+
+        Edge theoryEdge = edges.stream()
+            .filter(e -> e.target().equals("theory") && e.source().equals("abstract"))
+            .findFirst().orElse(null);
+        assertNotNull(theoryEdge, "Should have abstract→theory edge");
+        assertEquals(9.0, theoryEdge.weight(), 0.001);
+    }
+
+    // ── Cluster 2: ExplorationHandlers validation tests ──────────────────────
+
+    @Test
+    void handleSemanticFieldExploreMulti_nounsPerParam_returns400() throws Exception {
+        ExplorationHandlers handlers = new ExplorationHandlers(GrammarConfigHelper.requireTestConfig(), null);
+        MockExchange ex = new MockExchange(
+                "http://localhost/api/semantic-field/explore-multi?seeds=theory,model&nouns_per=5");
+        handlers.handleSemanticFieldExploreMulti(ex);
+        assertEquals(400, ex.statusCode);
+    }
+
+    @Test
+    void handleSemanticFieldExplore_unknownRelation_returns400() throws Exception {
+        ExplorationHandlers handlers = new ExplorationHandlers(GrammarConfigHelper.requireTestConfig(), null);
+        MockExchange ex = new MockExchange(
+                "http://localhost/api/semantic-field/explore?seeds=theory&relation=no_such_relation");
+        handlers.handleSemanticFieldExplore(ex);
+        assertEquals(400, ex.statusCode);
+    }
+
+    @Test
+    void handleSemanticFieldExploreMulti_unknownRelation_returns400() throws Exception {
+        ExplorationHandlers handlers = new ExplorationHandlers(GrammarConfigHelper.requireTestConfig(), null);
+        MockExchange ex = new MockExchange(
+                "http://localhost/api/semantic-field/explore-multi?seeds=theory,model&relation=no_such_relation");
+        handlers.handleSemanticFieldExploreMulti(ex);
+        assertEquals(400, ex.statusCode);
     }
 }
 

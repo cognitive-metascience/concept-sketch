@@ -10,10 +10,12 @@ import java.util.Set;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import pl.marcinmilkowski.word_sketch.config.GrammarConfig;
+import pl.marcinmilkowski.word_sketch.config.RelationConfig;
 import pl.marcinmilkowski.word_sketch.model.AdjectiveProfile;
 import pl.marcinmilkowski.word_sketch.model.ComparisonResult;
 import pl.marcinmilkowski.word_sketch.model.PosGroup;
 import pl.marcinmilkowski.word_sketch.model.QueryResults;
+import pl.marcinmilkowski.word_sketch.model.RelationType;
 import pl.marcinmilkowski.word_sketch.query.QueryExecutor;
 
 /**
@@ -41,11 +43,18 @@ public class CollocateProfileComparator {
 
     private static String deriveAdjectivePattern(GrammarConfig grammarConfig) {
         if (grammarConfig == null) return FALLBACK_ADJECTIVE_PATTERN;
+        // Use explicit relation_type filter rather than findFirst() to avoid implicit ordering dependency.
+        // ADJ_PREDICATE and ADJ_MODIFIER both have adjectives as collocates; prefer ADJ_MODIFIER.
         return grammarConfig.getRelations().stream()
-            .filter(r -> r.collocatePosGroup() == PosGroup.ADJ && r.relationType().isPresent())
+            .filter(r -> r.relationType().map(rt -> rt == RelationType.ADJ_MODIFIER || rt == RelationType.ADJ_PREDICATE).orElse(false)
+                && r.collocatePosGroup() == PosGroup.ADJ)
             .findFirst()
-            .map(r -> r.collocateReversePattern())
-            .orElse(FALLBACK_ADJECTIVE_PATTERN);
+            .map(RelationConfig::collocateReversePattern)
+            .orElseGet(() -> grammarConfig.getRelations().stream()
+                .filter(r -> r.collocatePosGroup() == PosGroup.ADJ && r.relationType().isPresent())
+                .findFirst()
+                .map(RelationConfig::collocateReversePattern)
+                .orElse(FALLBACK_ADJECTIVE_PATTERN));
     }
 
     /**

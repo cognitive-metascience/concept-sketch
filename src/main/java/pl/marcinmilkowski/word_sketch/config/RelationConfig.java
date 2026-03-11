@@ -1,6 +1,7 @@
 package pl.marcinmilkowski.word_sketch.config;
 
 import com.alibaba.fastjson2.JSONObject;
+import org.jspecify.annotations.Nullable;
 import pl.marcinmilkowski.word_sketch.model.PosGroup;
 import pl.marcinmilkowski.word_sketch.model.RelationType;
 import pl.marcinmilkowski.word_sketch.utils.CqlUtils;
@@ -24,7 +25,9 @@ public record RelationConfig(
     int defaultSlop,
     /** Empty when the grammar JSON omits or has an unrecognised {@code relation_type} field. */
     Optional<RelationType> relationType,
-    boolean explorationEnabled
+    boolean explorationEnabled,
+    /** Pre-computed collocate POS group — cached at construction time so repeated calls are O(1). */
+    PosGroup collocatePosGroup
 ) {
     public JSONObject toJson() {
         JSONObject obj = new JSONObject();
@@ -42,29 +45,30 @@ public record RelationConfig(
     }
 
     /**
-     * Get the BCQL pattern with both headword and collocate lemmas substituted.
-     * Delegates to {@link #getFullPattern(String)} for the head, then injects
+     * Build the BCQL pattern with both headword and collocate lemmas substituted.
+     * Delegates to {@link #buildFullPattern(String)} for the head, then injects
      * the collocate lemma at {@link #collocatePosition}.
      *
      * @param headword       the lemma for the head position
      * @param collocateLemma the lemma for the collocate position
      * @return the fully-substituted BCQL pattern string
      */
-    public String getFullPattern(String headword, String collocateLemma) {
-        String withHead = getFullPattern(headword);
+    public String buildFullPattern(String headword, String collocateLemma) {
+        String withHead = buildFullPattern(headword);
         if (collocateLemma == null || collocateLemma.isBlank()) return withHead;
         return CqlUtils.substituteAtPosition(withHead, collocateLemma, collocatePosition);
     }
 
     /**
-     * Get the BCQL pattern with headword substituted.
+     * Build the BCQL pattern with headword substituted.
      * For BCQL format: replaces the constraint at head_position with [lemma="headword" & original_constraint]
      *
      * @param headword the lemma to substitute at the head position; if {@code null} or blank,
      *                 the unmodified pattern is returned unchanged
-     * @return the substituted pattern, or the original pattern when headword is null/blank
+     * @return the substituted pattern, or the original pattern when headword is null/blank;
+     *         returns {@code null} when the {@code pattern} field is null
      */
-    public String getFullPattern(String headword) {
+    public @Nullable String buildFullPattern(String headword) {
         if (pattern == null) return null;
         if (headword == null || headword.isBlank()) return pattern;
 
@@ -99,12 +103,15 @@ public record RelationConfig(
     }
 
     /**
-     * Derive the collocate POS group from the pattern.
+     * Computes the collocate POS group from a raw BCQL pattern string.
      * Looks specifically at the 2: labelled position so that multi-token patterns
      * like "1:[xpos="NN.*"] 2:[xpos="JJ.*"]" correctly return "adj" not "noun".
      * Supports both xpos= (current grammar) and tag= (legacy format).
+     *
+     * <p>This is a static factory helper called by {@link GrammarConfigLoader} at construction
+     * time so that the result can be cached in the {@link #collocatePosGroup} component.</p>
      */
-    public PosGroup collocatePosGroup() {
+    public static PosGroup computeCollocatePosGroup(String pattern) {
         if (pattern == null) return PosGroup.OTHER;
         String pat = pattern.toLowerCase(Locale.ROOT);
         // Prefer the 2: labeled bracket; fall back to whole pattern for single-token patterns
@@ -114,7 +121,7 @@ public record RelationConfig(
     }
 
     /** Extract the bracket content of the nth labeled position (e.g. "2:[...]"). */
-    private String extractLabelContent(String pat, int label) {
+    private static String extractLabelContent(String pat, int label) {
         String prefix = label + ":[";
         int idx = pat.indexOf(prefix);
         if (idx < 0) return null;
@@ -136,7 +143,7 @@ public record RelationConfig(
      * value-label string like {@code "adj"}. {@code PosGroup.fromString} maps canonical value
      * labels to enum constants; it is not applicable here.
      */
-    private PosGroup posGroupFromConstraint(String s) {
+    private static PosGroup posGroupFromConstraint(String s) {
         PosGroup result = posGroupForPrefix(s, "xpos=");
         // tag= fallback supports legacy grammar files that use "tag=" instead of "xpos=".
         // Kept to remain compatible with older grammar configs not yet migrated to xpos=.

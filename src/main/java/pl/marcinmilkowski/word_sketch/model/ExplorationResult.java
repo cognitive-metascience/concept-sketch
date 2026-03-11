@@ -29,19 +29,19 @@ public class ExplorationResult {
         this.coreCollocates = coreCollocates;
     }
 
-    /** @return the seed word this result was built from; never null */
+    /** @return the seed word this result was built from; never null or blank */
     public String getSeed() { return seed; }
 
-    /** @return collocate lemma → logDice score for the seed; never null */
+    /** @return collocate lemma → logDice score for the seed; never null, may be empty */
     public Map<String, Double> getSeedCollocates() { return seedCollocates; }
 
-    /** @return collocate lemma → raw corpus frequency for the seed; never null */
+    /** @return collocate lemma → raw corpus frequency for the seed; never null, may be empty */
     public Map<String, Long> getSeedCollocateFrequencies() { return seedCollocateFrequencies; }
 
-    /** @return discovered nouns sorted by relevance score descending; never null */
+    /** @return discovered nouns sorted by relevance score descending; never null, may be empty */
     public List<DiscoveredNoun> getDiscoveredNouns() { return discoveredNouns; }
 
-    /** @return core collocates shared by most discovered nouns; never null */
+    /** @return core collocates shared by most discovered nouns; never null, may be empty */
     public List<CoreCollocate> getCoreCollocates() { return coreCollocates; }
 
     /**

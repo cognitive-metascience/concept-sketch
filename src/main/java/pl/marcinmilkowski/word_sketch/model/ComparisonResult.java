@@ -25,11 +25,31 @@ public class ComparisonResult {
         return new ComparisonResult(List.of(), List.of());
     }
 
-    /** @return the seed nouns this comparison was built from; never null */
+    /** @return the seed nouns this comparison was built from; never null, may be empty */
     public List<String> getNouns() { return nouns; }
 
-    /** @return all adjective profiles regardless of sharing category; never null */
+    /** @return all adjective profiles regardless of sharing category; never null, may be empty */
     public List<AdjectiveProfile> getAllAdjectives() { return adjectives; }
+
+    /**
+     * Single-pass counts of all three sharing categories to avoid 3 separate stream iterations.
+     */
+    public record SummaryCounts(int fullyShared, int partiallyShared, int specific) {}
+
+    /**
+     * Returns counts for fully-shared, partially-shared, and specific adjectives in a single pass.
+     */
+    public SummaryCounts getSummaryCounts() {
+        int total = nouns.size();
+        int fullyShared = 0, partiallyShared = 0, specific = 0;
+        for (AdjectiveProfile a : adjectives) {
+            int p = a.presentInCount();
+            if (p == total) fullyShared++;
+            else if (p >= 2) partiallyShared++;
+            else specific++;
+        }
+        return new SummaryCounts(fullyShared, partiallyShared, specific);
+    }
 
     /** @return adjectives present in every seed noun's collocate profile */
     public List<AdjectiveProfile> getFullyShared() {

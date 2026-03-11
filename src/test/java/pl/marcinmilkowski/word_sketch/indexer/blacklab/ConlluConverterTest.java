@@ -210,4 +210,47 @@ class ConlluConverterTest {
         List<String> lines = Files.readAllLines(outDir.resolve("chunk_000000.tsv"));
         assertTrue(lines.contains("</s>"), "trailing </s> written");
     }
+
+    // ── error / edge paths ────────────────────────────────────────────────────
+
+    @Test
+    @DisplayName("malformed token line (fewer than 10 fields) is written through without error")
+    void malformedTokenLine_writtenThrough(@TempDir Path tmp) throws IOException {
+        // Only 4 columns instead of the standard 10 — converter should not crash;
+        // it passes lines verbatim and does not validate column count.
+        String withShortLine =
+                "1\tcat\tcat\tNOUN\n" +
+                "\n";
+        Path input = writeInput(tmp, withShortLine);
+        Path outDir = tmp.resolve("out");
+        Files.createDirectories(outDir);
+
+        long[] result = ConlluConverter.convertConlluToWplChunks(input, outDir, 100);
+
+        assertEquals(1, result[0], "sentences");
+        assertEquals(1, result[1], "tokens");
+        List<String> lines = Files.readAllLines(outDir.resolve("chunk_000000.tsv"));
+        assertTrue(lines.stream().anyMatch(l -> l.startsWith("1\tcat")), "short line preserved");
+    }
+
+    @Test
+    @DisplayName("consecutive blank lines between sentences do not produce phantom sentences")
+    void consecutiveBlankLines_noPhantomSentences(@TempDir Path tmp) throws IOException {
+        String withExtraBlanks =
+                "# sent_id = 1\n" +
+                "1\tcat\tcat\tNOUN\tNN\t_\t0\troot\t_\t_\n" +
+                "\n" +
+                "\n" +   // extra blank line
+                "# sent_id = 2\n" +
+                "1\tdog\tdog\tNOUN\tNN\t_\t0\troot\t_\t_\n" +
+                "\n";
+        Path input = writeInput(tmp, withExtraBlanks);
+        Path outDir = tmp.resolve("out");
+        Files.createDirectories(outDir);
+
+        long[] result = ConlluConverter.convertConlluToWplChunks(input, outDir, 100);
+
+        assertEquals(2, result[0], "only 2 real sentences, not 3");
+        assertEquals(2, result[1], "tokens");
+    }
 }

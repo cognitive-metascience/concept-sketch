@@ -52,7 +52,7 @@ class CollocateQueryHelper {
 
     private final BlackLabIndex index;
 
-    CollocateQueryHelper(BlackLabIndex index) {
+    CollocateQueryHelper(@Nullable BlackLabIndex index) {
         this.index = index;
     }
 
