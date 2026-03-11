@@ -11,22 +11,22 @@
     "total": 965,
     "auto_resolved": 148,
     "false_positive": 0,
-    "fixed": 654,
-    "open": 21,
+    "fixed": 664,
+    "open": 11,
     "wontfix": 142,
     "by_tier": {
       "1": {
         "auto_resolved": 70,
         "false_positive": 0,
-        "fixed": 482,
-        "open": 8,
+        "fixed": 488,
+        "open": 2,
         "wontfix": 85
       },
       "2": {
         "auto_resolved": 44,
         "false_positive": 0,
-        "fixed": 163,
-        "open": 8,
+        "fixed": 167,
+        "open": 4,
         "wontfix": 54
       },
       "3": {
@@ -38033,16 +38033,22 @@
         "suggestion": "Move RelationUtils to the config/ package (or create config/RelationAliases.java) so the api/ package imports config/ for alias resolution, consistent with the existing dependency direction.",
         "reasoning": ""
       },
-      "status": "open",
-      "note": null,
+      "status": "fixed",
+      "note": "RelationUtils moved from api/ to config/ as public class; @Nullable annotation added; ExplorationHandlers import updated; test moved to config package",
       "first_seen": "2026-03-11T12:22:57+00:00",
       "last_seen": "2026-03-11T12:22:57+00:00",
-      "resolved_at": null,
+      "resolved_at": "2026-03-11T13:01:12+00:00",
       "reopen_count": 0,
       "lang": "java",
       "suppressed": false,
       "suppressed_at": null,
-      "suppression_pattern": null
+      "suppression_pattern": null,
+      "resolution_attestation": {
+        "kind": "manual",
+        "text": "I have actually RelationUtils moved from api/ to config/ as public class; @Nullable annotation added; ExplorationHandlers import updated; test moved to config package and I am not gaming the score.",
+        "attested_at": "2026-03-11T13:01:12+00:00",
+        "scan_verified": false
+      }
     },
     "review::.::holistic::high_level_elegance::hle_exploration_result_overloading::1501e903": {
       "id": "review::.::holistic::high_level_elegance::hle_exploration_result_overloading::1501e903",
@@ -38282,16 +38288,22 @@
         "suggestion": "Remove the try-catch from handleBcqlQueryPost; let the existing wrapHandler boundary handle exception classification. If JSONException needs special treatment, add it to wrapHandler's catch taxonomy.",
         "reasoning": ""
       },
-      "status": "open",
-      "note": null,
+      "status": "fixed",
+      "note": "All wrapHandler bypass violations fixed: VisualizationHandlers catch-all removed; ExplorationHandlers inner try-catch removed; SketchHandlers.handleBcqlQueryPost 3-clause try-catch removed; BlackLabQueryExecutor.findCollocations lets IAE propagate",
       "first_seen": "2026-03-11T12:22:57+00:00",
       "last_seen": "2026-03-11T12:22:57+00:00",
-      "resolved_at": null,
+      "resolved_at": "2026-03-11T12:58:22+00:00",
       "reopen_count": 0,
       "lang": "java",
       "suppressed": false,
       "suppressed_at": null,
-      "suppression_pattern": null
+      "suppression_pattern": null,
+      "resolution_attestation": {
+        "kind": "manual",
+        "text": "I have actually All wrapHandler bypass violations fixed: VisualizationHandlers catch-all removed; ExplorationHandlers inner try-catch removed; SketchHandlers.handleBcqlQueryPost 3-clause try-catch removed; BlackLabQueryExecutor.findCollocations lets IAE propagate and I am not gaming the score.",
+        "attested_at": "2026-03-11T12:58:22+00:00",
+        "scan_verified": false
+      }
     },
     "review::.::holistic::low_level_elegance::lle_logtopdebug_no_guard::8efffea4": {
       "id": "review::.::holistic::low_level_elegance::lle_logtopdebug_no_guard::8efffea4",
@@ -38427,16 +38439,22 @@
         "suggestion": "Remove the try-catch from handleBcqlQueryPost. If JSONException (from fastjson2) needs to be treated as a 400, add it to the wrapHandler catch taxonomy (or map it as a subclass of IllegalArgumentException if the library permits).",
         "reasoning": ""
       },
-      "status": "open",
-      "note": null,
+      "status": "fixed",
+      "note": "Removed the 3-clause try-catch from handleBcqlQueryPost; parseBcqlRequest now catches JSONException and rethrows as IAE; all BCQL errors route through wrapHandler",
       "first_seen": "2026-03-11T12:22:57+00:00",
       "last_seen": "2026-03-11T12:22:57+00:00",
-      "resolved_at": null,
+      "resolved_at": "2026-03-11T13:01:31+00:00",
       "reopen_count": 0,
       "lang": "java",
       "suppressed": false,
       "suppressed_at": null,
-      "suppression_pattern": null
+      "suppression_pattern": null,
+      "resolution_attestation": {
+        "kind": "manual",
+        "text": "I have actually Removed the 3-clause try-catch from handleBcqlQueryPost; parseBcqlRequest now catches JSONException and rethrows as IAE; all BCQL errors route through wrapHandler and I am not gaming the score.",
+        "attested_at": "2026-03-11T13:01:31+00:00",
+        "scan_verified": false
+      }
     },
     "review::.::holistic::ai_generated_debt::aigd_echo_comments::7d88f041": {
       "id": "review::.::holistic::ai_generated_debt::aigd_echo_comments::7d88f041",
@@ -38536,16 +38554,22 @@
         "suggestion": "Staged reorg: (1) Move LongIntHashMap to utils/ or a new utils/collections/ sub-package; update all import statements. (2) Move RadialPlot to api/viz/ (since it is only called from VisualizationHandlers in api/) or retain it in viz/ if future visualization classes are planned. Validate with: mvn compile after each move.",
         "reasoning": ""
       },
-      "status": "open",
-      "note": null,
+      "status": "fixed",
+      "note": "collections/ and viz/ packages eliminated by moving LongIntHashMap and RadialPlot to utils/; test files moved accordingly; all imports updated",
       "first_seen": "2026-03-11T12:22:57+00:00",
       "last_seen": "2026-03-11T12:22:57+00:00",
-      "resolved_at": null,
+      "resolved_at": "2026-03-11T13:01:59+00:00",
       "reopen_count": 0,
       "lang": "java",
       "suppressed": false,
       "suppressed_at": null,
-      "suppression_pattern": null
+      "suppression_pattern": null,
+      "resolution_attestation": {
+        "kind": "manual",
+        "text": "I have actually collections/ and viz/ packages eliminated by moving LongIntHashMap and RadialPlot to utils/; test files moved accordingly; all imports updated and I am not gaming the score.",
+        "attested_at": "2026-03-11T13:01:59+00:00",
+        "scan_verified": false
+      }
     },
     "review::.::holistic::contract_coherence::cc_relation_utils_null_return_undocumented::6ce46aa4": {
       "id": "review::.::holistic::contract_coherence::cc_relation_utils_null_return_undocumented::6ce46aa4",
@@ -38701,16 +38725,22 @@
         "suggestion": "Delete the three private static wrapper methods (formatSeedCollocates, formatDiscoveredNouns, formatCoreCollocates) from ExplorationHandlers \u2014 they are no longer reachable after populateExploreResponse was introduced",
         "reasoning": ""
       },
-      "status": "open",
-      "note": null,
+      "status": "fixed",
+      "note": "All 4 dead delegate methods removed from ExplorationHandlers (buildExploreResponseBody, formatSeedCollocates, formatDiscoveredNouns, formatCoreCollocates); 2 call sites updated to call ExploreResponseBuilder.populateExploreResponse directly",
       "first_seen": "2026-03-11T12:22:57+00:00",
       "last_seen": "2026-03-11T12:22:57+00:00",
-      "resolved_at": null,
+      "resolved_at": "2026-03-11T13:02:16+00:00",
       "reopen_count": 0,
       "lang": "java",
       "suppressed": false,
       "suppressed_at": null,
-      "suppression_pattern": null
+      "suppression_pattern": null,
+      "resolution_attestation": {
+        "kind": "manual",
+        "text": "I have actually All 4 dead delegate methods removed from ExplorationHandlers (buildExploreResponseBody, formatSeedCollocates, formatDiscoveredNouns, formatCoreCollocates); 2 call sites updated to call ExploreResponseBuilder.populateExploreResponse directly and I am not gaming the score.",
+        "attested_at": "2026-03-11T13:02:16+00:00",
+        "scan_verified": false
+      }
     },
     "review::.::holistic::logic_clarity::viz-handler-catch-all-500::d254b693": {
       "id": "review::.::holistic::logic_clarity::viz-handler-catch-all-500::d254b693",
@@ -38733,16 +38763,22 @@
         "suggestion": "Remove the inner try-catch from handleVisualRadial and let exceptions propagate to wrapHandler, which already provides consistent IAE\u2192400 and IOException\u2192500 mapping; add explicit validation checks for mandatory fields before any parsing side-effects if early 400 responses are needed",
         "reasoning": ""
       },
-      "status": "open",
-      "note": null,
+      "status": "fixed",
+      "note": "All wrapHandler bypass violations fixed: VisualizationHandlers catch-all removed; ExplorationHandlers inner try-catch removed; SketchHandlers.handleBcqlQueryPost 3-clause try-catch removed; BlackLabQueryExecutor.findCollocations lets IAE propagate",
       "first_seen": "2026-03-11T12:22:57+00:00",
       "last_seen": "2026-03-11T12:22:57+00:00",
-      "resolved_at": null,
+      "resolved_at": "2026-03-11T12:58:23+00:00",
       "reopen_count": 0,
       "lang": "java",
       "suppressed": false,
       "suppressed_at": null,
-      "suppression_pattern": null
+      "suppression_pattern": null,
+      "resolution_attestation": {
+        "kind": "manual",
+        "text": "I have actually All wrapHandler bypass violations fixed: VisualizationHandlers catch-all removed; ExplorationHandlers inner try-catch removed; SketchHandlers.handleBcqlQueryPost 3-clause try-catch removed; BlackLabQueryExecutor.findCollocations lets IAE propagate and I am not gaming the score.",
+        "attested_at": "2026-03-11T12:58:23+00:00",
+        "scan_verified": false
+      }
     },
     "review::.::holistic::type_safety::buildfullpattern-nullable-return::40a9aa61": {
       "id": "review::.::holistic::type_safety::buildfullpattern-nullable-return::40a9aa61",
@@ -38949,16 +38985,22 @@
         "suggestion": "Remove the broad inner try-catch from handleVisualRadial; add specific validation for required fields (items array null check, invalid width/height) that throws IllegalArgumentException to be caught by wrapHandler as 400",
         "reasoning": ""
       },
-      "status": "open",
-      "note": null,
+      "status": "fixed",
+      "note": "All wrapHandler bypass violations fixed: VisualizationHandlers catch-all removed (JSONException\u2192IAE); ExplorationHandlers inner try-catch removed; SketchHandlers.handleBcqlQueryPost 3-clause try-catch removed; BlackLabQueryExecutor.findCollocations lets IAE propagate",
       "first_seen": "2026-03-11T12:22:57+00:00",
       "last_seen": "2026-03-11T12:22:57+00:00",
-      "resolved_at": null,
+      "resolved_at": "2026-03-11T12:58:53+00:00",
       "reopen_count": 0,
       "lang": "java",
       "suppressed": false,
       "suppressed_at": null,
-      "suppression_pattern": null
+      "suppression_pattern": null,
+      "resolution_attestation": {
+        "kind": "manual",
+        "text": "I have actually All wrapHandler bypass violations fixed: VisualizationHandlers catch-all removed (JSONException\u2192IAE); ExplorationHandlers inner try-catch removed; SketchHandlers.handleBcqlQueryPost 3-clause try-catch removed; BlackLabQueryExecutor.findCollocations lets IAE propagate and I am not gaming the score.",
+        "attested_at": "2026-03-11T12:58:53+00:00",
+        "scan_verified": false
+      }
     },
     "review::.::holistic::error_consistency::iae-wrapped-as-ioexception::083387bf": {
       "id": "review::.::holistic::error_consistency::iae-wrapped-as-ioexception::083387bf",
@@ -39020,16 +39062,22 @@
         "suggestion": "Remove the inner try-catch blocks from handleSemanticFieldExplore and handleSemanticFieldExploreMulti; let IOException and IAE propagate to wrapHandler which provides the same classification uniformly; keep explicit sendError only for cases that need a specific 400 message before the exception phase (e.g. missing-seeds check)",
         "reasoning": ""
       },
-      "status": "open",
-      "note": null,
+      "status": "fixed",
+      "note": "ExplorationHandlers inner try-catch removed; handleBcqlQueryPost 3-clause try-catch removed (JSONException\u2192IAE in parseBcqlRequest); all handlers now route through wrapHandler",
       "first_seen": "2026-03-11T12:22:57+00:00",
       "last_seen": "2026-03-11T12:22:57+00:00",
-      "resolved_at": null,
+      "resolved_at": "2026-03-11T12:59:26+00:00",
       "reopen_count": 0,
       "lang": "java",
       "suppressed": false,
       "suppressed_at": null,
-      "suppression_pattern": null
+      "suppression_pattern": null,
+      "resolution_attestation": {
+        "kind": "manual",
+        "text": "I have actually ExplorationHandlers inner try-catch removed; handleBcqlQueryPost 3-clause try-catch removed (JSONException\u2192IAE in parseBcqlRequest); all handlers now route through wrapHandler and I am not gaming the score.",
+        "attested_at": "2026-03-11T12:59:26+00:00",
+        "scan_verified": false
+      }
     },
     "review::.::holistic::initialization_coupling::index-io-in-constructor::98c17e83": {
       "id": "review::.::holistic::initialization_coupling::index-io-in-constructor::98c17e83",
@@ -39130,16 +39178,22 @@
         "suggestion": "Move LongIntHashMap to the 'utils' package to consolidate non-domain utilities, or move LogDiceCalculator and CqlUtils to 'collections' \u2014 the choice is less important than eliminating the split",
         "reasoning": ""
       },
-      "status": "open",
-      "note": null,
+      "status": "fixed",
+      "note": "LongIntHashMap moved from collections/ to utils/; RadialPlot moved from viz/ to utils/; all imports updated",
       "first_seen": "2026-03-11T12:22:57+00:00",
       "last_seen": "2026-03-11T12:22:57+00:00",
-      "resolved_at": null,
+      "resolved_at": "2026-03-11T13:00:46+00:00",
       "reopen_count": 0,
       "lang": "java",
       "suppressed": false,
       "suppressed_at": null,
-      "suppression_pattern": null
+      "suppression_pattern": null,
+      "resolution_attestation": {
+        "kind": "manual",
+        "text": "I have actually LongIntHashMap moved from collections/ to utils/; RadialPlot moved from viz/ to utils/; all imports updated and I am not gaming the score.",
+        "attested_at": "2026-03-11T13:00:46+00:00",
+        "scan_verified": false
+      }
     },
     "review::.::holistic::convention_outlier::visualization-handler-style-island::7057f56a": {
       "id": "review::.::holistic::convention_outlier::visualization-handler-style-island::7057f56a",
@@ -39568,16 +39622,22 @@
         "suggestion": "Remove the outer try-catch from handleBcqlQueryPost; let parseBcqlRequest return null for validation failures (already does so), and let unexpected exceptions propagate to wrapHandler; the resulting method body would be just: `BcqlRequest req = parseBcqlRequest(exchange); if (req == null) return; ... sendJsonResponse(exchange, buildBcqlResponse(req, results))`",
         "reasoning": ""
       },
-      "status": "open",
-      "note": null,
+      "status": "fixed",
+      "note": "ExplorationHandlers inner try-catch removed; handleBcqlQueryPost 3-clause try-catch removed (JSONException\u2192IAE in parseBcqlRequest); all handlers now route through wrapHandler",
       "first_seen": "2026-03-11T12:22:57+00:00",
       "last_seen": "2026-03-11T12:22:57+00:00",
-      "resolved_at": null,
+      "resolved_at": "2026-03-11T12:59:28+00:00",
       "reopen_count": 0,
       "lang": "java",
       "suppressed": false,
       "suppressed_at": null,
-      "suppression_pattern": null
+      "suppression_pattern": null,
+      "resolution_attestation": {
+        "kind": "manual",
+        "text": "I have actually ExplorationHandlers inner try-catch removed; handleBcqlQueryPost 3-clause try-catch removed (JSONException\u2192IAE in parseBcqlRequest); all handlers now route through wrapHandler and I am not gaming the score.",
+        "attested_at": "2026-03-11T12:59:28+00:00",
+        "scan_verified": false
+      }
     },
     "review::.::holistic::design_coherence::semanticfieldexplorer-inlined-phases::adbd8848": {
       "id": "review::.::holistic::design_coherence::semanticfieldexplorer-inlined-phases::adbd8848",
@@ -39687,7 +39747,10 @@
     "cross_module_architecture": {
       "score": 78.3,
       "source": "holistic",
-      "assessed_at": "2026-03-11T12:22:57+00:00"
+      "assessed_at": "2026-03-11T12:22:57+00:00",
+      "needs_review_refresh": true,
+      "refresh_reason": "review_issue_fixed",
+      "stale_since": "2026-03-11T13:01:12+00:00"
     },
     "ai_generated_debt": {
       "score": 70.4,
@@ -39695,7 +39758,7 @@
       "assessed_at": "2026-03-11T12:22:57+00:00",
       "needs_review_refresh": true,
       "refresh_reason": "review_issue_fixed",
-      "stale_since": "2026-03-11T12:56:35+00:00"
+      "stale_since": "2026-03-11T13:01:31+00:00"
     },
     "incomplete_migration": {
       "score": 81.4,
@@ -39708,7 +39771,10 @@
     "package_organization": {
       "score": 80.1,
       "source": "holistic",
-      "assessed_at": "2026-03-11T12:22:57+00:00"
+      "assessed_at": "2026-03-11T12:22:57+00:00",
+      "needs_review_refresh": true,
+      "refresh_reason": "review_issue_fixed",
+      "stale_since": "2026-03-11T13:01:59+00:00"
     },
     "initialization_coupling": {
       "score": 73.6,
@@ -39724,7 +39790,7 @@
       "assessed_at": "2026-03-11T12:22:57+00:00",
       "needs_review_refresh": true,
       "refresh_reason": "review_issue_fixed",
-      "stale_since": "2026-03-11T12:57:15+00:00"
+      "stale_since": "2026-03-11T12:59:28+00:00"
     },
     "contract_coherence": {
       "score": 68.5,
@@ -39737,7 +39803,10 @@
     "logic_clarity": {
       "score": 70.9,
       "source": "holistic",
-      "assessed_at": "2026-03-11T12:22:57+00:00"
+      "assessed_at": "2026-03-11T12:22:57+00:00",
+      "needs_review_refresh": true,
+      "refresh_reason": "review_issue_fixed",
+      "stale_since": "2026-03-11T13:02:16+00:00"
     },
     "type_safety": {
       "score": 71.1,
@@ -39782,7 +39851,7 @@
       "assessed_at": "2026-03-11T12:22:57+00:00",
       "needs_review_refresh": true,
       "refresh_reason": "review_issue_fixed",
-      "stale_since": "2026-03-11T12:58:20+00:00"
+      "stale_since": "2026-03-11T13:00:46+00:00"
     },
     "error_consistency": {
       "score": 57.1,
@@ -39790,7 +39859,7 @@
       "assessed_at": "2026-03-11T12:22:57+00:00",
       "needs_review_refresh": true,
       "refresh_reason": "review_issue_fixed",
-      "stale_since": "2026-03-11T12:58:16+00:00"
+      "stale_since": "2026-03-11T12:59:26+00:00"
     },
     "naming_quality": {
       "score": 64.0,
@@ -39838,7 +39907,7 @@
       "assessed_at": "2026-03-11T12:22:57+00:00",
       "needs_review_refresh": true,
       "refresh_reason": "review_issue_fixed",
-      "stale_since": "2026-03-11T12:58:21+00:00"
+      "stale_since": "2026-03-11T12:58:22+00:00"
     },
     "mid_level_elegance": {
       "score": 70.5,
@@ -42730,13 +42799,13 @@
       "strict": 70.9,
       "verified_strict_score": 70.9,
       "checks": 10,
-      "failing": 2,
+      "failing": 0,
       "tier": 4,
       "detectors": {
         "subjective_assessment": {
           "potential": 10,
           "pass_rate": 0.709,
-          "failing": 2,
+          "failing": 0,
           "weighted_failures": 2.91,
           "assessment_score": 70.9,
           "placeholder": false,
@@ -42793,13 +42862,13 @@
       "strict": 57.1,
       "verified_strict_score": 57.1,
       "checks": 10,
-      "failing": 2,
+      "failing": 0,
       "tier": 4,
       "detectors": {
         "subjective_assessment": {
           "potential": 10,
           "pass_rate": 0.571,
-          "failing": 2,
+          "failing": 0,
           "weighted_failures": 4.29,
           "assessment_score": 57.1,
           "placeholder": false,
@@ -42850,13 +42919,13 @@
       "strict": 70.4,
       "verified_strict_score": 70.4,
       "checks": 10,
-      "failing": 1,
+      "failing": 0,
       "tier": 4,
       "detectors": {
         "subjective_assessment": {
           "potential": 10,
           "pass_rate": 0.704,
-          "failing": 1,
+          "failing": 0,
           "weighted_failures": 2.96,
           "assessment_score": 70.4,
           "placeholder": false,
@@ -42913,13 +42982,13 @@
       "strict": 66.5,
       "verified_strict_score": 66.5,
       "checks": 10,
-      "failing": 1,
+      "failing": 0,
       "tier": 4,
       "detectors": {
         "subjective_assessment": {
           "potential": 10,
           "pass_rate": 0.665,
-          "failing": 1,
+          "failing": 0,
           "weighted_failures": 3.35,
           "assessment_score": 66.5,
           "placeholder": false,
@@ -42934,13 +43003,13 @@
       "strict": 78.3,
       "verified_strict_score": 78.3,
       "checks": 10,
-      "failing": 1,
+      "failing": 0,
       "tier": 4,
       "detectors": {
         "subjective_assessment": {
           "potential": 10,
           "pass_rate": 0.783,
-          "failing": 1,
+          "failing": 0,
           "weighted_failures": 2.17,
           "assessment_score": 78.3,
           "placeholder": false,
@@ -42976,13 +43045,13 @@
       "strict": 66.7,
       "verified_strict_score": 66.7,
       "checks": 10,
-      "failing": 1,
+      "failing": 0,
       "tier": 4,
       "detectors": {
         "subjective_assessment": {
           "potential": 10,
           "pass_rate": 0.667,
-          "failing": 1,
+          "failing": 0,
           "weighted_failures": 3.33,
           "assessment_score": 66.7,
           "placeholder": false,
@@ -43102,13 +43171,13 @@
       "strict": 80.1,
       "verified_strict_score": 80.1,
       "checks": 10,
-      "failing": 1,
+      "failing": 0,
       "tier": 4,
       "detectors": {
         "subjective_assessment": {
           "potential": 10,
           "pass_rate": 0.801,
-          "failing": 1,
+          "failing": 0,
           "weighted_failures": 1.99,
           "assessment_score": 80.1,
           "placeholder": false,
@@ -43123,13 +43192,13 @@
       "strict": 61.9,
       "verified_strict_score": 61.9,
       "checks": 10,
-      "failing": 1,
+      "failing": 0,
       "tier": 4,
       "detectors": {
         "subjective_assessment": {
           "potential": 10,
           "pass_rate": 0.619,
-          "failing": 1,
+          "failing": 0,
           "weighted_failures": 3.81,
           "assessment_score": 61.9,
           "placeholder": false,
