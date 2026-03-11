@@ -1,7 +1,7 @@
 {
   "version": 8,
   "created": "2026-03-09T18:36:05+00:00",
-  "updated": "2026-03-11T19:03:42+00:00",
+  "updated": "2026-03-11T19:09:26+00:00",
   "queue_order": [
     "review::.::holistic::test_strategy::no-test-tier-separation::a5f40e45",
     "review::.::holistic::test_strategy::cli-parsing-no-test::f5778d7a",
@@ -38,8 +38,7 @@
     "review::.::holistic::convention_outlier::blacklab_query_not_in_subdirectory::2368f5ed",
     "review::.::holistic::cross_module_architecture::pattern_sub_misplaced_in_api::52e1e369",
     "review::.::holistic::cross_module_architecture::pattern_substitution_in_api::8f9ad891",
-    "review::.::holistic::cross_module_architecture::server_constructs_service_internally::8d0d0ab1",
-    "review::.::holistic::error_consistency::resolve_relation_alias_null_passthrough::0fc096b2"
+    "review::.::holistic::cross_module_architecture::server_constructs_service_internally::8d0d0ab1"
   ],
   "deferred": [],
   "skipped": {
@@ -8501,8 +8500,8 @@
     "review::.::holistic::error_consistency::resolve_relation_alias_null_passthrough::0fc096b2": {
       "issue_id": "review::.::holistic::error_consistency::resolve_relation_alias_null_passthrough::0fc096b2",
       "created_at": "2026-03-11T18:39:04+00:00",
-      "cluster": "stale-cleanup",
-      "updated_at": "2026-03-11T18:39:04+00:00"
+      "cluster": null,
+      "updated_at": "2026-03-11T19:09:26+00:00"
     },
     "review::.::holistic::api_surface_coherence::dep_method_pair_unifiable::5cbdbd08": {
       "issue_id": "review::.::holistic::api_surface_coherence::dep_method_pair_unifiable::5cbdbd08",
@@ -16890,8 +16889,7 @@
         "review::.::holistic::incomplete_migration::tag_attr_legacy_fallback::b1b61716",
         "review::.::holistic::package_organization::empty_collections_package::79dba20a",
         "review::.::holistic::logic_clarity::unreachable_max1_guard::0eac426c",
-        "review::.::holistic::initialization_coupling::cors_origin_runtime_mutation::07f967d0",
-        "review::.::holistic::error_consistency::resolve_relation_alias_null_passthrough::0fc096b2"
+        "review::.::holistic::initialization_coupling::cors_origin_runtime_mutation::07f967d0"
       ],
       "created_at": "2026-03-11T17:12:59+00:00",
       "updated_at": "2026-03-11T18:39:04+00:00",
@@ -93807,6 +93805,52 @@
         "status": "fixed",
         "attestation": "I have actually added 5 real unit tests to BlackLabQueryExecutorTest.java that run in CI without any index, and the live-index tests are properly guarded with @Disabled @Nested, and I am not gaming the score."
       }
+    },
+    {
+      "timestamp": "2026-03-11T19:04:04+00:00",
+      "action": "commit_record",
+      "issue_ids": [
+        "review::.::holistic::incomplete_migration::cors_vestigial_getter::91434c09",
+        "review::.::holistic::naming_quality::get_cors_allow_origin_pass_through::9ce5af5f",
+        "review::.::holistic::error_consistency::multi_seed_direct_send_error_vs_iae::329847f3",
+        "review::.::holistic::low_level_elegance::collocate_comparator_multi_pass_stats::5753509e",
+        "review::.::holistic::low_level_elegance::conllu_converter_rotate_null_sentinel::db61167a",
+        "review::.::holistic::naming_quality::explore_params_vocabulary_split::2910d50f",
+        "review::.::holistic::initialization_coupling::cors_system_property_at_class_load::958402f9",
+        "review::.::holistic::test_strategy::disabled_live_index_tests_core_path::f9391185"
+      ],
+      "cluster_name": null,
+      "actor": "user",
+      "note": "P3/P4 clusters: test-coverage and elegance-smells",
+      "detail": {
+        "sha": "2b238bdc34cd",
+        "branch": "desloppify/code-health"
+      }
+    },
+    {
+      "timestamp": "2026-03-11T19:09:26+00:00",
+      "action": "done",
+      "issue_ids": [
+        "review::.::holistic::error_consistency::resolve_relation_alias_null_passthrough::0fc096b2"
+      ],
+      "cluster_name": null,
+      "actor": "user",
+      "note": "Changed resolveRelationAlias to throw IAE on null input; removed @Nullable from parameter and return type; updated test to assertThrows; also removed empty collections/ package directory",
+      "detail": {}
+    },
+    {
+      "timestamp": "2026-03-11T19:09:26+00:00",
+      "action": "resolve",
+      "issue_ids": [
+        "review::.::holistic::error_consistency::resolve_relation_alias_null_passthrough::0fc096b2"
+      ],
+      "cluster_name": null,
+      "actor": "user",
+      "note": "Changed resolveRelationAlias to throw IAE on null input; removed @Nullable from parameter and return type; updated test to assertThrows; also removed empty collections/ package directory",
+      "detail": {
+        "status": "fixed",
+        "attestation": "I have actually Changed resolveRelationAlias to throw IAE on null input; removed @Nullable from parameter and return type; updated test to assertThrows; also removed empty collections/ package directory and I am not gaming the score."
+      }
     }
   ],
   "epic_triage_meta": {
@@ -95242,17 +95286,27 @@
       "recorded_at": "2026-03-11T19:02:06+00:00",
       "note": null,
       "cluster_name": null
+    },
+    {
+      "sha": "2b238bdc34cd",
+      "branch": "desloppify/code-health",
+      "issue_ids": [
+        "review::.::holistic::incomplete_migration::cors_vestigial_getter::91434c09",
+        "review::.::holistic::naming_quality::get_cors_allow_origin_pass_through::9ce5af5f",
+        "review::.::holistic::error_consistency::multi_seed_direct_send_error_vs_iae::329847f3",
+        "review::.::holistic::low_level_elegance::collocate_comparator_multi_pass_stats::5753509e",
+        "review::.::holistic::low_level_elegance::conllu_converter_rotate_null_sentinel::db61167a",
+        "review::.::holistic::naming_quality::explore_params_vocabulary_split::2910d50f",
+        "review::.::holistic::initialization_coupling::cors_system_property_at_class_load::958402f9",
+        "review::.::holistic::test_strategy::disabled_live_index_tests_core_path::f9391185"
+      ],
+      "recorded_at": "2026-03-11T19:04:04+00:00",
+      "note": "P3/P4 clusters: test-coverage and elegance-smells",
+      "cluster_name": null
     }
   ],
   "uncommitted_issues": [
-    "review::.::holistic::incomplete_migration::cors_vestigial_getter::91434c09",
-    "review::.::holistic::naming_quality::get_cors_allow_origin_pass_through::9ce5af5f",
-    "review::.::holistic::error_consistency::multi_seed_direct_send_error_vs_iae::329847f3",
-    "review::.::holistic::low_level_elegance::collocate_comparator_multi_pass_stats::5753509e",
-    "review::.::holistic::low_level_elegance::conllu_converter_rotate_null_sentinel::db61167a",
-    "review::.::holistic::naming_quality::explore_params_vocabulary_split::2910d50f",
-    "review::.::holistic::initialization_coupling::cors_system_property_at_class_load::958402f9",
-    "review::.::holistic::test_strategy::disabled_live_index_tests_core_path::f9391185"
+    "review::.::holistic::error_consistency::resolve_relation_alias_null_passthrough::0fc096b2"
   ],
   "commit_tracking_branch": null,
   "scan_count_at_plan_start": 5

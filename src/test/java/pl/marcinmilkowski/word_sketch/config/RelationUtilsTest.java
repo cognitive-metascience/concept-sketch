@@ -72,7 +72,7 @@ class RelationUtilsTest {
     }
 
     @Test
-    void nullInput_returnsNull() {
-        assertNull(RelationUtils.resolveRelationAlias(null));
+    void nullInput_throwsIllegalArgumentException() {
+        assertThrows(IllegalArgumentException.class, () -> RelationUtils.resolveRelationAlias(null));
     }
 }

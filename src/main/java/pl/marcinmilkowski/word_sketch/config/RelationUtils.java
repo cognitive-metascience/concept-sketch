@@ -40,10 +40,10 @@ public class RelationUtils {
      * (e.g. "noun_adj_predicates"). Pass-through for strings that are already canonical IDs.
      * Resolution is case-insensitive; the returned value is always lower-cased.
      *
-     * @return the canonical grammar-config ID, or {@code null} if {@code relation} is {@code null}
+     * @throws IllegalArgumentException if {@code relation} is {@code null}
      */
-    public static @Nullable String resolveRelationAlias(@Nullable String relation) {
-        if (relation == null) return null;
+    public static String resolveRelationAlias(String relation) {
+        if (relation == null) throw new IllegalArgumentException("relation must not be null");
         String lower = relation.toLowerCase();
         return RELATION_ALIASES.getOrDefault(lower, lower);
     }

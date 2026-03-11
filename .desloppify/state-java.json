@@ -11,8 +11,8 @@
     "total": 1168,
     "auto_resolved": 230,
     "false_positive": 0,
-    "fixed": 755,
-    "open": 22,
+    "fixed": 756,
+    "open": 21,
     "wontfix": 161,
     "by_tier": {
       "1": {
@@ -25,8 +25,8 @@
       "2": {
         "auto_resolved": 69,
         "false_positive": 0,
-        "fixed": 205,
-        "open": 12,
+        "fixed": 206,
+        "open": 11,
         "wontfix": 65
       },
       "3": {
@@ -46139,16 +46139,22 @@
         "suggestion": "Change resolveRelationAlias to accept @NonNull String relation (throwing IAE if null) and remove the null-passthrough branch. Update the @return Javadoc. Callers that need null-safe behavior can guard before calling.",
         "reasoning": ""
       },
-      "status": "open",
-      "note": null,
+      "status": "fixed",
+      "note": "Changed resolveRelationAlias to throw IAE on null input; removed @Nullable from parameter and return type; updated test to assertThrows; also removed empty collections/ package directory",
       "first_seen": "2026-03-11T18:31:03+00:00",
       "last_seen": "2026-03-11T18:31:03+00:00",
-      "resolved_at": null,
+      "resolved_at": "2026-03-11T19:09:26+00:00",
       "reopen_count": 0,
       "lang": "java",
       "suppressed": false,
       "suppressed_at": null,
-      "suppression_pattern": null
+      "suppression_pattern": null,
+      "resolution_attestation": {
+        "kind": "manual",
+        "text": "I have actually Changed resolveRelationAlias to throw IAE on null input; removed @Nullable from parameter and return type; updated test to assertThrows; also removed empty collections/ package directory and I am not gaming the score.",
+        "attested_at": "2026-03-11T19:09:26+00:00",
+        "scan_verified": false
+      }
     },
     "review::.::holistic::naming_quality::round2dp_abbreviation::06854159": {
       "id": "review::.::holistic::naming_quality::round2dp_abbreviation::06854159",
@@ -47647,7 +47653,7 @@
       "assessed_at": "2026-03-11T18:31:03+00:00",
       "needs_review_refresh": true,
       "refresh_reason": "review_issue_fixed",
-      "stale_since": "2026-03-11T19:02:51+00:00"
+      "stale_since": "2026-03-11T19:09:26+00:00"
     },
     "naming_quality": {
       "score": 72.9,
@@ -50644,13 +50650,13 @@
       "strict": 66.7,
       "verified_strict_score": 66.7,
       "checks": 10,
-      "failing": 1,
+      "failing": 0,
       "tier": 4,
       "detectors": {
         "subjective_assessment": {
           "potential": 10,
           "pass_rate": 0.667,
-          "failing": 1,
+          "failing": 0,
           "weighted_failures": 3.33,
           "assessment_score": 66.7,
           "placeholder": false,
