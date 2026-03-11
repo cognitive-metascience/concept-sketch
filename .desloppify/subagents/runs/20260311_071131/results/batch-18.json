@@ -1,0 +1,98 @@
+{
+  "batch": "test_strategy",
+  "batch_index": 18,
+  "assessments": {"test_strategy": 58.0},
+  "dimension_notes": {
+    "test_strategy": {
+      "evidence": [
+        "21 test files found for ~30 production files — breadth of coverage is good across query, config, exploration, api, and utils packages",
+        "Test files found: BlackLabQueryExecutorTest, BlackLabSnippetParserTest, CollocateQueryHelperTest, SemanticFieldExplorerTest, CollocateProfileComparatorTest, CqlUtilsTest, LogDiceCalculatorTest, GrammarConfigLoaderTest, RelationsValidationTest, RelationUtilsTest, HandlersTest, HttpApiUtilsTest, PatternSubstitutionTest, RadialPlotTest, LongIntHashMapTest, BCQLParserTest, DependencySketchTest, HybridAlgorithmTest, BlackLabBcqlConcordanceTest, BlackLabDummyTest",
+        "BlackLabConllUIndexer has NO dedicated test — this is a critical path that writes the index used by all queries; untested means any regression in indexing produces silent data corruption",
+        "ConlluConverter has NO dedicated test — converts CoNLL-U to WPL chunks; edge cases (empty corpus, malformed tokens, multi-word expressions) are not validated",
+        "WordSketchApiServer has NO dedicated integration test — route registration, CORS handling, method enforcement are untested at the server level",
+        "ExplorationHandlers and SketchHandlers appear to be covered by HandlersTest, but it is not clear without reading HandlersTest whether it uses mocks or a real index",
+        "HybridAlgorithmTest and BlackLabBcqlConcordanceTest suggest some integration-level tests exist, but these likely require a real BlackLab index to be meaningful; without a test corpus they may be skipped or trivial",
+        "No test corpus is shipped with the repository — tests that require a live index are either mocked or disabled, meaning the full query pipeline is only testable against a manually set up 74M-sentence corpus",
+        "LogDiceCalculatorTest and CqlUtilsTest are pure unit tests with no external dependencies — good coverage for utility code",
+        "SemanticFieldExplorerTest exists but likely uses mock executors; the multi-seed exploration logic has complex threshold and aggregation behavior that benefits from corpus-level validation"
+      ],
+      "impact_scope": "subsystem",
+      "fix_scope": "multi_file_refactor",
+      "confidence": "high"
+    }
+  },
+  "dimension_judgment": {
+    "test_strategy": {
+      "strengths": [
+        "21 test files provide good breadth of unit test coverage across query, parser, config, exploration, and utility classes",
+        "Pure utility classes (LogDiceCalculator, CqlUtils, LongIntHashMap, BlackLabSnippetParser) have dedicated unit tests covering edge cases",
+        "GrammarConfigLoader has test coverage for config parsing, validation, and error cases — the config loading path is well-tested",
+        "RelationsValidationTest specifically validates the grammar config schema — guards against regressions in the grammar definition"
+      ],
+      "issue_character": "The most critical write-path components (BlackLabConllUIndexer, ConlluConverter) are entirely untested, and there are no integration tests that exercise the full query pipeline against a real or synthetic index.",
+      "score_rationale": "The test suite provides good breadth over the query and exploration read-path but has a significant gap in the write-path (indexer) and end-to-end integration. Indexing bugs would produce silently incorrect indexes that are then queried without error — a high-severity untested path. The lack of a test corpus also means all BlackLab-backed tests must use mocks, leaving the real query execution path untested except manually. Anchoring: 60 = good unit tests but missing integration and critical path coverage. This scores 58 given the indexer gap is a genuine reliability risk."
+    }
+  },
+  "issues": [
+    {
+      "dimension": "test_strategy",
+      "identifier": "indexer_untested",
+      "summary": "BlackLabConllUIndexer and ConlluConverter have no unit or integration tests despite being the only write path in the system",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/indexer/blacklab/BlackLabConllUIndexer.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/indexer/blacklab/ConlluConverter.java"
+      ],
+      "evidence": [
+        "No test file named BlackLabConllUIndexerTest or ConlluConverterTest exists in src/test/",
+        "ConlluConverter.convertConlluToWplChunks has branching logic for: blank lines, MWT tokens (matching ^\\d+-\\d+), empty nodes (^\\d+\\.\\d+), sentence boundaries, and chunk file rolling — each branch is a potential bug that can corrupt the index",
+        "BlackLabConllUIndexer.close() calls indexer.close() which commits the index — a failure here loses all indexed data; no test verifies the commit path",
+        "The error-continuation behavior in IndexListener.errorOccurred (return true = continue) has no test asserting the error count or that indexing continues after a bad document"
+      ],
+      "suggestion": "Add ConlluConverterTest with a small in-memory CoNLL-U string covering: (1) normal tokens, (2) MWT tokens that should be skipped, (3) empty nodes that should be skipped, (4) chunk boundary at exactly sentencesPerChunk, (5) unterminated sentence at end of file. For BlackLabConllUIndexer, add a minimal integration test using a temp directory and a small 5-sentence corpus: index it, then open with BlackLabQueryExecutor and verify a known lemma has frequency > 0.",
+      "confidence": "high",
+      "impact_scope": "subsystem",
+      "fix_scope": "multi_file_refactor"
+    },
+    {
+      "dimension": "test_strategy",
+      "identifier": "no_integration_test_corpus",
+      "summary": "No test corpus is provided, so BlackLab-backed tests cannot exercise the real query execution pipeline in CI",
+      "related_files": [
+        "src/test/java/pl/marcinmilkowski/word_sketch/query/BlackLabQueryExecutorTest.java",
+        "src/test/java/pl/marcinmilkowski/word_sketch/query/BlackLabBcqlConcordanceTest.java"
+      ],
+      "evidence": [
+        "BlackLabDummyTest exists — a test named 'Dummy' strongly suggests the real BlackLab tests were stubbed out when no index was available",
+        "Without a test corpus, tests that exercise BlackLabQueryExecutor must either use mocks (masking query parsing bugs) or are @Disabled (testing nothing)",
+        "HybridAlgorithmTest and BlackLabBcqlConcordanceTest — the names suggest index-level queries; without a corpus they cannot verify real query results"
+      ],
+      "suggestion": "Create a minimal test corpus (50-100 sentences) in CoNLL-U format under src/test/resources/test-corpus.conllu. Add a JUnit test lifecycle method (@BeforeAll) that calls ConlluConverter + BlackLabConllUIndexer to index the corpus into a temp directory, then runs BlackLabQueryExecutor against it. This enables real end-to-end testing of at least findCollocations, executeSurfacePattern, and executeDependencyPattern. The test corpus can be hand-crafted to contain known collocations (e.g., 'big house' appearing 10 times) for deterministic assertions.",
+      "confidence": "high",
+      "impact_scope": "subsystem",
+      "fix_scope": "multi_file_refactor"
+    },
+    {
+      "dimension": "test_strategy",
+      "identifier": "exploration_multi_seed_path_coverage",
+      "summary": "Multi-seed exploration (exploreMultiSeed) has complex aggregation logic but no test verifying the threshold/intersection behavior",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/exploration/SemanticFieldExplorer.java",
+        "src/test/java/pl/marcinmilkowski/word_sketch/query/SemanticFieldExplorerTest.java"
+      ],
+      "evidence": [
+        "exploreMultiSeed builds collocateSharedCount map, applies threshold, computes intersection, builds DiscoveredNoun entries per seed — 60+ lines of aggregation logic",
+        "The threshold behavior (Math.min(minShared, seeds.size())) and the set intersection are critical correctness properties: wrong threshold silently returns wrong collocate sets",
+        "SemanticFieldExplorerTest likely covers the single-seed path; multi-seed was added as a feature extension and may have less coverage"
+      ],
+      "suggestion": "Add a unit test in SemanticFieldExplorerTest (or a new MultiSeedExplorerTest) using a MockQueryExecutor that returns fixed collocate lists for each seed. Test cases: (1) two seeds with 3 shared and 2 distinct collocates; verify coreCollocatesList.size() == 3; (2) minShared=2 with 3 seeds where only 1 collocate appears in all 3; verify it appears in core; (3) minShared clamped at seeds.size() when user passes a larger value.",
+      "confidence": "medium",
+      "impact_scope": "module",
+      "fix_scope": "single_edit"
+    }
+  ],
+  "retrospective": {
+    "root_causes": ["The test strategy was built primarily for the query read-path; the write path (indexer) was treated as infrastructure and never received dedicated tests; the lack of a bundled test corpus is the root cause of integration test gaps"],
+    "likely_symptoms": ["ConlluConverter edge-case bugs (MWT handling, chunk boundary) are the most likely silent failure mode"],
+    "possible_false_positives": ["HandlersTest may provide more coverage of ExplorationHandlers/SketchHandlers than the file names suggest; this would improve the score if confirmed"]
+  }
+}

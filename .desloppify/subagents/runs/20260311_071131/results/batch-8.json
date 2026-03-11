@@ -1,0 +1,86 @@
+{
+  "batch": "low_level_elegance",
+  "batch_index": 8,
+  "assessments": {"low_level_elegance": 72.0},
+  "dimension_notes": {
+    "low_level_elegance": {
+      "evidence": [
+        "ExplorationHandlers.buildExploreResponseBody and formatAdjectiveProfile contain the expression Math.round(x * 100.0) / 100.0 eight times across two methods with no extracted helper. This is mechanical copy-paste of a rounding idiom.",
+        "ExplorationHandlers: the three parallel list-building blocks in buildExploreResponseBody (seedCollocs, nouns, coreCollocs) each follow the same pattern: new ArrayList, for-loop, put fields, add to list. Each block is ~5-8 lines and could benefit from either typed response records or a small extraction.",
+        "GrammarConfigLoader.deriveTokenPosition walks a cursor through a pattern string in parallel with a token list produced by CqlUtils.splitCqlTokens. The cursor arithmetic (advancing past whitespace, finding '[', advancing by token length) is hard to follow because the cursor can desync from the token list if the pattern has non-token content between tokens.",
+        "CqlUtils.splitCqlTokens correctly handles nested brackets and quoted strings. The logic is correct but complex; the inner while-loop structure with break on depth==0 and a separate outer loop advancing i requires careful reading.",
+        "BlackLabSnippetParser.findLabelPosition counts '[' characters to find the labeled token position — this is fragile if the pattern contains '[' inside quoted strings. The implementation has a comment but no guard against quoted brackets.",
+        "ConlluConverter.convertConlluToWplChunks has a try/finally inside a try-with-resources. The inner try catches nothing and only guarantees cleanup via finally. The writer is set to null after close and a null check gates reopening. Correct but the null-as-sentinel pattern adds cognitive load.",
+        "CollocateQueryHelper.buildAndRankCollocates calls getTotalFrequency inside a loop over freqMap entries — this is a per-collocate index lookup in a potentially large map. The frequency lookup I/O is unavoidable but there is no bulk lookup path.",
+        "RadialPlot has 18 private static final double constants at the top of the class. They are named well and documented as 'at baseline 800px canvas', but the sheer number creates visual density.",
+        "Main.java uses enhanced switch with fallthrough string cases (case '--input': case '-i':) — clean and idiomatic.",
+        "RelationConfig.posGroupForPrefix does string-based pattern matching with explicit null-return on miss — the null-as-absent pattern is workable given Java's Optional is not used, but makes the caller logic slightly more involved."
+      ],
+      "impact_scope": "local",
+      "fix_scope": "single_edit",
+      "confidence": "high"
+    }
+  },
+  "dimension_judgment": {
+    "low_level_elegance": {
+      "strengths": [
+        "Main.java argument parsing with switch/fallthrough is concise and readable.",
+        "CqlUtils utility methods have clear, correct implementations with illustrative Javadoc examples.",
+        "LogDiceCalculator.compute is a clean, focused expression of the logDice formula with edge-case handling.",
+        "ConlluConverter uses buffered I/O correctly and handles the chunk-rollover logic clearly."
+      ],
+      "issue_character": "The dominant low-level issues are repeated rounding idioms that should be extracted as helpers, and cursor-based string walking that is technically correct but fragile against edge cases involving quoted content.",
+      "score_rationale": "The codebase's low-level code is generally readable and correct, with good method extraction and naming. The deductions are for: the eight-times-repeated Math.round rounding idiom that deserves a helper; the complex cursor arithmetic in deriveTokenPosition that has desync risk; and the findLabelPosition '['-counting that is fragile if quoted strings contain brackets. These are concrete, fixable issues affecting multiple files. Score of 72 reflects clean code with a few recurring low-level rough edges."
+    }
+  },
+  "issues": [
+    {
+      "dimension": "low_level_elegance",
+      "identifier": "repeated_rounding_idiom",
+      "summary": "Math.round(x * 100.0) / 100.0 is repeated eight times in ExplorationHandlers with no helper",
+      "related_files": ["src/main/java/pl/marcinmilkowski/word_sketch/api/ExplorationHandlers.java"],
+      "evidence": [
+        "buildExploreResponseBody: c.put(\"log_dice\", Math.round(e.getValue() * 100.0) / 100.0);",
+        "buildExploreResponseBody: nm.put(\"similarity_score\", Math.round(n.combinedRelevanceScore() * 100.0) / 100.0);",
+        "formatAdjectiveProfile: adjMap.put(\"avg_logdice\", Math.round(adj.avgLogDice() * 100.0) / 100.0); — and five more occurrences"
+      ],
+      "suggestion": "Extract a private static helper: private static double round2(double v) { return Math.round(v * 100.0) / 100.0; } and replace all occurrences.",
+      "confidence": "high",
+      "impact_scope": "local",
+      "fix_scope": "single_edit"
+    },
+    {
+      "dimension": "low_level_elegance",
+      "identifier": "findlabelposition_fragile_bracket_count",
+      "summary": "BlackLabSnippetParser.findLabelPosition counts raw '[' characters which breaks if pattern contains quoted brackets",
+      "related_files": ["src/main/java/pl/marcinmilkowski/word_sketch/query/BlackLabSnippetParser.java"],
+      "evidence": [
+        "findLabelPosition counts 'tokenPos++' every time it sees '[' in the pattern: for (int i = 0; i < pattern.length(); i++) { if (pattern.charAt(i) == '[') { tokenPos++; ... } }",
+        "CqlUtils.splitCqlTokens correctly skips quoted strings during bracket counting; findLabelPosition does not, so a pattern like [lemma=\"a[b\"] would miscount token positions"
+      ],
+      "suggestion": "Reuse CqlUtils.splitCqlTokens to find the labeled position rather than manually counting '[' characters. This makes findLabelPosition consistent with the rest of the CQL parsing logic.",
+      "confidence": "medium",
+      "impact_scope": "local",
+      "fix_scope": "single_edit"
+    },
+    {
+      "dimension": "low_level_elegance",
+      "identifier": "derive_token_position_cursor_desync_risk",
+      "summary": "GrammarConfigLoader.deriveTokenPosition cursor may desync from token list when pattern has quoted tokens (e.g., \"word\" tokens)",
+      "related_files": ["src/main/java/pl/marcinmilkowski/word_sketch/config/GrammarConfigLoader.java"],
+      "evidence": [
+        "deriveTokenPosition advances cursor by tokens.get(tokenIdx).length() to skip each token — but if the pattern has quoted literal tokens (e.g., '\"house\" [xpos...]') that are not in the splitCqlTokens result, the cursor arithmetic skips the wrong amount",
+        "cursor skips quoted strings by advancing to the next '[', which works for CQL patterns where headword is not yet substituted, but could fail for patterns already containing quoted literals"
+      ],
+      "suggestion": "Replace the cursor-based scanning with a two-pass approach: (1) use splitCqlTokens to get tokens, (2) scan the original pattern for 'N:[' prefix in each token's surrounding context using a simple indexOf, avoiding manual cursor management.",
+      "confidence": "medium",
+      "impact_scope": "local",
+      "fix_scope": "single_edit"
+    }
+  ],
+  "retrospective": {
+    "root_causes": ["The rounding idiom repetition is straightforwardly a missing helper function. The bracket-counting fragility in findLabelPosition and deriveTokenPosition likely stems from the CQL parsing utilities being developed incrementally without a unified bracket-walking abstraction."],
+    "likely_symptoms": [],
+    "possible_false_positives": []
+  }
+}

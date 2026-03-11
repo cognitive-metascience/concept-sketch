@@ -1,0 +1,99 @@
+{
+  "batch": "abstraction_fitness",
+  "batch_index": 6,
+  "assessments": {"abstraction_fitness": 66.0},
+  "dimension_notes": {
+    "abstraction_fitness": {
+      "evidence": [
+        "QueryExecutor interface is well-fitted: it precisely abstracts the collocate-retrieval contract with clear method differentiation (findCollocations vs executeSurfacePattern vs executeBcqlQuery). No leakage of BlackLab-specific types through the interface.",
+        "SemanticFieldExplorer.exploreMultiSeed reuses ExplorationResult and DiscoveredNoun with different semantics: seeds become 'discoveredNouns' (a DiscoveredNoun now represents a seed, not a discovered entity), and coreCollocates represent the intersection, not genuinely 'core' discovered items. The ExplorationResult abstraction is not fit for the multi-seed case without reinterpretation.",
+        "CollocateProfileComparator is exposed via SemanticFieldExplorer.getComparator() — this is a get-your-collaborator-from-a-collaborator anti-pattern. The comparator is a first-class component but is hidden inside the explorer, with access via a leaky accessor method.",
+        "GrammarConfigLoader is both a file reader and a domain object (holds and provides parsed config) — the loading responsibility conflates with the domain configuration responsibility. The fromReader factory is a step toward separability but the primary constructor still requires filesystem access.",
+        "RelationConfig (a record) provides getFullPattern(), collocateReversePattern(), collocatePosGroup() and getDeprel() — all of these require pattern parsing/manipulation. A record's fit is as a value carrier; adding parsing logic crosses into service territory and reduces fitness of the record abstraction.",
+        "ExplorationHandlers builds JSON response objects inline using raw Maps — there is no response model abstraction, so the 'response shape' concern is entirely in the handler. The handler carries both request parsing, domain delegation, and response serialization — three responsibilities in one class.",
+        "The two-overload pattern in SemanticFieldExplorer.exploreByPattern (one taking RelationConfig, one taking raw strings) is well-fitted: the convenience overload extracts and delegates cleanly.",
+        "RadialPlot.Item is a public static inner class with public fields — acceptable for a simple data carrier but somewhat inconsistent with the record style used elsewhere.",
+        "LogDiceCalculator is a pure static utility — well-fitted for its role.",
+        "CqlUtils is a well-fitted token manipulation utility with no state and a clear boundary."
+      ],
+      "impact_scope": "subsystem",
+      "fix_scope": "multi_file_refactor",
+      "confidence": "high",
+      "sub_axes": {
+        "abstraction_leverage": 65.0,
+        "indirection_cost": 72.0,
+        "interface_honesty": 78.0,
+        "delegation_density": 70.0,
+        "definition_directness": 74.0,
+        "type_discipline": 60.0
+      }
+    }
+  },
+  "dimension_judgment": {
+    "abstraction_fitness": {
+      "strengths": [
+        "QueryExecutor interface is honest and complete — no BlackLab types leak through it.",
+        "CqlUtils and LogDiceCalculator are appropriately narrow and stateless.",
+        "The two-overload exploreByPattern pattern in SemanticFieldExplorer cleanly separates convenience from implementation.",
+        "Model records (DiscoveredNoun, CoreCollocate, Edge) are well-fitted to their roles in the single-seed exploration path."
+      ],
+      "issue_character": "The abstraction fitness problems cluster around semantic reuse: ExplorationResult and DiscoveredNoun are repurposed in the multi-seed path with different meanings, and RelationConfig carries parsing behavior that strains its record abstraction.",
+      "score_rationale": "The codebase has several well-fitted abstractions (QueryExecutor interface, utility classes) alongside significant fitness problems in the exploration layer. The reuse of ExplorationResult/DiscoveredNoun for multi-seed with reinterpreted semantics is the most serious fitness issue — it makes the multi-seed code harder to understand and maintain. RelationConfig's dual role as data carrier and pattern processor is a secondary fitness gap. Score of 66 reflects a codebase where the query-layer abstractions are strong but the exploration and config layers have meaningful fitness deficits."
+    }
+  },
+  "issues": [
+    {
+      "dimension": "abstraction_fitness",
+      "identifier": "exploration_result_misfit_multiseed",
+      "summary": "ExplorationResult and DiscoveredNoun are reused in multi-seed mode with semantically inverted meanings",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/exploration/SemanticFieldExplorer.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/model/ExplorationResult.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/model/DiscoveredNoun.java"
+      ],
+      "evidence": [
+        "exploreMultiSeed builds DiscoveredNoun objects from seeds (each seed becomes a DiscoveredNoun) — 'discoveredNoun' now means 'given seed', inverting the abstraction",
+        "ExplorationResult.getSeed() returns a comma-joined list of seeds in multi-seed mode, not a single seed word",
+        "The Javadoc for exploreMultiSeed says 'Seeds become the discoveredNouns' — acknowledging the misfit without resolving it"
+      ],
+      "suggestion": "Introduce a MultiSeedExplorationResult that accurately models the multi-seed output, or generalize ExplorationResult to have a seeds:List<String> field. Remove the semantic reuse that forces callers to mentally invert the model.",
+      "confidence": "high",
+      "impact_scope": "subsystem",
+      "fix_scope": "multi_file_refactor"
+    },
+    {
+      "dimension": "abstraction_fitness",
+      "identifier": "relation_config_parsing_in_record",
+      "summary": "RelationConfig (a record) carries pattern-parsing methods that exceed value-type fitness",
+      "related_files": ["src/main/java/pl/marcinmilkowski/word_sketch/config/RelationConfig.java"],
+      "evidence": [
+        "collocatePosGroup() performs CQL bracket scanning and attribute matching",
+        "getDeprel() uses java.util.regex.Pattern to extract deprel from the pattern string",
+        "getFullPattern() delegates to CqlUtils.substituteAtPosition — two-argument overload also calls this"
+      ],
+      "suggestion": "Extract pattern manipulation into a RelationPatternUtils class or a RelationConfigHelper. Keep RelationConfig as a pure data record with only the fields it was designed to carry.",
+      "confidence": "medium",
+      "impact_scope": "module",
+      "fix_scope": "multi_file_refactor"
+    },
+    {
+      "dimension": "abstraction_fitness",
+      "identifier": "exploration_handlers_triple_responsibility",
+      "summary": "ExplorationHandlers carries request parsing, domain delegation, and response serialization without an intermediate response model",
+      "related_files": ["src/main/java/pl/marcinmilkowski/word_sketch/api/ExplorationHandlers.java"],
+      "evidence": [
+        "handleSemanticFieldExplore: parses params, resolves relation, calls semanticFieldExplorer, then manually builds Map<String,Object> response inline",
+        "buildExploreResponseBody builds three separate sections (seedCollocs, nouns, coreCollocs) using parallel Map-building patterns"
+      ],
+      "suggestion": "Introduce response record types (ExploreResponse, MultiSeedExploreResponse) serialized via FastJSON2. Handlers become: parse params → call service → return typed response object. This separates the three responsibilities.",
+      "confidence": "medium",
+      "impact_scope": "module",
+      "fix_scope": "multi_file_refactor"
+    }
+  ],
+  "retrospective": {
+    "root_causes": ["Multi-seed exploration was added to a single-seed model without creating new abstractions — reuse of existing types with inverted semantics is the canonical symptom of this pattern."],
+    "likely_symptoms": ["multi_seed_exploration_inverted_semantics", "exploration_result_misfit_multiseed"],
+    "possible_false_positives": []
+  }
+}

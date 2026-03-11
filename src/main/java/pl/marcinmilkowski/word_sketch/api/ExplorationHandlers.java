@@ -112,7 +112,7 @@ class ExplorationHandlers {
         ExploreParams exploreParams = resolveExploreParams(exchange, params);
         if (exploreParams == null) return;
         int topCollocates = exploreParams.topCollocates();
-        int minShared = Math.min(exploreParams.minShared(), seeds.size());
+        int minShared = exploreParams.minShared();
         double minLogDice = exploreParams.minLogDice();
         // nouns_per intentionally not supported in multi-seed mode — seeds parameter is required instead
 
@@ -243,7 +243,7 @@ class ExplorationHandlers {
         for (Map.Entry<String, Double> e : result.getSeedCollocates().entrySet()) {
             Map<String, Object> c = new HashMap<>();
             c.put("word", e.getKey());
-            c.put("log_dice", Math.round(e.getValue() * 100.0) / 100.0);
+            c.put("log_dice", round2dp(e.getValue()));
             c.put("frequency", result.getSeedCollocateFrequencies().getOrDefault(e.getKey(), 0L));
             seedCollocs.add(c);
         }
@@ -255,8 +255,8 @@ class ExplorationHandlers {
             Map<String, Object> nm = new HashMap<>();
             nm.put("word", n.noun());
             nm.put("shared_count", n.sharedCount());
-            nm.put("similarity_score", Math.round(n.combinedRelevanceScore() * 100.0) / 100.0);
-            nm.put("avg_logdice", Math.round(n.avgLogDice() * 100.0) / 100.0);
+            nm.put("similarity_score", round2dp(n.combinedRelevanceScore()));
+            nm.put("avg_logdice", round2dp(n.avgLogDice()));
             nm.put("shared_collocates", n.sharedCollocateList());
             nouns.add(nm);
         }
@@ -269,8 +269,8 @@ class ExplorationHandlers {
             cm.put("word", c.collocate());
             cm.put("shared_by_count", c.sharedByCount());
             cm.put("total_nouns", c.totalNouns());
-            cm.put("coverage", Math.round(c.coverage() * 100.0) / 100.0);
-            cm.put("seed_logdice", Math.round(c.seedLogDice() * 100.0) / 100.0);
+            cm.put("coverage", round2dp(c.coverage()));
+            cm.put("seed_logdice", round2dp(c.seedLogDice()));
             coreCollocs.add(cm);
         }
         response.put("core_collocates", coreCollocs);
@@ -311,11 +311,11 @@ class ExplorationHandlers {
         adjMap.put("word", adj.adjective());
         adjMap.put("present_in", adj.presentInCount());
         adjMap.put("total_nouns", adj.totalNouns());
-        adjMap.put("avg_logdice", Math.round(adj.avgLogDice() * 100.0) / 100.0);
-        adjMap.put("max_logdice", Math.round(adj.maxLogDice() * 100.0) / 100.0);
-        adjMap.put("variance", Math.round(adj.variance() * 100.0) / 100.0);
-        adjMap.put("commonality_score", Math.round(adj.commonalityScore() * 100.0) / 100.0);
-        adjMap.put("distinctiveness_score", Math.round(adj.distinctivenessScore() * 100.0) / 100.0);
+        adjMap.put("avg_logdice", round2dp(adj.avgLogDice()));
+        adjMap.put("max_logdice", round2dp(adj.maxLogDice()));
+        adjMap.put("variance", round2dp(adj.variance()));
+        adjMap.put("commonality_score", round2dp(adj.commonalityScore()));
+        adjMap.put("distinctiveness_score", round2dp(adj.distinctivenessScore()));
 
         String category = adj.isFullyShared() ? "fully_shared"
             : adj.isPartiallyShared() ? "partially_shared" : "specific";
@@ -324,7 +324,7 @@ class ExplorationHandlers {
         Map<String, Double> scores = new HashMap<>();
         if (adj.nounScores() != null) {
             for (Map.Entry<String, Double> entry : adj.nounScores().entrySet()) {
-                scores.put(entry.getKey(), Math.round(entry.getValue() * 100.0) / 100.0);
+                scores.put(entry.getKey(), round2dp(entry.getValue()));
             }
         }
         adjMap.put("noun_scores", scores);
@@ -333,6 +333,10 @@ class ExplorationHandlers {
             adj.strongestNoun().ifPresent(n -> adjMap.put("specific_to", n));
         }
         return adjMap;
+    }
+
+    private static double round2dp(double value) {
+        return Math.round(value * 100.0) / 100.0;
     }
 
     /** Parses a comma-separated seeds parameter into a cleaned, lowercased ordered set. */

@@ -1,0 +1,91 @@
+{
+  "batch": "high_level_elegance",
+  "batch_index": 2,
+  "assessments": {"high_level_elegance": 70.0},
+  "dimension_notes": {
+    "high_level_elegance": {
+      "evidence": [
+        "ExplorationHandlers builds JSON responses using raw Map<String, Object> throughout — no dedicated response DTOs. The pattern is repeated across handleSemanticFieldExplore, handleSemanticFieldExploreMulti, handleSemanticFieldComparison, and handleSemanticFieldExamples.",
+        "ExplorationResult and ComparisonResult are deliberately designed as different styles (class with getters vs record) and are documented as such. However both expose buildEdges() that re-creates the list on every call; ExplorationHandlers calls buildEdges() then also iterates getSeedCollocates/getDiscoveredNouns separately — the result is that a caller touching the response triggers multiple full list scans.",
+        "RelationConfig is a record with 10 fields plus five non-trivial business-logic methods (getFullPattern, collocateReversePattern, collocatePosGroup, getDeprel, toJson). Records are value types but this one carries parsing and transformation behavior — it is effectively a service object disguised as a record.",
+        "GrammarConfigLoader bundles file I/O, JSON parsing, structural validation, and domain validation in a single class. Each concern is extracted into private methods, which is good, but the class has no natural seam for testing the parsing logic independently of the filesystem.",
+        "RelationUtils is narrow and well-scoped: one static mapping table plus one resolution method. Appropriate.",
+        "HttpApiUtils is a clean static helper with a clear responsibility boundary. The hardcoded CORS_ALLOW_ORIGIN constant is noted inline as needing configuration in production.",
+        "PosGroup enum is clear and minimal.",
+        "The two-overload pattern in SemanticFieldExplorer.exploreByPattern (one taking RelationConfig, one taking raw strings) is a clean delegation design."
+      ],
+      "impact_scope": "subsystem",
+      "fix_scope": "multi_file_refactor",
+      "confidence": "high"
+    }
+  },
+  "dimension_judgment": {
+    "high_level_elegance": {
+      "strengths": [
+        "QueryExecutor interface provides a clean, well-documented contract that decouples consumers from the BlackLab implementation.",
+        "RelationUtils is a model narrow helper: single responsibility, no state, clear inputs and outputs.",
+        "The record/class distinction in the model package is consistent and explicitly documented.",
+        "SemanticFieldExplorer two-overload pattern cleanly separates the convenience wrapper from the implementation.",
+        "PosGroup enum is minimal and focused."
+      ],
+      "issue_character": "The dominant pattern issue is that response shape is defined implicitly through raw Map<String, Object> construction scattered across handler methods rather than through explicit response types, making the API surface invisible at the type level.",
+      "score_rationale": "The codebase's overall shape is workable — the layering is intentional and documented. But several design choices fall short of elegant: RelationConfig is a record carrying rich behavior (crossing the value/service boundary), GrammarConfigLoader conflates I/O with domain logic, and the entire response-building layer is untyped. These are recurring patterns affecting multiple files across the api and config layers. Score of 70 reflects a codebase with a clear structural intent that is undermined by an implicit, weakly-typed response-building convention and a record misused as a service object."
+    }
+  },
+  "issues": [
+    {
+      "dimension": "high_level_elegance",
+      "identifier": "untyped_response_maps",
+      "summary": "All API responses are built as raw Map<String, Object> rather than typed response classes, making the API surface invisible",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/api/ExplorationHandlers.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/api/SketchHandlers.java"
+      ],
+      "evidence": [
+        "ExplorationHandlers.buildExploreResponseBody builds seedCollocs, nouns, coreCollocs all as List<Map<String,Object>> inline",
+        "SketchHandlers.formatWordSketchResult builds a Map<String,Object> with four fields every call — no type captures the shape of a word-sketch collocation response"
+      ],
+      "suggestion": "Introduce typed response records (e.g., CollocateResponse, ExploreResponse) serialized via FastJSON2 annotations. This makes the API contract visible at the type level and eliminates the repeated Map-building boilerplate.",
+      "confidence": "high",
+      "impact_scope": "subsystem",
+      "fix_scope": "multi_file_refactor"
+    },
+    {
+      "dimension": "high_level_elegance",
+      "identifier": "relation_config_record_with_service_behavior",
+      "summary": "RelationConfig is declared as a record but carries five non-trivial business logic methods, mixing value and service roles",
+      "related_files": ["src/main/java/pl/marcinmilkowski/word_sketch/config/RelationConfig.java"],
+      "evidence": [
+        "record RelationConfig(...) has getFullPattern(String), getFullPattern(String,String), collocateReversePattern(), collocatePosGroup(), getDeprel() — each requiring pattern parsing or string manipulation",
+        "collocatePosGroup() and posGroupFromConstraint() do CQL string scanning — this is business logic in a value type"
+      ],
+      "suggestion": "Extract pattern-manipulation behavior into a RelationPatternResolver service/helper, keeping RelationConfig as a pure data carrier. Alternatively, convert RelationConfig to a regular class if behavior is intrinsic.",
+      "confidence": "medium",
+      "impact_scope": "module",
+      "fix_scope": "multi_file_refactor"
+    },
+    {
+      "dimension": "high_level_elegance",
+      "identifier": "buildsedges_materializes_on_every_call",
+      "summary": "ExplorationResult.buildEdges() and ComparisonResult.buildEdges() construct a new list on every call; response handlers call them then also iterate members separately",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/model/ExplorationResult.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/model/ComparisonResult.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/api/ExplorationHandlers.java"
+      ],
+      "evidence": [
+        "ExplorationHandlers.buildExploreResponseBody calls result.buildEdges() AND separately iterates result.getDiscoveredNouns() and result.getSeedCollocates()",
+        "ComparisonResult.buildEdges() Javadoc says 'performs list construction on every call' without caching"
+      ],
+      "suggestion": "Cache the edge list lazily or compute it once during construction. Alternatively make buildEdges() clearly a utility function with a view-once contract documented explicitly.",
+      "confidence": "medium",
+      "impact_scope": "local",
+      "fix_scope": "single_edit"
+    }
+  ],
+  "retrospective": {
+    "root_causes": ["Absence of typed response DTOs is the root of most high-level elegance debt — once response maps are typed, many downstream duplication patterns resolve naturally."],
+    "likely_symptoms": [],
+    "possible_false_positives": []
+  }
+}

@@ -1,0 +1,77 @@
+{
+  "batch": "dependency_health",
+  "batch_index": 7,
+  "assessments": {"dependency_health": 74.0},
+  "dimension_notes": {
+    "dependency_health": {
+      "evidence": [
+        "External runtime dependencies: BlackLab (corpus search), FastJSON2 (JSON), SLF4J (logging). All are purposeful and non-overlapping. No two libraries serve the same role.",
+        "com.sun.net.httpserver is used directly in WordSketchApiServer (field type, method parameters) and HttpApiUtils. This is a JDK internal package — accessible in Java 11+ but not part of the public API contract. Projects using a different JDK distribution (e.g., GraalVM native-image, some cloud runtimes) may not have this package.",
+        "WordSketchApiServer.constructor creates SemanticFieldExplorer(executor) and passes it to ExplorationHandlers. SemanticFieldExplorer is not injectable; any test of WordSketchApiServer must bring up the full executor stack.",
+        "SemanticFieldExplorer.constructor creates CollocateProfileComparator(executor) internally. Same testability constraint applies.",
+        "BlackLabQueryExecutor depends on the BlackLab indexing, query, and results APIs — this is the project's core integration point and an appropriate heavy dependency.",
+        "GrammarConfigLoader depends on FastJSON2 for all JSON parsing. This is consistent with its use elsewhere (SketchHandlers, HttpApiUtils) — single library, no split.",
+        "ConlluConverter has zero external dependencies — pure Java I/O. Good.",
+        "LongIntHashMap has zero external dependencies but appears unused (no import found in production code), adding dead weight to the utils package.",
+        "pom.xml (not reviewed directly, but inferred): the BlackLab dependency likely pulls in Lucene transitively; no direct Lucene imports observed in production code except through BlackLab's API surface."
+      ],
+      "impact_scope": "module",
+      "fix_scope": "single_edit",
+      "confidence": "medium"
+    }
+  },
+  "dimension_judgment": {
+    "dependency_health": {
+      "strengths": [
+        "External dependency set is minimal and purposeful — no redundant libraries for the same concern.",
+        "FastJSON2 is used consistently as the sole JSON library across all files.",
+        "ConlluConverter and LongIntHashMap are dependency-free, appropriate for utility components.",
+        "No circular package dependencies detected."
+      ],
+      "issue_character": "The main dependency health concerns are the use of a JDK internal API (com.sun.net.httpserver) as a first-class part of the server module, and the non-injectable construction of core collaborators that couples test paths to runtime dependencies.",
+      "score_rationale": "The dependency set is lean and non-overlapping, which is a strong positive. The com.sun.net.httpserver usage is the most significant health concern — it is a platform risk that appears in multiple files including a utility class. The in-constructor instantiation of SemanticFieldExplorer and CollocateProfileComparator reduces testability but is not a dependency-import issue per se. Score of 74 reflects a healthy dependency structure with one concrete platform risk and one testability friction point."
+    }
+  },
+  "issues": [
+    {
+      "dimension": "dependency_health",
+      "identifier": "sun_httpserver_platform_dependency",
+      "summary": "com.sun.net.httpserver is used as a first-class API type in WordSketchApiServer and HttpApiUtils, creating a platform-specific dependency",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/api/WordSketchApiServer.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/api/HttpApiUtils.java"
+      ],
+      "evidence": [
+        "WordSketchApiServer: private final com.sun.net.httpserver.HttpServer server; — stored as a field type",
+        "HttpApiUtils method signatures take com.sun.net.httpserver.HttpExchange as parameter type",
+        "Multiple files import com.sun.net.httpserver.* — this package is not part of the Java SE standard API"
+      ],
+      "suggestion": "For the current development/research context, this is low risk. For production hardening, consider replacing with a lightweight embedded HTTP server that is part of the public Java SE API or an open-source library (e.g., Javalin, Undertow, or Jetty minimal). At minimum, confine the com.sun imports to one adapter file to minimize blast radius.",
+      "confidence": "medium",
+      "impact_scope": "module",
+      "fix_scope": "multi_file_refactor"
+    },
+    {
+      "dimension": "dependency_health",
+      "identifier": "non_injectable_collaborator_construction",
+      "summary": "SemanticFieldExplorer and CollocateProfileComparator are constructed inside constructors rather than being injected, coupling dependents to runtime dependencies in tests",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/api/WordSketchApiServer.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/exploration/SemanticFieldExplorer.java"
+      ],
+      "evidence": [
+        "WordSketchApiServer constructor: new SemanticFieldExplorer(executor) — not injectable",
+        "SemanticFieldExplorer constructor: this.comparator = new CollocateProfileComparator(executor) — not injectable"
+      ],
+      "suggestion": "Accept SemanticFieldExplorer as a constructor parameter in WordSketchApiServer; accept CollocateProfileComparator as a constructor parameter in SemanticFieldExplorer. Wire them in Main.java at the composition root.",
+      "confidence": "high",
+      "impact_scope": "module",
+      "fix_scope": "multi_file_refactor"
+    }
+  ],
+  "retrospective": {
+    "root_causes": ["The com.sun.net.httpserver choice was likely a deliberate 'no extra dependency' decision for a research tool, and in that context is defensible. The non-injectable construction pattern is a recurring theme across the codebase."],
+    "likely_symptoms": [],
+    "possible_false_positives": []
+  }
+}

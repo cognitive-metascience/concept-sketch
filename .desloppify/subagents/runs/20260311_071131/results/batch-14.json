@@ -1,0 +1,74 @@
+{
+  "batch": "logic_clarity",
+  "batch_index": 14,
+  "assessments": {"logic_clarity": 80.0},
+  "dimension_notes": {
+    "logic_clarity": {
+      "evidence": [
+        "ExplorationHandlers.handleSemanticFieldExploreMulti applies Math.min(exploreParams.minShared(), seeds.size()) to produce minShared, then SemanticFieldExplorer.exploreMultiSeed applies Math.min(minShared, seeds.size()) again on the same already-clamped value — the second min is always a no-op",
+        "CollocateQueryHelper.executeBcqlQuery: 'int sampleSize = (int) Math.min(hits.size(), (long) maxResults * OVER_FETCH_FACTOR)' — comment says 'safe: min ensures result <= maxResults * OVER_FETCH_FACTOR' but the comment is misleading: the safety comes from the min+cast, not from the min alone; the intent is correct but the comment misdirects",
+        "BlackLabQueryExecutor has two call sites of collectFrequenciesFromGroups with different lambda extractors (extractLemmaWithFallback vs extractCollocateLemma) — this is intentional variation, not dead code, but the pattern is non-obvious without the Javadoc context",
+        "Main.java serverHolder[0] null check in shutdown hook is legitimately defensive (server construction can throw before assignment); not redundant",
+        "BlackLabSnippetParser.trimLeftAtSentenceBoundary: 'int lastEnd = 0; while (m.find()) lastEnd = m.end(); return lastEnd > 0 ? text.substring(lastEnd).trim() : text.trim()' — the initial value of 0 and the >0 check are correct; if no match is found, returns full text trimmed. Clean.",
+        "CqlUtils.splitCqlTokens inner loop: after the quoted-string-skipping inner while exits, the outer while loop increments i one more time past the closing quote — this is correct but requires careful reading to verify the i++ progression is correct",
+        "LogDiceCalculator.compute: 'if (dice <= 0) return 0.0' guards against log(0) and log(negative); edge case handled cleanly",
+        "ConlluConverter nested try-with-resources in finally block: 'try (BufferedWriter toClose = writer) { chunks++; }' — this ensures the writer is closed even if chunks++ throws (it won't), but the placement of chunks++ inside the try block is unusual and could confuse readers expecting chunks++ before or after the close",
+        "SemanticFieldExplorer.identifyCoreCollocates: 'int minNounsForCore = Math.max(2, discoveredNouns.size() / 3)' — when discoveredNouns has 0 or 1 elements, minNounsForCore is 2 but the loop over discoveredNouns finds 0 entries, so coreCollocates is always empty for small result sets. This is correct behavior but the Math.max(2,...) makes the semantics non-obvious for small inputs."
+      ],
+      "impact_scope": "module",
+      "fix_scope": "single_edit",
+      "confidence": "high"
+    }
+  },
+  "dimension_judgment": {
+    "logic_clarity": {
+      "strengths": [
+        "LogDiceCalculator.compute() handles all edge cases (zero/negative denominator, dice <= 0) explicitly and cleanly",
+        "BlackLabSnippetParser.trimToSentence and related trim methods use clear boundary-scanning logic with no dead branches",
+        "ConlluConverter.convertConlluToWplChunks uses boolean state (inSentence) cleanly to track sentence boundaries without redundant checks",
+        "GrammarConfigLoader position derivation uses a clean delegating pattern with explicit default returns — no hidden fallthrough"
+      ],
+      "issue_character": "The primary logic clarity issue is a redundant double-application of Math.min in the exploration pipeline — a common symptom of defensive copy-paste across API and implementation layers.",
+      "score_rationale": "The overall logic is clear and correct. The redundant double-min is a real but minor clarity issue, not a bug. The sampleSize comment misdirection and the unusual chunks++ placement in a try-with-resources are small readability issues. There are no dead code paths, always-true conditions, or async-wrapping issues. Anchoring at 80: the codebase is above average with isolated clarity issues rather than systemic problems."
+    }
+  },
+  "issues": [
+    {
+      "dimension": "logic_clarity",
+      "identifier": "double_min_shared_clamp",
+      "summary": "minShared is clamped by Math.min in the handler and then clamped again identically in SemanticFieldExplorer.exploreMultiSeed, making the second clamp always a no-op",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/api/ExplorationHandlers.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/exploration/SemanticFieldExplorer.java"
+      ],
+      "evidence": [
+        "ExplorationHandlers.handleSemanticFieldExploreMulti: 'int minShared = Math.min(exploreParams.minShared(), seeds.size())' — clamps to seeds.size()",
+        "SemanticFieldExplorer.exploreMultiSeed: 'int threshold = Math.min(minShared, seeds.size())' — applies the exact same clamp to the already-clamped value",
+        "At this second callsite, minShared <= seeds.size() is always true, so threshold == minShared always"
+      ],
+      "suggestion": "Remove the redundant clamp from either the handler or the explorer method. If the explorer method is meant to be called independently (not just via the handler), keep the clamp in the explorer and remove it from the handler. If the handler is the only caller, keep the clamp in the handler (closer to input validation) and remove it from the explorer. Simplest fix: remove the redundant 'int threshold = Math.min(minShared, seeds.size())' in SemanticFieldExplorer.exploreMultiSeed and use minShared directly.",
+      "confidence": "high",
+      "impact_scope": "local",
+      "fix_scope": "single_edit"
+    },
+    {
+      "dimension": "logic_clarity",
+      "identifier": "chunks_increment_inside_try_with_resources",
+      "summary": "chunks++ inside finally try-with-resources in ConlluConverter creates unusual control flow that misleads about when chunks is incremented relative to the close",
+      "related_files": ["src/main/java/pl/marcinmilkowski/word_sketch/indexer/blacklab/ConlluConverter.java"],
+      "evidence": [
+        "In the finally block: 'try (BufferedWriter toClose = writer) { chunks++; }' — chunks is incremented inside the try block, which means if an IOException occurs on close, chunks has already been incremented",
+        "Given chunks is only returned as a count metric and the writer.close() is unlikely to throw for a BufferedWriter over a local file, this is functionally harmless, but the idiom suggests chunks++ should happen before the close call to be semantically clear"
+      ],
+      "suggestion": "Move chunks++ outside the try-with-resources: 'chunks++; try (BufferedWriter toClose = writer) {}' or simply 'if (writer != null) { try (writer) { /* close */ } chunks++; }'. This makes it clear that counting happens regardless of close success.",
+      "confidence": "low",
+      "impact_scope": "local",
+      "fix_scope": "single_edit"
+    }
+  ],
+  "retrospective": {
+    "root_causes": ["Redundant clamping likely arose from defensive coding at both the API boundary and the business logic layer without coordinating which layer owns the invariant"],
+    "likely_symptoms": ["double_min_shared_clamp is symptomatic of the handler and explorer having partially overlapping validation responsibilities"],
+    "possible_false_positives": ["The second Math.min in exploreMultiSeed could be intentional defensive programming for callers other than ExplorationHandlers"]
+  }
+}

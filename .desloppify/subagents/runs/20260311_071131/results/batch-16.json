@@ -1,0 +1,72 @@
+{
+  "batch": "design_coherence",
+  "batch_index": 16,
+  "assessments": {"design_coherence": 74.0},
+  "dimension_notes": {
+    "design_coherence": {
+      "evidence": [
+        "Mechanical signal: boilerplate duplication at BlackLabQueryExecutor.java:12 and CollocateQueryHelper.java:20 — confirmed as import block overlap; both files import ~15 nl.inl.blacklab classes; unavoidable given both depend on the same BlackLab API surface",
+        "SketchHandlers.handleFullSketchForType and handleDepSketchForType are structurally near-identical: both iterate grammarConfig.getRelations(), filter by relationType, call executeAndFormatCollocations, collect errors, and return a response map. The only difference is the response key ('type':'dependency') and the use of buildRelationResponse for dep sketches",
+        "SketchHandlers has 8 methods (handleSketchRequest, handleSurfaceRelations, handleDepRelations, handleRelationsForType, handleFullSketch, handleRelationSketch, handleFullDependencySketch, handleDepSketchForType, handleFullSketchForType, handleRelationQueryForPattern, executeAndFormatCollocations, buildRelationResponse, formatWordSketchResult, handleConcordanceExamples, handleVisualRadial, handleBcqlQueryPost) — this is a god-class accumulating all HTTP handler concerns for the sketch domain",
+        "BlackLabQueryExecutor appropriately delegates collocate search, scoring, and ranking to CollocateQueryHelper — clean separation of concerns",
+        "ExplorationHandlers shows good extraction: resolveRelationConfig, resolveExploreParams, buildBaseExploreResponse, parseSeedSet are all well-factored shared helpers",
+        "GrammarConfigLoader is 300+ lines but has a single coherent responsibility (parse and validate grammar JSON); each private method does one thing; not a god class",
+        "RelationConfig mixes data representation with behavioral methods (getFullPattern, collocateReversePattern, collocatePosGroup, getDeprel); these are all derived from the core pattern data so the mixing is justified",
+        "SemanticFieldExplorer has clean phase decomposition with named private methods: fetchSeedCollocates, buildCollocateToNounsMap, filterCandidates, identifyCoreCollocates — each does one thing",
+        "CqlUtils utility class is well-focused with 4 related static methods; no accumulation of unrelated concerns"
+      ],
+      "impact_scope": "module",
+      "fix_scope": "multi_file_refactor",
+      "confidence": "high"
+    }
+  },
+  "dimension_judgment": {
+    "design_coherence": {
+      "strengths": [
+        "BlackLabQueryExecutor delegates all complexity to CollocateQueryHelper — the separation of query execution from collocate scoring is a clean and consistent design pattern",
+        "SemanticFieldExplorer decomposes exploration into named phases with clear single-responsibility private methods",
+        "ExplorationHandlers extracts shared parameter parsing and response building into reusable methods that are actually reused across both handlers",
+        "GrammarConfigLoader is long but focused — every method serves config parsing/validation, no unrelated concerns"
+      ],
+      "issue_character": "SketchHandlers has grown into a multi-responsibility file mixing full-sketch, relation-sketch, concordance-example, BCQL, and radial-plot handling with structural duplication between the surface and dependency sketch paths.",
+      "score_rationale": "The codebase shows strong design discipline in its core computation layers (query, exploration, config) but has a design coherence gap in SketchHandlers where HTTP handler accumulation and structural duplication between surface and dependency sketch paths add cognitive overhead. The boilerplate import duplication flagged mechanically is unavoidable and not a design issue. Anchoring: 75 = mostly coherent with one clearly overloaded component, 65 = multiple overloaded or structurally repetitive components. This scores 74."
+    }
+  },
+  "issues": [
+    {
+      "dimension": "design_coherence",
+      "identifier": "sketch_handlers_god_class",
+      "summary": "SketchHandlers accumulates surface sketch, dependency sketch, concordance, BCQL query, and radial-plot handling with ~16 methods in a single class",
+      "related_files": ["src/main/java/pl/marcinmilkowski/word_sketch/api/SketchHandlers.java"],
+      "evidence": [
+        "SketchHandlers has at minimum: handleSketchRequest, handleSurfaceRelations, handleDepRelations, handleRelationsForType, handleFullSketch, handleRelationSketch, handleFullDependencySketch, handleDepSketchForType, handleFullSketchForType, handleRelationQueryForPattern, executeAndFormatCollocations, buildRelationResponse, formatWordSketchResult, handleConcordanceExamples, handleVisualRadial, handleBcqlQueryPost — approximately 16 methods",
+        "handleVisualRadial (SVG rendering) and handleBcqlQueryPost (raw query execution) are qualitatively different concerns from word sketch pattern matching",
+        "handleFullSketchForType and handleDepSketchForType share identical loop structure and error collection logic"
+      ],
+      "suggestion": "Extract handleVisualRadial to a VisualizationHandlers class and handleBcqlQueryPost to a QueryHandlers class or similar. Extract the shared loop skeleton of handleFullSketchForType/handleDepSketchForType into a single private method taking a BiFunction that builds the per-relation response map: 'private Map<String,Object> runSketchLoop(String lemma, RelationType type, RelationResponseBuilder builder)' — callers supply only what differs. This reduces SketchHandlers to sketch-specific concerns.",
+      "confidence": "medium",
+      "impact_scope": "module",
+      "fix_scope": "multi_file_refactor"
+    },
+    {
+      "dimension": "design_coherence",
+      "identifier": "duplicate_sketch_loop_structure",
+      "summary": "handleFullSketchForType and handleDepSketchForType share an identical iteration/error-collection skeleton with only the response-building step differing",
+      "related_files": ["src/main/java/pl/marcinmilkowski/word_sketch/api/SketchHandlers.java"],
+      "evidence": [
+        "handleFullSketchForType: 'for (var rel : grammarConfig.getRelations()) { if (rel.relationType()... != relationType) continue; try { ExecutedSketch sketch = executeAndFormatCollocations(...); if (sketch != null) { byRelation.put(...); } } catch (...) { relationErrors.add(...); } }'",
+        "handleDepSketchForType: identical loop skeleton with 'if (rel.getDeprel() == null) continue' added and 'buildRelationResponse(...)' used instead of direct map building",
+        "The response map construction (put 'name', 'cql', 'collocate_pos_group', 'collocations') vs buildRelationResponse (put 'id', 'name', 'description', 'deprel', 'total_matches', 'collocations') is the only substantive difference"
+      ],
+      "suggestion": "Extract the common iteration skeleton: 'private void executeSketchLoop(String lemma, RelationType type, Predicate<RelationConfig> extraFilter, SketchResultConsumer consumer, List<String> errors)' — both handleFullSketchForType and handleDepSketchForType call this with different consumers. The consumer receives (RelationConfig, ExecutedSketch) and builds the per-relation map entry. This removes ~30 lines of duplicate boilerplate.",
+      "confidence": "high",
+      "impact_scope": "local",
+      "fix_scope": "multi_file_refactor"
+    }
+  ],
+  "retrospective": {
+    "root_causes": ["SketchHandlers grew organically by adding endpoints (concordance, BCQL, radial) to the existing sketch handler class rather than being split by concern"],
+    "likely_symptoms": ["Future endpoint additions will continue to grow SketchHandlers unless a split is made proactively"],
+    "possible_false_positives": ["The flagged import block duplication between BlackLabQueryExecutor and CollocateQueryHelper is unavoidable Java boilerplate, not a design issue"]
+  }
+}

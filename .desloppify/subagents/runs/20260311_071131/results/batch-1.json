@@ -1,0 +1,76 @@
+{
+  "batch": "cross_module_architecture",
+  "batch_index": 1,
+  "assessments": {"cross_module_architecture": 77.0},
+  "dimension_notes": {
+    "cross_module_architecture": {
+      "evidence": [
+        "Package hierarchy: api → exploration → query → model/utils/config; indexer is an independent leaf. Dependency direction is consistently top-down with no upward references observed.",
+        "WordSketchApiServer constructor instantiates SemanticFieldExplorer directly rather than accepting it as a parameter, creating a construction-time coupling that makes the server harder to test in isolation.",
+        "SemanticFieldExplorer constructor instantiates CollocateProfileComparator internally; comparator is then exposed via getComparator() accessor called from ExplorationHandlers — creating an indirect dependency path api→exploration→comparator that bypasses the exploration abstraction.",
+        "LongIntHashMap in utils package has no import references in any production file observed; appears to be orphaned code that blurs the utils boundary by retaining a presumably unused implementation.",
+        "com.sun.net.httpserver is used directly in WordSketchApiServer and HttpApiUtils — a JDK internal API that is accessible but introduces a fragile platform coupling across the api module boundary.",
+        "Main.java correctly instantiates subsystems and wires them together at the entry point — appropriate hub role.",
+        "No circular package dependencies detected across api/exploration/query/model/config/indexer/utils."
+      ],
+      "impact_scope": "module",
+      "fix_scope": "multi_file_refactor",
+      "confidence": "high"
+    }
+  },
+  "dimension_judgment": {
+    "cross_module_architecture": {
+      "strengths": [
+        "Clear unidirectional layering: api consumes exploration and query; neither depends upward.",
+        "QueryExecutor interface creates a clean boundary between the api/exploration layers and the BlackLab implementation.",
+        "Indexer package is properly isolated and only touched by Main.",
+        "No circular dependencies detected anywhere in the package graph."
+      ],
+      "issue_character": "The main issues are construction-time coupling (components create collaborators rather than receiving them) and a single orphaned utility class, rather than any structural cycle or layer violation.",
+      "score_rationale": "The codebase scores well on dependency direction and boundary integrity — the most critical cross-module properties. The deductions come from: in-constructor instantiation of SemanticFieldExplorer and CollocateProfileComparator (testability cost, blast-radius concern), the odd getComparator() indirection that leaks a collaborator through its owner, and the orphaned LongIntHashMap. These are module-scope issues, not codebase-wide violations. Score of 77 reflects an architecture that works cleanly but has unfixed construction coupling and one dead utility."
+    }
+  },
+  "issues": [
+    {
+      "dimension": "cross_module_architecture",
+      "identifier": "server_constructs_explorer",
+      "summary": "WordSketchApiServer constructs SemanticFieldExplorer internally, preventing injection and creating hidden coupling",
+      "related_files": ["src/main/java/pl/marcinmilkowski/word_sketch/api/WordSketchApiServer.java"],
+      "evidence": ["Line 46: SemanticFieldExplorer semanticFieldExplorer = new SemanticFieldExplorer(executor); inside constructor — caller cannot substitute a mock or alternative implementation"],
+      "suggestion": "Accept SemanticFieldExplorer as a constructor parameter in WordSketchApiServer; construct it in Main.java alongside the executor, keeping construction at the composition root.",
+      "confidence": "high",
+      "impact_scope": "module",
+      "fix_scope": "multi_file_refactor"
+    },
+    {
+      "dimension": "cross_module_architecture",
+      "identifier": "orphaned_longinthashmap",
+      "summary": "LongIntHashMap in utils is not imported by any production file, blurring the utils boundary",
+      "related_files": ["src/main/java/pl/marcinmilkowski/word_sketch/utils/LongIntHashMap.java"],
+      "evidence": ["No import of LongIntHashMap found in any other production source file; class appears to be dead code retained in the utils boundary."],
+      "suggestion": "Either integrate LongIntHashMap where it adds value (e.g., frequency accumulation in CollocateQueryHelper), or delete it to keep the utils package boundary clean.",
+      "confidence": "medium",
+      "impact_scope": "module",
+      "fix_scope": "single_edit"
+    },
+    {
+      "dimension": "cross_module_architecture",
+      "identifier": "comparator_leaked_via_accessor",
+      "summary": "CollocateProfileComparator is exposed through SemanticFieldExplorer.getComparator() rather than being directly accessible to the api layer",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/exploration/SemanticFieldExplorer.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/api/ExplorationHandlers.java"
+      ],
+      "evidence": ["ExplorationHandlers calls semanticFieldExplorer.getComparator().compareCollocateProfiles(...) — ExplorationHandlers reaches through SemanticFieldExplorer to get a collaborator, bypassing the intended abstraction boundary."],
+      "suggestion": "Expose compareCollocateProfiles directly on SemanticFieldExplorer as a delegate method, or inject CollocateProfileComparator separately into ExplorationHandlers.",
+      "confidence": "medium",
+      "impact_scope": "module",
+      "fix_scope": "multi_file_refactor"
+    }
+  ],
+  "retrospective": {
+    "root_causes": ["Construction-time wiring rather than dependency injection is the recurring pattern — components build their own collaborators, limiting testability and creating implicit cross-module coupling."],
+    "likely_symptoms": ["Low unit test coverage for WordSketchApiServer and ExplorationHandlers due to tight construction coupling."],
+    "possible_false_positives": []
+  }
+}

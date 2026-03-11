@@ -1,0 +1,80 @@
+{
+  "batch": "error_consistency",
+  "batch_index": 4,
+  "assessments": {"error_consistency": 73.0},
+  "dimension_notes": {
+    "error_consistency": {
+      "evidence": [
+        "BlackLabQueryExecutor constructor catches broad Exception and re-wraps as IOException — acceptable for I/O layer initialization but swallows the original type information (e.g., a NullPointerException from BlackLab startup would become an IOException).",
+        "findCollocations, executeDependencyPattern, executeDependencyPatternWithPos all guard against null/empty lemma by returning Collections.emptyList() silently — no logging, no warning. Callers have no visibility into whether an empty result reflects no matches or a skipped query.",
+        "buildBcqlWithLemmaSubstitution throws IllegalArgumentException for patterns not starting with '['. This is an unchecked exception from a private method. The public methods that invoke it (findCollocations) declare throws IOException in their signature but not IllegalArgumentException — callers who rely only on checked-exception contracts could be surprised.",
+        "CollocateQueryHelper.executeCollocateSearch wraps InvalidQuery as IOException('BCQL parse error') — consistent with executeCqlQuery which does the same wrapping. Good.",
+        "CollocateQueryHelper.scoreHits calls getTotalFrequency per collocate inside a loop; if getTotalFrequency throws, the exception propagates out of scoreHits, abandoning all results collected so far without any partial-result signal to the caller.",
+        "ExplorationHandlers catches IOException and IllegalArgumentException separately, sending 500 and 400 respectively. SketchHandlers.handleRelationQueryForPattern also catches IOException and sends 500. Pattern is consistent across handlers.",
+        "WordSketchApiServer.wrapHandler catches IOException (500) and Exception (500 'Unexpected error') — the generic Exception catch is appropriate as a last-resort fence but the error message does not include the handler name for the generic case."
+      ],
+      "impact_scope": "module",
+      "fix_scope": "multi_file_refactor",
+      "confidence": "high"
+    }
+  },
+  "dimension_judgment": {
+    "error_consistency": {
+      "strengths": [
+        "Checked exception propagation via IOException is consistently used across the query layer.",
+        "InvalidQuery is consistently wrapped as IOException at each parser invocation.",
+        "Handler-level error dispatch (IOException→500, IllegalArgumentException→400) is applied symmetrically across ExplorationHandlers and SketchHandlers."
+      ],
+      "issue_character": "The inconsistency is at the boundary between checked and unchecked exceptions: null/empty inputs are silently swallowed (empty return without logging), and an unchecked IllegalArgumentException can escape from public methods whose signature only declares IOException.",
+      "score_rationale": "The codebase has a clear and consistently applied pattern for I/O error wrapping and HTTP status mapping. The deductions come from: silent empty-return guards that produce invisible failures, the IllegalArgumentException escape from buildBcqlWithLemmaSubstitution breaking the checked-exception contract, and partial-result abandonment in scoreHits without logging. These are real inconsistencies that affect operational diagnosability. Score of 73 reflects solid structural consistency with notable gaps at the null-guard and unchecked-exception boundaries."
+    }
+  },
+  "issues": [
+    {
+      "dimension": "error_consistency",
+      "identifier": "silent_null_guard_no_log",
+      "summary": "Null/empty lemma guards return empty list silently without logging, making query skips invisible",
+      "related_files": ["src/main/java/pl/marcinmilkowski/word_sketch/query/BlackLabQueryExecutor.java"],
+      "evidence": [
+        "findCollocations: if (lemma == null || lemma.isEmpty()) { return Collections.emptyList(); } — no log",
+        "executeDependencyPattern: same pattern — no log, no signal to the caller"
+      ],
+      "suggestion": "Add a logger.debug or logger.warn call before returning empty, e.g. logger.debug('findCollocations called with null/empty lemma, returning empty'); this preserves the guard behavior while giving operators visibility.",
+      "confidence": "high",
+      "impact_scope": "local",
+      "fix_scope": "single_edit"
+    },
+    {
+      "dimension": "error_consistency",
+      "identifier": "illegal_argument_escapes_io_contract",
+      "summary": "buildBcqlWithLemmaSubstitution throws unchecked IllegalArgumentException but callers only declare throws IOException",
+      "related_files": ["src/main/java/pl/marcinmilkowski/word_sketch/query/BlackLabQueryExecutor.java"],
+      "evidence": [
+        "private static String buildBcqlWithLemmaSubstitution(...) { throw new IllegalArgumentException(...); }",
+        "findCollocations declares 'throws IOException' only; callers of findCollocations relying on the checked-exception contract will not catch IllegalArgumentException"
+      ],
+      "suggestion": "Either convert the throw to IOException('Unrecognized CQL pattern format: ...', null) to keep it in the checked contract, or document the IllegalArgumentException in each public method's @throws Javadoc so callers know to handle it.",
+      "confidence": "high",
+      "impact_scope": "module",
+      "fix_scope": "single_edit"
+    },
+    {
+      "dimension": "error_consistency",
+      "identifier": "scoring_loop_abandons_partial_results",
+      "summary": "CollocateQueryHelper.scoreHits abandons all accumulated results if getTotalFrequency throws mid-loop",
+      "related_files": ["src/main/java/pl/marcinmilkowski/word_sketch/query/CollocateQueryHelper.java"],
+      "evidence": [
+        "scoreHits iterates records and calls getTotalFrequency(collocateLemma) per record; if getTotalFrequency throws, the IOException propagates and the caller receives no partial results and no indication of how many records were processed"
+      ],
+      "suggestion": "Wrap the getTotalFrequency call in a try/catch inside the loop, log a warning for the failed collocate, and continue processing remaining records. Return whatever partial results were accumulated.",
+      "confidence": "medium",
+      "impact_scope": "local",
+      "fix_scope": "single_edit"
+    }
+  ],
+  "retrospective": {
+    "root_causes": ["The silent null-guard pattern and unchecked exception escape both stem from a lack of a uniform policy for 'what happens when input is invalid' — some cases throw, some return empty, some log."],
+    "likely_symptoms": [],
+    "possible_false_positives": []
+  }
+}

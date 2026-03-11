@@ -1,0 +1,101 @@
+{
+  "batch": "type_safety",
+  "batch_index": 15,
+  "assessments": {"type_safety": 68.0},
+  "dimension_notes": {
+    "type_safety": {
+      "evidence": [
+        "Java's static type system is enforced at compile time — no missing annotations on primitive types, no incorrect return types",
+        "BlackLabSnippetParser has 5+ methods with '/* @Nullable */' comment-annotations instead of real @Nullable annotations; tool-based null-safety analysis cannot enforce these contracts",
+        "RelationConfig.relationType() returns Optional<RelationType>; callers use .orElseThrow() in production paths (SketchHandlers, ExplorationHandlers) which will throw at runtime if grammar config is incomplete — no compile-time guarantee",
+        "RelationUtils.RELATION_ALIASES maps String→String; canonical relation IDs are stringly-typed throughout the codebase; a typo in a URL parameter ('adj_predicate') cannot be caught at compile time",
+        "HttpApiUtils response building uses Map<String, Object> everywhere — no typed response DTOs; type errors in map values are invisible until runtime serialization",
+        "QueryResults.ConcordanceResult is a sealed interface with two permitted implementations — excellent; pattern-matching can exhaustively cover both cases",
+        "PosGroup enum is used for POS categories — typed; but RelationType enum is not exposed to API callers who must pass string 'SURFACE'/'DEP' equivalents as URL params",
+        "RelationConfig.getDeprel() returns a nullable String without @Nullable annotation; callers null-check manually",
+        "ExploreOptions is a typed record — parameter grouping is type-safe; creation is straightforward",
+        "LogDiceCalculator.compute() overloads for (double, double, double) and (long, long, long) — clean; no unsafe widening issues",
+        "LongIntHashMap documents that Long.MIN_VALUE cannot be stored (sentinel) — this is a type contract limitation not expressible in Java's type system; documented but not enforceable"
+      ],
+      "impact_scope": "module",
+      "fix_scope": "multi_file_refactor",
+      "confidence": "high"
+    }
+  },
+  "dimension_judgment": {
+    "type_safety": {
+      "strengths": [
+        "QueryResults.ConcordanceResult sealed interface with permitted record subtypes makes exhaustive pattern matching possible and provides genuine type safety for result discrimination",
+        "PosGroup and RelationType enums replace raw string comparisons for POS and relation type classifications within the core domain",
+        "ExploreOptions record bundles exploration parameters into a typed aggregate preventing individual parameter positional errors",
+        "Optional<RelationType> on RelationConfig.relationType() makes the absent-type case structurally explicit rather than null-based"
+      ],
+      "issue_character": "The codebase has sound Java type system usage in its core domain but relies on stringly-typed API boundaries (relation ID strings, URL parameters, Map<String,Object> response maps) that reduce end-to-end type safety.",
+      "score_rationale": "The internal domain model (enums, sealed types, records) shows good type discipline. However, the HTTP API layer communicates entirely in strings and Map<String,Object>, making type errors at the API boundary invisible until runtime. The informal @Nullable comments represent unenforced null safety contracts. Anchoring: 70 = good core types but untyped API boundaries, 80 = typed DTOs and enforced null safety. This scores 68, slightly below the 70 anchor due to the combination of informal null annotations and multiple stringly-typed API paths."
+    }
+  },
+  "issues": [
+    {
+      "dimension": "type_safety",
+      "identifier": "informal_nullable_annotations",
+      "summary": "BlackLabSnippetParser uses /* @Nullable */ comments instead of real @Nullable annotations, making null contracts invisible to static analysis tools",
+      "related_files": ["src/main/java/pl/marcinmilkowski/word_sketch/query/BlackLabSnippetParser.java"],
+      "evidence": [
+        "'/* @Nullable */ static String extractLemmaFromMatch(String matchText)' — comment only, not a real annotation",
+        "'/* @Nullable */ static String extractPosFromMatch(String matchText)' — same pattern",
+        "'/* @Nullable */ static String extractCollocateFromXmlByPosition(...)' — same pattern",
+        "'/* @Nullable */ static String extractHeadword(String bcqlPattern)' — same pattern",
+        "extractCollocateLemma also returns null but has no annotation at all",
+        "At least 5 nullable return sites are not machine-checkable"
+      ],
+      "suggestion": "Add org.jetbrains:annotations or com.google.code.findbugs:jsr305 to pom.xml dependencies, then replace '/* @Nullable */' with '@Nullable'. For methods only used internally (package-private), using Optional<String> is a viable alternative: 'static Optional<String> extractLemmaFromMatch(String text)' — callers would use .orElse(null) only when needed.",
+      "confidence": "high",
+      "impact_scope": "module",
+      "fix_scope": "multi_file_refactor"
+    },
+    {
+      "dimension": "type_safety",
+      "identifier": "stringly_typed_relation_ids",
+      "summary": "Relation IDs and API parameters are bare strings throughout; a typo in a caller cannot be caught at compile time",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/api/RelationUtils.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/api/ExplorationHandlers.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/api/SketchHandlers.java"
+      ],
+      "evidence": [
+        "RelationUtils.RELATION_ALIASES maps String keys to String canonical IDs; if a canonical ID like 'noun_adj_predicates' is renamed, nothing catches stale alias mappings at compile time",
+        "ExplorationHandlers.handleSemanticFieldExplore: params.getOrDefault(\"relation\", \"noun_adj_predicates\") — hardcoded default string",
+        "SketchHandlers.handleSketchRequest: checks 'dep'.equals(parts[1]) — magic string literal for routing",
+        "GrammarConfigLoader.getRelation(String id) takes a raw String; no type-checking that the caller is using a known relation ID"
+      ],
+      "suggestion": "For internal usage, expose a typed way to enumerate known relation IDs: either a Set<String> from GrammarConfigLoader.getRelationIds(), or a programmatic check in RelationUtils. For URL parameter defaults, define a constant: 'static final String DEFAULT_RELATION = \"noun_adj_predicates\"'. This doesn't eliminate stringly-typing at the HTTP boundary but reduces it within the application logic.",
+      "confidence": "medium",
+      "impact_scope": "module",
+      "fix_scope": "multi_file_refactor"
+    },
+    {
+      "dimension": "type_safety",
+      "identifier": "map_string_object_response_building",
+      "summary": "All HTTP response building uses Map<String, Object> with no typed DTOs, making response shape changes invisible to the compiler",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/api/ExplorationHandlers.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/api/SketchHandlers.java"
+      ],
+      "evidence": [
+        "ExplorationHandlers.buildExploreResponseBody: 'Map<String, Object> response = new HashMap<>()' with 15+ typed-erased puts",
+        "SketchHandlers.formatWordSketchResult: 'Map<String, Object> word = new HashMap<>()' returning 4 fields",
+        "handleSemanticFieldComparison: 40+ line method building a response map with no shape contract",
+        "If a field name typo occurs (e.g., 'log_diice' instead of 'log_dice'), it would serialize silently without error"
+      ],
+      "suggestion": "Define response record types (or small data classes) for each endpoint's response shape, and use JSON.toJSONString(responseRecord) instead of Map<String, Object>. Start with the most-used: WordSketchResponse, ExploreResponse, ComparisonResponse. This is a larger refactor but enables shape validation at serialization time.",
+      "confidence": "medium",
+      "impact_scope": "module",
+      "fix_scope": "multi_file_refactor"
+    }
+  ],
+  "retrospective": {
+    "root_causes": ["The HTTP handler layer was written in a Java-idiomatic 'build a map and serialize' style that trades type safety for flexibility; the informal null annotations suggest null-analysis tooling was not part of the project setup"],
+    "likely_symptoms": ["Response shape breakages would be discovered only by integration testing or runtime JSON inspection"],
+    "possible_false_positives": ["Map<String, Object> response building is universal in Java HTTP server code without a framework; this may be an intentional simplicity tradeoff for a research tool"]
+  }
+}

@@ -1,0 +1,54 @@
+{
+  "batch": "incomplete_migration",
+  "batch_index": 11,
+  "assessments": {"incomplete_migration": 88.0},
+  "dimension_notes": {
+    "incomplete_migration": {
+      "evidence": [
+        "GrammarConfigLoader.validateNoLegacyKeys() actively rejects any config containing 'copulas' key with a clear error message directing users to the current API; no silent coexistence of old pattern",
+        "RelationConfig.getFullPattern() Javadoc notes 'Canonical field name is pattern; cql_pattern is no longer supported' — the migration is complete and enforced, not silently tolerated",
+        "CqlUtils.java Javadoc contains duplicate word 'Both Both' — minor doc artifact from edit, not a migration issue",
+        "No @Deprecated annotations anywhere in the production codebase",
+        "No TODO/FIXME comments referencing 'migrate', 'legacy', 'old api', or 'remove after' found across all seed files",
+        "RelationUtils.RELATION_ALIASES provides forward-compatible alias resolution — this is an intentional backward-compat shim for short API param names, not stale migration debris",
+        "All 30 production files use a single consistent Java/BlackLab API; no mixed paradigms (e.g., no old Lucene API alongside new BlackLab API)",
+        "buildBcqlWithLemmaSubstitution throws IllegalArgumentException for unrecognized patterns rather than silently falling back, preventing zombie usage of old formats"
+      ],
+      "impact_scope": "local",
+      "fix_scope": "single_edit",
+      "confidence": "high",
+      "issues_preventing_higher_score": "Minor Javadoc typo in CqlUtils ('Both Both') is the only residual artifact; no structural migration debt exists. Score held below 95 due to this doc inconsistency and a single informal comment style artifact."
+    }
+  },
+  "dimension_judgment": {
+    "incomplete_migration": {
+      "strengths": [
+        "GrammarConfigLoader actively validates and rejects deprecated config keys at startup — migration is enforced, not just documented",
+        "No @Deprecated symbols exist that are still called by active code",
+        "The BCQL/CQL pattern API is clean and unified: no old-style and new-style patterns coexisting",
+        "RelationUtils.RELATION_ALIASES is clearly labeled as an intentional compatibility layer with explicit forward-looking documentation",
+        "Single JVM language (Java), single dependency ecosystem — no mixed-language migration concerns"
+      ],
+      "issue_character": "The codebase has no active migration technical debt; any historical migration (e.g., copulas → embedded CQL, cql_pattern → pattern) has been completed and the old paths actively guarded against.",
+      "score_rationale": "The codebase scores very high on this dimension. There are no deprecated-but-called symbols, no stale migration TODOs, and no old+new API coexistence. The only marks against a perfect score are a minor Javadoc typo ('Both Both' in CqlUtils) and a single informal comment noting a prior format, which read together suggest recent but completed housekeeping rather than in-flight migration. Relative to a global anchor where 80 = minor isolated artifacts and 95 = completely clean, this codebase falls in the 88 range."
+    }
+  },
+  "issues": [
+    {
+      "dimension": "incomplete_migration",
+      "identifier": "cqlutils_doc_both_both",
+      "summary": "CqlUtils Javadoc contains duplicate word 'Both Both' — artifact of an incomplete edit",
+      "related_files": ["src/main/java/pl/marcinmilkowski/word_sketch/utils/CqlUtils.java"],
+      "evidence": ["Class-level Javadoc reads: 'Both Both {@link pl.marcinmilkowski.word_sketch.api.SketchHandlers} and ...' — the word 'Both' appears twice on consecutive lines, indicating a cut-paste edit artifact"],
+      "suggestion": "Remove the duplicate 'Both' word from the CqlUtils class Javadoc. Change 'Both\\nBoth {@link ...}' to 'Both {@link ...}'.",
+      "confidence": "high",
+      "impact_scope": "local",
+      "fix_scope": "single_edit"
+    }
+  ],
+  "retrospective": {
+    "root_causes": ["Historical migration from 'copulas' config key and 'cql_pattern' field to the current unified pattern API appears complete and well-guarded"],
+    "likely_symptoms": [],
+    "possible_false_positives": ["RelationUtils.RELATION_ALIASES might superficially appear to be a stale compatibility shim, but it is intentionally maintained for API usability and is well-documented"]
+  }
+}
