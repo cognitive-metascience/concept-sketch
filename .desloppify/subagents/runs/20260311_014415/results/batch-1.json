@@ -1,0 +1,121 @@
+{
+  "batch": "mid_level_elegance",
+  "batch_index": 1,
+  "assessments": {
+    "mid_level_elegance": 67.0
+  },
+  "dimension_notes": {
+    "mid_level_elegance": {
+      "evidence": [
+        "buildExploreResponseBody and buildBaseExploreResponse centralize shared response assembly for both single-seed and multi-seed paths, so the handler seam has no duplication",
+        "All model-to-JSON translation (formatDiscoveredNoun, formatCoreCollocate, formatAdjectiveProfile, formatEdge) is concentrated inside ExplorationHandlers, not leaked into model or query packages",
+        "ExploreOptions record bundles tuning parameters cleanly, removing a 5-argument list from the exploreByPattern call site",
+        "CollocateQueryHelper.buildAndRankCollocates is a shared ranking seam reused verbatim by findCollocations, executeDependencyPattern, and executeSurfacePattern, keeping logDice scoring in one place",
+        "exploreMultiSeed in SemanticFieldExplorer maps multi-seed results into ExplorationResult with seed set to String.join(',', seeds); ExplorationResult.getSeed() then returns 'theory,model,hypothesis', a string that does not represent a single seed — the handler must compensate by adding separate 'seeds' and 'seed_count' keys outside the standard buildExploreResponseBody path",
+        "In BlackLabQueryExecutor.findCollocations, when BlackLabSnippetParser.extractLemmaFromMatch returns null, the fallback uses ad-hoc lastIndexOf(' ') string splitting (trimmed.substring(lastSpace + 1)) rather than any shared utility; executeDependencyPattern has no equivalent fallback, so extraction strategy is inconsistent across methods at the executor/parser boundary",
+        "ExplorationResult.getEdges() and ComparisonResult.getEdges() build visualization edges directly in model classes, embedding edge-type strings ('seed_adj', 'discovered_adj', 'modifier') that are presentation concerns; the handler then calls result.getEdges() and re-maps through formatEdge(), meaning edge construction logic is split between model and formatter",
+        "SemanticFieldExplorer.fetchExamples builds a hardcoded BCQL pattern '[lemma=\"%s\" & xpos=\"JJ.*\"] []{0,3} [lemma=\"%s\" & xpos=\"NN.*\"]' inline, bypassing RelationConfig.getFullPattern() entirely; every other exploration method delegates to RelationConfig, so this method silently breaks the config→explorer contract"
+      ],
+      "impact_scope": "module",
+      "fix_scope": "multi_file_refactor",
+      "confidence": "high"
+    }
+  },
+  "dimension_judgment": {
+    "mid_level_elegance": {
+      "strengths": [
+        "Translation at the handler boundary is consolidated: all format* helpers are package-private statics in ExplorationHandlers, so domain objects never carry JSON-map building logic",
+        "buildExploreResponseBody extracts the shared response structure shared by single-seed and multi-seed handlers, avoiding divergent copy-paste at the HTTP seam",
+        "ExploreOptions record eliminates a long parameter list at the SemanticFieldExplorer.exploreByPattern seam, making the handoff explicit and minimal",
+        "CollocateQueryHelper.buildAndRankCollocates is a clean shared scoring seam reused by all three executor query variants without duplication",
+        "HttpApiUtils.requireParam provides a consistent null-sentinel gateway pattern for parameter extraction, with a predictable single-check protocol across all handlers"
+      ],
+      "issue_character": "Issues are concentrated at two seams — the multi-seed data mapping into a single-seed-shaped result type, and a pair of bypasses (ad-hoc extraction fallback, hardcoded BCQL in fetchExamples) that create invisible inconsistencies at the executor/config boundaries — rather than being a systemic breakdown across the whole module.",
+      "score_rationale": "The codebase sits above the 60-point drag threshold: boundary translation is generally disciplined, helpers are well-factored, and the three-layer handoff (API → exploration → query) is legible. However, the ExplorationResult reuse for multi-seed data forces the handler to patch around the model's semantic mismatch, and two config/extraction bypasses create invisible seam inconsistencies that a developer will stumble on. These are not isolated micro-issues — each affects how collaborators communicate — but they are bounded to specific seams rather than pervasive, which keeps the score from falling further. Solid-but-uneven lands around 67."
+    }
+  },
+  "issues": [
+    {
+      "dimension": "mid_level_elegance",
+      "identifier": "multi_seed_result_shape_mismatch",
+      "summary": "exploreMultiSeed maps multi-seed data into single-seed ExplorationResult, forcing the handler to compensate with extra keys outside the shared response path",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/exploration/SemanticFieldExplorer.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/api/ExplorationHandlers.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/model/ExplorationResult.java"
+      ],
+      "evidence": [
+        "exploreMultiSeed returns new ExplorationResult(String.join(',', seeds), ...) — getSeed() returns 'theory,model,hypothesis', not a single seed",
+        "handleSemanticFieldExploreMulti calls buildExploreResponseBody(response, result) but then adds response.put('seeds', ...) and response.put('seed_count', ...) outside of it, because the shared helper only writes the single-seed key 'seed' on the single-seed path",
+        "The seeds become discoveredNouns inside ExplorationResult, even though they are known inputs, not discovered outputs — the type's meaning is semantically stretched"
+      ],
+      "suggestion": "Introduce a dedicated MultiSeedExplorationResult (or add a seeds: List<String> field to ExplorationResult alongside seed) so the type correctly carries multi-seed data, and buildExploreResponseBody can handle both cases uniformly without out-of-band handler patching.",
+      "confidence": "high",
+      "impact_scope": "module",
+      "fix_scope": "multi_file_refactor"
+    },
+    {
+      "dimension": "mid_level_elegance",
+      "identifier": "adhoc_lemma_extraction_fallback",
+      "summary": "findCollocations uses an ad-hoc lastIndexOf(' ') fallback for lemma extraction not shared with executeDependencyPattern, scattering identity-parsing logic across two call sites",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/query/BlackLabQueryExecutor.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/query/BlackLabSnippetParser.java"
+      ],
+      "evidence": [
+        "In findCollocations: if extractLemmaFromMatch returns null, the code does trimmed.lastIndexOf(' ') and takes the suffix — raw string splitting with no encapsulation",
+        "executeDependencyPattern calls extractCollocateLemma(identity) with no fallback — the two methods handle a null result differently with no shared strategy",
+        "BlackLabSnippetParser already has extractCollocateLemma and extractLemmaAt for positional extraction, so the fallback is bypassing the canonical extraction seam"
+      ],
+      "suggestion": "Move the fallback strategy into BlackLabSnippetParser (e.g., extractLemmaFromMatchWithFallback), so all executor methods share one extraction seam and the fallback logic is visible and testable in one place.",
+      "confidence": "high",
+      "impact_scope": "local",
+      "fix_scope": "single_edit"
+    },
+    {
+      "dimension": "mid_level_elegance",
+      "identifier": "edge_building_in_model",
+      "summary": "ExplorationResult.getEdges() and ComparisonResult.getEdges() embed visualization edge construction — including presentation-level edge type strings — inside model classes",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/model/ExplorationResult.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/model/ComparisonResult.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/api/ExplorationHandlers.java"
+      ],
+      "evidence": [
+        "ExplorationResult.getEdges() creates Edge objects with type 'seed_adj' and 'discovered_adj' — these string labels are visualization/presentation conventions, not domain invariants",
+        "ComparisonResult.getEdges() similarly creates Edge('modifier') labels inside the model",
+        "The handler then iterates result.getEdges() and re-maps each Edge through formatEdge(), so the model builds edges and the handler formats them, splitting the boundary logic across two layers"
+      ],
+      "suggestion": "Remove getEdges() from both model classes and move edge construction into ExplorationHandlers (or a dedicated EdgeBuilder), so model classes carry only data and the handler owns the full model-to-response translation in one place.",
+      "confidence": "medium",
+      "impact_scope": "module",
+      "fix_scope": "multi_file_refactor"
+    },
+    {
+      "dimension": "mid_level_elegance",
+      "identifier": "fetch_examples_bypasses_grammar_config",
+      "summary": "SemanticFieldExplorer.fetchExamples hardcodes a BCQL pattern instead of delegating to RelationConfig, silently breaking the grammar-config contract",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/exploration/SemanticFieldExplorer.java"
+      ],
+      "evidence": [
+        "fetchExamples builds: \"[lemma=\\\"%s\\\" & xpos=\\\"JJ.*\\\"] []{0,3} [lemma=\\\"%s\\\" & xpos=\\\"NN.*\\\"]\" — hardcoded xpos tags and window size with no config injection",
+        "Every other exploration method uses relationConfig.getFullPattern(seed) or relationConfig.collocateReversePattern() to look up patterns from grammar config",
+        "The API handler (handleSemanticFieldExamples) does not take a relation parameter, so there is no way to vary the pattern even if a caller wanted to"
+      ],
+      "suggestion": "Accept a RelationConfig parameter in fetchExamples (or use a default config from grammarConfig) and derive the example query from it, consistent with all other exploration methods. Alternatively, expose the hardcoded pattern as a named constant with a comment explaining why it is relation-agnostic.",
+      "confidence": "high",
+      "impact_scope": "module",
+      "fix_scope": "single_edit"
+    }
+  ],
+  "retrospective": {
+    "root_causes": [
+      "ExplorationResult was designed for single-seed use and reused for multi-seed without evolving the type, creating an impedance mismatch at the model boundary",
+      "BlackLabSnippetParser's extraction utilities were added incrementally rather than as a single canonical API, leaving fallback logic to grow in call sites",
+      "SemanticFieldExplorer.fetchExamples was likely added as a quick utility without integrating it into the grammar-config-driven pattern used by the rest of the class"
+    ],
+    "likely_symptoms": [],
+    "possible_false_positives": []
+  }
+}

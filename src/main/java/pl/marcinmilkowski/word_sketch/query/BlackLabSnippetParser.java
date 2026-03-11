@@ -31,6 +31,25 @@ public class BlackLabSnippetParser {
     }
 
     /**
+     * Extract lemma from matched text with a plain-text fallback.
+     * Tries {@link #extractLemmaFromMatch(String)} first; if that returns null or blank,
+     * falls back to extracting the last whitespace-separated token from the raw identity
+     * string (e.g. a plain "word pos" grouping format).
+     *
+     * @param identity the identity string from a {@link nl.inl.blacklab.search.results.HitGroup}
+     * @return the extracted lemma, or an empty string if nothing could be determined
+     */
+    static String extractLemmaWithFallback(String identity) {
+        String lemma = extractLemmaFromMatch(identity);
+        if (lemma == null || lemma.isBlank()) {
+            String trimmed = identity.trim();
+            int lastSpace = trimmed.lastIndexOf(' ');
+            lemma = lastSpace >= 0 ? trimmed.substring(lastSpace + 1) : trimmed;
+        }
+        return lemma;
+    }
+
+    /**
      * Extract POS tag from matched text (XML format).
      * Tries xpos first, falls back to upos.
      */

@@ -155,17 +155,17 @@ class ExplorationHandlers {
         String nounsParam = HttpApiUtils.requireParam(exchange, params, "seeds");
         if (nounsParam == null) return;
 
-        Set<String> nouns = new LinkedHashSet<>();
+        Set<String> seeds = new LinkedHashSet<>();
         for (String s : nounsParam.split(",")) {
             String cleaned = s.trim().toLowerCase();
-            if (!cleaned.isEmpty()) nouns.add(cleaned);
+            if (!cleaned.isEmpty()) seeds.add(cleaned);
         }
 
         double minLogDice;
-        int maxPerNoun;
+        int topCollocates;
         try {
             minLogDice = Double.parseDouble(params.getOrDefault("min_logdice", "3.0"));
-            maxPerNoun = Integer.parseInt(params.getOrDefault("max_per_noun", "50"));
+            topCollocates = Integer.parseInt(params.getOrDefault("max_per_noun", "50"));
         } catch (NumberFormatException e) {
             HttpApiUtils.sendError(exchange, 400, "Invalid numeric parameter: " + e.getMessage());
             return;
@@ -173,7 +173,7 @@ class ExplorationHandlers {
 
         ComparisonResult result;
         try {
-            result = semanticFieldExplorer.compareCollocateProfiles(nouns, minLogDice, maxPerNoun);
+            result = semanticFieldExplorer.compareCollocateProfiles(seeds, minLogDice, topCollocates);
         } catch (IOException e) {
             HttpApiUtils.sendError(exchange, 500, "Comparison failed: " + e.getMessage());
             return;
@@ -211,7 +211,7 @@ class ExplorationHandlers {
 
     /**
      * Handle semantic field examples.
-     * GET /api/semantic-field/examples?adjective=good&noun=theory&max=10
+     * GET /api/semantic-field/examples?adjective=good&noun=theory&max=10&relation=adj_predicate
      */
     void handleSemanticFieldExamples(HttpExchange exchange) throws IOException {
         String query = exchange.getRequestURI().getQuery();
@@ -230,9 +230,12 @@ class ExplorationHandlers {
             return;
         }
 
+        RelationConfig resolvedConfig = resolveRelationConfig(exchange, params);
+        if (resolvedConfig == null) return;
+
         List<String> examples;
         try {
-            examples = semanticFieldExplorer.fetchExamples(adjective, noun, maxExamples);
+            examples = semanticFieldExplorer.fetchExamples(adjective, noun, resolvedConfig, maxExamples);
         } catch (IOException e) {
             HttpApiUtils.sendError(exchange, 500, "Failed to fetch examples: " + e.getMessage());
             return;
@@ -387,7 +390,7 @@ class ExplorationHandlers {
      */
     private RelationConfig resolveRelationConfig(HttpExchange exchange, Map<String, String> params) throws IOException {
         String relationId = RelationUtils.resolveRelationAlias(
-            params.getOrDefault("relation", "noun_adj_predicates").toLowerCase());
+            params.getOrDefault("relation", "noun_adj_predicates"));
         var relationConfig = grammarConfig.getRelation(relationId);
         if (relationConfig.isEmpty()) {
             HttpApiUtils.sendError(exchange, 400, "Unknown relation: " + relationId);

@@ -45,6 +45,24 @@ public record RelationConfig(
     }
 
     /**
+     * Get the BCQL pattern with both headword and collocate lemmas substituted.
+     * Delegates to {@link #getFullPattern(String)} for the head, then injects
+     * the collocate lemma at {@link #collocatePosition}.
+     *
+     * @param headword       the lemma for the head position
+     * @param collocateLemma the lemma for the collocate position
+     * @return the fully-substituted BCQL pattern string
+     */
+    public String getFullPattern(String headword, String collocateLemma) {
+        String withHead = getFullPattern(headword);
+        if (collocateLemma == null || collocateLemma.isBlank()) return withHead;
+        List<String> tokens = CqlUtils.splitCqlTokens(withHead);
+        if (collocatePosition < 1 || collocatePosition > tokens.size()) return withHead;
+        tokens.set(collocatePosition - 1, mergeLemmaConstraint(tokens.get(collocatePosition - 1), collocateLemma));
+        return String.join(" ", tokens);
+    }
+
+    /**
      * Get the BCQL pattern with headword substituted.
      * For BCQL format: replaces the constraint at head_position with [lemma="headword" & original_constraint]
      */

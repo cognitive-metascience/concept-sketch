@@ -1,30 +1,34 @@
 package pl.marcinmilkowski.word_sketch.query;
 
-import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Assumptions;
+import java.nio.file.Path;
 import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * Unit tests for BlackLabQueryExecutor.
  *
  * <p>BlackLabQueryExecutor wraps a live BlackLab index; all its public methods
- * require an on-disk index to operate.  To enable these tests, provide a valid
- * BlackLab index directory via the {@code CONCEPT_SKETCH_TEST_INDEX} environment
- * variable or the {@code conceptSketch.testIndex} system property, and remove
- * the {@code @Disabled} annotation from the class or individual tests.
- *
- * <p>The tests below are written and disabled so the intended behaviour is
- * documented and can be activated once a test index is available.
+ * require an on-disk index to operate.  These tests are skipped automatically
+ * when no index is available.  To enable them, provide a valid BlackLab index
+ * directory via the {@code CONCEPT_SKETCH_TEST_INDEX} environment variable or
+ * the {@code conceptSketch.testIndex} system property.
  */
-@Disabled("Requires live BlackLab index — set CONCEPT_SKETCH_TEST_INDEX env var to enable")
 class BlackLabQueryExecutorTest {
 
     private static final String INDEX_PATH = System.getenv("CONCEPT_SKETCH_TEST_INDEX") != null
             ? System.getenv("CONCEPT_SKETCH_TEST_INDEX")
             : System.getProperty("conceptSketch.testIndex", "D:\\corpora_philsci\\bi");
 
+    @BeforeAll
+    static void requireIndex() {
+        Path path = Path.of(INDEX_PATH);
+        Assumptions.assumeTrue(path.toFile().exists(),
+            "Requires live BlackLab index at " + path + " — set CONCEPT_SKETCH_TEST_INDEX to enable");
+    }
+
     @Test
-    @Disabled("Requires live BlackLab index")
     void findCollocations_missingLemma_throwsIllegalArgumentException() throws Exception {
         try (BlackLabQueryExecutor executor = new BlackLabQueryExecutor(INDEX_PATH)) {
             // A cqlPattern that is neither a placeholder (%s) nor starts with '[' is invalid.
@@ -34,7 +38,6 @@ class BlackLabQueryExecutorTest {
     }
 
     @Test
-    @Disabled("Requires live BlackLab index")
     void findCollocations_validLemmaAndPattern_returnsNonNullList() throws Exception {
         try (BlackLabQueryExecutor executor = new BlackLabQueryExecutor(INDEX_PATH)) {
             var results = executor.findCollocations("house", "[xpos=\"JJ.*\"]", 0.0, 10);
@@ -43,7 +46,6 @@ class BlackLabQueryExecutorTest {
     }
 
     @Test
-    @Disabled("Requires live BlackLab index")
     void getTotalFrequency_knownLemma_returnsPositiveCount() throws Exception {
         try (BlackLabQueryExecutor executor = new BlackLabQueryExecutor(INDEX_PATH)) {
             long freq = executor.getTotalFrequency("theory");

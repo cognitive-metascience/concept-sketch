@@ -288,33 +288,30 @@ public class SemanticFieldExplorer {
     // ==================== COMPARISON MODE ====================
 
     /**
-     * Compare collocate profiles of the given nouns using logDice scores.
+     * Compare collocate profiles of the given seed words using logDice scores.
      *
-     * @param nouns        nouns to compare
-     * @param minLogDice   minimum logDice threshold
-     * @param maxPerNoun   maximum collocates per noun
+     * @param seeds          seed words to compare
+     * @param minLogDice     minimum logDice threshold
+     * @param topCollocates  maximum collocates per seed
      * @return comparison result
      */
-    public ComparisonResult compareCollocateProfiles(Set<String> nouns, double minLogDice, int maxPerNoun)
+    public ComparisonResult compareCollocateProfiles(Set<String> seeds, double minLogDice, int topCollocates)
             throws IOException {
-        return comparator.compareCollocateProfiles(nouns, minLogDice, maxPerNoun);
+        return comparator.compareCollocateProfiles(seeds, minLogDice, topCollocates);
     }
 
     /**
-     * Fetch example sentences for an adjective-noun pair.
+     * Fetch example sentences for an adjective-noun pair using the provided relation pattern.
      *
-     * @param adjective The adjective lemma
-     * @param noun The noun lemma
-     * @param maxExamples Maximum number of examples to fetch
+     * @param adjective      The adjective lemma
+     * @param noun           The noun lemma
+     * @param relationConfig The relation config defining how adjective and noun co-occur
+     * @param maxExamples    Maximum number of examples to fetch
      * @return List of example sentences showing the adjective-noun combination
      */
-    public List<String> fetchExamples(String adjective, String noun, int maxExamples) throws IOException {
-        // Build BCQL query: adjective near noun
-        // e.g., [lemma="good" & xpos="JJ.*"] []{0,3} [lemma="theory" & xpos="NN.*"]
-        String bcqlQuery = String.format(
-            "[lemma=\"%s\" & xpos=\"JJ.*\"] []{0,3} [lemma=\"%s\" & xpos=\"NN.*\"]",
-            adjective.toLowerCase(), noun.toLowerCase()
-        );
+    public List<String> fetchExamples(String adjective, String noun, RelationConfig relationConfig, int maxExamples)
+            throws IOException {
+        String bcqlQuery = relationConfig.getFullPattern(noun.toLowerCase(), adjective.toLowerCase());
 
         List<QueryResults.CollocateResult> results = executor.executeBcqlQuery(bcqlQuery, maxExamples);
 

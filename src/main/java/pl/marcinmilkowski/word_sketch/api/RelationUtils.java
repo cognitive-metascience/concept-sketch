@@ -24,9 +24,11 @@ class RelationUtils {
     /**
      * Resolves short relation aliases (e.g. "adj_predicate") to canonical grammar config IDs
      * (e.g. "noun_adj_predicates"). Pass-through for strings that are already canonical IDs.
+     * Resolution is case-insensitive; the returned value is always lower-cased.
      */
     static String resolveRelationAlias(String relation) {
         if (relation == null) return null;
-        return RELATION_ALIASES.getOrDefault(relation, relation);
+        String lower = relation.toLowerCase();
+        return RELATION_ALIASES.getOrDefault(lower, lower);
     }
 }

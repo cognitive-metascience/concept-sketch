@@ -1,23 +1,23 @@
 {
   "command": "resolve",
   "patterns": [
-    "review::.::holistic::test_strategy::stub_throws_on_dependency_pattern::f1b56a48"
+    "review::.::holistic::test_strategy::relation_utils_untested::fbbaad54"
   ],
   "status": "fixed",
   "resolved": [
-    "review::.::holistic::test_strategy::stub_throws_on_dependency_pattern::f1b56a48"
+    "review::.::holistic::test_strategy::relation_utils_untested::fbbaad54"
   ],
   "count": 1,
   "next_command": "desloppify next",
-  "overall_score": 74.3,
-  "objective_score": 99.4,
-  "strict_score": 74.3,
-  "verified_strict_score": 99.4,
-  "prev_overall_score": 74.3,
-  "prev_objective_score": 99.4,
-  "prev_strict_score": 74.3,
-  "prev_verified_strict_score": 99.4,
-  "attestation": "I have actually changed the StubExecutor.executeDependencyPattern implementation to return Collections.emptyList() instead of throwing UnsupportedOperationException, verified all 8 SemanticFieldExplorer tests pass, and I am not gaming the score by resolving without fixing.",
+  "overall_score": 75.7,
+  "objective_score": 100.0,
+  "strict_score": 75.7,
+  "verified_strict_score": 100.0,
+  "prev_overall_score": 75.7,
+  "prev_objective_score": 100.0,
+  "prev_strict_score": 75.7,
+  "prev_verified_strict_score": 100.0,
+  "attestation": "I have actually Created RelationUtilsTest.java with 12 tests: all 8 aliases, canonical pass-through, case-insensitivity, unknown input, and null and I am not gaming the score.",
   "narrative": {
     "phase": "middle_grind",
     "headline": "All T1 and T2 items cleared!",
@@ -25,7 +25,15 @@
       "lowest_dimensions": [
         {
           "name": "Test strategy",
-          "strict": 19.1,
+          "strict": 40.8,
+          "failing": 0,
+          "impact": 0.0,
+          "subjective": true,
+          "impact_description": "re-review to improve"
+        },
+        {
+          "name": "Type Discipline",
+          "strict": 43.6,
           "failing": 0,
           "impact": 0.0,
           "subjective": true,
@@ -33,15 +41,7 @@
         },
         {
           "name": "API coherence",
-          "strict": 41.2,
-          "failing": 0,
-          "impact": 0.0,
-          "subjective": true,
-          "impact_description": "re-review to improve"
-        },
-        {
-          "name": "Mid elegance",
-          "strict": 41.3,
+          "strict": 48.8,
           "failing": 0,
           "impact": 0.0,
           "subjective": true,
@@ -114,11 +114,6 @@
           "name": "Type Discipline",
           "strict": 43.6,
           "stuck_scans": 5
-        },
-        {
-          "name": "Duplication",
-          "strict": 65.0,
-          "stuck_scans": 5
         }
       ]
     },
@@ -178,7 +173,7 @@
     },
     "debt": {
       "overall_gap": 0.0,
-      "wontfix_count": 54,
+      "wontfix_count": 58,
       "worst_dimension": null,
       "worst_gap": 0.0,
       "trend": "stable"
@@ -197,13 +192,13 @@
       {
         "type": "wontfix_gap",
         "severity": "high",
-        "message": "Strict/lenient gap is 0.0 pts with 54 wontfix issues"
+        "message": "Strict/lenient gap is 0.0 pts with 58 wontfix issues"
       }
     ],
     "strict_target": {
       "target": 95.0,
-      "current": 74.3,
-      "gap": 20.7,
+      "current": 75.7,
+      "gap": 19.3,
       "state": "below",
       "warning": null
     },
@@ -225,7 +220,7 @@
     ],
     "reminder_history": {
       "zone_classification": 3,
-      "report_scores": 12,
+      "report_scores": 13,
       "review_issues_pending": 3,
       "feedback_nudge": 3,
       "wontfix_growing": 1,

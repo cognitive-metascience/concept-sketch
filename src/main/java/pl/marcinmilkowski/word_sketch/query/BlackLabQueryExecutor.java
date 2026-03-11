@@ -71,12 +71,7 @@ public class BlackLabQueryExecutor implements QueryExecutor {
                 continue;
             }
 
-            String collocateLemma = BlackLabSnippetParser.extractLemmaFromMatch(identity);
-            if (collocateLemma == null || collocateLemma.isEmpty()) {
-                String trimmed = identity.trim();
-                int lastSpace = trimmed.lastIndexOf(' ');
-                collocateLemma = lastSpace >= 0 ? trimmed.substring(lastSpace + 1) : trimmed;
-            }
+            String collocateLemma = BlackLabSnippetParser.extractLemmaWithFallback(identity);
             if (collocateLemma.isEmpty()) {
                 continue;
             }
