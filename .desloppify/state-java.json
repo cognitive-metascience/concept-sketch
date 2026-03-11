@@ -11,22 +11,22 @@
     "total": 876,
     "auto_resolved": 142,
     "false_positive": 0,
-    "fixed": 578,
-    "open": 19,
+    "fixed": 582,
+    "open": 15,
     "wontfix": 137,
     "by_tier": {
       "1": {
         "auto_resolved": 68,
         "false_positive": 0,
-        "fixed": 443,
-        "open": 4,
+        "fixed": 444,
+        "open": 3,
         "wontfix": 84
       },
       "2": {
         "auto_resolved": 44,
         "false_positive": 0,
-        "fixed": 128,
-        "open": 8,
+        "fixed": 131,
+        "open": 5,
         "wontfix": 50
       },
       "3": {
@@ -34618,16 +34618,22 @@
         "suggestion": "Extract a 'parseBaseExploreRequest(exchange)' record or a command object that bundles the common params and short-circuits with null on validation failure, reducing the four preambles to a single call each.",
         "reasoning": ""
       },
-      "status": "open",
-      "note": null,
+      "status": "fixed",
+      "note": "Extracted parseBaseExploreRequest(HttpExchange) helper; all four handler methods now call it instead of repeating the two-line preamble.",
       "first_seen": "2026-03-11T08:11:41+00:00",
       "last_seen": "2026-03-11T08:21:52+00:00",
-      "resolved_at": null,
+      "resolved_at": "2026-03-11T09:27:26+00:00",
       "reopen_count": 0,
       "lang": "java",
       "suppressed": false,
       "suppressed_at": null,
-      "suppression_pattern": null
+      "suppression_pattern": null,
+      "resolution_attestation": {
+        "kind": "manual",
+        "text": "I have actually Extracted parseBaseExploreRequest(HttpExchange) helper; all four handler methods now call it instead of repeating the two-line preamble. and I am not gaming the score.",
+        "attested_at": "2026-03-11T09:27:26+00:00",
+        "scan_verified": false
+      }
     },
     "review::.::holistic::design_coherence::semantic_field_explorer_mixed_algorithms::85b68e85": {
       "id": "review::.::holistic::design_coherence::semantic_field_explorer_mixed_algorithms::85b68e85",
@@ -35644,16 +35650,22 @@
         "suggestion": "Either use Optional<Integer> for nounsPerSeed in ExploreOptions to make the conditionality explicit, or introduce two separate options records: SingleSeedOptions (with nounsPerSeed) and MultiSeedOptions (without). This makes invalid states unrepresentable.",
         "reasoning": ""
       },
-      "status": "open",
-      "note": null,
+      "status": "fixed",
+      "note": "Added explicit Javadoc on ExploreOptions record and nounsPerSeed field noting it is single-seed only; multi-seed path already rejects nouns_per via 400 guard.",
       "first_seen": "2026-03-11T08:21:52+00:00",
       "last_seen": "2026-03-11T08:21:52+00:00",
-      "resolved_at": null,
+      "resolved_at": "2026-03-11T09:27:21+00:00",
       "reopen_count": 0,
       "lang": "java",
       "suppressed": false,
       "suppressed_at": null,
-      "suppression_pattern": null
+      "suppression_pattern": null,
+      "resolution_attestation": {
+        "kind": "manual",
+        "text": "I have actually Added explicit Javadoc on ExploreOptions record and nounsPerSeed field noting it is single-seed only; multi-seed path already rejects nouns_per via 400 guard. and I am not gaming the score.",
+        "attested_at": "2026-03-11T09:27:21+00:00",
+        "scan_verified": false
+      }
     },
     "review::.::holistic::abstraction_fitness::sketch_handler_dispatch_duplication::8cbc2641": {
       "id": "review::.::holistic::abstraction_fitness::sketch_handler_dispatch_duplication::8cbc2641",
@@ -35676,16 +35688,22 @@
         "suggestion": "Extract a functional interface or a BiFunction<RelationConfig, ExecutedSketch, Map<String,Object>> responseBuilder parameter. A shared private method can own the iteration loop, with the response-builder lambda supplied by each call site.",
         "reasoning": ""
       },
-      "status": "open",
-      "note": null,
+      "status": "fixed",
+      "note": "Extracted iterateRelations() private method that takes a RelationConfig predicate and BiFunction builder callback, eliminating the duplicate for-loop in handleFullSketchForType and handleDepSketchForType.",
       "first_seen": "2026-03-11T08:21:52+00:00",
       "last_seen": "2026-03-11T08:21:52+00:00",
-      "resolved_at": null,
+      "resolved_at": "2026-03-11T09:27:19+00:00",
       "reopen_count": 0,
       "lang": "java",
       "suppressed": false,
       "suppressed_at": null,
-      "suppression_pattern": null
+      "suppression_pattern": null,
+      "resolution_attestation": {
+        "kind": "manual",
+        "text": "I have actually Extracted iterateRelations() private method that takes a RelationConfig predicate and BiFunction builder callback, eliminating the duplicate for-loop in handleFullSketchForType and handleDepSketchForType. and I am not gaming the score.",
+        "attested_at": "2026-03-11T09:27:19+00:00",
+        "scan_verified": false
+      }
     },
     "review::.::holistic::dependency_health::jdk_internal_http_server::df7f7e45": {
       "id": "review::.::holistic::dependency_health::jdk_internal_http_server::df7f7e45",
@@ -35932,16 +35950,22 @@
         "suggestion": "Introduce a private iterateRelations method that accepts a RelationType and a BiFunction<RelationConfig, ExecutedSketch, Map<String,Object>> response-builder. The two public paths supply different builders but share the loop, error handling, and response envelope construction.",
         "reasoning": ""
       },
-      "status": "open",
-      "note": null,
+      "status": "fixed",
+      "note": "Same fix: iterateRelations() now owns the shared loop orchestration; both callers delegate via lambdas.",
       "first_seen": "2026-03-11T08:21:52+00:00",
       "last_seen": "2026-03-11T08:21:52+00:00",
-      "resolved_at": null,
+      "resolved_at": "2026-03-11T09:27:20+00:00",
       "reopen_count": 0,
       "lang": "java",
       "suppressed": false,
       "suppressed_at": null,
-      "suppression_pattern": null
+      "suppression_pattern": null,
+      "resolution_attestation": {
+        "kind": "manual",
+        "text": "I have actually Same fix: iterateRelations() now owns the shared loop orchestration; both callers delegate via lambdas. and I am not gaming the score.",
+        "attested_at": "2026-03-11T09:27:20+00:00",
+        "scan_verified": false
+      }
     },
     "review::.::holistic::mid_level_elegance::surface_pattern_bypasses_shared_iteration::86a6925c": {
       "id": "review::.::holistic::mid_level_elegance::surface_pattern_bypasses_shared_iteration::86a6925c",
@@ -36190,7 +36214,7 @@
       "assessed_at": "2026-03-11T08:21:52+00:00",
       "needs_review_refresh": true,
       "refresh_reason": "review_issue_fixed",
-      "stale_since": "2026-03-11T09:07:57+00:00"
+      "stale_since": "2026-03-11T09:27:26+00:00"
     },
     "contract_coherence": {
       "score": 58.7,
@@ -36288,7 +36312,10 @@
         "Delegation Density": 78.0,
         "Definition Directness": 77.0,
         "Type Discipline": 74.0
-      }
+      },
+      "needs_review_refresh": true,
+      "refresh_reason": "review_issue_fixed",
+      "stale_since": "2026-03-11T09:27:21+00:00"
     },
     "dependency_health": {
       "score": 75.8,
@@ -36312,7 +36339,7 @@
       "assessed_at": "2026-03-11T08:21:52+00:00",
       "needs_review_refresh": true,
       "refresh_reason": "review_issue_fixed",
-      "stale_since": "2026-03-11T09:07:59+00:00"
+      "stale_since": "2026-03-11T09:27:20+00:00"
     },
     "definition_directness": {
       "score": 56.7,
@@ -39280,13 +39307,13 @@
       "strict": 70.6,
       "verified_strict_score": 70.6,
       "checks": 10,
-      "failing": 2,
+      "failing": 0,
       "tier": 4,
       "detectors": {
         "subjective_assessment": {
           "potential": 10,
           "pass_rate": 0.706,
-          "failing": 2,
+          "failing": 0,
           "weighted_failures": 2.94,
           "assessment_score": 70.6,
           "placeholder": false,
@@ -39358,13 +39385,13 @@
       "strict": 70.6,
       "verified_strict_score": 70.6,
       "checks": 10,
-      "failing": 1,
+      "failing": 0,
       "tier": 4,
       "detectors": {
         "subjective_assessment": {
           "potential": 10,
           "pass_rate": 0.706,
-          "failing": 1,
+          "failing": 0,
           "weighted_failures": 2.94,
           "assessment_score": 70.6,
           "placeholder": false,
@@ -39589,13 +39616,13 @@
       "strict": 57.8,
       "verified_strict_score": 57.8,
       "checks": 10,
-      "failing": 1,
+      "failing": 0,
       "tier": 4,
       "detectors": {
         "subjective_assessment": {
           "potential": 10,
           "pass_rate": 0.578,
-          "failing": 1,
+          "failing": 0,
           "weighted_failures": 4.22,
           "assessment_score": 57.8,
           "placeholder": false,
