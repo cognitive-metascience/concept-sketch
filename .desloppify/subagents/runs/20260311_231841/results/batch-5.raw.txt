@@ -1,0 +1,90 @@
+{
+  "batch": "abstraction_fitness",
+  "batch_index": 5,
+  "assessments": {
+    "abstraction_fitness": 72.0
+  },
+  "dimension_notes": {
+    "abstraction_fitness": {
+      "evidence": [
+        "QueryExecutor interface has one production implementation (BlackLabQueryExecutor) — documented in its Javadoc as intentional testability seam: 'A future split into narrower ports is feasible but deferred until a second implementation or clearer isolation need arises.' This is a considered, documented design choice.",
+        "SemanticFieldExplorer is documented as 'coordination facade for the HTTP exploration layer' — it owns single-seed exploration directly and delegates multi-seed to MultiSeedExplorer and comparison to CollocateProfileComparator. The facade is justified because it presents a stable API surface to HTTP handlers.",
+        "ExploreResponseAssembler exposes 6 public static methods (buildEdges x2, populateExploreResponse, formatSeedCollocates, formatDiscoveredNouns, formatCoreCollocates, formatAdjectiveProfile, populateComparisonResponse, serializeEdge) — formatSeedCollocates, formatDiscoveredNouns, formatCoreCollocates, and formatAdjectiveProfile are only called internally by the class and from tests. Making them public widens the surface beyond what callers need.",
+        "ExploreResponseAssembler.buildEdges(ExplorationResult) creates a cross-product of ALL seeds × ALL aggregate collocates as SEED_ADJ edges. In multi-seed mode, result.seedCollocates() is the aggregate union across seeds, so (seed B, collocate) edges are created even when collocate only appeared for seed A. The abstraction 'buildEdges(ExplorationResult)' assumes the ExplorationResult carries per-seed collocate attribution, but it does not — ExplorationResult stores only the aggregate.",
+        "HttpApiUtils co-locates response writing and request parameter parsing — documented in its Javadoc as intentional ('Both sets of methods serve a single concern — handling the HTTP layer'). The justification is reasonable and the class is package-private, so this is not a leakage issue.",
+        "FetchExamplesOptions is a record with a single int field — minimal wrapper. Its value is forward compatibility (binary compatibility for future fields) and it follows the documented options-object pattern. A bare int would also work but the record pays for itself through naming.",
+        "RelationUtils.findBestCollocatePattern performs a two-stage search (primaryTypes first, then any matching POS group) — this is appropriate parameterizable policy logic that avoids duplication across SemanticFieldExplorer and CollocateProfileComparator."
+      ],
+      "impact_scope": "module",
+      "fix_scope": "single_edit",
+      "confidence": "high",
+      "sub_axes": {
+        "abstraction_leverage": 78.0,
+        "indirection_cost": 72.0,
+        "interface_honesty": 82.0,
+        "delegation_density": 85.0,
+        "definition_directness": 80.0,
+        "type_discipline": 76.0
+      }
+    }
+  },
+  "dimension_judgment": {
+    "abstraction_fitness": {
+      "strengths": [
+        "SemanticFieldExplorer-as-facade is explicitly designed and documented, providing a stable surface for HTTP handlers without exposing algorithm details",
+        "QueryExecutor interface is documented as a testability seam with a clear statement about when a port split would be warranted — this is honest about the abstraction's limits",
+        "RelationUtils.findBestCollocatePattern is a real abstraction that eliminates a duplicated two-stage lookup pattern that would otherwise appear in both SemanticFieldExplorer and CollocateProfileComparator",
+        "MultiSeedExplorer and CollocateProfileComparator are package-private algorithm classes — properly hidden behind SemanticFieldExplorer's facade"
+      ],
+      "issue_character": "The main issue is a single design gap at the ExplorationResult/ExploreResponseAssembler seam: the assembler assumes per-seed collocate data that the result model does not carry, causing it to create spurious cross-product edges in multi-seed mode.",
+      "score_rationale": "Most abstractions in this codebase pay for themselves clearly — the facade pattern in SemanticFieldExplorer, the testability seam in QueryExecutor, and the static utility pattern in RelationUtils are all justified. The drag comes from one real seam gap (ExploreResponseAssembler.buildEdges relies on per-seed data that ExplorationResult does not carry) and one over-publication (internal format methods on ExploreResponseAssembler made public unnecessarily). A score of 72 reflects a codebase that is mostly well-abstracted with one structural gap."
+    }
+  },
+  "issues": [
+    {
+      "dimension": "abstraction_fitness",
+      "identifier": "af_build_edges_cross_product",
+      "summary": "ExploreResponseAssembler.buildEdges(ExplorationResult) creates cross-product SEED_ADJ edges in multi-seed mode, attributing all aggregate collocates to every seed",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/api/ExploreResponseAssembler.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/model/ExplorationResult.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/exploration/MultiSeedExplorer.java"
+      ],
+      "evidence": [
+        "buildEdges loops: 'for (Map.Entry<String, Double> colloc : result.seedCollocates().entrySet()) { for (String seed : seedList) { edges.add(new Edge(seed, colloc.getKey(), ...)) } }'",
+        "In multi-seed mode, result.seedCollocates() is built by MultiSeedExplorer with 'seedCollocScores.merge(wsr.lemma(), wsr.logDice(), Math::max)' — a union across all seeds",
+        "The loop therefore produces (seedA, collocate_from_seedB) edges even when collocate_from_seedB did not appear for seedA",
+        "MultiSeedExplorer.buildDiscoveredNouns correctly tracks per-seed common collocates in the DiscoveredNoun objects, but buildEdges does not use discoveredNouns for SEED_ADJ edges — it uses the aggregate map instead",
+        "The Javadoc on buildEdges says 'each SEED_ADJ edge correctly names its source' — this is only true for which seed label appears on the edge, not for whether the collocate was actually found for that seed"
+      ],
+      "suggestion": "The fix requires ExplorationResult to carry per-seed collocate maps, or ExploreResponseAssembler to be given that data separately. The simplest approach: for multi-seed mode, generate SEED_ADJ edges from result.discoveredNouns() (each DiscoveredNoun is a seed, and its sharedCollocates() are the collocates actually found for it) rather than from result.seedCollocates(). Single-seed mode is unaffected since seeds() has one element and seedCollocates() is that seed's collocates. Add a seeds().size() > 1 branch in buildEdges to use discoveredNoun.sharedCollocates() for SEED_ADJ edges in multi-seed mode.",
+      "confidence": "high",
+      "impact_scope": "module",
+      "fix_scope": "single_edit",
+      "root_cause_cluster": "seam_data_mismatch"
+    },
+    {
+      "dimension": "abstraction_fitness",
+      "identifier": "af_assembler_over_public",
+      "summary": "ExploreResponseAssembler exposes internal format helpers as public static methods, widening the API surface beyond what external callers need",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/api/ExploreResponseAssembler.java"
+      ],
+      "evidence": [
+        "formatSeedCollocates, formatDiscoveredNouns, formatCoreCollocates are public static — they are called only from populateExploreResponse inside the same class",
+        "formatAdjectiveProfile is public static — called from populateComparisonResponse inside the same class, and from ExploreResponseAssemblerTest",
+        "serializeEdge is public static — called from populateExploreResponse and populateComparisonResponse inside the same class",
+        "The only callers outside the class are tests (ExploreResponseAssemblerTest), which could instead test through populateExploreResponse and populateComparisonResponse"
+      ],
+      "suggestion": "Reduce visibility of formatSeedCollocates, formatDiscoveredNouns, formatCoreCollocates, and serializeEdge to package-private (remove 'public'). If tests need to exercise them independently, test through the populate* entry points or move unit assertions to cover the aggregate output. formatAdjectiveProfile can remain public only if it has documented callers outside the package.",
+      "confidence": "medium",
+      "impact_scope": "module",
+      "fix_scope": "single_edit"
+    }
+  ],
+  "retrospective": {
+    "root_causes": ["ExplorationResult model was designed for single-seed first; when multi-seed was added, the aggregate seedCollocates map reused the same field without adding per-seed attribution, creating a seam gap with buildEdges"],
+    "likely_symptoms": ["af_build_edges_cross_product", "af_assembler_over_public"],
+    "possible_false_positives": []
+  }
+}

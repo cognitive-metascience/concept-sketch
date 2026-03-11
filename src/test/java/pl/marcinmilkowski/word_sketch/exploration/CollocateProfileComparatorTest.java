@@ -42,23 +42,17 @@ class CollocateProfileComparatorTest {
     }
 
     @Test
-    void compareCollocateProfiles_emptySeeds_returnsEmpty() throws IOException {
+    void compareCollocateProfiles_emptySeeds_throwsIllegalArgument() {
         CollocateProfileComparator comparator = new CollocateProfileComparator(stubExecutor(Collections.emptyMap()), null);
-        ComparisonResult result = comparator.compareCollocateProfiles(Collections.emptySet(), 0.0, 10);
-
-        assertNotNull(result);
-        assertTrue(result.nouns().isEmpty());
-        assertTrue(result.allAdjectives().isEmpty());
+        assertThrows(IllegalArgumentException.class,
+            () -> comparator.compareCollocateProfiles(Collections.emptySet(), 0.0, 10));
     }
 
     @Test
-    void compareCollocateProfiles_nullSeeds_returnsEmpty() throws IOException {
+    void compareCollocateProfiles_nullSeeds_throwsIllegalArgument() {
         CollocateProfileComparator comparator = new CollocateProfileComparator(stubExecutor(Collections.emptyMap()), null);
-        ComparisonResult result = comparator.compareCollocateProfiles(null, 0.0, 10);
-
-        assertNotNull(result);
-        assertTrue(result.nouns().isEmpty());
-        assertTrue(result.allAdjectives().isEmpty());
+        assertThrows(IllegalArgumentException.class,
+            () -> comparator.compareCollocateProfiles(null, 0.0, 10));
     }
 
     @Test

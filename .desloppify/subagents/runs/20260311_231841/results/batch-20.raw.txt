@@ -1,0 +1,61 @@
+{
+  "batch": "authorization_consistency",
+  "batch_index": 20,
+  "assessments": {
+    "authorization_consistency": 90.0
+  },
+  "dimension_notes": {
+    "authorization_consistency": {
+      "evidence": [
+        "WordSketchApiServer Javadoc: 'All endpoints are unauthenticated — access control is provided by the host firewall and the loopback-only bind'",
+        "Server binds exclusively to InetAddress.getLoopbackAddress() (127.0.0.1) — no external network interface exposure",
+        "Javadoc includes a deployment warning: 'Any change to the bind address must be accompanied by an authentication or network-level access-control layer'",
+        "All 13 registered routes use the same pattern: registerGetHandler/registerPostHandler → registerHandler → CORS + method check only, no auth",
+        "CORS origin is configurable via System.getProperty('cors.allow.origin') defaulting to 'http://localhost:3000' — the default is appropriately restrictive for local use",
+        "Body size limits (65536 bytes) and BCQL complexity limits (1024 chars, 20 bracket tokens) are uniformly applied to POST endpoints"
+      ],
+      "impact_scope": "codebase",
+      "fix_scope": "single_edit",
+      "confidence": "high",
+      "issues_preventing_higher_score": "The CORS allow-origin defaults to 'http://localhost:3000' via a system property override mechanism. A container deployment that changes the bind address but forgets to set cors.allow.origin gets a default that may be too permissive for the new environment. The security model document in the Javadoc warns about bind address changes but does not mention the CORS default as a related concern."
+    }
+  },
+  "dimension_judgment": {
+    "authorization_consistency": {
+      "strengths": [
+        "The no-auth security model is explicitly documented in WordSketchApiServer Javadoc with the rationale (loopback-only bind) and a deployment caveat",
+        "All 13 routes are registered through a single registerHandler path — there is no route that bypasses the CORS/method-check envelope",
+        "POST endpoints (bcql, radial) apply body size limits uniformly via readBodyWithSizeLimit, preventing resource exhaustion regardless of caller",
+        "BCQL complexity limits (length and bracket-depth) are applied before query execution — consistent defensive input validation",
+        "The loopback bind is hardcoded (InetAddress.getLoopbackAddress()), not configurable, making accidental external exposure impossible without a code change"
+      ],
+      "issue_character": "No auth inconsistencies exist — the no-auth design is uniform and intentional. The one minor gap is that the CORS origin deployment caveat does not mention the cors.allow.origin default as a related risk.",
+      "score_rationale": "Authorization is uniformly not present — this is a documented, intentional design for a local research tool. All 13 endpoints apply the same (no-auth) treatment; there are no partially-protected resources or silently exposed routes. The loopback-only bind is hardcoded. The CORS default is restrictive for local use. The only concern is a deployment documentation gap (the Javadoc warns about bind address changes but omits the corresponding CORS default risk), which is minor. This is consistent with the 90 anchor: strong, mostly consistent with a limited documented exception."
+    }
+  },
+  "issues": [
+    {
+      "dimension": "authorization_consistency",
+      "identifier": "cors_default_undocumented_in_deployment_warning",
+      "summary": "WordSketchApiServer deployment warning mentions bind address but omits the cors.allow.origin default risk for container deployments",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/api/WordSketchApiServer.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/api/HttpApiUtils.java"
+      ],
+      "evidence": [
+        "WordSketchApiServer Javadoc: 'Any change to the bind address must be accompanied by an authentication or network-level access-control layer' — does not mention CORS",
+        "HttpApiUtils: 'private static final String DEFAULT_CORS_ALLOW_ORIGIN = \"http://localhost:3000\"' — the default is narrowly scoped to localhost:3000",
+        "A developer following the deployment warning who changes the bind address to 0.0.0.0 might not realise the CORS default also needs to change for a multi-origin container setup"
+      ],
+      "suggestion": "Extend the deployment warning in WordSketchApiServer Javadoc to mention CORS: 'Any change to the bind address must be accompanied by an authentication or network-level access-control layer. Also set -Dcors.allow.origin=<trusted-origin> to restrict cross-origin access to the intended client origin.' This keeps the security guidance co-located with the bind-address note.",
+      "confidence": "medium",
+      "impact_scope": "local",
+      "fix_scope": "single_edit"
+    }
+  ],
+  "retrospective": {
+    "root_causes": ["Deployment warning was written with bind-address changes in mind but the correlated CORS configuration was not mentioned alongside it"],
+    "likely_symptoms": [],
+    "possible_false_positives": []
+  }
+}

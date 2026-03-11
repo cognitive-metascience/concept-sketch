@@ -1,0 +1,75 @@
+{
+  "batch": "naming_quality",
+  "batch_index": 4,
+  "assessments": {
+    "naming_quality": 80.0
+  },
+  "dimension_notes": {
+    "naming_quality": {
+      "evidence": [
+        "buildMultiSeedExplorationResult, buildCoreExploreResponse, buildDiscoveredNouns, buildCoreCollocates, identifyCommonCollocates — all name what they return, not how they work",
+        "exploreByPattern, compareCollocateProfiles, fetchExamples — verb+noun structure communicates intent and distinguishes the three exploration modes clearly",
+        "ExplorationParams, ConcordanceExamplesRequest, BcqlRequest, ExecutedSketch — record names are domain-vocabulary nouns, not generic 'Data' or 'Info' suffixes",
+        "RelationConfig.computeDeprel() is named with 'compute' but the method derives a value from existing record fields (pattern, id) with no external I/O — a 'derive' or 'extract' prefix would more accurately signal that this is a pure derivation: 'deriveDeprel()' or 'extractDeprel()'",
+        "parseRelationConfig in ExplorationHandlers does more than parse: it resolves aliases via RelationUtils.resolveRelationAlias, calls grammarConfig.getRelation, and validates that relationType is present. 'resolveAndValidateRelation' or 'resolveRelationConfig' would better communicate the compound nature of the operation",
+        "handleRelationsForType in SketchHandlers is named with 'handle' but it is a private implementation helper extracted from handleSurfaceRelations and handleDepRelations — the name 'handle' suggests it is itself a handler, not a helper. 'buildRelationsResponseForType' would be more accurate"
+      ],
+      "impact_scope": "local",
+      "fix_scope": "single_edit",
+      "confidence": "medium"
+    }
+  },
+  "dimension_judgment": {
+    "naming_quality": {
+      "strengths": [
+        "Exploration method names clearly distinguish the three modes: exploreByPattern (single-seed), exploreMultiSeed (multi-seed), compareCollocateProfiles (comparison)",
+        "Recent renames (buildBaseExploreResponse → buildCoreExploreResponse, computeCollocateIntersection → buildMultiSeedExplorationResult, executeAndFormatCollocations → buildSketch) have materially improved intent communication",
+        "Record type names for request/result objects use domain vocabulary throughout (ExplorationParams, ConcordanceExamplesRequest, ExecutedSketch) rather than generic suffixes",
+        "Phase-separation naming in SemanticFieldExplorer (fetchSeedCollocates, buildCollocateToNounsMap, filterByMinShared, identifyCoreCollocates) reflects the algorithm phases clearly"
+      ],
+      "issue_character": "Three isolated naming imprecisions — compute vs derive, parse vs resolve, handle vs build — each in a different file, indicating occasional inconsistency rather than a systemic naming problem.",
+      "score_rationale": "Naming is a strength overall: domain vocabulary is used consistently, recent renames have fixed the most egregious cases, and the exploration API names are particularly clear. The three issues found are all minor mismatches between name and behavior (calling a derivation 'compute', calling a resolution 'parse', calling a builder 'handle'). These would cause brief confusion for a new reader but are not misleading in a harmful way. Score of 80 reflects a solid codebase with a small number of fixable imprecisions."
+    }
+  },
+  "issues": [
+    {
+      "dimension": "naming_quality",
+      "identifier": "nq_compute_deprel_misnomer",
+      "summary": "RelationConfig.computeDeprel() uses 'compute' for a pure field-derivation method that has no side effects and reads only from the record's own fields",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/config/RelationConfig.java"
+      ],
+      "evidence": [
+        "computeDeprel() reads only this.pattern and this.id — both are immutable record components",
+        "The method applies a regex match and string prefix check to derive a deprel string — this is a derivation, not a computation over external state",
+        "The Javadoc says 'Extracts and computes the dependency relation' — 'extracts' is the primary verb, 'computes' is secondary and suggests more work than is done"
+      ],
+      "suggestion": "Rename to 'deriveDeprel()' or 'extractDeprel()' to signal that this is a pure derivation from existing fields. Update all call sites in SketchHandlers (two calls in handleRelationsForType and handleDepSketchForType) and any references in tests.",
+      "confidence": "medium",
+      "impact_scope": "local",
+      "fix_scope": "multi_file_refactor"
+    },
+    {
+      "dimension": "naming_quality",
+      "identifier": "nq_parse_relation_config_misnomer",
+      "summary": "ExplorationHandlers.parseRelationConfig does alias resolution + optional lookup + validation — 'parse' understates the method's compound responsibility",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/api/ExplorationHandlers.java"
+      ],
+      "evidence": [
+        "parseRelationConfig calls RelationUtils.resolveRelationAlias (alias resolution), then grammarConfig.getRelation (map lookup), then validates relationType is present — three distinct operations",
+        "'parse' in this codebase is used for JSON/string parsing (JSON.parseObject, parseBcqlRequest, parseConcordanceExamplesRequest) — the name implies a String→Object transformation from raw text, which is not what this method does",
+        "The method's @throws Javadoc correctly describes the validation behavior but the method name does not hint at it"
+      ],
+      "suggestion": "Rename to 'resolveRelationConfig' — 'resolve' accurately communicates alias lookup + config retrieval + validation as a single resolution step, consistent with how 'resolve' is used elsewhere (RelationUtils.resolveRelationAlias).",
+      "confidence": "medium",
+      "impact_scope": "local",
+      "fix_scope": "single_edit"
+    }
+  ],
+  "retrospective": {
+    "root_causes": ["Minor naming drift: methods named after their implementation technique ('compute', 'parse') rather than their behavioral role ('derive', 'resolve')"],
+    "likely_symptoms": ["nq_compute_deprel_misnomer", "nq_parse_relation_config_misnomer"],
+    "possible_false_positives": []
+  }
+}

@@ -58,7 +58,9 @@ class CollocateProfileComparator {
             int maxPerNoun) throws IOException {
 
         if (seedNouns == null || seedNouns.size() < 2) {
-            return ComparisonResult.empty();
+            throw new IllegalArgumentException(
+                "compareCollocateProfiles requires at least 2 seed nouns; got: "
+                    + (seedNouns == null ? "null" : seedNouns.size()));
         }
 
         List<String> nounList = new ArrayList<>(seedNouns);
@@ -92,9 +94,7 @@ class CollocateProfileComparator {
             List<QueryResults.WordSketchResult> adjectives = executor.executeCollocations(
                 noun, adjectivePattern, minLogDice, maxPerNoun);
             logger.debug("  Found {} adjectives", adjectives.size());
-            if (!adjectives.isEmpty() && logger.isDebugEnabled()) {
-                logger.debug("  Top 5: {}", adjectives.subList(0, Math.min(5, adjectives.size())));
-            }
+            logger.debug("  Top 5: {}", adjectives.subList(0, Math.min(5, adjectives.size())));
             for (QueryResults.WordSketchResult r : adjectives) {
                 adjectiveProfiles
                     .computeIfAbsent(r.lemma().toLowerCase(), k -> new LinkedHashMap<>())

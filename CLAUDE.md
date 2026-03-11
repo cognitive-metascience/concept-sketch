@@ -104,15 +104,25 @@ src/main/java/pl/marcinmilkowski/word_sketch/
 ├── Main.java                           # CLI entry point
 ├── api/
 │   ├── WordSketchApiServer.java        # REST API server (14 endpoints)
-│   ├── HttpApiUtils.java               # HTTP utility: sendJsonResponse, sendError, parseQueryParams, requireParam
+│   ├── ConcordanceHandlers.java        # Handlers for concordance/examples endpoints
+│   ├── CorpusQueryHandlers.java        # Handler for BCQL corpus query endpoint
 │   ├── ExplorationHandlers.java        # Handlers for semantic field exploration endpoints
-│   └── SketchHandlers.java             # Handlers for sketch, concordance, BCQL, radial endpoints
+│   ├── ExploreResponseAssembler.java   # Builds JSON response maps for exploration results
+│   ├── GrammarConfigSerializer.java    # Serializes GrammarConfig/RelationConfig to JSON
+│   ├── HttpApiUtils.java               # HTTP utilities: sendJsonResponse, readBodyWithSizeLimit, parseQueryParams
+│   ├── RequestEntityTooLargeException.java  # RuntimeException for HTTP 413 responses
+│   ├── SketchHandlers.java             # Handlers for word sketch endpoints
+│   └── VisualizationHandlers.java      # Handler for radial plot endpoint
 ├── config/
-│   ├── GrammarConfigLoader.java        # Grammar config loading from JSON
-│   ├── PosGroup.java                   # POS group constants (NOUN, VERB, ADJ, ADV, OTHER)
-│   └── RelationType.java               # Enum: SURFACE | DEP
+│   ├── GrammarConfig.java              # Immutable grammar configuration (relations, version)
+│   ├── GrammarConfigLoader.java        # Loads grammar config from JSON; throws IAE for invalid config
+│   ├── RelationConfig.java             # Single relation: pattern, deprel derivation
+│   ├── RelationPatternBuilder.java     # Builds CQL patterns for relations
+│   └── RelationUtils.java              # Utility: relation type checks
 ├── exploration/
-│   └── SemanticFieldExplorer.java      # Single-seed and multi-seed semantic field exploration
+│   ├── CollocateProfileComparator.java # Compares adjective profiles across seed nouns
+│   ├── MultiSeedExplorer.java          # Multi-seed semantic field exploration
+│   └── SemanticFieldExplorer.java      # Coordination facade for SEF (single + multi seed)
 ├── indexer/
 │   └── blacklab/
 │       ├── BlackLabConllUIndexer.java  # CoNLL-U corpus indexer for BlackLab
@@ -123,22 +133,25 @@ src/main/java/pl/marcinmilkowski/word_sketch/
 │   ├── CoreCollocate.java              # High-coverage shared collocate
 │   ├── DiscoveredNoun.java             # Noun discovered via shared adjectives
 │   ├── Edge.java                       # Graph edge for D3.js visualization
-│   ├── ExploreOptions.java             # Options for semantic field exploration
+│   ├── ExplorationOptions.java         # Base options for SEF exploration
 │   ├── ExplorationResult.java          # Top-level result DTO for SEF exploration
-│   └── QueryResults.java               # Result DTOs: WordSketchResult, ConcordanceResult
+│   ├── FetchExamplesOptions.java       # Options for fetchExamples
+│   ├── PosGroup.java                   # POS group enum: NOUN, VERB, ADJ, ADV, OTHER
+│   ├── QueryResults.java               # Result DTOs: WordSketchResult, ConcordanceResult
+│   ├── RelationEdgeType.java           # Enum for edge types in exploration graphs
+│   ├── RelationType.java               # Enum: SURFACE | DEP_GRAMMAR
+│   ├── SharingCategory.java            # Enum: FULLY_SHARED, PARTIALLY_SHARED, SPECIFIC
+│   ├── SingleSeedExplorationOptions.java  # Options for single-seed exploration
+│   └── package-info.java               # Package documentation
 ├── query/
-│   ├── QueryExecutor.java              # Query executor interface
 │   ├── BlackLabQueryExecutor.java      # BlackLab-backed query executor
-│   └── BlackLabSnippetParser.java      # Parses BlackLab XML snippets
-├── tagging/
-│   ├── PosTagger.java                  # POS tagger interface
-│   ├── SimpleTagger.java               # Rule-based POS tagger (implements PosTagger)
-│   └── TaggedToken.java                # Single tagged token with word, lemma, tag, position
+│   ├── BlackLabSnippetParser.java      # Parses BlackLab XML snippets
+│   ├── CollocateQueryHelper.java       # Low-level collocate frequency/example lookup
+│   └── QueryExecutor.java             # Query executor interface
 ├── utils/
 │   ├── CqlUtils.java                   # CQL parsing: splitCqlTokens, escapeForRegex
-│   ├── LogDiceCalculator.java          # logDice scoring
-│   ├── LongIntHashMap.java             # Compact long→int hash map
-│   └── PatternSubstitution.java        # CQL pattern head/collocate substitution
+│   ├── LogDiceUtils.java               # logDice scoring
+│   └── MathUtils.java                  # Math utilities: round2dp
 └── viz/
     └── RadialPlot.java                 # Radial plot data builder
 ```
@@ -285,10 +298,13 @@ Where `f(AB)` = collocate frequency, `f(A)` = headword frequency, `f(B)` = collo
 ## Key Components
 
 - **[Main.java](src/main/java/pl/marcinmilkowski/word_sketch/Main.java)**: CLI entry point
-- **[config/GrammarConfigLoader.java](src/main/java/pl/marcinmilkowski/word_sketch/config/GrammarConfigLoader.java)**: Grammar config loading and CQL pattern substitution
-- **[query/BlackLabQueryExecutor.java](src/main/java/pl/marcinmilkowski/word_sketch/query/BlackLabQueryExecutor.java)**: Query executor with logDice scoring
-- **[tagging/SimpleTagger.java](src/main/java/pl/marcinmilkowski/word_sketch/tagging/SimpleTagger.java)**: Rule-based POS tagger (implements PosTagger)
 - **[api/WordSketchApiServer.java](src/main/java/pl/marcinmilkowski/word_sketch/api/WordSketchApiServer.java)**: REST API server (14 endpoints)
+- **[api/ExplorationHandlers.java](src/main/java/pl/marcinmilkowski/word_sketch/api/ExplorationHandlers.java)**: Semantic field exploration endpoints
+- **[api/SketchHandlers.java](src/main/java/pl/marcinmilkowski/word_sketch/api/SketchHandlers.java)**: Word sketch, concordance, and radial endpoints
+- **[config/GrammarConfigLoader.java](src/main/java/pl/marcinmilkowski/word_sketch/config/GrammarConfigLoader.java)**: Grammar config loading; throws IAE for invalid config
+- **[exploration/SemanticFieldExplorer.java](src/main/java/pl/marcinmilkowski/word_sketch/exploration/SemanticFieldExplorer.java)**: Single-seed and multi-seed SEF coordination
+- **[query/BlackLabQueryExecutor.java](src/main/java/pl/marcinmilkowski/word_sketch/query/BlackLabQueryExecutor.java)**: BlackLab-backed query executor with logDice scoring
+- **[utils/LogDiceUtils.java](src/main/java/pl/marcinmilkowski/word_sketch/utils/LogDiceUtils.java)**: logDice scoring formula
 - **[utils/CqlUtils.java](src/main/java/pl/marcinmilkowski/word_sketch/utils/CqlUtils.java)**: CQL token parsing and regex escaping
 - **[grammars/](grammars/)**: Grammar definition files in JSON and m4 macro format
 

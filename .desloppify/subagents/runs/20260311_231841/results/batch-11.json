@@ -1,0 +1,62 @@
+{
+  "batch": "package_organization",
+  "batch_index": 11,
+  "assessments": {
+    "package_organization": 87.0
+  },
+  "dimension_notes": {
+    "package_organization": {
+      "evidence": [
+        "api/(10 files, 1546 LOC): HTTP handlers, server, CORS/routing utilities — all serving the HTTP layer",
+        "config/(5 files): grammar loading only; no HTTP or query concerns leak in",
+        "exploration/(3 files): algorithms for single-seed, multi-seed, and comparison — cohesive",
+        "model/(15 files): pure DTOs and value objects; package-info.java explicitly documents the boundary",
+        "query/(4 files): query executor interface and BlackLab implementation — tight single concern",
+        "utils/(3 files): stateless helpers with no application-layer dependencies",
+        "ExploreResponseAssembler lives in api/ but its test is at src/test/java/.../model/ExploreResponseAssemblerTest.java — the test is placed one package down from where the class lives, reflecting navigational uncertainty about whether the assembler belongs in api/ or model/"
+      ],
+      "impact_scope": "local",
+      "fix_scope": "multi_file_refactor",
+      "confidence": "medium",
+      "issues_preventing_higher_score": "ExploreResponseAssembler in api/ has no HTTP imports; its test lives in the model/ test package, which signals the class straddles the api/model boundary. A developer looking for response-assembly logic would need to check api/ rather than the more intuitive model/ location."
+    }
+  },
+  "dimension_judgment": {
+    "package_organization": {
+      "strengths": [
+        "All top-level packages have a single, clear sentence of purpose; api/, config/, exploration/, model/, query/, utils/ each own exactly one concern",
+        "ExplorationOptions, SingleSeedExplorationOptions, FetchExamplesOptions are correctly placed in model/ rather than exploration/, reflecting their nature as data carriers not algorithm classes",
+        "model/ has no outbound dependencies — a clean base layer any package can import without risk of cycles",
+        "utils/ contains only three stateless helpers (CqlUtils, LogDiceUtils, MathUtils) with no application-layer imports",
+        "indexer/blacklab/ is correctly nested under a two-level path that names both the concern (indexer) and the backend (blacklab)"
+      ],
+      "issue_character": "A single structural outlier: ExploreResponseAssembler sits in api/ without HTTP dependencies, and its test is placed in the model/ test tree — an isolated placement ambiguity rather than a systemic organisation problem.",
+      "score_rationale": "The package graph is coherent and navigable end-to-end. A developer can predict where to find almost any class from the directory name alone. The one friction point — ExploreResponseAssembler's cross-boundary test placement — is a minor outlier that slightly undermines confidence in the api/model boundary. This is consistent with the 90 anchor (strong, minor friction) rather than 80 (recurring mismatches). Scored 87 because the misplacement is real evidence but the overall structure is genuinely strong."
+    }
+  },
+  "issues": [
+    {
+      "dimension": "package_organization",
+      "identifier": "explore_assembler_placement",
+      "summary": "ExploreResponseAssembler is in api/ but has no HTTP dependencies; its test lives in the model/ test package",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/api/ExploreResponseAssembler.java",
+        "src/test/java/pl/marcinmilkowski/word_sketch/model/ExploreResponseAssemblerTest.java"
+      ],
+      "evidence": [
+        "ExploreResponseAssembler imports only from model/ and utils/ — no com.sun.net.httpserver, no HttpExchange",
+        "ExploreResponseAssemblerTest.java is in the .model test package, not .api, signalling that the test author considered it a model-layer concern",
+        "The class is declared public, used by ExplorationHandlers (api/), but contains pure Map-building logic with no HTTP contract"
+      ],
+      "suggestion": "Move ExploreResponseAssembler to the model/ package (alongside ExplorationResult and ComparisonResult which it serves). Update the single import in ExplorationHandlers.java. Run: grep -r 'ExploreResponseAssembler' src/ to confirm all callsites, then move the file and update the package declaration. The test file already lives in the correct location.",
+      "confidence": "medium",
+      "impact_scope": "module",
+      "fix_scope": "multi_file_refactor"
+    }
+  ],
+  "retrospective": {
+    "root_causes": ["Assembler class was extracted from api/ handlers but no explicit policy governs whether model-to-map translation belongs in api/ or model/"],
+    "likely_symptoms": ["test placed in wrong package tree as a symptom of ambiguous ownership"],
+    "possible_false_positives": []
+  }
+}

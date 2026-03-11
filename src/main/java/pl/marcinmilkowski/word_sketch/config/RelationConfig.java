@@ -11,7 +11,7 @@ import java.util.regex.Pattern;
  * Immutable data carrier for a single grammar relation deserialized from {@code relations.json}.
  *
  * <p>Pattern-building and POS-group inference logic lives in {@link RelationPatternBuilder},
- * keeping this record focused on data only. The sole remaining method ({@link #computeDeprel()})
+ * keeping this record focused on data only. The sole remaining method ({@link #deriveDeprel()})
  * is retained here because it is a simple derivation from {@link #pattern()} and {@link #id()}
  * that is only called during construction and has no callers outside this class.</p>
  */
@@ -47,7 +47,7 @@ public record RelationConfig(
      * @return the deprel string (e.g. {@code "amod"}), or {@code null} when the relation
      *         type is not {@link RelationType#DEP} or no deprel can be derived
      */
-    public @org.jspecify.annotations.Nullable String computeDeprel() {
+    public @org.jspecify.annotations.Nullable String deriveDeprel() {
         if (pattern == null || !RelationType.DEP.equals(relationType().orElse(null))) {
             return null;
         }

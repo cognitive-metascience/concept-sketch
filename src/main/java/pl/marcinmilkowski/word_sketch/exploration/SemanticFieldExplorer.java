@@ -167,7 +167,7 @@ public class SemanticFieldExplorer {
         int minShared = opts.base().minShared();
 
         if (seed.isEmpty()) {
-            return ExplorationResult.empty("");
+            throw new IllegalArgumentException("seed must not be blank");
         }
 
         String normalizedSeed = seed.toLowerCase().trim();

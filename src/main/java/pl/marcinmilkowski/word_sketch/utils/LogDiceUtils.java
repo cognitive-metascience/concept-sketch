@@ -3,10 +3,10 @@ package pl.marcinmilkowski.word_sketch.utils;
 /**
  * Utility class for computing association scores for collocation analysis.
  *
- * Supported measures:
- * - logDice: Symmetric association measure, range 0-14. Formula: log2(2 * f(AB) / (f(A) + f(B))) + 14
+ * <p>Computes logDice: a symmetric association measure with range 0–14.
+ * Formula: {@code log2(2 * f(AB) / (f(A) + f(B))) + 14}
  */
-public class LogDiceUtils {
+public final class LogDiceUtils {
 
     /**
      * Compute the logDice score for a collocation.

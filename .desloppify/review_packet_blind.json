@@ -379,7 +379,7 @@
           "throws": 1
         },
         "api/": {
-          "throws": 20,
+          "throws": 21,
           "try_catch": 8
         },
         "config/": {
@@ -388,13 +388,17 @@
           "try_catch": 2
         },
         "exploration/": {
-          "throws": 4,
+          "throws": 3,
           "result_type": 2
         },
         "blacklab/": {
           "try_catch": 4,
           "throws": 3,
           "returns_null": 1
+        },
+        "model/": {
+          "throws": 1,
+          "result_type": 1
         },
         "query/": {
           "returns_null": 8,
@@ -459,7 +463,7 @@
         {
           "file": "src/main/java/pl/marcinmilkowski/word_sketch/exploration/SemanticFieldExplorer.java",
           "max_chain_depth": 4,
-          "chain_count": 27
+          "chain_count": 29
         },
         {
           "file": "src/main/java/pl/marcinmilkowski/word_sketch/api/HttpApiUtils.java",
@@ -497,6 +501,11 @@
           "chain_count": 18
         },
         {
+          "file": "src/main/java/pl/marcinmilkowski/word_sketch/api/CorpusQueryHandlers.java",
+          "max_chain_depth": 4,
+          "chain_count": 15
+        },
+        {
           "file": "src/main/java/pl/marcinmilkowski/word_sketch/indexer/blacklab/BlackLabConllUIndexer.java",
           "max_chain_depth": 4,
           "chain_count": 15
@@ -507,24 +516,19 @@
           "chain_count": 14
         },
         {
-          "file": "src/main/java/pl/marcinmilkowski/word_sketch/api/CorpusQueryHandlers.java",
-          "max_chain_depth": 4,
-          "chain_count": 14
-        },
-        {
           "file": "src/main/java/pl/marcinmilkowski/word_sketch/api/VisualizationHandlers.java",
           "max_chain_depth": 4,
           "chain_count": 13
         },
         {
-          "file": "src/main/java/pl/marcinmilkowski/word_sketch/indexer/blacklab/ConlluConverter.java",
+          "file": "src/main/java/pl/marcinmilkowski/word_sketch/config/RelationConfig.java",
           "max_chain_depth": 4,
           "chain_count": 9
         },
         {
-          "file": "src/main/java/pl/marcinmilkowski/word_sketch/config/RelationConfig.java",
+          "file": "src/main/java/pl/marcinmilkowski/word_sketch/indexer/blacklab/ConlluConverter.java",
           "max_chain_depth": 4,
-          "chain_count": 8
+          "chain_count": 9
         },
         {
           "file": "src/main/java/pl/marcinmilkowski/word_sketch/model/package-info.java",
@@ -536,7 +540,7 @@
         {
           "file": "src/main/java/pl/marcinmilkowski/word_sketch/api/ExplorationHandlers.java",
           "wide_functions": 0,
-          "config_bag_mentions": 44
+          "config_bag_mentions": 36
         },
         {
           "file": "src/main/java/pl/marcinmilkowski/word_sketch/config/GrammarConfigLoader.java",
@@ -602,7 +606,7 @@
             "VisualizationHandlers.java",
             "WordSketchApiServer.java"
           ],
-          "total_loc": 1558,
+          "total_loc": 1546,
           "avg_fan_in": 0.0,
           "avg_fan_out": 0.0,
           "zones": {
@@ -618,7 +622,7 @@
             "RelationPatternBuilder.java",
             "RelationUtils.java"
           ],
-          "total_loc": 608,
+          "total_loc": 614,
           "avg_fan_in": 0.0,
           "avg_fan_out": 0.0,
           "zones": {
@@ -626,20 +630,17 @@
           }
         },
         "src/main/java/pl/marcinmilkowski/word_sketch/exploration/": {
-          "file_count": 6,
+          "file_count": 3,
           "files": [
             "CollocateProfileComparator.java",
-            "ExplorationOptions.java",
-            "FetchExamplesOptions.java",
             "MultiSeedExplorer.java",
-            "SemanticFieldExplorer.java",
-            "SingleSeedExplorationOptions.java"
+            "SemanticFieldExplorer.java"
           ],
-          "total_loc": 748,
+          "total_loc": 696,
           "avg_fan_in": 0.0,
           "avg_fan_out": 0.0,
           "zones": {
-            "production": 6
+            "production": 3
           }
         },
         "src/main/java/pl/marcinmilkowski/word_sketch/indexer/blacklab/": {
@@ -656,26 +657,29 @@
           }
         },
         "src/main/java/pl/marcinmilkowski/word_sketch/model/": {
-          "file_count": 12,
+          "file_count": 15,
           "files": [
             "AdjectiveProfile.java",
             "ComparisonResult.java",
             "CoreCollocate.java",
             "DiscoveredNoun.java",
             "Edge.java",
+            "ExplorationOptions.java",
             "ExplorationResult.java",
+            "FetchExamplesOptions.java",
             "PosGroup.java",
             "QueryResults.java",
             "RelationEdgeType.java",
             "RelationType.java",
             "SharingCategory.java",
+            "SingleSeedExplorationOptions.java",
             "package-info.java"
           ],
-          "total_loc": 530,
+          "total_loc": 583,
           "avg_fan_in": 0.0,
           "avg_fan_out": 0.0,
           "zones": {
-            "production": 12
+            "production": 15
           }
         },
         "src/main/java/pl/marcinmilkowski/word_sketch/query/": {
@@ -697,7 +701,7 @@
           "file_count": 3,
           "files": [
             "CqlUtils.java",
-            "LogDiceCalculator.java",
+            "LogDiceUtils.java",
             "MathUtils.java"
           ],
           "total_loc": 235,
@@ -711,7 +715,7 @@
     },
     "codebase_stats": {
       "total_files": 44,
-      "total_loc": 5492
+      "total_loc": 5487
     },
     "authorization": {},
     "ai_debt_signals": {
@@ -751,37 +755,37 @@
           "guard_density": 3.0
         },
         "src/main/java/pl/marcinmilkowski/word_sketch/config/RelationConfig.java": {
-          "comment_ratio": 0.34
+          "comment_ratio": 0.41
         },
         "src/main/java/pl/marcinmilkowski/word_sketch/config/RelationUtils.java": {
           "comment_ratio": 0.4
         },
-        "src/main/java/pl/marcinmilkowski/word_sketch/exploration/ExplorationOptions.java": {
-          "comment_ratio": 0.61
-        },
-        "src/main/java/pl/marcinmilkowski/word_sketch/exploration/FetchExamplesOptions.java": {
-          "comment_ratio": 0.47
-        },
         "src/main/java/pl/marcinmilkowski/word_sketch/exploration/SemanticFieldExplorer.java": {
-          "comment_ratio": 0.37
-        },
-        "src/main/java/pl/marcinmilkowski/word_sketch/exploration/SingleSeedExplorationOptions.java": {
-          "comment_ratio": 0.7
+          "comment_ratio": 0.36
         },
         "src/main/java/pl/marcinmilkowski/word_sketch/model/Edge.java": {
           "comment_ratio": 0.64
         },
+        "src/main/java/pl/marcinmilkowski/word_sketch/model/ExplorationOptions.java": {
+          "comment_ratio": 0.61
+        },
         "src/main/java/pl/marcinmilkowski/word_sketch/model/ExplorationResult.java": {
           "comment_ratio": 0.46
         },
+        "src/main/java/pl/marcinmilkowski/word_sketch/model/FetchExamplesOptions.java": {
+          "comment_ratio": 0.47
+        },
         "src/main/java/pl/marcinmilkowski/word_sketch/model/RelationEdgeType.java": {
           "comment_ratio": 0.4
+        },
+        "src/main/java/pl/marcinmilkowski/word_sketch/model/SingleSeedExplorationOptions.java": {
+          "comment_ratio": 0.7
         },
         "src/main/java/pl/marcinmilkowski/word_sketch/model/package-info.java": {
           "comment_ratio": 0.97
         }
       },
-      "codebase_avg_comment_ratio": 0.31
+      "codebase_avg_comment_ratio": 0.312
     },
     "migration_signals": {
       "deprecated_markers": {
@@ -819,17 +823,17 @@
         "with": 1,
         "to": 1
       },
-      "total_names": 98
+      "total_names": 102
     },
     "error_conventions": {
-      "try_catch": 16,
-      "throws": 20,
-      "returns_null": 8,
+      "try_catch": 18,
+      "throws": 22,
+      "returns_null": 10,
       "result_type": 5
     },
     "module_patterns": {
       "api/": {
-        "class_based": 17
+        "class_based": 19
       },
       "config/": {
         "class_based": 8
@@ -853,7 +857,7 @@
     "import_graph_summary": {},
     "zone_distribution": {
       "production": 44,
-      "test": 29
+      "test": 31
     },
     "existing_issues": {
       "src/main/java/pl/marcinmilkowski/word_sketch/indexer/blacklab/BlackLabConllUIndexer.java": [
@@ -865,8 +869,8 @@
       ]
     },
     "codebase_stats": {
-      "total_files": 73,
-      "total_loc": 9327,
+      "total_files": 75,
+      "total_loc": 9542,
       "avg_file_loc": 127
     },
     "sibling_conventions": {},
@@ -907,37 +911,37 @@
           "guard_density": 3.0
         },
         "src/main/java/pl/marcinmilkowski/word_sketch/config/RelationConfig.java": {
-          "comment_ratio": 0.34
+          "comment_ratio": 0.41
         },
         "src/main/java/pl/marcinmilkowski/word_sketch/config/RelationUtils.java": {
           "comment_ratio": 0.4
         },
-        "src/main/java/pl/marcinmilkowski/word_sketch/exploration/ExplorationOptions.java": {
-          "comment_ratio": 0.61
-        },
-        "src/main/java/pl/marcinmilkowski/word_sketch/exploration/FetchExamplesOptions.java": {
-          "comment_ratio": 0.47
-        },
         "src/main/java/pl/marcinmilkowski/word_sketch/exploration/SemanticFieldExplorer.java": {
-          "comment_ratio": 0.37
-        },
-        "src/main/java/pl/marcinmilkowski/word_sketch/exploration/SingleSeedExplorationOptions.java": {
-          "comment_ratio": 0.7
+          "comment_ratio": 0.36
         },
         "src/main/java/pl/marcinmilkowski/word_sketch/model/Edge.java": {
           "comment_ratio": 0.64
         },
+        "src/main/java/pl/marcinmilkowski/word_sketch/model/ExplorationOptions.java": {
+          "comment_ratio": 0.61
+        },
         "src/main/java/pl/marcinmilkowski/word_sketch/model/ExplorationResult.java": {
           "comment_ratio": 0.46
         },
+        "src/main/java/pl/marcinmilkowski/word_sketch/model/FetchExamplesOptions.java": {
+          "comment_ratio": 0.47
+        },
         "src/main/java/pl/marcinmilkowski/word_sketch/model/RelationEdgeType.java": {
           "comment_ratio": 0.4
+        },
+        "src/main/java/pl/marcinmilkowski/word_sketch/model/SingleSeedExplorationOptions.java": {
+          "comment_ratio": 0.7
         },
         "src/main/java/pl/marcinmilkowski/word_sketch/model/package-info.java": {
           "comment_ratio": 0.97
         }
       },
-      "codebase_avg_comment_ratio": 0.21
+      "codebase_avg_comment_ratio": 0.206
     },
     "error_strategies": {
       "src/main/java/pl/marcinmilkowski/word_sketch/Main.java": "try_catch",
@@ -951,20 +955,22 @@
       "src/main/java/pl/marcinmilkowski/word_sketch/config/RelationConfig.java": "return_null",
       "src/main/java/pl/marcinmilkowski/word_sketch/config/RelationPatternBuilder.java": "return_null",
       "src/main/java/pl/marcinmilkowski/word_sketch/config/RelationUtils.java": "throw",
-      "src/main/java/pl/marcinmilkowski/word_sketch/exploration/FetchExamplesOptions.java": "throw",
       "src/main/java/pl/marcinmilkowski/word_sketch/exploration/SemanticFieldExplorer.java": "throw",
       "src/main/java/pl/marcinmilkowski/word_sketch/indexer/blacklab/BlackLabConllUIndexer.java": "throw",
       "src/main/java/pl/marcinmilkowski/word_sketch/indexer/blacklab/ConlluConverter.java": "try_catch",
+      "src/main/java/pl/marcinmilkowski/word_sketch/model/FetchExamplesOptions.java": "throw",
       "src/main/java/pl/marcinmilkowski/word_sketch/model/QueryResults.java": "result_type",
       "src/main/java/pl/marcinmilkowski/word_sketch/query/BlackLabQueryExecutor.java": "throw",
       "src/main/java/pl/marcinmilkowski/word_sketch/query/BlackLabSnippetParser.java": "return_null",
       "src/main/java/pl/marcinmilkowski/word_sketch/query/CollocateQueryHelper.java": "mixed",
       "src/main/java/pl/marcinmilkowski/word_sketch/utils/CqlUtils.java": "return_null",
-      "src/main/java/pl/marcinmilkowski/word_sketch/utils/LogDiceCalculator.java": "throw",
+      "src/main/java/pl/marcinmilkowski/word_sketch/utils/LogDiceUtils.java": "throw",
       "src/test/java/pl/marcinmilkowski/word_sketch/MainTest.java": "try_catch",
       "src/test/java/pl/marcinmilkowski/word_sketch/api/CorpusQueryHandlersTest.java": "return_null",
+      "src/test/java/pl/marcinmilkowski/word_sketch/api/ExplorationHandlersTest.java": "return_null",
       "src/test/java/pl/marcinmilkowski/word_sketch/api/HandlersTest.java": "return_null",
       "src/test/java/pl/marcinmilkowski/word_sketch/api/PatternSubstitutionTest.java": "return_null",
+      "src/test/java/pl/marcinmilkowski/word_sketch/api/VisualizationHandlersTest.java": "return_null",
       "src/test/java/pl/marcinmilkowski/word_sketch/api/WrapHandlerTest.java": "throw",
       "src/test/java/pl/marcinmilkowski/word_sketch/config/GrammarConfigHelper.java": "mixed",
       "src/test/java/pl/marcinmilkowski/word_sketch/exploration/SemanticFieldExplorerInternalTest.java": "result_type",
@@ -1004,9 +1010,9 @@
         "src/main/java/pl/marcinmilkowski/word_sketch/api/ConcordanceHandlers.java",
         "src/main/java/pl/marcinmilkowski/word_sketch/api/CorpusQueryHandlers.java",
         "src/main/java/pl/marcinmilkowski/word_sketch/api/ExplorationHandlers.java",
-        "src/main/java/pl/marcinmilkowski/word_sketch/exploration/CollocateProfileComparator.java",
-        "src/main/java/pl/marcinmilkowski/word_sketch/exploration/ExplorationOptions.java",
-        "src/main/java/pl/marcinmilkowski/word_sketch/exploration/FetchExamplesOptions.java"
+        "src/main/java/pl/marcinmilkowski/word_sketch/config/GrammarConfig.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/config/GrammarConfigLoader.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/config/RelationConfig.java"
       ],
       "why": "seed files for high_level_elegance review",
       "concern_signals": []
@@ -1063,12 +1069,12 @@
         "src/main/java/pl/marcinmilkowski/word_sketch/api/ExploreResponseAssembler.java",
         "src/main/java/pl/marcinmilkowski/word_sketch/exploration/CollocateProfileComparator.java",
         "src/main/java/pl/marcinmilkowski/word_sketch/exploration/MultiSeedExplorer.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/api/CorpusQueryHandlers.java",
         "src/main/java/pl/marcinmilkowski/word_sketch/indexer/blacklab/BlackLabConllUIndexer.java",
         "src/main/java/pl/marcinmilkowski/word_sketch/api/ConcordanceHandlers.java",
-        "src/main/java/pl/marcinmilkowski/word_sketch/api/CorpusQueryHandlers.java",
         "src/main/java/pl/marcinmilkowski/word_sketch/api/VisualizationHandlers.java",
-        "src/main/java/pl/marcinmilkowski/word_sketch/indexer/blacklab/ConlluConverter.java",
         "src/main/java/pl/marcinmilkowski/word_sketch/config/RelationConfig.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/indexer/blacklab/ConlluConverter.java",
         "src/main/java/pl/marcinmilkowski/word_sketch/model/package-info.java",
         "src/main/java/pl/marcinmilkowski/word_sketch/config/RelationPatternBuilder.java",
         "src/main/java/pl/marcinmilkowski/word_sketch/api/GrammarConfigSerializer.java",
@@ -1096,12 +1102,12 @@
         "src/main/java/pl/marcinmilkowski/word_sketch/api/ExploreResponseAssembler.java",
         "src/main/java/pl/marcinmilkowski/word_sketch/exploration/CollocateProfileComparator.java",
         "src/main/java/pl/marcinmilkowski/word_sketch/exploration/MultiSeedExplorer.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/api/CorpusQueryHandlers.java",
         "src/main/java/pl/marcinmilkowski/word_sketch/indexer/blacklab/BlackLabConllUIndexer.java",
         "src/main/java/pl/marcinmilkowski/word_sketch/api/ConcordanceHandlers.java",
-        "src/main/java/pl/marcinmilkowski/word_sketch/api/CorpusQueryHandlers.java",
         "src/main/java/pl/marcinmilkowski/word_sketch/api/VisualizationHandlers.java",
-        "src/main/java/pl/marcinmilkowski/word_sketch/indexer/blacklab/ConlluConverter.java",
         "src/main/java/pl/marcinmilkowski/word_sketch/config/RelationConfig.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/indexer/blacklab/ConlluConverter.java",
         "src/main/java/pl/marcinmilkowski/word_sketch/model/package-info.java",
         "src/main/java/pl/marcinmilkowski/word_sketch/config/RelationPatternBuilder.java",
         "src/main/java/pl/marcinmilkowski/word_sketch/api/GrammarConfigSerializer.java",
@@ -1129,12 +1135,12 @@
         "src/main/java/pl/marcinmilkowski/word_sketch/api/ExploreResponseAssembler.java",
         "src/main/java/pl/marcinmilkowski/word_sketch/exploration/CollocateProfileComparator.java",
         "src/main/java/pl/marcinmilkowski/word_sketch/exploration/MultiSeedExplorer.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/api/CorpusQueryHandlers.java",
         "src/main/java/pl/marcinmilkowski/word_sketch/indexer/blacklab/BlackLabConllUIndexer.java",
         "src/main/java/pl/marcinmilkowski/word_sketch/api/ConcordanceHandlers.java",
-        "src/main/java/pl/marcinmilkowski/word_sketch/api/CorpusQueryHandlers.java",
         "src/main/java/pl/marcinmilkowski/word_sketch/api/VisualizationHandlers.java",
-        "src/main/java/pl/marcinmilkowski/word_sketch/indexer/blacklab/ConlluConverter.java",
         "src/main/java/pl/marcinmilkowski/word_sketch/config/RelationConfig.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/indexer/blacklab/ConlluConverter.java",
         "src/main/java/pl/marcinmilkowski/word_sketch/model/package-info.java",
         "src/main/java/pl/marcinmilkowski/word_sketch/config/RelationPatternBuilder.java",
         "src/main/java/pl/marcinmilkowski/word_sketch/api/GrammarConfigSerializer.java",
@@ -1155,9 +1161,9 @@
         "src/main/java/pl/marcinmilkowski/word_sketch/api/ConcordanceHandlers.java",
         "src/main/java/pl/marcinmilkowski/word_sketch/api/CorpusQueryHandlers.java",
         "src/main/java/pl/marcinmilkowski/word_sketch/api/ExplorationHandlers.java",
-        "src/main/java/pl/marcinmilkowski/word_sketch/exploration/CollocateProfileComparator.java",
-        "src/main/java/pl/marcinmilkowski/word_sketch/exploration/ExplorationOptions.java",
-        "src/main/java/pl/marcinmilkowski/word_sketch/exploration/FetchExamplesOptions.java"
+        "src/main/java/pl/marcinmilkowski/word_sketch/config/GrammarConfig.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/config/GrammarConfigLoader.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/config/RelationConfig.java"
       ],
       "why": "seed files for mid_level_elegance review",
       "concern_signals": []
@@ -1180,13 +1186,13 @@
         "src/main/java/pl/marcinmilkowski/word_sketch/api/VisualizationHandlers.java",
         "src/main/java/pl/marcinmilkowski/word_sketch/config/RelationConfig.java",
         "src/main/java/pl/marcinmilkowski/word_sketch/config/RelationUtils.java",
-        "src/main/java/pl/marcinmilkowski/word_sketch/exploration/ExplorationOptions.java",
-        "src/main/java/pl/marcinmilkowski/word_sketch/exploration/FetchExamplesOptions.java",
         "src/main/java/pl/marcinmilkowski/word_sketch/exploration/SemanticFieldExplorer.java",
-        "src/main/java/pl/marcinmilkowski/word_sketch/exploration/SingleSeedExplorationOptions.java",
         "src/main/java/pl/marcinmilkowski/word_sketch/model/Edge.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/model/ExplorationOptions.java",
         "src/main/java/pl/marcinmilkowski/word_sketch/model/ExplorationResult.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/model/FetchExamplesOptions.java",
         "src/main/java/pl/marcinmilkowski/word_sketch/model/RelationEdgeType.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/model/SingleSeedExplorationOptions.java",
         "src/main/java/pl/marcinmilkowski/word_sketch/model/package-info.java",
         "src/main/java/pl/marcinmilkowski/word_sketch/api/WordSketchApiServer.java"
       ],
@@ -1211,13 +1217,13 @@
         "src/main/java/pl/marcinmilkowski/word_sketch/api/VisualizationHandlers.java",
         "src/main/java/pl/marcinmilkowski/word_sketch/config/RelationConfig.java",
         "src/main/java/pl/marcinmilkowski/word_sketch/config/RelationUtils.java",
-        "src/main/java/pl/marcinmilkowski/word_sketch/exploration/ExplorationOptions.java",
-        "src/main/java/pl/marcinmilkowski/word_sketch/exploration/FetchExamplesOptions.java",
         "src/main/java/pl/marcinmilkowski/word_sketch/exploration/SemanticFieldExplorer.java",
-        "src/main/java/pl/marcinmilkowski/word_sketch/exploration/SingleSeedExplorationOptions.java",
         "src/main/java/pl/marcinmilkowski/word_sketch/model/Edge.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/model/ExplorationOptions.java",
         "src/main/java/pl/marcinmilkowski/word_sketch/model/ExplorationResult.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/model/FetchExamplesOptions.java",
         "src/main/java/pl/marcinmilkowski/word_sketch/model/RelationEdgeType.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/model/SingleSeedExplorationOptions.java",
         "src/main/java/pl/marcinmilkowski/word_sketch/model/package-info.java",
         "src/main/java/pl/marcinmilkowski/word_sketch/api/WordSketchApiServer.java"
       ],
@@ -1236,9 +1242,9 @@
         "src/main/java/pl/marcinmilkowski/word_sketch/api/ConcordanceHandlers.java",
         "src/main/java/pl/marcinmilkowski/word_sketch/api/CorpusQueryHandlers.java",
         "src/main/java/pl/marcinmilkowski/word_sketch/api/ExplorationHandlers.java",
-        "src/main/java/pl/marcinmilkowski/word_sketch/exploration/CollocateProfileComparator.java",
-        "src/main/java/pl/marcinmilkowski/word_sketch/exploration/ExplorationOptions.java",
-        "src/main/java/pl/marcinmilkowski/word_sketch/exploration/FetchExamplesOptions.java"
+        "src/main/java/pl/marcinmilkowski/word_sketch/config/GrammarConfig.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/config/GrammarConfigLoader.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/config/RelationConfig.java"
       ],
       "why": "seed files for package_organization review",
       "concern_signals": []
@@ -1262,12 +1268,12 @@
         "src/main/java/pl/marcinmilkowski/word_sketch/api/ExploreResponseAssembler.java",
         "src/main/java/pl/marcinmilkowski/word_sketch/exploration/CollocateProfileComparator.java",
         "src/main/java/pl/marcinmilkowski/word_sketch/exploration/MultiSeedExplorer.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/api/CorpusQueryHandlers.java",
         "src/main/java/pl/marcinmilkowski/word_sketch/indexer/blacklab/BlackLabConllUIndexer.java",
         "src/main/java/pl/marcinmilkowski/word_sketch/api/ConcordanceHandlers.java",
-        "src/main/java/pl/marcinmilkowski/word_sketch/api/CorpusQueryHandlers.java",
         "src/main/java/pl/marcinmilkowski/word_sketch/api/VisualizationHandlers.java",
-        "src/main/java/pl/marcinmilkowski/word_sketch/indexer/blacklab/ConlluConverter.java",
         "src/main/java/pl/marcinmilkowski/word_sketch/config/RelationConfig.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/indexer/blacklab/ConlluConverter.java",
         "src/main/java/pl/marcinmilkowski/word_sketch/model/package-info.java",
         "src/main/java/pl/marcinmilkowski/word_sketch/config/RelationPatternBuilder.java",
         "src/main/java/pl/marcinmilkowski/word_sketch/api/GrammarConfigSerializer.java",
@@ -1295,12 +1301,12 @@
         "src/main/java/pl/marcinmilkowski/word_sketch/api/ExploreResponseAssembler.java",
         "src/main/java/pl/marcinmilkowski/word_sketch/exploration/CollocateProfileComparator.java",
         "src/main/java/pl/marcinmilkowski/word_sketch/exploration/MultiSeedExplorer.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/api/CorpusQueryHandlers.java",
         "src/main/java/pl/marcinmilkowski/word_sketch/indexer/blacklab/BlackLabConllUIndexer.java",
         "src/main/java/pl/marcinmilkowski/word_sketch/api/ConcordanceHandlers.java",
-        "src/main/java/pl/marcinmilkowski/word_sketch/api/CorpusQueryHandlers.java",
         "src/main/java/pl/marcinmilkowski/word_sketch/api/VisualizationHandlers.java",
-        "src/main/java/pl/marcinmilkowski/word_sketch/indexer/blacklab/ConlluConverter.java",
         "src/main/java/pl/marcinmilkowski/word_sketch/config/RelationConfig.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/indexer/blacklab/ConlluConverter.java",
         "src/main/java/pl/marcinmilkowski/word_sketch/model/package-info.java",
         "src/main/java/pl/marcinmilkowski/word_sketch/config/RelationPatternBuilder.java",
         "src/main/java/pl/marcinmilkowski/word_sketch/api/GrammarConfigSerializer.java",
@@ -1328,12 +1334,12 @@
         "src/main/java/pl/marcinmilkowski/word_sketch/api/ExploreResponseAssembler.java",
         "src/main/java/pl/marcinmilkowski/word_sketch/exploration/CollocateProfileComparator.java",
         "src/main/java/pl/marcinmilkowski/word_sketch/exploration/MultiSeedExplorer.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/api/CorpusQueryHandlers.java",
         "src/main/java/pl/marcinmilkowski/word_sketch/indexer/blacklab/BlackLabConllUIndexer.java",
         "src/main/java/pl/marcinmilkowski/word_sketch/api/ConcordanceHandlers.java",
-        "src/main/java/pl/marcinmilkowski/word_sketch/api/CorpusQueryHandlers.java",
         "src/main/java/pl/marcinmilkowski/word_sketch/api/VisualizationHandlers.java",
-        "src/main/java/pl/marcinmilkowski/word_sketch/indexer/blacklab/ConlluConverter.java",
         "src/main/java/pl/marcinmilkowski/word_sketch/config/RelationConfig.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/indexer/blacklab/ConlluConverter.java",
         "src/main/java/pl/marcinmilkowski/word_sketch/model/package-info.java",
         "src/main/java/pl/marcinmilkowski/word_sketch/config/RelationPatternBuilder.java",
         "src/main/java/pl/marcinmilkowski/word_sketch/api/GrammarConfigSerializer.java",
@@ -1378,9 +1384,9 @@
         "src/main/java/pl/marcinmilkowski/word_sketch/api/ConcordanceHandlers.java",
         "src/main/java/pl/marcinmilkowski/word_sketch/api/CorpusQueryHandlers.java",
         "src/main/java/pl/marcinmilkowski/word_sketch/api/ExplorationHandlers.java",
-        "src/main/java/pl/marcinmilkowski/word_sketch/exploration/CollocateProfileComparator.java",
-        "src/main/java/pl/marcinmilkowski/word_sketch/exploration/ExplorationOptions.java",
-        "src/main/java/pl/marcinmilkowski/word_sketch/exploration/FetchExamplesOptions.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/config/GrammarConfig.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/config/GrammarConfigLoader.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/config/RelationConfig.java",
         "src/main/java/pl/marcinmilkowski/word_sketch/Main.java",
         "src/main/java/pl/marcinmilkowski/word_sketch/query/CollocateQueryHelper.java",
         "src/main/java/pl/marcinmilkowski/word_sketch/query/BlackLabQueryExecutor.java",
@@ -1388,14 +1394,13 @@
         "src/main/java/pl/marcinmilkowski/word_sketch/api/WordSketchApiServer.java",
         "src/main/java/pl/marcinmilkowski/word_sketch/exploration/SemanticFieldExplorer.java",
         "src/main/java/pl/marcinmilkowski/word_sketch/api/HttpApiUtils.java",
-        "src/main/java/pl/marcinmilkowski/word_sketch/config/GrammarConfigLoader.java",
         "src/main/java/pl/marcinmilkowski/word_sketch/api/SketchHandlers.java",
         "src/main/java/pl/marcinmilkowski/word_sketch/api/ExploreResponseAssembler.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/exploration/CollocateProfileComparator.java",
         "src/main/java/pl/marcinmilkowski/word_sketch/exploration/MultiSeedExplorer.java",
         "src/main/java/pl/marcinmilkowski/word_sketch/indexer/blacklab/BlackLabConllUIndexer.java",
         "src/main/java/pl/marcinmilkowski/word_sketch/api/VisualizationHandlers.java",
         "src/main/java/pl/marcinmilkowski/word_sketch/indexer/blacklab/ConlluConverter.java",
-        "src/main/java/pl/marcinmilkowski/word_sketch/config/RelationConfig.java",
         "src/main/java/pl/marcinmilkowski/word_sketch/model/package-info.java",
         "src/main/java/pl/marcinmilkowski/word_sketch/config/RelationPatternBuilder.java",
         "src/main/java/pl/marcinmilkowski/word_sketch/api/GrammarConfigSerializer.java",
@@ -1403,10 +1408,12 @@
         "src/main/java/pl/marcinmilkowski/word_sketch/utils/CqlUtils.java",
         "src/main/java/pl/marcinmilkowski/word_sketch/api/RequestEntityTooLargeException.java",
         "src/main/java/pl/marcinmilkowski/word_sketch/config/RelationUtils.java",
-        "src/main/java/pl/marcinmilkowski/word_sketch/exploration/SingleSeedExplorationOptions.java",
         "src/main/java/pl/marcinmilkowski/word_sketch/model/Edge.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/model/ExplorationOptions.java",
         "src/main/java/pl/marcinmilkowski/word_sketch/model/ExplorationResult.java",
-        "src/main/java/pl/marcinmilkowski/word_sketch/model/RelationEdgeType.java"
+        "src/main/java/pl/marcinmilkowski/word_sketch/model/FetchExamplesOptions.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/model/RelationEdgeType.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/model/SingleSeedExplorationOptions.java"
       ],
       "why": "no direct batch mapping for cross_module_architecture; using representative files",
       "concern_signals": []
@@ -1423,9 +1430,9 @@
         "src/main/java/pl/marcinmilkowski/word_sketch/api/ConcordanceHandlers.java",
         "src/main/java/pl/marcinmilkowski/word_sketch/api/CorpusQueryHandlers.java",
         "src/main/java/pl/marcinmilkowski/word_sketch/api/ExplorationHandlers.java",
-        "src/main/java/pl/marcinmilkowski/word_sketch/exploration/CollocateProfileComparator.java",
-        "src/main/java/pl/marcinmilkowski/word_sketch/exploration/ExplorationOptions.java",
-        "src/main/java/pl/marcinmilkowski/word_sketch/exploration/FetchExamplesOptions.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/config/GrammarConfig.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/config/GrammarConfigLoader.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/config/RelationConfig.java",
         "src/main/java/pl/marcinmilkowski/word_sketch/Main.java",
         "src/main/java/pl/marcinmilkowski/word_sketch/query/CollocateQueryHelper.java",
         "src/main/java/pl/marcinmilkowski/word_sketch/query/BlackLabQueryExecutor.java",
@@ -1433,14 +1440,13 @@
         "src/main/java/pl/marcinmilkowski/word_sketch/api/WordSketchApiServer.java",
         "src/main/java/pl/marcinmilkowski/word_sketch/exploration/SemanticFieldExplorer.java",
         "src/main/java/pl/marcinmilkowski/word_sketch/api/HttpApiUtils.java",
-        "src/main/java/pl/marcinmilkowski/word_sketch/config/GrammarConfigLoader.java",
         "src/main/java/pl/marcinmilkowski/word_sketch/api/SketchHandlers.java",
         "src/main/java/pl/marcinmilkowski/word_sketch/api/ExploreResponseAssembler.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/exploration/CollocateProfileComparator.java",
         "src/main/java/pl/marcinmilkowski/word_sketch/exploration/MultiSeedExplorer.java",
         "src/main/java/pl/marcinmilkowski/word_sketch/indexer/blacklab/BlackLabConllUIndexer.java",
         "src/main/java/pl/marcinmilkowski/word_sketch/api/VisualizationHandlers.java",
         "src/main/java/pl/marcinmilkowski/word_sketch/indexer/blacklab/ConlluConverter.java",
-        "src/main/java/pl/marcinmilkowski/word_sketch/config/RelationConfig.java",
         "src/main/java/pl/marcinmilkowski/word_sketch/model/package-info.java",
         "src/main/java/pl/marcinmilkowski/word_sketch/config/RelationPatternBuilder.java",
         "src/main/java/pl/marcinmilkowski/word_sketch/api/GrammarConfigSerializer.java",
@@ -1448,10 +1454,12 @@
         "src/main/java/pl/marcinmilkowski/word_sketch/utils/CqlUtils.java",
         "src/main/java/pl/marcinmilkowski/word_sketch/api/RequestEntityTooLargeException.java",
         "src/main/java/pl/marcinmilkowski/word_sketch/config/RelationUtils.java",
-        "src/main/java/pl/marcinmilkowski/word_sketch/exploration/SingleSeedExplorationOptions.java",
         "src/main/java/pl/marcinmilkowski/word_sketch/model/Edge.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/model/ExplorationOptions.java",
         "src/main/java/pl/marcinmilkowski/word_sketch/model/ExplorationResult.java",
-        "src/main/java/pl/marcinmilkowski/word_sketch/model/RelationEdgeType.java"
+        "src/main/java/pl/marcinmilkowski/word_sketch/model/FetchExamplesOptions.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/model/RelationEdgeType.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/model/SingleSeedExplorationOptions.java"
       ],
       "why": "no direct batch mapping for initialization_coupling; using representative files",
       "concern_signals": []
@@ -1468,9 +1476,9 @@
         "src/main/java/pl/marcinmilkowski/word_sketch/api/ConcordanceHandlers.java",
         "src/main/java/pl/marcinmilkowski/word_sketch/api/CorpusQueryHandlers.java",
         "src/main/java/pl/marcinmilkowski/word_sketch/api/ExplorationHandlers.java",
-        "src/main/java/pl/marcinmilkowski/word_sketch/exploration/CollocateProfileComparator.java",
-        "src/main/java/pl/marcinmilkowski/word_sketch/exploration/ExplorationOptions.java",
-        "src/main/java/pl/marcinmilkowski/word_sketch/exploration/FetchExamplesOptions.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/config/GrammarConfig.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/config/GrammarConfigLoader.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/config/RelationConfig.java",
         "src/main/java/pl/marcinmilkowski/word_sketch/Main.java",
         "src/main/java/pl/marcinmilkowski/word_sketch/query/CollocateQueryHelper.java",
         "src/main/java/pl/marcinmilkowski/word_sketch/query/BlackLabQueryExecutor.java",
@@ -1478,14 +1486,13 @@
         "src/main/java/pl/marcinmilkowski/word_sketch/api/WordSketchApiServer.java",
         "src/main/java/pl/marcinmilkowski/word_sketch/exploration/SemanticFieldExplorer.java",
         "src/main/java/pl/marcinmilkowski/word_sketch/api/HttpApiUtils.java",
-        "src/main/java/pl/marcinmilkowski/word_sketch/config/GrammarConfigLoader.java",
         "src/main/java/pl/marcinmilkowski/word_sketch/api/SketchHandlers.java",
         "src/main/java/pl/marcinmilkowski/word_sketch/api/ExploreResponseAssembler.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/exploration/CollocateProfileComparator.java",
         "src/main/java/pl/marcinmilkowski/word_sketch/exploration/MultiSeedExplorer.java",
         "src/main/java/pl/marcinmilkowski/word_sketch/indexer/blacklab/BlackLabConllUIndexer.java",
         "src/main/java/pl/marcinmilkowski/word_sketch/api/VisualizationHandlers.java",
         "src/main/java/pl/marcinmilkowski/word_sketch/indexer/blacklab/ConlluConverter.java",
-        "src/main/java/pl/marcinmilkowski/word_sketch/config/RelationConfig.java",
         "src/main/java/pl/marcinmilkowski/word_sketch/model/package-info.java",
         "src/main/java/pl/marcinmilkowski/word_sketch/config/RelationPatternBuilder.java",
         "src/main/java/pl/marcinmilkowski/word_sketch/api/GrammarConfigSerializer.java",
@@ -1493,10 +1500,12 @@
         "src/main/java/pl/marcinmilkowski/word_sketch/utils/CqlUtils.java",
         "src/main/java/pl/marcinmilkowski/word_sketch/api/RequestEntityTooLargeException.java",
         "src/main/java/pl/marcinmilkowski/word_sketch/config/RelationUtils.java",
-        "src/main/java/pl/marcinmilkowski/word_sketch/exploration/SingleSeedExplorationOptions.java",
         "src/main/java/pl/marcinmilkowski/word_sketch/model/Edge.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/model/ExplorationOptions.java",
         "src/main/java/pl/marcinmilkowski/word_sketch/model/ExplorationResult.java",
-        "src/main/java/pl/marcinmilkowski/word_sketch/model/RelationEdgeType.java"
+        "src/main/java/pl/marcinmilkowski/word_sketch/model/FetchExamplesOptions.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/model/RelationEdgeType.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/model/SingleSeedExplorationOptions.java"
       ],
       "why": "no direct batch mapping for test_strategy; using representative files",
       "concern_signals": []
@@ -1513,9 +1522,9 @@
         "src/main/java/pl/marcinmilkowski/word_sketch/api/ConcordanceHandlers.java",
         "src/main/java/pl/marcinmilkowski/word_sketch/api/CorpusQueryHandlers.java",
         "src/main/java/pl/marcinmilkowski/word_sketch/api/ExplorationHandlers.java",
-        "src/main/java/pl/marcinmilkowski/word_sketch/exploration/CollocateProfileComparator.java",
-        "src/main/java/pl/marcinmilkowski/word_sketch/exploration/ExplorationOptions.java",
-        "src/main/java/pl/marcinmilkowski/word_sketch/exploration/FetchExamplesOptions.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/config/GrammarConfig.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/config/GrammarConfigLoader.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/config/RelationConfig.java",
         "src/main/java/pl/marcinmilkowski/word_sketch/Main.java",
         "src/main/java/pl/marcinmilkowski/word_sketch/query/CollocateQueryHelper.java",
         "src/main/java/pl/marcinmilkowski/word_sketch/query/BlackLabQueryExecutor.java",
@@ -1523,14 +1532,13 @@
         "src/main/java/pl/marcinmilkowski/word_sketch/api/WordSketchApiServer.java",
         "src/main/java/pl/marcinmilkowski/word_sketch/exploration/SemanticFieldExplorer.java",
         "src/main/java/pl/marcinmilkowski/word_sketch/api/HttpApiUtils.java",
-        "src/main/java/pl/marcinmilkowski/word_sketch/config/GrammarConfigLoader.java",
         "src/main/java/pl/marcinmilkowski/word_sketch/api/SketchHandlers.java",
         "src/main/java/pl/marcinmilkowski/word_sketch/api/ExploreResponseAssembler.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/exploration/CollocateProfileComparator.java",
         "src/main/java/pl/marcinmilkowski/word_sketch/exploration/MultiSeedExplorer.java",
         "src/main/java/pl/marcinmilkowski/word_sketch/indexer/blacklab/BlackLabConllUIndexer.java",
         "src/main/java/pl/marcinmilkowski/word_sketch/api/VisualizationHandlers.java",
         "src/main/java/pl/marcinmilkowski/word_sketch/indexer/blacklab/ConlluConverter.java",
-        "src/main/java/pl/marcinmilkowski/word_sketch/config/RelationConfig.java",
         "src/main/java/pl/marcinmilkowski/word_sketch/model/package-info.java",
         "src/main/java/pl/marcinmilkowski/word_sketch/config/RelationPatternBuilder.java",
         "src/main/java/pl/marcinmilkowski/word_sketch/api/GrammarConfigSerializer.java",
@@ -1538,10 +1546,12 @@
         "src/main/java/pl/marcinmilkowski/word_sketch/utils/CqlUtils.java",
         "src/main/java/pl/marcinmilkowski/word_sketch/api/RequestEntityTooLargeException.java",
         "src/main/java/pl/marcinmilkowski/word_sketch/config/RelationUtils.java",
-        "src/main/java/pl/marcinmilkowski/word_sketch/exploration/SingleSeedExplorationOptions.java",
         "src/main/java/pl/marcinmilkowski/word_sketch/model/Edge.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/model/ExplorationOptions.java",
         "src/main/java/pl/marcinmilkowski/word_sketch/model/ExplorationResult.java",
-        "src/main/java/pl/marcinmilkowski/word_sketch/model/RelationEdgeType.java"
+        "src/main/java/pl/marcinmilkowski/word_sketch/model/FetchExamplesOptions.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/model/RelationEdgeType.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/model/SingleSeedExplorationOptions.java"
       ],
       "why": "no direct batch mapping for api_surface_coherence; using representative files",
       "concern_signals": []
@@ -1558,9 +1568,9 @@
         "src/main/java/pl/marcinmilkowski/word_sketch/api/ConcordanceHandlers.java",
         "src/main/java/pl/marcinmilkowski/word_sketch/api/CorpusQueryHandlers.java",
         "src/main/java/pl/marcinmilkowski/word_sketch/api/ExplorationHandlers.java",
-        "src/main/java/pl/marcinmilkowski/word_sketch/exploration/CollocateProfileComparator.java",
-        "src/main/java/pl/marcinmilkowski/word_sketch/exploration/ExplorationOptions.java",
-        "src/main/java/pl/marcinmilkowski/word_sketch/exploration/FetchExamplesOptions.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/config/GrammarConfig.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/config/GrammarConfigLoader.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/config/RelationConfig.java",
         "src/main/java/pl/marcinmilkowski/word_sketch/Main.java",
         "src/main/java/pl/marcinmilkowski/word_sketch/query/CollocateQueryHelper.java",
         "src/main/java/pl/marcinmilkowski/word_sketch/query/BlackLabQueryExecutor.java",
@@ -1568,14 +1578,13 @@
         "src/main/java/pl/marcinmilkowski/word_sketch/api/WordSketchApiServer.java",
         "src/main/java/pl/marcinmilkowski/word_sketch/exploration/SemanticFieldExplorer.java",
         "src/main/java/pl/marcinmilkowski/word_sketch/api/HttpApiUtils.java",
-        "src/main/java/pl/marcinmilkowski/word_sketch/config/GrammarConfigLoader.java",
         "src/main/java/pl/marcinmilkowski/word_sketch/api/SketchHandlers.java",
         "src/main/java/pl/marcinmilkowski/word_sketch/api/ExploreResponseAssembler.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/exploration/CollocateProfileComparator.java",
         "src/main/java/pl/marcinmilkowski/word_sketch/exploration/MultiSeedExplorer.java",
         "src/main/java/pl/marcinmilkowski/word_sketch/indexer/blacklab/BlackLabConllUIndexer.java",
         "src/main/java/pl/marcinmilkowski/word_sketch/api/VisualizationHandlers.java",
         "src/main/java/pl/marcinmilkowski/word_sketch/indexer/blacklab/ConlluConverter.java",
-        "src/main/java/pl/marcinmilkowski/word_sketch/config/RelationConfig.java",
         "src/main/java/pl/marcinmilkowski/word_sketch/model/package-info.java",
         "src/main/java/pl/marcinmilkowski/word_sketch/config/RelationPatternBuilder.java",
         "src/main/java/pl/marcinmilkowski/word_sketch/api/GrammarConfigSerializer.java",
@@ -1583,10 +1592,12 @@
         "src/main/java/pl/marcinmilkowski/word_sketch/utils/CqlUtils.java",
         "src/main/java/pl/marcinmilkowski/word_sketch/api/RequestEntityTooLargeException.java",
         "src/main/java/pl/marcinmilkowski/word_sketch/config/RelationUtils.java",
-        "src/main/java/pl/marcinmilkowski/word_sketch/exploration/SingleSeedExplorationOptions.java",
         "src/main/java/pl/marcinmilkowski/word_sketch/model/Edge.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/model/ExplorationOptions.java",
         "src/main/java/pl/marcinmilkowski/word_sketch/model/ExplorationResult.java",
-        "src/main/java/pl/marcinmilkowski/word_sketch/model/RelationEdgeType.java"
+        "src/main/java/pl/marcinmilkowski/word_sketch/model/FetchExamplesOptions.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/model/RelationEdgeType.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/model/SingleSeedExplorationOptions.java"
       ],
       "why": "no direct batch mapping for authorization_consistency; using representative files",
       "concern_signals": []

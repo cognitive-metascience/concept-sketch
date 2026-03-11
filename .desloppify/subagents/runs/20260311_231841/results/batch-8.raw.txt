@@ -1,0 +1,63 @@
+{
+  "batch": "mid_level_elegance",
+  "batch_index": 8,
+  "assessments": {
+    "mid_level_elegance": 70.0
+  },
+  "dimension_notes": {
+    "mid_level_elegance": {
+      "evidence": [
+        "ExplorationHandlers → SemanticFieldExplorer → MultiSeedExplorer / CollocateProfileComparator is a clean delegation chain: each layer receives exactly what it needs and returns a typed result object (ExplorationResult, ComparisonResult)",
+        "GrammarConfig → GrammarConfigLoader seam is clean: the loader produces an immutable GrammarConfig; callers only need GrammarConfig and never carry a loader reference",
+        "RelationConfig → RelationPatternBuilder seam is clean: the config record is a pure data carrier; all pattern-building logic is in the separate builder class, eliminating mutation or side effects at the data layer",
+        "ExploreResponseAssembler.buildEdges(ExplorationResult) in multi-seed mode creates SEED_ADJ edges for every (seed, aggregate_collocate) combination — the aggregate seedCollocates map in ExplorationResult is a union across all seeds, so a collocate found only for seed A is attributed to seed B as well. The root cause is that ExplorationResult does not carry per-seed collocate data, only the aggregate. The assembler cannot correctly attribute collocates to their source seeds without this data.",
+        "ExploreResponseAssembler mutation pattern: populateExploreResponse and populateComparisonResponse accept a Map<String,Object> and mutate it rather than returning a new map. The callers (ExplorationHandlers) construct the map, pass it through, then send it — the construction and population are split across two locations. This is an accepted T4-deferred pattern but it does create a seam where the map must be constructed in the right pre-populated state before calling populate*.",
+        "ConcordanceHandlers internally renames HTTP parameter names: 'seed' → 'noun' and 'collocate' → 'adjective' in parseConcordanceExamplesRequest. The rename is documented in the ConcordanceExamplesRequest Javadoc, and the translation happens at a single explicit boundary — this is the right pattern.",
+        "WordSketchApiServer wires all handlers via constructor injection with a clear two-constructor design (convenience constructor and full constructor) — dependency wiring is explicit and testable"
+      ],
+      "impact_scope": "module",
+      "fix_scope": "multi_file_refactor",
+      "confidence": "high"
+    }
+  },
+  "dimension_judgment": {
+    "mid_level_elegance": {
+      "strengths": [
+        "The delegation chain ExplorationHandlers → SemanticFieldExplorer → MultiSeedExplorer is explicit and each boundary carries only the typed data the receiver needs",
+        "GrammarConfig/GrammarConfigLoader separation ensures callers depend only on the data, never on the loading machinery",
+        "HTTP parameter renaming (seed→noun, collocate→adjective) happens at a single documented seam in parseConcordanceExamplesRequest — the translation is centralized and visible",
+        "WordSketchApiServer constructor injection makes the dependency graph of the API layer transparent"
+      ],
+      "issue_character": "The primary issue is a structural gap at the ExplorationResult/ExploreResponseAssembler seam: the result model was not extended to carry per-seed attribution when multi-seed was added, leaving the assembler unable to produce accurate seed-specific edges.",
+      "score_rationale": "Most seams in this codebase are clean — data flows in one direction, translation happens at named points, and collaborator wiring is explicit. The score of 70 reflects one real structural gap: the ExplorationResult model and the ExploreResponseAssembler are mismatched at the multi-seed edge-building seam, and the mutation-based populate* pattern (T4 deferred) means response construction is split across two call sites. These are not catastrophic, but they are the kind of seam issue that leads to subtle bugs and confusion when extending multi-seed visualizations."
+    }
+  },
+  "issues": [
+    {
+      "dimension": "mid_level_elegance",
+      "identifier": "mle_exploration_result_no_per_seed_data",
+      "summary": "ExplorationResult carries only an aggregate seedCollocates map, preventing ExploreResponseAssembler from producing accurate per-seed SEED_ADJ edges in multi-seed mode",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/model/ExplorationResult.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/api/ExploreResponseAssembler.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/exploration/MultiSeedExplorer.java"
+      ],
+      "evidence": [
+        "ExplorationResult has a single 'Map<String, Double> seedCollocates' field — in multi-seed mode this is populated by MultiSeedExplorer with 'seedCollocScores.merge(wsr.lemma(), wsr.logDice(), Math::max)' (union across all seeds)",
+        "ExploreResponseAssembler.buildEdges loops 'for each collocate in result.seedCollocates(): for each seed in result.seeds(): add Edge(seed, collocate, ...)' — creates all-seeds × all-collocates cross-product",
+        "MultiSeedExplorer.SeedCollocateData internally holds the per-seed collocate map 'Map<String, List<WordSketchResult>> seedCollocateMap' but this is discarded after buildMultiSeedExplorationResult returns — the per-seed data does not survive the seam",
+        "The result: if collocate 'elegant' appears only for seed 'theory' (not 'model'), the edge (model, elegant, SEED_ADJ) is still created"
+      ],
+      "suggestion": "Add a 'Map<String, Map<String, Double>> perSeedCollocates' field to ExplorationResult (empty map for single-seed mode; populated per seed for multi-seed mode). In MultiSeedExplorer.buildMultiSeedExplorationResult, populate it from the existing seedCollocateMap before returning. In ExploreResponseAssembler.buildEdges, use perSeedCollocates when it is non-empty to create (seed, collocate) edges only where the collocate was actually found for that seed.",
+      "confidence": "high",
+      "impact_scope": "module",
+      "fix_scope": "multi_file_refactor",
+      "root_cause_cluster": "seam_data_mismatch"
+    }
+  ],
+  "retrospective": {
+    "root_causes": ["ExplorationResult was designed for single-seed; when multi-seed was added, the aggregate union map reused the same field, discarding per-seed attribution that the assembler needs"],
+    "likely_symptoms": ["mle_exploration_result_no_per_seed_data"],
+    "possible_false_positives": []
+  }
+}

@@ -87,7 +87,7 @@ class SketchHandlers {
                 obj.put("relation_type", rt.name());
                 obj.put("pattern", rel.pattern());
                 if (relationType == RelationType.DEP) {
-                    obj.put("deprel", rel.computeDeprel());
+                    obj.put("deprel", rel.deriveDeprel());
                 }
                 relationsArray.add(obj);
             }
@@ -147,7 +147,7 @@ class SketchHandlers {
         Map<String, Object> byRelation = new HashMap<>();
         List<String> relationErrors = new ArrayList<>();
 
-        executeRelationQueries(RelationType.DEP, rel -> rel.computeDeprel() != null, lemma, byRelation, relationErrors,
+        executeRelationQueries(RelationType.DEP, rel -> rel.deriveDeprel() != null, lemma, byRelation, relationErrors,
             (rel, sketch) -> buildRelationResponse(rel, sketch.results(), sketch.collocations()));
 
         Map<String, Object> response = new HashMap<>();
@@ -168,7 +168,7 @@ class SketchHandlers {
      * {@code relationErrors} rather than propagated.
      *
      * @param relationType    the type of relations to process
-     * @param extraFilter     additional per-relation predicate (e.g. {@code rel -> rel.computeDeprel() != null})
+     * @param extraFilter     additional per-relation predicate (e.g. {@code rel -> rel.deriveDeprel() != null})
      * @param lemma           the head lemma being sketched
      * @param byRelation      accumulator map from relation-id to response map
      * @param relationErrors  accumulator list for error strings
@@ -273,7 +273,7 @@ class SketchHandlers {
         relData.put("id", rel.id());
         relData.put("name", rel.name());
         relData.put("description", rel.description());
-        relData.put("deprel", rel.computeDeprel());
+        relData.put("deprel", rel.deriveDeprel());
         relData.put("total_matches", results.stream().mapToLong(QueryResults.WordSketchResult::frequency).sum());
         relData.put("collocations", collocations);
         return relData;

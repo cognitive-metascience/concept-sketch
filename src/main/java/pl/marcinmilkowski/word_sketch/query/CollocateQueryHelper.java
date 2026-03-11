@@ -29,6 +29,7 @@ import nl.inl.blacklab.searches.SearchHits;
 
 import pl.marcinmilkowski.word_sketch.utils.LogDiceUtils;
 
+
 import org.jspecify.annotations.Nullable;
 
 import java.util.Objects;
@@ -54,9 +55,15 @@ class CollocateQueryHelper {
 
     private final BlackLabIndex index;
 
+    /**
+     * Creates a helper bound to the given BlackLab index.
+     *
+     * @param index the BlackLab index; {@code null} is accepted only in test subclasses that
+     *              override {@link #getTotalFrequency} and
+     *              {@link #executeCollocateSearch(String, String, String, double, int)} — all
+     *              production callers must supply a non-null index.
+     */
     CollocateQueryHelper(@Nullable BlackLabIndex index) {
-        // Null is accepted to support test subclasses that override getTotalFrequency and
-        // executeCollocateSearch. Production callers must always supply a non-null index.
         this.index = index;
     }
 
@@ -266,7 +273,7 @@ class CollocateQueryHelper {
         }
 
         List<QueryResults.CollocateResult> results = new ArrayList<>();
-        int limit = (int) Math.min((long) maxResults * OVER_FETCH_FACTOR, (long) records.size());
+        int limit = records.size();
 
         for (int i = 0; i < limit; i++) {
             HitRecord rec = records.get(i);

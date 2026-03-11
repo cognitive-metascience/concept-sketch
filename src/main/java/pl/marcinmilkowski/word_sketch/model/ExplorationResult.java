@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Collectors;
+import org.jspecify.annotations.NonNull;
 
 /**
  * Immutable result of semantic field exploration from one or more seed words.
@@ -28,11 +29,11 @@ public class ExplorationResult {
      * Use {@link #seed()} for a combined display string and {@link #seeds()} to iterate
      * individual lemmas.</p>
      */
-    private final List<String> seeds;
-    private final Map<String, Double> seedCollocates;  // collocate -> logDice with seed
-    private final Map<String, Long> seedCollocateFrequencies;  // collocate -> raw frequency
-    private final List<DiscoveredNoun> discoveredNouns;
-    private final List<CoreCollocate> coreCollocates;
+    private final @NonNull List<String> seeds;
+    private final @NonNull Map<String, Double> seedCollocates;  // collocate -> logDice with seed
+    private final @NonNull Map<String, Long> seedCollocateFrequencies;  // collocate -> raw frequency
+    private final @NonNull List<DiscoveredNoun> discoveredNouns;
+    private final @NonNull List<CoreCollocate> coreCollocates;
 
     public ExplorationResult(List<String> seeds, Map<String, Double> seedCollocates,
             Map<String, Long> seedCollocateFrequencies,

@@ -55,10 +55,10 @@ class ExplorationHandlers {
     void handleSemanticFieldExplore(HttpExchange exchange) throws IOException {
         Map<String, String> params = HttpApiUtils.parseQueryParams(exchange.getRequestURI().getQuery());
         String seed = HttpApiUtils.requireParam(params, "seed");
-        RelationConfig relationConfig = parseRelationConfig(params);
+        RelationConfig relationConfig = resolveRelationConfig(params);
         ExplorationParams exploreParams = parseExplorationParams(params);
 
-        // Safe: parseRelationConfig guarantees relationType is present
+        // Safe: resolveRelationConfig guarantees relationType is present
         String relationType = relationConfig.relationType().get().name();
 
         SingleSeedExplorationOptions opts = new SingleSeedExplorationOptions(
@@ -99,7 +99,7 @@ class ExplorationHandlers {
         }
 
         String seedsRaw = HttpApiUtils.requireParam(params, "seeds");
-        RelationConfig resolvedConfig = parseRelationConfig(params);
+        RelationConfig resolvedConfig = resolveRelationConfig(params);
         ExplorationParams exploreParams = parseExplorationParams(params);
 
         Set<String> seeds = parseSeedSet(seedsRaw);
@@ -109,7 +109,7 @@ class ExplorationHandlers {
                 "Multi-seed exploration requires at least 2 seeds; received " + seeds.size());
         }
 
-        // Safe: parseRelationConfig guarantees relationType is present
+        // Safe: resolveRelationConfig guarantees relationType is present
         String relationType = resolvedConfig.relationType().get().name();
 
         ExplorationOptions opts = new ExplorationOptions(
@@ -136,8 +136,8 @@ class ExplorationHandlers {
      *
      * <p>Also reachable at the legacy path {@code /api/semantic-field}.</p>
      *
-     * <p>Cardinality: requires exactly 2 comma-separated {@code seeds} values to form a
-     * meaningful pairwise comparison.
+     * <p>Cardinality: requires at least 2 comma-separated {@code seeds} values; works with 2 or
+     * more nouns, enabling pairwise and multi-way adjective profile comparison.
      * This endpoint does not accept a {@code relation} parameter because
      * {@link pl.marcinmilkowski.word_sketch.exploration.CollocateProfileComparator} aggregates
      * collocates across all loaded relations rather than filtering to one relation type.</p>
@@ -191,7 +191,7 @@ class ExplorationHandlers {
 
         int maxExamples = HttpApiUtils.parseIntParam(params, "top", 10);
 
-        RelationConfig resolvedConfig = parseRelationConfig(params);
+        RelationConfig resolvedConfig = resolveRelationConfig(params);
 
         List<String> examples = semanticFieldExplorer.fetchExamples(adjective, noun, resolvedConfig, new FetchExamplesOptions(maxExamples));
 
@@ -245,7 +245,7 @@ class ExplorationHandlers {
      * @throws IllegalArgumentException if the relation is unknown or misconfigured — caught by
      *         {@link HttpApiUtils#wrapWithErrorHandling} and mapped to 400
      */
-    private RelationConfig parseRelationConfig(Map<String, String> params) {
+    private RelationConfig resolveRelationConfig(Map<String, String> params) {
         String relationId = RelationUtils.resolveRelationAlias(
             params.getOrDefault("relation", "noun_adj_predicates"));
         var relationConfig = grammarConfig.getRelation(relationId);

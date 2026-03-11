@@ -42,8 +42,8 @@ class VisualizationHandlers {
         String center = obj.getString("center");
         if (center == null) center = "";
         logger.debug("Radial: center = {}", center);
-        int width = (obj.get("width") == null) ? 840 : obj.getIntValue("width");
-        int height = (obj.get("height") == null) ? 520 : obj.getIntValue("height");
+        int width = obj.getIntValue("width", 840);
+        int height = obj.getIntValue("height", 520);
 
         JSONArray itemsArr = obj.getJSONArray("items");
         List<RadialPlot.Item> items = new ArrayList<>();
