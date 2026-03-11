@@ -11,8 +11,8 @@
     "total": 1302,
     "auto_resolved": 263,
     "false_positive": 0,
-    "fixed": 848,
-    "open": 11,
+    "fixed": 851,
+    "open": 8,
     "wontfix": 180,
     "by_tier": {
       "1": {
@@ -25,8 +25,8 @@
       "2": {
         "auto_resolved": 90,
         "false_positive": 0,
-        "fixed": 241,
-        "open": 5,
+        "fixed": 244,
+        "open": 2,
         "wontfix": 72
       },
       "3": {
@@ -52104,16 +52104,22 @@
         "suggestion": "Rename the local variables and record fields to match the HTTP parameter names: 'headword' (from 'seed') and 'collocate' (keep). If the endpoint is adjective-specific by design, document that constraint in the Javadoc and reject non-adjective relation types explicitly.",
         "reasoning": ""
       },
-      "status": "open",
-      "note": null,
+      "status": "fixed",
+      "note": "Added Javadoc to parseConcordanceExamplesRequest documenting that HTTP params seed/collocate map to record fields noun/adjective",
       "first_seen": "2026-03-11T22:06:00+00:00",
       "last_seen": "2026-03-11T22:06:00+00:00",
-      "resolved_at": null,
+      "resolved_at": "2026-03-11T22:28:21+00:00",
       "reopen_count": 0,
       "lang": "java",
       "suppressed": false,
       "suppressed_at": null,
-      "suppression_pattern": null
+      "suppression_pattern": null,
+      "resolution_attestation": {
+        "kind": "manual",
+        "text": "I have actually Added Javadoc to parseConcordanceExamplesRequest documenting that HTTP params seed/collocate map to record fields noun/adjective and I am not gaming the score.",
+        "attested_at": "2026-03-11T22:28:21+00:00",
+        "scan_verified": false
+      }
     },
     "review::.::holistic::naming_quality::fetch_examples_default_constant_unused::01489af7": {
       "id": "review::.::holistic::naming_quality::fetch_examples_default_constant_unused::01489af7",
@@ -52351,16 +52357,22 @@
         "suggestion": "Add accepted-values documentation to the endpoint Javadoc (e.g. mode: 'spiral' | 'radial' | null-for-default). Add a validation guard at the handler boundary that throws IAE for unrecognized mode values, consistent with how other optional enum-style parameters are handled in the codebase.",
         "reasoning": ""
       },
-      "status": "open",
-      "note": null,
+      "status": "fixed",
+      "note": "Added mode allowlist validation in handleVisualRadial (null/''/signed accepted; others throw IAE)",
       "first_seen": "2026-03-11T22:06:00+00:00",
       "last_seen": "2026-03-11T22:06:00+00:00",
-      "resolved_at": null,
+      "resolved_at": "2026-03-11T22:28:07+00:00",
       "reopen_count": 0,
       "lang": "java",
       "suppressed": false,
       "suppressed_at": null,
-      "suppression_pattern": null
+      "suppression_pattern": null,
+      "resolution_attestation": {
+        "kind": "manual",
+        "text": "I have actually Added mode allowlist validation in handleVisualRadial (null/''/signed accepted; others throw IAE) and I am not gaming the score.",
+        "attested_at": "2026-03-11T22:28:07+00:00",
+        "scan_verified": false
+      }
     },
     "review::.::holistic::ai_generated_debt::fetch_examples_default_unused_constant::b32b289b": {
       "id": "review::.::holistic::ai_generated_debt::fetch_examples_default_unused_constant::b32b289b",
@@ -52619,16 +52631,22 @@
         "suggestion": "Refactor to use Optional.map or a ternary: `String bcqlQuery = grammarConfig.getRelation(req.relation()).map(rel -> RelationPatternBuilder.buildFullPattern(rel, req.noun())).map(p -> CqlUtils.substituteAtPosition(p, req.adjective(), grammarConfig.getRelation(req.relation()).get().collocatePosition())).orElse(null);` \u2014 or extract to a private method `resolveOrNullBcqlQuery(req)` that returns Optional<String>, then the fallback branch is a clear orElseGet.",
         "reasoning": ""
       },
-      "status": "open",
-      "note": null,
+      "status": "fixed",
+      "note": "Replaced null-initialized bcqlQuery mutable local with ternary-based definite assignment in ConcordanceHandlers",
       "first_seen": "2026-03-11T22:06:00+00:00",
       "last_seen": "2026-03-11T22:06:00+00:00",
-      "resolved_at": null,
+      "resolved_at": "2026-03-11T22:27:55+00:00",
       "reopen_count": 0,
       "lang": "java",
       "suppressed": false,
       "suppressed_at": null,
-      "suppression_pattern": null
+      "suppression_pattern": null,
+      "resolution_attestation": {
+        "kind": "manual",
+        "text": "I have actually Replaced null-initialized bcqlQuery mutable local with ternary-based definite assignment in ConcordanceHandlers and I am not gaming the score.",
+        "attested_at": "2026-03-11T22:27:55+00:00",
+        "scan_verified": false
+      }
     },
     "review::.::holistic::type_safety::word_sketch_result_pos_no_nullability_annotation::55ce0689": {
       "id": "review::.::holistic::type_safety::word_sketch_result_pos_no_nullability_annotation::55ce0689",
@@ -53090,7 +53108,10 @@
     "logic_clarity": {
       "score": 83.8,
       "source": "holistic",
-      "assessed_at": "2026-03-11T22:06:00+00:00"
+      "assessed_at": "2026-03-11T22:06:00+00:00",
+      "needs_review_refresh": true,
+      "refresh_reason": "review_issue_fixed",
+      "stale_since": "2026-03-11T22:27:55+00:00"
     },
     "type_safety": {
       "score": 83.8,
@@ -53154,7 +53175,7 @@
       "assessed_at": "2026-03-11T22:06:00+00:00",
       "needs_review_refresh": true,
       "refresh_reason": "review_issue_fixed",
-      "stale_since": "2026-03-11T22:23:08+00:00"
+      "stale_since": "2026-03-11T22:28:21+00:00"
     },
     "abstraction_fitness": {
       "score": 81.8,
@@ -53199,7 +53220,10 @@
     "mid_level_elegance": {
       "score": 83.8,
       "source": "holistic",
-      "assessed_at": "2026-03-11T22:06:00+00:00"
+      "assessed_at": "2026-03-11T22:06:00+00:00",
+      "needs_review_refresh": true,
+      "refresh_reason": "review_issue_fixed",
+      "stale_since": "2026-03-11T22:28:07+00:00"
     },
     "definition_directness": {
       "score": 56.7,
@@ -56062,13 +56086,13 @@
       "strict": 81.5,
       "verified_strict_score": 81.5,
       "checks": 10,
-      "failing": 1,
+      "failing": 0,
       "tier": 4,
       "detectors": {
         "subjective_assessment": {
           "potential": 10,
           "pass_rate": 0.815,
-          "failing": 1,
+          "failing": 0,
           "weighted_failures": 1.85,
           "assessment_score": 81.5,
           "placeholder": false,
@@ -56083,13 +56107,13 @@
       "strict": 83.8,
       "verified_strict_score": 83.8,
       "checks": 10,
-      "failing": 1,
+      "failing": 0,
       "tier": 4,
       "detectors": {
         "subjective_assessment": {
           "potential": 10,
           "pass_rate": 0.838,
-          "failing": 1,
+          "failing": 0,
           "weighted_failures": 1.62,
           "assessment_score": 83.8,
           "placeholder": false,
@@ -56245,13 +56269,13 @@
       "strict": 83.8,
       "verified_strict_score": 83.8,
       "checks": 10,
-      "failing": 1,
+      "failing": 0,
       "tier": 4,
       "detectors": {
         "subjective_assessment": {
           "potential": 10,
           "pass_rate": 0.838,
-          "failing": 1,
+          "failing": 0,
           "weighted_failures": 1.62,
           "assessment_score": 83.8,
           "placeholder": false,
