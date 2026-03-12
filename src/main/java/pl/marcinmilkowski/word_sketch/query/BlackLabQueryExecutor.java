@@ -83,7 +83,7 @@ public class BlackLabQueryExecutor implements QueryExecutor {
 
         String bcql = buildBcqlWithLemmaSubstitution(cqlPattern, lemma);
 
-        CollocateQueryHelper.CollocateSearch collocateSearch = collocateQueryHelper.executeCollocateSearch(lemma, bcql, true);
+        CollocateQueryHelper.CollocateSearch collocateSearch = collocateQueryHelper.executeCollocateSearchWithStoredHits(lemma, bcql);
         long headwordFreq = collocateSearch.headwordFreq();
         HitGroups groups = collocateSearch.groups();
 
@@ -185,7 +185,7 @@ public class BlackLabQueryExecutor implements QueryExecutor {
 
     private List<QueryResults.WordSketchResult> collectDependencyFrequencies(
             String bcql, String lemma, double minLogDice, int maxResults) throws IOException {
-        CollocateQueryHelper.CollocateSearch collocateSearch = collocateQueryHelper.executeCollocateSearch(lemma, bcql, true);
+        CollocateQueryHelper.CollocateSearch collocateSearch = collocateQueryHelper.executeCollocateSearchWithStoredHits(lemma, bcql);
         long headwordFreq = collocateSearch.headwordFreq();
         HitGroups groups = collocateSearch.groups();
 
@@ -235,7 +235,7 @@ public class BlackLabQueryExecutor implements QueryExecutor {
         }
 
         int collocatePos = BlackLabSnippetParser.findLabelTokenIndex(bcqlPattern, 2);
-        CollocateQueryHelper.CollocateSearch collocateSearch = collocateQueryHelper.executeCollocateSearch(lemma, bcqlPattern, false);
+        CollocateQueryHelper.CollocateSearch collocateSearch = collocateQueryHelper.executeCollocateSearch(lemma, bcqlPattern);
         long headwordFreq = collocateSearch.headwordFreq();
         HitGroups groups = collocateSearch.groups();
 

@@ -60,7 +60,7 @@ class CollocateQueryHelper {
      *
      * @param index the BlackLab index; {@code null} is accepted only in test subclasses that
      *              override {@link #getTotalFrequency} and
-     *              {@link #executeCollocateSearch(String, String, String, double, int)} — all
+     *              {@link #executeCollocateSearchWithStoredHits(String, String)} — all
      *              production callers must supply a non-null index.
      */
     CollocateQueryHelper(@Nullable BlackLabIndex index) {
@@ -102,16 +102,30 @@ class CollocateQueryHelper {
     record CollocateSearch(long headwordFreq, HitGroups groups) {}
 
     /**
-     * Parses {@code bcqlPattern}, executes the search, and returns headword frequency together
-     * with grouped hits.
+     * Parses {@code bcqlPattern}, executes the search with stored hits (needed when the
+     * iteration logic reads stored XML fields), and returns headword frequency with grouped hits.
      *
-     * @param lemma          the headword lemma used to fetch total corpus frequency
-     * @param bcqlPattern    the BCQL pattern to search
-     * @param withStoredHits pass {@code true} to use {@code groupWithStoredHits} (needed when
-     *                       the iteration logic reads stored XML fields), {@code false} for
-     *                       the lighter {@code group} variant.
+     * @param lemma       the headword lemma used to fetch total corpus frequency
+     * @param bcqlPattern the BCQL pattern to search
      */
-    CollocateSearch executeCollocateSearch(String lemma, String bcqlPattern, boolean withStoredHits)
+    CollocateSearch executeCollocateSearchWithStoredHits(String lemma, String bcqlPattern)
+            throws IOException {
+        return executeCollocateSearchImpl(lemma, bcqlPattern, true);
+    }
+
+    /**
+     * Parses {@code bcqlPattern}, executes the search with the lighter {@code group} variant
+     * (no stored XML fields needed), and returns headword frequency with grouped hits.
+     *
+     * @param lemma       the headword lemma used to fetch total corpus frequency
+     * @param bcqlPattern the BCQL pattern to search
+     */
+    CollocateSearch executeCollocateSearch(String lemma, String bcqlPattern)
+            throws IOException {
+        return executeCollocateSearchImpl(lemma, bcqlPattern, false);
+    }
+
+    private CollocateSearch executeCollocateSearchImpl(String lemma, String bcqlPattern, boolean withStoredHits)
             throws IOException {
         Objects.requireNonNull(index, "BlackLabIndex must not be null for executeCollocateSearch");
         try {
