@@ -9,7 +9,6 @@ import pl.marcinmilkowski.word_sketch.model.QueryResults;
 import pl.marcinmilkowski.word_sketch.query.QueryExecutor;
 
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -74,14 +73,7 @@ class ConcordanceHandlers {
         response.put("top", req.top());
         response.put("total_results", results.size());
 
-        List<Map<String, Object>> examplesList = new ArrayList<>();
-        for (QueryResults.CollocateResult r : results) {
-            Map<String, Object> exMap = new HashMap<>();
-            exMap.put("sentence", r.sentence());
-            exMap.put("raw", r.rawXml() != null ? r.rawXml() : "");
-            examplesList.add(exMap);
-        }
-        response.put("examples", examplesList);
+        response.put("examples", results.stream().map(ConcordanceHandlers::toResultMap).toList());
 
         HttpApiUtils.sendJsonResponse(exchange, response);
     }
@@ -91,6 +83,13 @@ class ConcordanceHandlers {
      * Field names use the system-wide vocabulary ({@code seed}, {@code collocate}).
      */
     private record ConcordanceExamplesRequest(String seed, String collocate, String relation, int top) {}
+
+    private static Map<String, Object> toResultMap(QueryResults.CollocateResult r) {
+        Map<String, Object> m = new HashMap<>();
+        m.put("sentence", r.sentence());
+        m.put("raw", r.rawXml() != null ? r.rawXml() : "");
+        return m;
+    }
 
     private ConcordanceExamplesRequest parseConcordanceExamplesRequest(Map<String, String> params) {
         String seed = HttpApiUtils.requireParam(params, "seed");

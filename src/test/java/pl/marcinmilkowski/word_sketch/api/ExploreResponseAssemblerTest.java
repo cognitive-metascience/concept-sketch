@@ -37,7 +37,9 @@ class ExploreResponseAssemblerTest {
     @Test
     void buildEdges_fromSeedCollocates_createsEdgesWithSeedAdjType() {
         Map<String, Double> collocates = Map.of("important", 8.5, "novel", 6.0);
-        ExplorationResult result = resultWith("theory", collocates, Map.of(), List.of(), List.of());
+        Map<String, Map<String, Double>> perSeed = Map.of("theory", collocates);
+        ExplorationResult result = new ExplorationResult(
+            List.of("theory"), collocates, Map.of(), List.of(), List.of(), perSeed);
 
         List<Edge> edges = ExploreResponseAssembler.buildExplorationEdges(result);
 
@@ -137,9 +139,13 @@ class ExploreResponseAssemblerTest {
 
     @Test
     void buildEdges_multiSeed_seedAdjEdgesUseIndividualSeedSources() {
-        // In multi-seed mode seeds() returns individual lemmas; edges must use them as sources
+        // In multi-seed mode perSeedCollocates maps each seed to its own collocates
         Map<String, Double> aggregateCollocates = Map.of("abstract", 7.0);
-        ExplorationResult result = resultWith(List.of("theory", "model"), aggregateCollocates, Map.of(), List.of(), List.of());
+        Map<String, Map<String, Double>> perSeed = Map.of(
+            "theory", Map.of("abstract", 7.0),
+            "model",  Map.of("abstract", 7.0));
+        ExplorationResult result = new ExplorationResult(
+            List.of("theory", "model"), aggregateCollocates, Map.of(), List.of(), List.of(), perSeed);
 
         List<Edge> edges = ExploreResponseAssembler.buildExplorationEdges(result);
 

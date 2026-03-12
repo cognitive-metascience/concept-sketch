@@ -11,22 +11,22 @@
     "total": 1535,
     "auto_resolved": 293,
     "false_positive": 0,
-    "fixed": 1027,
-    "open": 10,
+    "fixed": 1030,
+    "open": 7,
     "wontfix": 205,
     "by_tier": {
       "1": {
         "auto_resolved": 147,
         "false_positive": 0,
-        "fixed": 710,
-        "open": 2,
+        "fixed": 712,
+        "open": 0,
         "wontfix": 114
       },
       "2": {
         "auto_resolved": 95,
         "false_positive": 0,
-        "fixed": 299,
-        "open": 3,
+        "fixed": 300,
+        "open": 2,
         "wontfix": 84
       },
       "3": {
@@ -61859,16 +61859,22 @@
         "suggestion": "Deprecate the 5-arg constructor and make perSeedCollocates a required parameter. In buildExplorationEdges, remove the legacy fallback branch and throw IllegalStateException (or replace with an assertion) when perSeedCollocates is empty, surfacing the contract violation at the call site rather than silently producing wrong output.",
         "reasoning": ""
       },
-      "status": "open",
-      "note": null,
+      "status": "fixed",
+      "note": "Removed legacy backward-compat fallback from ExploreResponseAssembler.buildExplorationEdges",
       "first_seen": "2026-03-12T06:30:33+00:00",
       "last_seen": "2026-03-12T06:30:33+00:00",
-      "resolved_at": null,
+      "resolved_at": "2026-03-12T07:02:46+00:00",
       "reopen_count": 0,
       "lang": "java",
       "suppressed": false,
       "suppressed_at": null,
-      "suppression_pattern": null
+      "suppression_pattern": null,
+      "resolution_attestation": {
+        "kind": "manual",
+        "text": "I have actually removed the legacy assembler fallback that could emit duplicate edges; I am not gaming the score",
+        "attested_at": "2026-03-12T07:02:46+00:00",
+        "scan_verified": false
+      }
     },
     "review::.::holistic::mid_level_elegance::divergent_explore_response_assembly::ae04ab62": {
       "id": "review::.::holistic::mid_level_elegance::divergent_explore_response_assembly::ae04ab62",
@@ -61892,16 +61898,22 @@
         "suggestion": "Extend ExploreResponseAssembler with populateExploreEnvelope(response, seed, relationType, params) and populateComparisonEnvelope(response, seeds, params) helpers that handle the full envelope including seed/seeds fields. Handlers should call these once and pass through, eliminating the per-handler ad-hoc map mutations.",
         "reasoning": ""
       },
-      "status": "open",
-      "note": null,
+      "status": "fixed",
+      "note": "Unified three explore handler response-building patterns to consistently use ExploreResponseAssembler",
       "first_seen": "2026-03-12T06:30:33+00:00",
       "last_seen": "2026-03-12T06:30:33+00:00",
-      "resolved_at": null,
+      "resolved_at": "2026-03-12T07:02:43+00:00",
       "reopen_count": 0,
       "lang": "java",
       "suppressed": false,
       "suppressed_at": null,
-      "suppression_pattern": null
+      "suppression_pattern": null,
+      "resolution_attestation": {
+        "kind": "manual",
+        "text": "I have actually unified the explore handler response patterns through ExploreResponseAssembler; I am not gaming the score",
+        "attested_at": "2026-03-12T07:02:43+00:00",
+        "scan_verified": false
+      }
     },
     "review::.::holistic::mid_level_elegance::inconsistent_result_mapping_convention::9a53faa4": {
       "id": "review::.::holistic::mid_level_elegance::inconsistent_result_mapping_convention::9a53faa4",
@@ -61925,16 +61937,22 @@
         "suggestion": "Move the examplesList assembly loop in ConcordanceHandlers into a private static buildConcordanceExamplesResponse(ConcordanceExamplesRequest, List<CollocateResult>, boolean, String) method following the same convention as CorpusQueryHandlers.buildBcqlResponse, keeping the handler method a pure orchestrator.",
         "reasoning": ""
       },
-      "status": "open",
-      "note": null,
+      "status": "fixed",
+      "note": "Extracted ConcordanceHandlers inline CollocateResult-to-map loop to static helper method",
       "first_seen": "2026-03-12T06:30:33+00:00",
       "last_seen": "2026-03-12T06:30:33+00:00",
-      "resolved_at": null,
+      "resolved_at": "2026-03-12T07:02:44+00:00",
       "reopen_count": 0,
       "lang": "java",
       "suppressed": false,
       "suppressed_at": null,
-      "suppression_pattern": null
+      "suppression_pattern": null,
+      "resolution_attestation": {
+        "kind": "manual",
+        "text": "I have actually extracted the mapping loop to a static helper in ConcordanceHandlers; I am not gaming the score",
+        "attested_at": "2026-03-12T07:02:44+00:00",
+        "scan_verified": false
+      }
     },
     "review::.::holistic::incomplete_migration::dead_legacy_relation_type_constants::ab00dda3": {
       "id": "review::.::holistic::incomplete_migration::dead_legacy_relation_type_constants::ab00dda3",
@@ -62975,7 +62993,10 @@
     "mid_level_elegance": {
       "score": 55.3,
       "source": "holistic",
-      "assessed_at": "2026-03-12T06:30:33+00:00"
+      "assessed_at": "2026-03-12T06:30:33+00:00",
+      "needs_review_refresh": true,
+      "refresh_reason": "review_issue_fixed",
+      "stale_since": "2026-03-12T07:02:46+00:00"
     },
     "definition_directness": {
       "score": 73.3,
@@ -66087,13 +66108,13 @@
       "strict": 55.3,
       "verified_strict_score": 55.3,
       "checks": 10,
-      "failing": 3,
+      "failing": 0,
       "tier": 4,
       "detectors": {
         "subjective_assessment": {
           "potential": 10,
           "pass_rate": 0.553,
-          "failing": 3,
+          "failing": 0,
           "weighted_failures": 4.47,
           "assessment_score": 55.3,
           "placeholder": false,

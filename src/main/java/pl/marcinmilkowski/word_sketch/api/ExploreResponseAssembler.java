@@ -38,20 +38,9 @@ final class ExploreResponseAssembler {
     public static @NonNull List<Edge> buildExplorationEdges(@NonNull ExplorationResult result) {
         List<Edge> edges = new ArrayList<>();
         Map<String, Map<String, Double>> perSeed = result.perSeedCollocates();
-        if (!perSeed.isEmpty()) {
-            // Correct: emit SEED_ADJ only for seed-collocate pairs actually observed
-            for (Map.Entry<String, Map<String, Double>> seedEntry : perSeed.entrySet()) {
-                for (Map.Entry<String, Double> colloc : seedEntry.getValue().entrySet()) {
-                    edges.add(new Edge(seedEntry.getKey(), colloc.getKey(), colloc.getValue(), RelationEdgeType.SEED_ADJ));
-                }
-            }
-        } else {
-            // Legacy fallback for ExplorationResult instances without per-seed data
-            List<String> seedList = result.seeds();
-            for (Map.Entry<String, Double> colloc : result.seedCollocates().entrySet()) {
-                for (String seed : seedList) {
-                    edges.add(new Edge(seed, colloc.getKey(), colloc.getValue(), RelationEdgeType.SEED_ADJ));
-                }
+        for (Map.Entry<String, Map<String, Double>> seedEntry : perSeed.entrySet()) {
+            for (Map.Entry<String, Double> colloc : seedEntry.getValue().entrySet()) {
+                edges.add(new Edge(seedEntry.getKey(), colloc.getKey(), colloc.getValue(), RelationEdgeType.SEED_ADJ));
             }
         }
         for (DiscoveredNoun noun : result.discoveredNouns()) {
