@@ -175,7 +175,8 @@ final class HttpApiUtils {
      * catches it and sends a 400 Bad Request response.
      */
     static int parseIntParam(@NonNull Map<String, String> params, @NonNull String name, int defaultValue) {
-        String raw = params.getOrDefault(name, String.valueOf(defaultValue));
+        String raw = params.get(name);
+        if (raw == null) return defaultValue;
         try {
             return Integer.parseInt(raw);
         } catch (NumberFormatException e) {
@@ -190,7 +191,8 @@ final class HttpApiUtils {
      * catches it and sends a 400 Bad Request response.
      */
     static double parseDoubleParam(@NonNull Map<String, String> params, @NonNull String name, double defaultValue) {
-        String raw = params.getOrDefault(name, String.valueOf(defaultValue));
+        String raw = params.get(name);
+        if (raw == null) return defaultValue;
         try {
             return Double.parseDouble(raw);
         } catch (NumberFormatException e) {

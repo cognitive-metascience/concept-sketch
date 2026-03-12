@@ -30,10 +30,12 @@ class VisualizationHandlers {
         SIGNED;
 
         static boolean isValid(String value) {
-            for (RenderMode m : values()) {
-                if (m.name().equalsIgnoreCase(value)) return true;
+            try {
+                RenderMode.valueOf(value.toUpperCase(java.util.Locale.ROOT));
+                return true;
+            } catch (IllegalArgumentException e) {
+                return false;
             }
-            return false;
         }
     }
 

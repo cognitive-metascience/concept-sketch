@@ -121,16 +121,11 @@ public class BlackLabQueryExecutor implements QueryExecutor {
             for (int i = 0; i < Math.min(hits.size(), maxResults); i++) {
                 Hit hit = hits.get(i);
                 Concordance conc = concordances.get(hit);
-                if (conc == null) {
+                String[] parts = BlackLabSnippetParser.safeParts(conc);
+                if (parts == null) {
                     continue;
                 }
-                String[] parts = conc.parts();
-                if (parts == null || parts.length < 3) {
-                    continue;
-                }
-                String snippet = (parts[0] != null ? parts[0] : "")
-                    + (parts[1] != null ? parts[1] : "")
-                    + (parts[2] != null ? parts[2] : "");
+                String snippet = parts[0] + parts[1] + parts[2];
 
                 results.add(new QueryResults.SnippetResult(
                     snippet, hit.start(), hit.end(), String.valueOf(hit.doc())));

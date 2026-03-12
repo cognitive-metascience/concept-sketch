@@ -255,19 +255,15 @@ class CollocateQueryHelper {
             Hit hit = sample.get(idx);
             Concordance conc = concordances.get(hit);
 
-            if (conc == null) {
-                records.add(new HitRecord("", "", "", "", null, hit.doc(), hit.start(), hit.end()));
-                continue;
-            }
-            String[] parts = conc.parts();
-            if (parts == null || parts.length < 3) {
+            String[] parts = BlackLabSnippetParser.safeParts(conc);
+            if (parts == null) {
                 records.add(new HitRecord("", "", "", "", null, hit.doc(), hit.start(), hit.end()));
                 continue;
             }
 
-            String leftXml  = parts[0] != null ? parts[0] : "";
-            String matchXml = parts[1] != null ? parts[1] : "";
-            String rightXml = parts[2] != null ? parts[2] : "";
+            String leftXml  = parts[0];
+            String matchXml = parts[1];
+            String rightXml = parts[2];
             String xmlSnippet = leftXml + matchXml + rightXml;
             String leftText   = BlackLabSnippetParser.extractPlainTextFromXml(
                     BlackLabSnippetParser.trimLeftXmlAtSentence(leftXml));

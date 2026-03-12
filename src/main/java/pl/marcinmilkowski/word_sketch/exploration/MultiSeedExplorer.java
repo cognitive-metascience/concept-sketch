@@ -125,9 +125,10 @@ class MultiSeedExplorer {
                 }
             }
             int count = sharedCollocs.size();
-            double avg = sharedCollocs.isEmpty() ? 0.0
-                : sharedCollocs.values().stream().mapToDouble(Double::doubleValue).average().orElse(0.0);
-            double sum = sharedCollocs.values().stream().mapToDouble(Double::doubleValue).sum();
+            java.util.DoubleSummaryStatistics stats = sharedCollocs.values().stream()
+                .mapToDouble(Double::doubleValue).summaryStatistics();
+            double avg = count == 0 ? 0.0 : stats.getAverage();
+            double sum = stats.getSum();
             discoveredNounsList.add(new DiscoveredNoun(seed, sharedCollocs, count, sum, avg));
         }
         return discoveredNounsList;

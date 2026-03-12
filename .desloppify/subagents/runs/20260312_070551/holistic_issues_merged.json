@@ -1,0 +1,428 @@
+{
+  "assessments": {
+    "api_surface_coherence": 65.1,
+    "high_level_elegance": 56.3,
+    "incomplete_migration": 73.1,
+    "low_level_elegance": 59.0,
+    "mid_level_elegance": 57.8
+  },
+  "dimension_notes": {
+    "high_level_elegance": {
+      "evidence": [
+        "Top-level packages (api, config, exploration, indexer, model, query, utils, viz) each map to a clear domain responsibility with no orphaned or historical-accident packages",
+        "ExplorationService interface in exploration/ provides a narrow, domain-aligned public API; SemanticFieldExplorer implements it with clean delegation to QueryExecutor",
+        "api/ handler decomposition (ConcordanceHandlers, CorpusQueryHandlers, ExplorationHandlers, SketchHandlers, VisualizationHandlers) follows single-responsibility and is predictably navigable",
+        "package-info.java files in api/, model/, model/exploration/, exploration/, query/, utils/ document each package's boundary and responsibilities",
+        "README.md Code Structure tree references grammar/ and tagging/ packages (CQLParser, CQLPattern, CQLParseException, SimpleTagger) that do not exist in the actual source tree",
+        "README.md places SemanticFieldExplorer, QueryResults, PosGroup, CollocateProfileComparator in query/ but they actually live in exploration/ and model/ respectively",
+        "README.md references api/PatternSubstitution.java, utils/LogDiceCalculator.java, utils/LongIntHashMap.java \u2014 none of these files exist in the current codebase",
+        "CLAUDE.md Code Structure section lists ~12 model types (CollocateProfile, ComparisonResult, CoreCollocate, DiscoveredNoun, Edge, ExplorationOptions, ExplorationResult, RelationEdgeType, SharingCategory, SingleSeedExplorationOptions) as residing directly under model/ when they actually live in model/exploration/",
+        "SemanticFieldExplorerTest resides in src/test/java/.../query/ package but tests the SemanticFieldExplorer class, which lives in the exploration/ package \u2014 a mismatched ownership signal for new engineers"
+      ],
+      "impact_scope": "subsystem",
+      "fix_scope": "multi_file_refactor",
+      "confidence": "high",
+      "issues_preventing_higher_score": "README.md and CLAUDE.md both contain structural documentation that does not match the actual package layout. The README references packages (grammar/, tagging/) and files (PatternSubstitution.java, LongIntHashMap.java, LogDiceCalculator.java) from an earlier codebase state. CLAUDE.md omits the model/exploration/ sub-package entirely. These are material violations of the 'reference docs match runtime reality' criterion. The test-package misplacement is a secondary but confirming signal."
+    },
+    "low_level_elegance": {
+      "evidence": [
+        "CollocateQueryHelper cleanly separates a two-phase pipeline (collectHits \u2192 scoreHits), each phase is a private method with a narrow contract and a named return type (HitRecord, CollocateSearch)",
+        "SemanticFieldExplorer.exploreByPattern splits multi-step algorithm into four named private helpers (fetchSeedCollocates, buildNounToCollocatesMap, filterByMinShared, identifyCoreCollocates) \u2014 each is a well-scoped pure transform on its inputs",
+        "Handler classes (ExplorationHandlers, SketchHandlers, ConcordanceHandlers) follow a consistent parse-validate-execute-respond skeleton; state mutation is absent from all handler methods, which only accumulate and send results",
+        "Private records (BcqlRequest, ExplorationParams, CollocateSearch, HitRecord, SeedCollocateData, ExecutedSketch) are used consistently to avoid ad-hoc parameter tuples",
+        "Main.requireNextArg (line 344) is declared but never called anywhere \u2014 dead code left after argument-parsing was refactored to parseCommandArguments",
+        "HttpApiUtils.parseIntParam and parseDoubleParam both call String.valueOf(defaultValue) and then parse the resulting string when the key is absent, instead of short-circuiting with a direct return of defaultValue",
+        "MultiSeedExplorer.buildDiscoveredNouns iterates sharedCollocs.values() twice in sequence (once for .average(), once for .sum()) on lines 129-130 \u2014 a single-pass accumulation would be cleaner",
+        "VisualizationHandlers.RenderMode is a private enum with exactly one member (SIGNED); its isValid() method loops over values() for case-insensitive matching rather than using Enum.valueOf() with try-catch or a simple Set.of(\"signed\")",
+        "Concordance parts null-guard idiom (parts == null || parts.length < 3, then null-coalesce each element) is duplicated verbatim in BlackLabQueryExecutor.executeCqlQuery and CollocateQueryHelper.collectHits without a shared utility"
+      ],
+      "impact_scope": "module",
+      "fix_scope": "multi_file_refactor",
+      "confidence": "high",
+      "issues_preventing_higher_score": ""
+    },
+    "mid_level_elegance": {
+      "evidence": [
+        "ExploreResponseAssembler centralises all model-to-JSON translation for ExplorationResult and ComparisonResult in one class; handler methods only call populateExploreResponse/populateComparisonResponse",
+        "HttpApiUtils.wrapWithErrorHandling provides a single error-propagation seam: IllegalArgumentException\u2192400, IOException\u2192500, other\u2192500 applied uniformly to every route",
+        "ExplorationService interface provides a typed boundary between the HTTP and exploration layers; handlers depend on the interface and receive RelationConfig/ExplorationOptions as value objects, not raw strings",
+        "WordSketchApiServer wires handler collaborators in constructors with minimal shared state; each handler class receives exactly the dependencies it needs",
+        "Private parse*Request records in ConcordanceHandlers and CorpusQueryHandlers localise input-to-typed-value translation; the record boundary is explicit and tested in isolation",
+        "QueryExecutor.executeSurfacePatternForRelation and executeBcqlQueryForRelation are default-method convenience adapters that keep HTTP handlers free of pattern-assembly logic",
+        "CollocateResult serialised differently in ConcordanceHandlers.toResultMap (2 fields: sentence, raw) vs CorpusQueryHandlers inline loop (7 fields including offsets, logDice); same DTO, divergent translation at two seams",
+        "ExplorationHandlers.buildCoreExploreResponse builds a partial response map; callers then manually add per-endpoint fields (seed, seeds, seed_count) inline \u2014 assembly is split across shared helper and handler body",
+        "handleSemanticFieldComparison has a materially different preamble from its two sibling handlers (no resolveRelationConfig call, no nouns_per guard, different parameter derivation), creating an uneven seam trio; the asymmetry is acknowledged in Javadoc but not structurally isolated",
+        "handleSemanticFieldExamples assembles its own ad-hoc response map (status, collocate, seed, examples, total_results) independently rather than reusing buildCoreExploreResponse or ExploreResponseAssembler"
+      ],
+      "impact_scope": "module",
+      "fix_scope": "multi_file_refactor",
+      "confidence": "high",
+      "issues_preventing_higher_score": ""
+    },
+    "incomplete_migration": {
+      "evidence": [
+        "SketchHandlers.java:92 uses key 'pattern' for the same rel.pattern() value that line 113 exposes as 'cql' \u2014 two different API response field names for the same underlying data across two endpoints in the same class.",
+        "GrammarConfigLoader.java:159 comment: 'Canonical field name is \"pattern\"; cql_pattern is no longer supported' \u2014 confirms a completed config-layer migration from cql_pattern\u2192pattern, but the API response at SketchHandlers.java:113 still emits 'cql' as the field name.",
+        "ExplorationResult.java defines two public constructors: a 5-arg one (lines 40-44, without perSeedCollocates) and a 6-arg one (lines 46-55, with perSeedCollocates). The 5-arg constructor is commented 'empty map means not available (backward compat)' yet no production call site uses it \u2014 MultiSeedExplorer.java:77 and SemanticFieldExplorer.java:202 both call the 6-arg form; ExplorationResult.empty() also uses the 6-arg form.",
+        "ExplorationResult.perSeedCollocates() javadoc reads 'Returns an empty map when not available (legacy backward-compat path)' \u2014 the backward-compat branch is unreachable in production because all callers now pass perSeedCollocates explicitly.",
+        "SemanticFieldExplorer was moved from query package to exploration package (test file src/test/.../query/SemanticFieldExplorerTest.java still resides in the old query test sub-package, while the implementation lives in exploration/), though the test imports from the new location correctly."
+      ],
+      "impact_scope": "module",
+      "fix_scope": "multi_file_refactor",
+      "confidence": "high",
+      "issues_preventing_higher_score": ""
+    },
+    "api_surface_coherence": {
+      "evidence": [
+        "Parameter naming is consistent across all endpoints: `seed`, `collocate`, `relation`, `top`, `min_logdice`, `min_shared` appear uniformly in ExplorationHandlers, ConcordanceHandlers, and SketchHandlers.",
+        "Error contracts are uniform: all handlers route through HttpApiUtils.wrapWithErrorHandling(), mapping IllegalArgumentException -> 400, IOException -> 500, RequestEntityTooLargeException -> 413.",
+        "Full-sketch response (handleFullSketchForType) includes `cql` and `collocate_pos_group` in each relation map, but single-relation response (handleRelationQueryForPattern) omits both fields \u2014 same `relations` envelope, different per-relation schema.",
+        "DEP full-sketch response adds top-level `type: dependency` and per-relation `description` and `deprel` fields not present in surface sketch responses \u2014 clients must detect type from response shape.",
+        "handleSemanticFieldExamples omits `top` and `relation` from its response, while handleConcordanceExamples explicitly echoes `top`, `relation`, `bcql`, and `fallback` \u2014 two conceptually parallel 'examples' endpoints with divergent response shapes.",
+        "ExplorationService interface methods use well-structured options objects (ExplorationOptions, SingleSeedExplorationOptions, FetchExamplesOptions), making the internal service API extensible and consistent.",
+        "QueryExecutor.executeDependencyPattern has 5 parameters (lemma, deprel, minLogDice, maxResults, headPosConstraint) \u2014 just at the public API boundary limit and not clearly a wrong boundary."
+      ],
+      "impact_scope": "module",
+      "fix_scope": "multi_file_refactor",
+      "confidence": "high",
+      "issues_preventing_higher_score": ""
+    }
+  },
+  "dimension_judgment": {
+    "high_level_elegance": {
+      "strengths": [
+        "Package topology maps cleanly to domain capabilities: api (HTTP), config (grammar config loading), exploration (semantic field logic), indexer (corpus indexing), model (domain DTOs), query (BlackLab access), utils (shared math/CQL utilities), viz (SVG rendering)",
+        "ExplorationService interface + SemanticFieldExplorer implementation provides a narrow, coherent public seam between the HTTP layer and exploration domain logic",
+        "Handler decomposition in api/ (five focused handler classes) follows a single-responsibility pattern consistently across all endpoint groups",
+        "model/exploration/ sub-package correctly isolates exploration-specific DTOs from general-purpose model types, with a package-info.java describing the boundary",
+        "package-info.java documentation exists in all major packages and accurately describes each package's role and what does/does not belong"
+      ],
+      "issue_character": "The production code structure is well-decomposed and coherent, but both primary reference documents (README.md and CLAUDE.md) document a superseded structural state \u2014 referencing removed packages, mislocated classes, and non-existent files \u2014 creating a trust gap that undermines navigability for new engineers.",
+      "score_rationale": "The actual codebase scores high on structural coherence: packages are domain-aligned, ownership boundaries are predictable, and the public surface of each subsystem is small and consistent. This would push toward 80+. However, the 'project contracts match runtime reality' criterion is materially violated: README.md documents grammar/ and tagging/ packages that do not exist, places classes in wrong packages, and lists three files that are absent from the codebase; CLAUDE.md flattens model/exploration/ into model/. A new engineer following either reference document would be immediately disoriented. This documentation drift pulls the score to 70.0 \u2014 solid structure undermined by untrustworthy reference docs."
+    },
+    "low_level_elegance": {
+      "strengths": [
+        "Two-phase hit-collection pipeline in CollocateQueryHelper (collectHits/scoreHits) with private named records for intermediate data is textbook clean internal factoring",
+        "SemanticFieldExplorer.exploreByPattern's four-phase decomposition into focused single-purpose private helpers makes the algorithm readable top-down with no nesting surprises",
+        "Handler classes never mutate shared state and follow a single skeleton (parse params \u2192 execute \u2192 build response map \u2192 send), making each method's flow direct and predictable",
+        "Consistent use of private records (BcqlRequest, ExplorationParams, HitRecord, SeedCollocateData) avoids ad-hoc Map<String,Object> tupling at internal API boundaries",
+        "Edge-case handling is co-located with parsing (requireParam, parseIntParam, wrapWithErrorHandling) rather than scattered through business logic"
+      ],
+      "issue_character": "The issues are isolated small inefficiencies and dead-weight artefacts (one dead method, two minor redundant computations, one awkward enum pattern, one copy-pasted null guard) rather than a systemic pattern \u2014 none reflects a deeper design problem in function internals.",
+      "score_rationale": "The codebase sits comfortably above the 60-point 'significant drag' threshold: function internals are generally direct, extraction is well-balanced, and state mutation is explicitly bounded. A handful of small issues (dead `requireNextArg`, round-trip default parsing, double-stream in buildDiscoveredNouns, awkward single-value enum) prevent a score in the 80s, but none is severe enough to materially slow a developer reading or modifying the code. This places it at approximately 76 \u2014 solid craft with minor rough edges."
+    },
+    "mid_level_elegance": {
+      "strengths": [
+        "ExploreResponseAssembler gathers all model-to-JSON translation for exploration into one dedicated class, keeping handler code free of presentation concerns",
+        "HttpApiUtils.wrapWithErrorHandling is a single, uniform error-propagation seam applied consistently to every registered route",
+        "ExplorationService interface provides a stable, typed handoff between the HTTP layer and the exploration layer; handlers never reach into concrete implementation classes",
+        "QueryExecutor default convenience methods (executeSurfacePatternForRelation, executeBcqlQueryForRelation) absorb pattern-construction at the executor boundary, keeping callers unaware of RelationPatternBuilder",
+        "Private parse-record types (ConcordanceExamplesRequest, BcqlRequest, ExplorationParams) make input translation explicit and confined"
+      ],
+      "issue_character": "Issues are localised boundary inconsistencies within the API module: scattered serialisation of the same DTO at two seams, split response assembly between a shared helper and inline handler code, and a trio of sibling handlers with divergent preambles that are acknowledged but not structurally isolated.",
+      "score_rationale": "The codebase sits in the solid-but-uneven range. Key architectural seams (service interface, error propagation, config loading, response assembly for exploration) are well-designed and consistent. What pulls the score down is a pattern of small seam entropy in the API layer: CollocateResult is serialised differently at two independent sites, buildCoreExploreResponse covers only part of the response leaving callers to complete it inline, and the three exploration handlers share a logical family but diverge structurally in ways that will accumulate copy-paste debt as endpoints multiply. None of these rise to a systemic structural problem, but together they represent a 'good foundation with glue entropy creeping in at the seams' picture \u2014 placing the score around 71 rather than the 80+ reserved for codebases where handoffs are consistently explicit and translation happens in one obvious place throughout."
+    },
+    "incomplete_migration": {
+      "strengths": [
+        "Config-layer migration from cql_pattern \u2192 pattern is complete and actively enforced: GrammarConfigLoader.validateNoLegacyKeys() throws at load time if the old 'copulas' key appears, and a clear comment marks cql_pattern as no longer supported.",
+        "ExplorationService interface + SemanticFieldExplorer implementation cleanly replaced the old query-package coupling; the WordSketchApiServer accepts ExplorationService by interface for testability, signalling a deliberate design-level migration.",
+        "No mixed-language files, no library coexistence (e.g. moment/dayjs, axios/fetch) \u2014 the codebase is uniformly Java 21 throughout with a single JSON library (fastjson2).",
+        "The 6-arg ExplorationResult constructor is used consistently across all new production code \u2014 MultiSeedExplorer and SemanticFieldExplorer both pass perSeedCollocates explicitly, showing the data-model extension was completed."
+      ],
+      "issue_character": "The remaining migration artifacts are narrow and local: a single inconsistent API response field name ('cql' vs 'pattern') left over from a config rename, and a dead backward-compat constructor on ExplorationResult that was never cleaned up after all callers were updated.",
+      "score_rationale": "The codebase has no broad migration confusion \u2014 there is one implementation per concern, no deprecated-but-still-called symbols, and no old/new API coexistence beyond a single mismatched field name in one handler. The 'cql' key in SketchHandlers.java:113 and the unreachable 5-arg ExplorationResult constructor are genuine remnants but both are isolated and low-severity. Against the 80=solid-but-uneven anchor, this scores slightly above because the issues are few and confined to a single module rather than systemic, but below exemplary (100) because the response field inconsistency is a real developer-facing confusion point."
+    },
+    "api_surface_coherence": {
+      "strengths": [
+        "Parameter naming is rigorously consistent across all endpoints: `seed`, `collocate`, `relation`, `top`, `min_logdice`, `min_shared` are used uniformly with no synonyms or ordering variations.",
+        "Error contracts are explicit and uniformly enforced via HttpApiUtils.wrapWithErrorHandling, making the failure modes of every public handler identical and predictable.",
+        "The ExplorationService interface uses options objects (ExplorationOptions, SingleSeedExplorationOptions, FetchExamplesOptions) throughout, giving the internal service API good extensibility without overloaded parameter lists.",
+        "Both examples endpoints use the same `seed`/`collocate` vocabulary (with Javadoc noting the intentional alignment), showing deliberate API-surface design.",
+        "The convenience default methods on QueryExecutor (executeSurfacePatternForRelation, executeBcqlQueryForRelation) keep HTTP handlers free of pattern-construction details, cleanly separating concerns."
+      ],
+      "issue_character": "The issues are localized to response-shape inconsistency: related endpoints that share a structural envelope (sketch `relations` map, examples responses) diverge silently in the fields they include, requiring clients to handle multiple schemas for what appears to be a single resource type.",
+      "score_rationale": "Parameter naming, error contracts, and the internal service API are strong and consistent \u2014 a developer writing new handlers or a client consuming the API will find the request side exemplary. What pulls the score down is the response-shape divergence: the full-sketch and single-relation endpoints share a `relations` envelope but one includes `cql` and `collocate_pos_group` while the other does not; the two examples endpoints differ meaningfully in what they echo back. These are real friction points for API consumers, but they are bounded to 2-3 endpoint pairs and are not systemic structural failures \u2014 more 'uneven polish' than 'deep incoherence'. This places the codebase solidly in the 70-75 range: solid parameter discipline with a meaningful but non-pervasive response-shape gap."
+    }
+  },
+  "issues": [
+    {
+      "dimension": "high_level_elegance",
+      "identifier": "readme_structure_stale",
+      "summary": "README.md Code Structure tree documents a superseded package layout with non-existent packages and files",
+      "confidence": "high",
+      "suggestion": "Replace the Code Structure tree in README.md with a regenerated listing that matches the current filesystem layout. Use `find src/main/java -name '*.java' | sort` as the authoritative source. Annotate each class with its actual role. Remove all references to grammar/, tagging/, PatternSubstitution, LogDiceCalculator, LongIntHashMap.",
+      "related_files": [
+        "README.md"
+      ],
+      "evidence": [
+        "README.md lines ~630-660 list grammar/ package (CQLParser.java, CQLPattern.java, CQLParseException.java) \u2014 this package does not exist in the current source tree",
+        "README.md lists tagging/ package (SimpleTagger.java) \u2014 this package does not exist",
+        "README.md places SemanticFieldExplorer.java, QueryResults.java, PosGroup.java inside query/ \u2014 they actually live in exploration/ and model/ respectively",
+        "README.md references api/PatternSubstitution.java, utils/LogDiceCalculator.java, utils/LongIntHashMap.java \u2014 none of these files exist"
+      ],
+      "impact_scope": "codebase",
+      "fix_scope": "single_edit"
+    },
+    {
+      "dimension": "high_level_elegance",
+      "identifier": "claude_md_model_subpackage_missing",
+      "summary": "CLAUDE.md Code Structure section omits the model/exploration/ sub-package, listing its types as if they live directly under model/",
+      "confidence": "high",
+      "suggestion": "Update the CLAUDE.md Code Structure tree to reflect the model/exploration/ sub-package. Add a model/exploration/ section listing the exploration-specific DTOs. This accurately represents the intentional boundary documented in model/package-info.java.",
+      "related_files": [
+        "CLAUDE.md"
+      ],
+      "evidence": [
+        "CLAUDE.md lists CollocateProfile.java, ComparisonResult.java, CoreCollocate.java, DiscoveredNoun.java, Edge.java, ExplorationOptions.java, ExplorationResult.java, RelationEdgeType.java, SharingCategory.java, SingleSeedExplorationOptions.java under model/ directly",
+        "Actual filesystem: all these files reside in src/main/java/.../model/exploration/ not model/"
+      ],
+      "impact_scope": "module",
+      "fix_scope": "single_edit"
+    },
+    {
+      "dimension": "high_level_elegance",
+      "identifier": "misplaced_exploration_test",
+      "summary": "SemanticFieldExplorerTest lives in the query/ test package but tests the exploration/ package class",
+      "confidence": "high",
+      "suggestion": "Move SemanticFieldExplorerTest from src/test/java/.../query/ to src/test/java/.../exploration/ and update its package declaration to `pl.marcinmilkowski.word_sketch.exploration`. This aligns the test's ownership signal with the class it exercises and with the other exploration tests already in that package.",
+      "related_files": [
+        "src/test/java/pl/marcinmilkowski/word_sketch/query/SemanticFieldExplorerTest.java"
+      ],
+      "evidence": [
+        "File declares `package pl.marcinmilkowski.word_sketch.query;` at line 1",
+        "It imports and directly instantiates `pl.marcinmilkowski.word_sketch.exploration.SemanticFieldExplorer`",
+        "Dedicated exploration tests already exist in src/test/java/.../exploration/ (SemanticFieldExplorerFetchExamplesTest, SemanticFieldExplorerInternalTest, MultiSeedExplorerTest)"
+      ],
+      "impact_scope": "module",
+      "fix_scope": "single_edit"
+    },
+    {
+      "dimension": "low_level_elegance",
+      "identifier": "dead_require_next_arg",
+      "summary": "Main.requireNextArg is a dead private method \u2014 never called anywhere",
+      "confidence": "high",
+      "suggestion": "Delete the method entirely. If the intent was to provide a readable error for missing sub-arguments, that case is already handled by the top-level catch in main() together with IllegalArgumentException.",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/Main.java"
+      ],
+      "evidence": [
+        "requireNextArg is defined at line 344 of Main.java with a Javadoc comment describing its intended use, but no call site exists anywhere in the codebase \u2014 grep confirms only the definition",
+        "The method was superseded when argument parsing was refactored to the parseCommandArguments+getParam pattern"
+      ],
+      "impact_scope": "local",
+      "fix_scope": "single_edit"
+    },
+    {
+      "dimension": "low_level_elegance",
+      "identifier": "redundant_default_parse_roundtrip",
+      "summary": "parseIntParam/parseDoubleParam in HttpApiUtils round-trip the default through String.valueOf then parse when the key is absent",
+      "confidence": "high",
+      "suggestion": "Add an early-return guard: String raw = params.get(name); if (raw == null) return defaultValue; then parse raw. This makes the default path direct and removes the unreachable catch branch for the absent-key case.",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/api/HttpApiUtils.java"
+      ],
+      "evidence": [
+        "Line 178: String raw = params.getOrDefault(name, String.valueOf(defaultValue)); followed by Integer.parseInt(raw) \u2014 when key is absent, this serialises the int to a string and immediately parses it back",
+        "Line 193: same pattern for double. The round-trip always succeeds (it is not a bug) but adds unnecessary noise and an unreachable NumberFormatException branch for the default case"
+      ],
+      "impact_scope": "local",
+      "fix_scope": "single_edit"
+    },
+    {
+      "dimension": "low_level_elegance",
+      "identifier": "double_stream_avg_sum",
+      "summary": "buildDiscoveredNouns in MultiSeedExplorer iterates sharedCollocs.values() twice for average and sum",
+      "confidence": "high",
+      "suggestion": "Compute sum in a single loop or stream with summaryStatistics(): DoubleSummaryStatistics stats = sharedCollocs.values().stream().mapToDouble(Double::doubleValue).summaryStatistics(); double avg = stats.getAverage(); double sum = stats.getSum(); \u2014 one pass, same result.",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/exploration/MultiSeedExplorer.java"
+      ],
+      "evidence": [
+        "Lines 129-130: sharedCollocs.values().stream().mapToDouble(...).average().orElse(0.0) and sharedCollocs.values().stream().mapToDouble(...).sum() are back-to-back separate stream passes over the same collection"
+      ],
+      "impact_scope": "local",
+      "fix_scope": "single_edit"
+    },
+    {
+      "dimension": "low_level_elegance",
+      "identifier": "single_value_enum_isvalid_loop",
+      "summary": "VisualizationHandlers.RenderMode is a single-value enum with an unnecessary loop-based isValid() validator",
+      "confidence": "medium",
+      "suggestion": "Replace the enum and isValid() method with a simple private static final Set<String> VALID_MODES = Set.of(\"signed\"); and check VALID_MODES.contains(mode.toLowerCase(Locale.ROOT)). If a full enum is desired for future values, use Enum.valueOf() with a try-catch instead of the loop.",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/api/VisualizationHandlers.java"
+      ],
+      "evidence": [
+        "RenderMode has exactly one value (SIGNED); isValid() iterates values() and checks case-insensitive equality",
+        "The validated mode string is then passed directly as a raw String to RadialPlot.renderFromItems, so the enum does not carry any behavioural differentiation \u2014 it is used purely as a set of valid strings"
+      ],
+      "impact_scope": "local",
+      "fix_scope": "single_edit"
+    },
+    {
+      "dimension": "low_level_elegance",
+      "identifier": "duplicated_concordance_parts_nullguard",
+      "summary": "The concordance parts null-guard block is copy-pasted verbatim in two places without extraction",
+      "confidence": "medium",
+      "suggestion": "Extract a package-private static helper in BlackLabSnippetParser (e.g. static String[] safeParts(Concordance conc)) that returns a guaranteed-non-null 3-element array (empty strings for missing parts), and call it from both sites to remove the duplication.",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/query/BlackLabQueryExecutor.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/query/CollocateQueryHelper.java"
+      ],
+      "evidence": [
+        "BlackLabQueryExecutor.executeCqlQuery lines 128-133: null-checks parts, then null-coalesces each of parts[0], parts[1], parts[2]",
+        "CollocateQueryHelper.collectHits lines 263-270: identical guard and coalesce pattern, differing only in variable names"
+      ],
+      "impact_scope": "module",
+      "fix_scope": "multi_file_refactor"
+    },
+    {
+      "dimension": "mid_level_elegance",
+      "identifier": "collocate_result_dual_serialization",
+      "summary": "CollocateResult DTO serialised differently at two independent API seams",
+      "confidence": "high",
+      "suggestion": "Introduce a CollocateResultSerializer utility (or add serialisation methods to ExploreResponseAssembler) with named projections \u2014 e.g. toExampleMap() and toFullResultMap() \u2014 so both handlers delegate to the same class and the difference in projection is explicit rather than implicit in two independent loops.",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/api/ConcordanceHandlers.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/api/CorpusQueryHandlers.java"
+      ],
+      "evidence": [
+        "ConcordanceHandlers.toResultMap serialises CollocateResult to {sentence, raw} only (line 87-91)",
+        "CorpusQueryHandlers.buildBcqlResponse inline loop serialises the same type to {sentence, raw, match_start, match_end, collocate_lemma, frequency, log_dice} (lines 99-108)",
+        "Both call executor methods that return List<QueryResults.CollocateResult>; the divergent translation is not a contract difference \u2014 it is a scope decision made twice at different sites"
+      ],
+      "impact_scope": "module",
+      "fix_scope": "multi_file_refactor"
+    },
+    {
+      "dimension": "mid_level_elegance",
+      "identifier": "split_explore_response_assembly",
+      "summary": "Exploration response assembled in two places: shared helper then inline handler additions",
+      "confidence": "high",
+      "suggestion": "Extend buildCoreExploreResponse (or replace it with builder-pattern overloads) to accept the per-variant fields (seed vs seeds, optional nouns_per) so the full envelope is assembled in one call. Alternatively, add a static factory method on a response DTO and have ExploreResponseAssembler own the full assembly including the envelope.",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/api/ExplorationHandlers.java"
+      ],
+      "evidence": [
+        "buildCoreExploreResponse returns a partial map with status and parameters; each of the three handlers then calls response.put(\"seed\",...), response.put(\"seeds\",...), response.put(\"seed_count\",...) inline before delegating to ExploreResponseAssembler",
+        "handleSemanticFieldExamples does not use buildCoreExploreResponse at all and builds its own response map from scratch with different keys (no 'parameters' sub-map)",
+        "The response shape for a family of four sibling endpoints is thus defined across four separate code sites rather than one"
+      ],
+      "impact_scope": "module",
+      "fix_scope": "single_edit"
+    },
+    {
+      "dimension": "mid_level_elegance",
+      "identifier": "divergent_exploration_handler_preambles",
+      "summary": "Three sibling exploration handlers share a logical family but have structurally divergent preambles",
+      "confidence": "medium",
+      "suggestion": "Introduce a sealed ParsedRequest hierarchy (SingleSeedRequest, MultiSeedRequest, ComparisonRequest) with a factory method that encapsulates which params each type requires. Handlers become a dispatch on the parsed type, making the structural differences explicit in the type system rather than in duplicated preamble code.",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/api/ExplorationHandlers.java"
+      ],
+      "evidence": [
+        "handleSemanticFieldExplore: parses seed, calls resolveRelationConfig, calls parseExplorationParams \u2014 then builds SingleSeedExplorationOptions",
+        "handleSemanticFieldExploreMulti: pre-flight rejects nouns_per, parses seeds, calls resolveRelationConfig, calls parseExplorationParams \u2014 then builds ExplorationOptions",
+        "handleSemanticFieldComparison: parses seeds, skips resolveRelationConfig entirely (cross-relational), calls parseExplorationParams \u2014 builds ExplorationOptions; documented as intentionally asymmetric",
+        "As the endpoint family grows, each new handler will need to copy-decide which preamble steps to include; there is no structural pattern that makes the decision obvious"
+      ],
+      "impact_scope": "module",
+      "fix_scope": "multi_file_refactor"
+    },
+    {
+      "dimension": "incomplete_migration",
+      "identifier": "cql_vs_pattern_response_key",
+      "summary": "SketchHandlers emits 'cql' in full-sketch response but 'pattern' in relations-list response for the same underlying field",
+      "confidence": "high",
+      "suggestion": "Replace relData.put(\"cql\", rel.pattern()) with relData.put(\"pattern\", rel.pattern()) on line 113 of SketchHandlers.java to make the field name consistent with the /api/relations endpoint. Update any API client or frontend code that reads the 'cql' key from /api/sketch/{lemma} responses.",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/api/SketchHandlers.java"
+      ],
+      "evidence": [
+        "Line 92: obj.put(\"pattern\", rel.pattern()) \u2014 used in handleRelationsForType",
+        "Line 113: relData.put(\"cql\", rel.pattern()) \u2014 used in handleFullSketchForType for surface relations",
+        "GrammarConfigLoader.java comment line 159: 'Canonical field name is \"pattern\"; cql_pattern is no longer supported' \u2014 the config field was renamed but the API response was only partially updated"
+      ],
+      "impact_scope": "module",
+      "fix_scope": "single_edit"
+    },
+    {
+      "dimension": "incomplete_migration",
+      "identifier": "dead_backward_compat_constructor",
+      "summary": "ExplorationResult 5-arg constructor is an unreachable backward-compat shim \u2014 no production caller uses it",
+      "confidence": "high",
+      "suggestion": "Remove the 5-arg constructor and update ExplorationResult.perSeedCollocates() javadoc to drop the 'legacy backward-compat path' note. The 6-arg constructor is now the sole construction path; callers that need an empty map can pass Map.of() explicitly, or the existing ExplorationResult.empty() factory can be used.",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/model/exploration/ExplorationResult.java"
+      ],
+      "evidence": [
+        "Lines 40-44: public ExplorationResult(List<String> seeds, Map<String, Double> seedCollocates, Map<String, Long> seedCollocateFrequencies, List<DiscoveredNoun> discoveredNouns, List<CoreCollocate> coreCollocates) \u2014 sets perSeedCollocates = Map.of()",
+        "Comment: 'empty map means not available (backward compat)'",
+        "All production call sites (MultiSeedExplorer.java:77, SemanticFieldExplorer.java:202, ExplorationResult.empty():104) call the 6-arg constructor with an explicit perSeedCollocates argument",
+        "perSeedCollocates() javadoc: 'Returns an empty map when not available (legacy backward-compat path)' \u2014 the compat path is never triggered"
+      ],
+      "impact_scope": "local",
+      "fix_scope": "single_edit"
+    },
+    {
+      "dimension": "api_surface_coherence",
+      "identifier": "sketch_response_shape_divergence",
+      "summary": "Full-sketch and single-relation responses share a `relations` envelope but include different per-relation fields",
+      "confidence": "high",
+      "suggestion": "Extract a shared `buildSurfaceRelationEntry(RelationConfig rel, List collocations, long totalMatches)` factory method that always includes `id`, `name`, `cql`, `collocate_pos_group`, `total_matches`, `collocations`. Both full-sketch and single-relation paths should use it. The DEP path can extend it with `description` and `deprel` via a separate DEP-specific builder.",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/api/SketchHandlers.java"
+      ],
+      "evidence": [
+        "handleFullSketchForType (line 110-116): relData includes `cql` (rel.pattern()) and `collocate_pos_group` (rel.collocatePosGroup().label()).",
+        "handleRelationQueryForPattern (lines 213-217): relData includes only `id`, `name`, `collocations`, `total_matches` \u2014 `cql` and `collocate_pos_group` are absent.",
+        "Both paths produce a `relations: { <id>: { ... } }` envelope, so clients face two schemas for the same field path."
+      ],
+      "impact_scope": "module",
+      "fix_scope": "single_edit"
+    },
+    {
+      "dimension": "api_surface_coherence",
+      "identifier": "examples_endpoints_response_shape_divergence",
+      "summary": "/api/semantic-field/examples and /api/concordance/examples are parallel 'examples' endpoints but return structurally different response bodies",
+      "confidence": "high",
+      "suggestion": "Add `relation` and `top` to the handleSemanticFieldExamples response to match the concordance examples envelope. The concordance-specific fields (`bcql`, `fallback`) can remain unique to that endpoint. This makes the shared base fields consistent across both examples endpoints.",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/api/ExplorationHandlers.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/api/ConcordanceHandlers.java"
+      ],
+      "evidence": [
+        "handleSemanticFieldExamples response: {status, collocate, seed, examples, total_results} \u2014 does not echo `relation` or `top`.",
+        "handleConcordanceExamples response: {status, seed, collocate, relation, bcql, fallback, top, total_results, examples} \u2014 echoes all parameters plus derived fields.",
+        "Both endpoints accept the same `seed`, `collocate`, `relation`, and `top` parameters, so a client cannot reuse the same response-parsing code for both."
+      ],
+      "impact_scope": "local",
+      "fix_scope": "single_edit"
+    }
+  ],
+  "review_quality": {
+    "batch_count": 5,
+    "dimension_coverage": 1.0,
+    "evidence_density": 2.827,
+    "high_score_missing_issue_note": 0,
+    "issue_pressure": 22.608,
+    "dimensions_with_issues": 5
+  },
+  "provenance": {
+    "kind": "blind_review_batch_import",
+    "blind": true,
+    "runner": "claude",
+    "run_stamp": "20260312_070551",
+    "created_at": "2026-03-12T07:13:51+00:00",
+    "batch_count": 5,
+    "batch_indexes": [
+      1,
+      2,
+      3,
+      4,
+      5
+    ],
+    "packet_path": "/mnt/d/git/word-sketch-lucene/.desloppify/review_packet_blind.json",
+    "packet_sha256": "1ba9d22925fa4550d23d9e4b0d5e7cd99ed419140a1cbeaa640d4ff6e4d901b1"
+  }
+}

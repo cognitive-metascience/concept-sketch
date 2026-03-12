@@ -1,0 +1,98 @@
+{
+  "batch": "high_level_elegance",
+  "batch_index": 1,
+  "assessments": {"high_level_elegance": 70.0},
+  "dimension_notes": {
+    "high_level_elegance": {
+      "evidence": [
+        "Top-level packages (api, config, exploration, indexer, model, query, utils, viz) each map to a clear domain responsibility with no orphaned or historical-accident packages",
+        "ExplorationService interface in exploration/ provides a narrow, domain-aligned public API; SemanticFieldExplorer implements it with clean delegation to QueryExecutor",
+        "api/ handler decomposition (ConcordanceHandlers, CorpusQueryHandlers, ExplorationHandlers, SketchHandlers, VisualizationHandlers) follows single-responsibility and is predictably navigable",
+        "package-info.java files in api/, model/, model/exploration/, exploration/, query/, utils/ document each package's boundary and responsibilities",
+        "README.md Code Structure tree references grammar/ and tagging/ packages (CQLParser, CQLPattern, CQLParseException, SimpleTagger) that do not exist in the actual source tree",
+        "README.md places SemanticFieldExplorer, QueryResults, PosGroup, CollocateProfileComparator in query/ but they actually live in exploration/ and model/ respectively",
+        "README.md references api/PatternSubstitution.java, utils/LogDiceCalculator.java, utils/LongIntHashMap.java — none of these files exist in the current codebase",
+        "CLAUDE.md Code Structure section lists ~12 model types (CollocateProfile, ComparisonResult, CoreCollocate, DiscoveredNoun, Edge, ExplorationOptions, ExplorationResult, RelationEdgeType, SharingCategory, SingleSeedExplorationOptions) as residing directly under model/ when they actually live in model/exploration/",
+        "SemanticFieldExplorerTest resides in src/test/java/.../query/ package but tests the SemanticFieldExplorer class, which lives in the exploration/ package — a mismatched ownership signal for new engineers"
+      ],
+      "impact_scope": "subsystem",
+      "fix_scope": "multi_file_refactor",
+      "confidence": "high",
+      "issues_preventing_higher_score": "README.md and CLAUDE.md both contain structural documentation that does not match the actual package layout. The README references packages (grammar/, tagging/) and files (PatternSubstitution.java, LongIntHashMap.java, LogDiceCalculator.java) from an earlier codebase state. CLAUDE.md omits the model/exploration/ sub-package entirely. These are material violations of the 'reference docs match runtime reality' criterion. The test-package misplacement is a secondary but confirming signal."
+    }
+  },
+  "dimension_judgment": {
+    "high_level_elegance": {
+      "strengths": [
+        "Package topology maps cleanly to domain capabilities: api (HTTP), config (grammar config loading), exploration (semantic field logic), indexer (corpus indexing), model (domain DTOs), query (BlackLab access), utils (shared math/CQL utilities), viz (SVG rendering)",
+        "ExplorationService interface + SemanticFieldExplorer implementation provides a narrow, coherent public seam between the HTTP layer and exploration domain logic",
+        "Handler decomposition in api/ (five focused handler classes) follows a single-responsibility pattern consistently across all endpoint groups",
+        "model/exploration/ sub-package correctly isolates exploration-specific DTOs from general-purpose model types, with a package-info.java describing the boundary",
+        "package-info.java documentation exists in all major packages and accurately describes each package's role and what does/does not belong"
+      ],
+      "issue_character": "The production code structure is well-decomposed and coherent, but both primary reference documents (README.md and CLAUDE.md) document a superseded structural state — referencing removed packages, mislocated classes, and non-existent files — creating a trust gap that undermines navigability for new engineers.",
+      "score_rationale": "The actual codebase scores high on structural coherence: packages are domain-aligned, ownership boundaries are predictable, and the public surface of each subsystem is small and consistent. This would push toward 80+. However, the 'project contracts match runtime reality' criterion is materially violated: README.md documents grammar/ and tagging/ packages that do not exist, places classes in wrong packages, and lists three files that are absent from the codebase; CLAUDE.md flattens model/exploration/ into model/. A new engineer following either reference document would be immediately disoriented. This documentation drift pulls the score to 70.0 — solid structure undermined by untrustworthy reference docs."
+    }
+  },
+  "issues": [
+    {
+      "dimension": "high_level_elegance",
+      "identifier": "readme_structure_stale",
+      "summary": "README.md Code Structure tree documents a superseded package layout with non-existent packages and files",
+      "related_files": ["README.md"],
+      "evidence": [
+        "README.md lines ~630-660 list grammar/ package (CQLParser.java, CQLPattern.java, CQLParseException.java) — this package does not exist in the current source tree",
+        "README.md lists tagging/ package (SimpleTagger.java) — this package does not exist",
+        "README.md places SemanticFieldExplorer.java, QueryResults.java, PosGroup.java inside query/ — they actually live in exploration/ and model/ respectively",
+        "README.md references api/PatternSubstitution.java, utils/LogDiceCalculator.java, utils/LongIntHashMap.java — none of these files exist"
+      ],
+      "suggestion": "Replace the Code Structure tree in README.md with a regenerated listing that matches the current filesystem layout. Use `find src/main/java -name '*.java' | sort` as the authoritative source. Annotate each class with its actual role. Remove all references to grammar/, tagging/, PatternSubstitution, LogDiceCalculator, LongIntHashMap.",
+      "confidence": "high",
+      "impact_scope": "codebase",
+      "fix_scope": "single_edit",
+      "root_cause_cluster": "doc_drift_post_refactor"
+    },
+    {
+      "dimension": "high_level_elegance",
+      "identifier": "claude_md_model_subpackage_missing",
+      "summary": "CLAUDE.md Code Structure section omits the model/exploration/ sub-package, listing its types as if they live directly under model/",
+      "related_files": ["CLAUDE.md"],
+      "evidence": [
+        "CLAUDE.md lists CollocateProfile.java, ComparisonResult.java, CoreCollocate.java, DiscoveredNoun.java, Edge.java, ExplorationOptions.java, ExplorationResult.java, RelationEdgeType.java, SharingCategory.java, SingleSeedExplorationOptions.java under model/ directly",
+        "Actual filesystem: all these files reside in src/main/java/.../model/exploration/ not model/"
+      ],
+      "suggestion": "Update the CLAUDE.md Code Structure tree to reflect the model/exploration/ sub-package. Add a model/exploration/ section listing the exploration-specific DTOs. This accurately represents the intentional boundary documented in model/package-info.java.",
+      "confidence": "high",
+      "impact_scope": "module",
+      "fix_scope": "single_edit",
+      "root_cause_cluster": "doc_drift_post_refactor"
+    },
+    {
+      "dimension": "high_level_elegance",
+      "identifier": "misplaced_exploration_test",
+      "summary": "SemanticFieldExplorerTest lives in the query/ test package but tests the exploration/ package class",
+      "related_files": ["src/test/java/pl/marcinmilkowski/word_sketch/query/SemanticFieldExplorerTest.java"],
+      "evidence": [
+        "File declares `package pl.marcinmilkowski.word_sketch.query;` at line 1",
+        "It imports and directly instantiates `pl.marcinmilkowski.word_sketch.exploration.SemanticFieldExplorer`",
+        "Dedicated exploration tests already exist in src/test/java/.../exploration/ (SemanticFieldExplorerFetchExamplesTest, SemanticFieldExplorerInternalTest, MultiSeedExplorerTest)"
+      ],
+      "suggestion": "Move SemanticFieldExplorerTest from src/test/java/.../query/ to src/test/java/.../exploration/ and update its package declaration to `pl.marcinmilkowski.word_sketch.exploration`. This aligns the test's ownership signal with the class it exercises and with the other exploration tests already in that package.",
+      "confidence": "high",
+      "impact_scope": "module",
+      "fix_scope": "single_edit",
+      "root_cause_cluster": "doc_drift_post_refactor"
+    }
+  ],
+  "retrospective": {
+    "root_causes": [
+      "Both reference documents appear to reflect the pre-refactoring codebase structure (before grammar/, tagging/, query-resident exploration classes were reorganised into their current packages), and were not updated when the structural refactor landed"
+    ],
+    "likely_symptoms": [
+      "readme_structure_stale",
+      "claude_md_model_subpackage_missing",
+      "misplaced_exploration_test"
+    ],
+    "possible_false_positives": []
+  }
+}

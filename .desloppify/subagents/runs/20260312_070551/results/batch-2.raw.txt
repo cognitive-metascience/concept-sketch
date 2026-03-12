@@ -1,0 +1,119 @@
+{
+  "batch": "low_level_elegance",
+  "batch_index": 2,
+  "assessments": {"low_level_elegance": 76.0},
+  "dimension_notes": {
+    "low_level_elegance": {
+      "evidence": [
+        "CollocateQueryHelper cleanly separates a two-phase pipeline (collectHits → scoreHits), each phase is a private method with a narrow contract and a named return type (HitRecord, CollocateSearch)",
+        "SemanticFieldExplorer.exploreByPattern splits multi-step algorithm into four named private helpers (fetchSeedCollocates, buildNounToCollocatesMap, filterByMinShared, identifyCoreCollocates) — each is a well-scoped pure transform on its inputs",
+        "Handler classes (ExplorationHandlers, SketchHandlers, ConcordanceHandlers) follow a consistent parse-validate-execute-respond skeleton; state mutation is absent from all handler methods, which only accumulate and send results",
+        "Private records (BcqlRequest, ExplorationParams, CollocateSearch, HitRecord, SeedCollocateData, ExecutedSketch) are used consistently to avoid ad-hoc parameter tuples",
+        "Main.requireNextArg (line 344) is declared but never called anywhere — dead code left after argument-parsing was refactored to parseCommandArguments",
+        "HttpApiUtils.parseIntParam and parseDoubleParam both call String.valueOf(defaultValue) and then parse the resulting string when the key is absent, instead of short-circuiting with a direct return of defaultValue",
+        "MultiSeedExplorer.buildDiscoveredNouns iterates sharedCollocs.values() twice in sequence (once for .average(), once for .sum()) on lines 129-130 — a single-pass accumulation would be cleaner",
+        "VisualizationHandlers.RenderMode is a private enum with exactly one member (SIGNED); its isValid() method loops over values() for case-insensitive matching rather than using Enum.valueOf() with try-catch or a simple Set.of(\"signed\")",
+        "Concordance parts null-guard idiom (parts == null || parts.length < 3, then null-coalesce each element) is duplicated verbatim in BlackLabQueryExecutor.executeCqlQuery and CollocateQueryHelper.collectHits without a shared utility"
+      ],
+      "impact_scope": "module",
+      "fix_scope": "multi_file_refactor",
+      "confidence": "high"
+    }
+  },
+  "dimension_judgment": {
+    "low_level_elegance": {
+      "strengths": [
+        "Two-phase hit-collection pipeline in CollocateQueryHelper (collectHits/scoreHits) with private named records for intermediate data is textbook clean internal factoring",
+        "SemanticFieldExplorer.exploreByPattern's four-phase decomposition into focused single-purpose private helpers makes the algorithm readable top-down with no nesting surprises",
+        "Handler classes never mutate shared state and follow a single skeleton (parse params → execute → build response map → send), making each method's flow direct and predictable",
+        "Consistent use of private records (BcqlRequest, ExplorationParams, HitRecord, SeedCollocateData) avoids ad-hoc Map<String,Object> tupling at internal API boundaries",
+        "Edge-case handling is co-located with parsing (requireParam, parseIntParam, wrapWithErrorHandling) rather than scattered through business logic"
+      ],
+      "issue_character": "The issues are isolated small inefficiencies and dead-weight artefacts (one dead method, two minor redundant computations, one awkward enum pattern, one copy-pasted null guard) rather than a systemic pattern — none reflects a deeper design problem in function internals.",
+      "score_rationale": "The codebase sits comfortably above the 60-point 'significant drag' threshold: function internals are generally direct, extraction is well-balanced, and state mutation is explicitly bounded. A handful of small issues (dead `requireNextArg`, round-trip default parsing, double-stream in buildDiscoveredNouns, awkward single-value enum) prevent a score in the 80s, but none is severe enough to materially slow a developer reading or modifying the code. This places it at approximately 76 — solid craft with minor rough edges."
+    }
+  },
+  "issues": [
+    {
+      "dimension": "low_level_elegance",
+      "identifier": "dead_require_next_arg",
+      "summary": "Main.requireNextArg is a dead private method — never called anywhere",
+      "related_files": ["src/main/java/pl/marcinmilkowski/word_sketch/Main.java"],
+      "evidence": [
+        "requireNextArg is defined at line 344 of Main.java with a Javadoc comment describing its intended use, but no call site exists anywhere in the codebase — grep confirms only the definition",
+        "The method was superseded when argument parsing was refactored to the parseCommandArguments+getParam pattern"
+      ],
+      "suggestion": "Delete the method entirely. If the intent was to provide a readable error for missing sub-arguments, that case is already handled by the top-level catch in main() together with IllegalArgumentException.",
+      "confidence": "high",
+      "impact_scope": "local",
+      "fix_scope": "single_edit"
+    },
+    {
+      "dimension": "low_level_elegance",
+      "identifier": "redundant_default_parse_roundtrip",
+      "summary": "parseIntParam/parseDoubleParam in HttpApiUtils round-trip the default through String.valueOf then parse when the key is absent",
+      "related_files": ["src/main/java/pl/marcinmilkowski/word_sketch/api/HttpApiUtils.java"],
+      "evidence": [
+        "Line 178: String raw = params.getOrDefault(name, String.valueOf(defaultValue)); followed by Integer.parseInt(raw) — when key is absent, this serialises the int to a string and immediately parses it back",
+        "Line 193: same pattern for double. The round-trip always succeeds (it is not a bug) but adds unnecessary noise and an unreachable NumberFormatException branch for the default case"
+      ],
+      "suggestion": "Add an early-return guard: String raw = params.get(name); if (raw == null) return defaultValue; then parse raw. This makes the default path direct and removes the unreachable catch branch for the absent-key case.",
+      "confidence": "high",
+      "impact_scope": "local",
+      "fix_scope": "single_edit"
+    },
+    {
+      "dimension": "low_level_elegance",
+      "identifier": "double_stream_avg_sum",
+      "summary": "buildDiscoveredNouns in MultiSeedExplorer iterates sharedCollocs.values() twice for average and sum",
+      "related_files": ["src/main/java/pl/marcinmilkowski/word_sketch/exploration/MultiSeedExplorer.java"],
+      "evidence": [
+        "Lines 129-130: sharedCollocs.values().stream().mapToDouble(...).average().orElse(0.0) and sharedCollocs.values().stream().mapToDouble(...).sum() are back-to-back separate stream passes over the same collection"
+      ],
+      "suggestion": "Compute sum in a single loop or stream with summaryStatistics(): DoubleSummaryStatistics stats = sharedCollocs.values().stream().mapToDouble(Double::doubleValue).summaryStatistics(); double avg = stats.getAverage(); double sum = stats.getSum(); — one pass, same result.",
+      "confidence": "high",
+      "impact_scope": "local",
+      "fix_scope": "single_edit"
+    },
+    {
+      "dimension": "low_level_elegance",
+      "identifier": "single_value_enum_isvalid_loop",
+      "summary": "VisualizationHandlers.RenderMode is a single-value enum with an unnecessary loop-based isValid() validator",
+      "related_files": ["src/main/java/pl/marcinmilkowski/word_sketch/api/VisualizationHandlers.java"],
+      "evidence": [
+        "RenderMode has exactly one value (SIGNED); isValid() iterates values() and checks case-insensitive equality",
+        "The validated mode string is then passed directly as a raw String to RadialPlot.renderFromItems, so the enum does not carry any behavioural differentiation — it is used purely as a set of valid strings"
+      ],
+      "suggestion": "Replace the enum and isValid() method with a simple private static final Set<String> VALID_MODES = Set.of(\"signed\"); and check VALID_MODES.contains(mode.toLowerCase(Locale.ROOT)). If a full enum is desired for future values, use Enum.valueOf() with a try-catch instead of the loop.",
+      "confidence": "medium",
+      "impact_scope": "local",
+      "fix_scope": "single_edit"
+    },
+    {
+      "dimension": "low_level_elegance",
+      "identifier": "duplicated_concordance_parts_nullguard",
+      "summary": "The concordance parts null-guard block is copy-pasted verbatim in two places without extraction",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/query/BlackLabQueryExecutor.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/query/CollocateQueryHelper.java"
+      ],
+      "evidence": [
+        "BlackLabQueryExecutor.executeCqlQuery lines 128-133: null-checks parts, then null-coalesces each of parts[0], parts[1], parts[2]",
+        "CollocateQueryHelper.collectHits lines 263-270: identical guard and coalesce pattern, differing only in variable names"
+      ],
+      "suggestion": "Extract a package-private static helper in BlackLabSnippetParser (e.g. static String[] safeParts(Concordance conc)) that returns a guaranteed-non-null 3-element array (empty strings for missing parts), and call it from both sites to remove the duplication.",
+      "confidence": "medium",
+      "impact_scope": "module",
+      "fix_scope": "multi_file_refactor"
+    }
+  ],
+  "retrospective": {
+    "root_causes": [
+      "Incremental refactoring left one dead method (requireNextArg) behind after argument-parsing was redesigned",
+      "Utility method defaults were implemented with defensive round-trip serialisation rather than early-return guards — a minor but consistent pattern in HttpApiUtils",
+      "Concordance parts handling was duplicated when CollocateQueryHelper was extracted from BlackLabQueryExecutor rather than sharing a helper"
+    ],
+    "likely_symptoms": [],
+    "possible_false_positives": []
+  }
+}

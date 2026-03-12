@@ -333,18 +333,4 @@ public class Main {
             throw new AssertionError("unreachable");
         }
     }
-
-    /**
-     * Returns the next argument from {@code args} at index {@code i}, or throws
-     * {@link IllegalArgumentException} if the index is out of bounds.
-     *
-     * <p>Callers in {@code main} let this propagate to the top-level {@code catch (Exception e)}
-     * handler which prints the message and exits cleanly.</p>
-     */
-    private static String requireNextArg(String[] args, int i, String option) {
-        if (i >= args.length) {
-            throw new IllegalArgumentException(option + " requires an argument");
-        }
-        return args[i];
-    }
 }

@@ -39,12 +39,6 @@ public class ExplorationResult {
 
     public ExplorationResult(List<String> seeds, Map<String, Double> seedCollocates,
             Map<String, Long> seedCollocateFrequencies,
-            List<DiscoveredNoun> discoveredNouns, List<CoreCollocate> coreCollocates) {
-        this(seeds, seedCollocates, seedCollocateFrequencies, discoveredNouns, coreCollocates, Map.of());
-    }
-
-    public ExplorationResult(List<String> seeds, Map<String, Double> seedCollocates,
-            Map<String, Long> seedCollocateFrequencies,
             List<DiscoveredNoun> discoveredNouns, List<CoreCollocate> coreCollocates,
             Map<String, Map<String, Double>> perSeedCollocates) {
         this.seeds = List.copyOf(seeds);

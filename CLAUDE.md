@@ -128,21 +128,21 @@ src/main/java/pl/marcinmilkowski/word_sketch/
 │       ├── BlackLabConllUIndexer.java  # CoNLL-U corpus indexer for BlackLab
 │       └── ConlluConverter.java        # Converts CoNLL-U to WPL chunk format
 ├── model/
-│   ├── AdjectiveProfile.java           # Adjective collocate profile for SEF comparison
-│   ├── ComparisonResult.java           # Result DTO for compareCollocateProfiles()
-│   ├── CoreCollocate.java              # High-coverage shared collocate
-│   ├── DiscoveredNoun.java             # Noun discovered via shared adjectives
-│   ├── Edge.java                       # Graph edge for D3.js visualization
-│   ├── ExplorationOptions.java         # Base options for SEF exploration
-│   ├── ExplorationResult.java          # Top-level result DTO for SEF exploration
 │   ├── FetchExamplesOptions.java       # Options for fetchExamples
 │   ├── PosGroup.java                   # POS group enum: NOUN, VERB, ADJ, ADV, OTHER
 │   ├── QueryResults.java               # Result DTOs: WordSketchResult, ConcordanceResult
-│   ├── RelationEdgeType.java           # Enum for edge types in exploration graphs
 │   ├── RelationType.java               # Enum: SURFACE | DEP_GRAMMAR
-│   ├── SharingCategory.java            # Enum: FULLY_SHARED, PARTIALLY_SHARED, SPECIFIC
-│   ├── SingleSeedExplorationOptions.java  # Options for single-seed exploration
-│   └── package-info.java               # Package documentation
+│   └── exploration/
+│       ├── CollocateProfile.java       # Adjective collocate profile for SEF comparison
+│       ├── ComparisonResult.java       # Result DTO for compareCollocateProfiles()
+│       ├── CoreCollocate.java          # High-coverage shared collocate
+│       ├── DiscoveredNoun.java         # Noun discovered via shared adjectives
+│       ├── Edge.java                   # Graph edge for D3.js visualization
+│       ├── ExplorationOptions.java     # Base options for SEF exploration
+│       ├── ExplorationResult.java      # Top-level result DTO for SEF exploration
+│       ├── RelationEdgeType.java       # Enum for edge types in exploration graphs
+│       ├── SharingCategory.java        # Enum: FULLY_SHARED, PARTIALLY_SHARED, SPECIFIC
+│       └── SingleSeedExplorationOptions.java  # Options for single-seed exploration
 ├── query/
 │   ├── BlackLabQueryExecutor.java      # BlackLab-backed query executor
 │   ├── BlackLabSnippetParser.java      # Parses BlackLab XML snippets

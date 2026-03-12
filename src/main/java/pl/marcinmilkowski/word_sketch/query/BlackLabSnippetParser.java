@@ -179,6 +179,26 @@ class BlackLabSnippetParser {
 
 
 
+    /**
+     * Normalises the concordance parts array, returning {@code null} when the concordance
+     * is absent or malformed so each caller can apply its own skip/fallback logic.
+     * When present, each element is guaranteed non-null (empty-string instead of null).
+     *
+     * @param conc the concordance from BlackLab (may be {@code null})
+     * @return a 3-element array [left, match, right], or {@code null} if unavailable
+     */
+    @Nullable
+    static String[] safeParts(nl.inl.blacklab.search.Concordance conc) {
+        if (conc == null) return null;
+        String[] parts = conc.parts();
+        if (parts == null || parts.length < 3) return null;
+        return new String[]{
+            parts[0] != null ? parts[0] : "",
+            parts[1] != null ? parts[1] : "",
+            parts[2] != null ? parts[2] : ""
+        };
+    }
+
     /** Returns the last {@code lemma="..."} value in {@code xml}, or {@code null}. */
     static String extractLastLemma(String xml) {
         if (xml == null || xml.isEmpty()) return null;

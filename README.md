@@ -634,30 +634,58 @@ concept-sketch/
 ├── src/main/java/pl/marcinmilkowski/word_sketch/
 │   ├── Main.java                    # CLI entry point
 │   ├── api/
-│   │   ├── WordSketchApiServer.java # REST API server
-│   │   ├── HttpApiUtils.java        # HTTP utilities
-│   │   └── PatternSubstitution.java # Pattern substitution
+│   │   ├── WordSketchApiServer.java          # REST API server (14 endpoints)
+│   │   ├── ConcordanceHandlers.java          # Handlers for concordance/examples endpoints
+│   │   ├── CorpusQueryHandlers.java          # Handler for BCQL corpus query endpoint
+│   │   ├── ExplorationHandlers.java          # Handlers for semantic field exploration endpoints
+│   │   ├── ExploreResponseAssembler.java     # Builds JSON response maps for exploration results
+│   │   ├── GrammarConfigSerializer.java      # Serializes GrammarConfig/RelationConfig to JSON
+│   │   ├── HttpApiUtils.java                 # HTTP utilities: sendJsonResponse, parseQueryParams
+│   │   ├── RequestEntityTooLargeException.java  # RuntimeException for HTTP 413 responses
+│   │   ├── SketchHandlers.java               # Handlers for word sketch endpoints
+│   │   └── VisualizationHandlers.java        # Handler for radial plot endpoint
 │   ├── config/
-│   │   └── GrammarConfigLoader.java # Grammar config loading
-│   ├── grammar/
-│   │   ├── CQLParser.java           # CQL pattern parsing
-│   │   ├── CQLPattern.java          # Pattern representation
-│   │   └── CQLParseException.java   # Parse exception type
+│   │   ├── GrammarConfig.java                # Immutable grammar configuration (relations, version)
+│   │   ├── GrammarConfigLoader.java          # Loads grammar config from JSON
+│   │   ├── RelationConfig.java               # Single relation: pattern, deprel derivation
+│   │   ├── RelationPatternBuilder.java       # Builds CQL patterns for relations
+│   │   └── RelationUtils.java               # Utility: relation type checks
+│   ├── exploration/
+│   │   ├── CollocateProfileComparator.java   # Compares adjective profiles across seed nouns
+│   │   ├── ExplorationService.java           # Interface for exploration operations
+│   │   ├── MultiSeedExplorer.java            # Multi-seed semantic field exploration
+│   │   └── SemanticFieldExplorer.java        # Coordination facade for SEF (single + multi seed)
 │   ├── indexer/
 │   │   └── blacklab/
-│   │       └── BlackLabConllUIndexer.java # CoNLL-U corpus indexer
+│   │       ├── BlackLabConllUIndexer.java    # CoNLL-U corpus indexer for BlackLab
+│   │       └── ConlluConverter.java          # Converts CoNLL-U to WPL chunk format
+│   ├── model/
+│   │   ├── FetchExamplesOptions.java         # Options for fetchExamples
+│   │   ├── PosGroup.java                     # POS group enum: NOUN, VERB, ADJ, ADV, OTHER
+│   │   ├── QueryResults.java                 # Result DTOs: WordSketchResult, ConcordanceResult
+│   │   ├── RelationType.java                 # Enum: SURFACE | DEP_GRAMMAR
+│   │   └── exploration/
+│   │       ├── CollocateProfile.java         # Adjective collocate profile for SEF comparison
+│   │       ├── ComparisonResult.java         # Result DTO for compareCollocateProfiles()
+│   │       ├── CoreCollocate.java            # High-coverage shared collocate
+│   │       ├── DiscoveredNoun.java           # Noun discovered via shared adjectives
+│   │       ├── Edge.java                     # Graph edge for D3.js visualization
+│   │       ├── ExplorationOptions.java       # Base options for SEF exploration
+│   │       ├── ExplorationResult.java        # Top-level result DTO for SEF exploration
+│   │       ├── RelationEdgeType.java         # Enum for edge types in exploration graphs
+│   │       ├── SharingCategory.java          # Enum: FULLY_SHARED, PARTIALLY_SHARED, SPECIFIC
+│   │       └── SingleSeedExplorationOptions.java  # Options for single-seed exploration
 │   ├── query/
-│   │   ├── BlackLabQueryExecutor.java    # BlackLab query executor
-│   │   ├── BlackLabSnippetParser.java    # BlackLab XML snippet parser
-│   │   ├── SemanticFieldExplorer.java    # Semantic field exploration
-│   │   ├── QueryExecutor.java            # Query executor interface
-│   │   ├── QueryResults.java             # Result DTOs
-│   │   └── PosGroup.java                 # POS group constants
-│   ├── tagging/
-│   │   └── SimpleTagger.java        # Rule-based tagger
-│   └── utils/
-│       ├── LogDiceCalculator.java   # logDice scoring
-│       └── LongIntHashMap.java      # Compact long→int hash map
+│   │   ├── BlackLabQueryExecutor.java        # BlackLab-backed query executor
+│   │   ├── BlackLabSnippetParser.java        # Parses BlackLab XML snippets
+│   │   ├── CollocateQueryHelper.java         # Low-level collocate frequency/example lookup
+│   │   └── QueryExecutor.java               # Query executor interface
+│   ├── utils/
+│   │   ├── CqlUtils.java                    # CQL parsing: splitCqlTokens, escapeForRegex
+│   │   ├── LogDiceUtils.java                # logDice scoring
+│   │   └── MathUtils.java                   # Math utilities: round2dp
+│   └── viz/
+│       └── RadialPlot.java                  # Radial plot data builder
 ├── webapp/
 │   ├── index.html                   # Web UI (D3.js visualization)
 │   └── assets/                      # CSS, D3.js
