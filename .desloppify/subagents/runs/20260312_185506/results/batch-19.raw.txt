@@ -1,0 +1,76 @@
+{
+  "batch": "api_surface_coherence",
+  "batch_index": 19,
+  "assessments": {"api_surface_coherence": 78.0},
+  "dimension_notes": {
+    "api_surface_coherence": {
+      "evidence": [
+        "All HTTP handlers parse request parameters through the same HttpApiUtils.parseQueryParams + requireParam/parseIntParam/parseDoubleParam pipeline, giving a uniform client-error contract across all endpoints.",
+        "SharedExploreParams record and parseSharedExploreParams() eliminate parameter repetition across three sibling handlers (explore, explore-multi, compare), keeping the common surface consistent.",
+        "wrapWithErrorHandling centralises error-to-HTTP-status mapping: IAE→400, IOException→500, RequestEntityTooLargeException→413. Handlers can throw freely without duplicating this logic.",
+        "ConcordanceHandlers and CorpusQueryHandlers take the narrower CollocateQueryPort rather than the full QueryExecutor, reducing unnecessary surface exposure.",
+        "ExploreResponseAssembler centralises model-to-JSON translation; response envelopes share a consistent skeleton (status:ok, parameters sub-map with relation/top/min_shared/min_logdice).",
+        "ExplorationService.fetchExamples(String seed, String collocate, RelationConfig, int maxExamples) uses a flat int parameter instead of an ExplorationOptions object, unlike the three sibling methods that all accept a typed options record.",
+        "ExplorationResult.of() factory takes 6 positional parameters (seeds, seedCollocates, seedCollocateFrequencies, discoveredNouns, coreCollocates, perSeedCollocates), exceeding the 5-parameter API boundary guideline with no builder alternative."
+      ],
+      "impact_scope": "module",
+      "fix_scope": "multi_file_refactor",
+      "confidence": "high"
+    }
+  },
+  "dimension_judgment": {
+    "api_surface_coherence": {
+      "strengths": [
+        "Uniform parameter-parsing and error-contract pipeline: all handlers use the same HttpApiUtils helpers, so 400/413/500 mapping is consistent everywhere.",
+        "SharedExploreParams record and its factory parseSharedExploreParams() remove cross-handler parameter duplication from the three exploration endpoints.",
+        "Interface segregation is applied correctly: handlers that only need BCQL retrieval declare the narrow CollocateQueryPort, not the full QueryExecutor.",
+        "ExploreResponseAssembler decouples response shape from handler logic, so the JSON envelope structure is consistent across explore, explore-multi, and compare."
+      ],
+      "issue_character": "Issues are isolated to the service-layer API boundary: one method (fetchExamples) breaks the options-object convention used by its siblings, and one factory (ExplorationResult.of) exposes more than five positional parameters with no builder alternative.",
+      "score_rationale": "The HTTP handler layer is notably consistent — uniform param parsing, a single error-wrapping contract, clear method-not-allowed enforcement, and well-documented parameter semantics. This pushes the score well above 60. What pulls it below 85 is the small but real inconsistency at the ExplorationService interface boundary: fetchExamples uses raw int maxExamples where the other three methods use typed options objects, and ExplorationResult.of() requires callers to position six arguments correctly. These are real usability gaps at the public API surface, though they are confined to one interface and one factory. Against the global anchors this places the codebase in the solid-but-uneven 75–80 band."
+    }
+  },
+  "issues": [
+    {
+      "dimension": "api_surface_coherence",
+      "identifier": "fetch_examples_raw_param",
+      "summary": "ExplorationService.fetchExamples uses a raw int parameter instead of an options object, inconsistent with sibling methods",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/exploration/ExplorationService.java"
+      ],
+      "evidence": [
+        "exploreByPattern takes SingleSeedExplorationOptions, exploreMultiSeed and compareCollocateProfiles take ExplorationOptions, but fetchExamples(String, String, RelationConfig, int maxExamples) exposes a bare int in the same public interface."
+      ],
+      "suggestion": "Introduce a FetchExamplesOptions record (or reuse ExplorationOptions with a topCollocates/maxExamples field) and change the signature to fetchExamples(String seed, String collocate, RelationConfig, FetchExamplesOptions opts), aligning it with the options-object pattern used across the interface.",
+      "confidence": "high",
+      "impact_scope": "module",
+      "fix_scope": "multi_file_refactor"
+    },
+    {
+      "dimension": "api_surface_coherence",
+      "identifier": "exploration_result_of_six_params",
+      "summary": "ExplorationResult.of() factory exposes 6 positional parameters with no builder alternative",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/model/exploration/ExplorationResult.java"
+      ],
+      "evidence": [
+        "ExplorationResult.of(List<String> seeds, Map<String,Double> seedCollocates, Map<String,Long> seedCollocateFrequencies, List<DiscoveredNoun> discoveredNouns, List<CoreCollocate> coreCollocates, Map<String,Map<String,Double>> perSeedCollocates) — all six are Map or List with similar generic shapes, making argument ordering errors undetectable at compile time."
+      ],
+      "suggestion": "Add a static Builder inner class (ExplorationResult.builder().seeds(...).seedCollocates(...).build()) so call sites name each argument explicitly; the existing factory method can delegate to the builder for backward compatibility.",
+      "confidence": "medium",
+      "impact_scope": "module",
+      "fix_scope": "multi_file_refactor"
+    }
+  ],
+  "retrospective": {
+    "root_causes": [
+      "fetchExamples was likely added after the options-object pattern was established for the other three methods and received a quick raw-int signature that was never harmonised.",
+      "ExplorationResult.of() grew as new fields were added to the model without a builder being introduced alongside."
+    ],
+    "likely_symptoms": [
+      "fetch_examples_raw_param",
+      "exploration_result_of_six_params"
+    ],
+    "possible_false_positives": []
+  }
+}

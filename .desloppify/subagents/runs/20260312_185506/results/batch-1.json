@@ -1,0 +1,104 @@
+{
+  "batch": "high_level_elegance",
+  "batch_index": 1,
+  "assessments": {
+    "high_level_elegance": 78.0
+  },
+  "dimension_notes": {
+    "high_level_elegance": {
+      "evidence": [
+        "Packages map cleanly to domain capabilities: api, config, exploration, model, query, indexer, utils, viz — each has a single stated purpose and package-info to document it.",
+        "GrammarConfig (data carrier), GrammarConfigLoader (I/O), and GrammarConfigSerializer (JSON output) are three distinct classes with distinct responsibilities, and the Javadoc explicitly states the rationale for this split.",
+        "CollocateQueryPort is a narrow port interface; ConcordanceHandlers and CorpusQueryHandlers accept this narrower type rather than the full QueryExecutor, making dependency surfaces explicit.",
+        "WordSketchApiServer delegates to five focused, package-private handler classes (SketchHandlers, ExplorationHandlers, ConcordanceHandlers, CorpusQueryHandlers, VisualizationHandlers) — not public, keeping the API surface small.",
+        "ExplorationService bundles exploreByPattern (returns ExplorationResult, takes SingleSeedExplorationOptions), exploreMultiSeed (returns ExplorationResult, takes ExplorationOptions), and compareCollocateProfiles (returns ComparisonResult, takes ExplorationOptions) in one interface — the Javadoc defends this but the return-type and options-type diversity signals blurred responsibility.",
+        "viz/ package contains exactly one class (RadialPlot.java). A single-class package implies either an incomplete subsystem or a misplaced utility, and it is not obvious from the package name whether more visualization types belong there.",
+        "model/exploration/ sub-package holds 12 files and is well-structured; however model-level types for word-sketch results (QueryResults with its nested records) stay in the model root rather than a model/sketch/ sub-package, creating an asymmetry the package-info acknowledges but does not resolve.",
+        "SingleSeedExplorationOptions wraps ExplorationOptions and re-delegates all three fields, creating a thin delegation layer; this is explained in Javadoc but adds an indirection that new engineers must learn."
+      ],
+      "impact_scope": "subsystem",
+      "fix_scope": "multi_file_refactor",
+      "confidence": "high"
+    }
+  },
+  "dimension_judgment": {
+    "high_level_elegance": {
+      "strengths": [
+        "Top-level packages (api, config, exploration, model, query, indexer, utils, viz) map directly to domain capabilities with accurate package-info docs — a new engineer can orient quickly.",
+        "Data-carrier / loader / serializer split in the config subsystem is explicit, intentional, and documented; the public surface is minimal (GrammarConfig is the only type callers need to hold).",
+        "Narrow port interfaces (CollocateQueryPort) limit what each handler can see from the query layer, making handler dependency surfaces self-documenting.",
+        "API handler decomposition into five focused package-private classes keeps WordSketchApiServer thin and makes handler ownership boundaries predictable.",
+        "Package-info files and class-level Javadoc accurately match the runtime structure — no README/code drift observed."
+      ],
+      "issue_character": "Issues are isolated pockets of slightly blurred ownership rather than systemic structural problems: one interface that bundles three distinct operational modes, one near-empty outlier package, and a minor model-layer asymmetry — none of these cascade into surprise ripple edits.",
+      "score_rationale": "The codebase clears the 'solid but uneven' bar (80) and approaches it from slightly below. The domain decomposition is coherent, the public surface is small, and docs are trustworthy — all strong signals. What pulls it below 80 is that ExplorationService mixes three distinct return types and options types under one interface (blurring ownership just enough to require explanation), the viz/ package looks incomplete, and the model-layer asymmetry between exploration types and sketch types is acknowledged but unresolved. These are predictable friction points for a new engineer, not fundamental structural failures, landing the score at 78."
+    }
+  },
+  "issues": [
+    {
+      "dimension": "high_level_elegance",
+      "identifier": "exploration_service_mixed_modes",
+      "summary": "ExplorationService interface bundles three operationally distinct modes with different return types and options types under one contract",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/exploration/ExplorationService.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/exploration/SemanticFieldExplorer.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/api/ExplorationHandlers.java"
+      ],
+      "evidence": [
+        "exploreByPattern returns ExplorationResult and takes SingleSeedExplorationOptions; exploreMultiSeed returns ExplorationResult but takes plain ExplorationOptions; compareCollocateProfiles returns ComparisonResult (a completely different type) and also takes plain ExplorationOptions.",
+        "The Javadoc defence ('all three share the same underlying corpus-query infrastructure') is a reason for co-location in the same implementing class, not a reason to expose them behind a single interface — interface cohesion is about client needs, not implementation convenience.",
+        "ExplorationHandlers injects ExplorationService and calls all three methods, so it would work equally well with a split interface; the bundling provides no API simplification."
+      ],
+      "suggestion": "Split ExplorationService into two focused interfaces: ExplorePort (exploreByPattern + exploreMultiSeed, both return ExplorationResult) and ComparePort (compareCollocateProfiles + fetchExamples, centred on CollocateProfile comparison). SemanticFieldExplorer can implement both. ExplorationHandlers can be injected with both. This localises change: handlers that only need exploration don't see the comparison surface, and vice versa.",
+      "confidence": "medium",
+      "impact_scope": "subsystem",
+      "fix_scope": "multi_file_refactor"
+    },
+    {
+      "dimension": "high_level_elegance",
+      "identifier": "viz_single_class_package",
+      "summary": "viz/ package contains exactly one class, making its ownership boundary ambiguous and its future scope unclear",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/viz/RadialPlot.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/api/VisualizationHandlers.java"
+      ],
+      "evidence": [
+        "viz/ holds only RadialPlot.java (SVG generation). All other response-assembly work lives in api/ExploreResponseAssembler.java, making it unclear whether viz/ is 'pure output format logic' or 'charting subsystem'.",
+        "viz/package-info.java is absent (no package-level doc), unlike api/, config/, model/, and exploration/ which all have package-info files.",
+        "VisualizationHandlers in the api package mediates between the HTTP layer and RadialPlot, but the conceptual boundary between 'visualization data shaping' (ExploreResponseAssembler) and 'visualization rendering' (RadialPlot) is not explained anywhere."
+      ],
+      "suggestion": "Either (a) add a viz/package-info.java that defines the package contract — 'SVG/chart rendering logic with no HTTP or persistence concerns' — so future engineers know what belongs here, or (b) if RadialPlot is the only visualization type and no others are planned, move it into utils/ as a named utility class and eliminate the single-class package. Option (a) is preferable if chart types are expected to grow.",
+      "confidence": "medium",
+      "impact_scope": "local",
+      "fix_scope": "single_edit"
+    },
+    {
+      "dimension": "high_level_elegance",
+      "identifier": "model_sketch_asymmetry",
+      "summary": "model/exploration/ sub-package exists but model-level sketch result types remain as nested classes in model root, leaving an acknowledged asymmetry unresolved",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/model/QueryResults.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/model/package-info.java"
+      ],
+      "evidence": [
+        "model/exploration/ holds 12 dedicated files for exploration model types. QueryResults (with WordSketchResult, SnippetResult, CollocateResult nested inside) lives in the model root as a namespace class.",
+        "The model/package-info.java explicitly says sketch result types 'remain as nested types in this root package rather than being split into the reserved model/sketch/ sub-package' and points to a 'model/sketch/package-info.java for rationale' — but that file does not exist.",
+        "A new engineer reading the package-info finds a pointer to a file that is not present, breaking the docs-match-reality contract this codebase otherwise upholds."
+      ],
+      "suggestion": "Either (a) create src/main/java/pl/marcinmilkowski/word_sketch/model/sketch/package-info.java with the promised rationale (even if the types stay in the root), or (b) update model/package-info.java to remove the reference to a non-existent file and state the rationale inline. The asymmetry between exploration types having a sub-package and sketch types not having one is tolerable; the dangling cross-reference is not.",
+      "confidence": "high",
+      "impact_scope": "local",
+      "fix_scope": "single_edit"
+    }
+  ],
+  "retrospective": {
+    "root_causes": [
+      "ExplorationService bundling appears to be organic growth: single-seed exploration came first, multi-seed and comparison were added to the same interface for convenience rather than re-evaluating the interface boundary.",
+      "viz/ and model/sketch/ both look like partially-executed structural intentions — the intent to have a viz subsystem and a model/sketch sub-package is visible, but neither was completed."
+    ],
+    "likely_symptoms": [
+      "model_sketch_asymmetry is primarily a documentation gap rather than a structural problem; it may be over-weighted as a structural concern."
+    ],
+    "possible_false_positives": []
+  }
+}

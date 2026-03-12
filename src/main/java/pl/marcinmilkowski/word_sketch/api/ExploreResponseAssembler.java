@@ -1,6 +1,7 @@
 package pl.marcinmilkowski.word_sketch.api;
 
 import org.jspecify.annotations.NonNull;
+import org.jspecify.annotations.Nullable;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -194,6 +195,40 @@ final class ExploreResponseAssembler {
         m.put("sentence", r.sentence());
         m.put("raw", r.rawXml() != null ? r.rawXml() : "");
         return m;
+    }
+
+    /**
+     * Converts a {@link QueryResults.CollocateResult} to a typed {@link ExamplesResponse.ExampleEntry}.
+     */
+    static ExamplesResponse.ExampleEntry collocateResultToExampleEntry(QueryResults.CollocateResult r) {
+        return new ExamplesResponse.ExampleEntry(r.sentence(), r.rawXml() != null ? r.rawXml() : "");
+    }
+
+    /**
+     * Builds a typed {@link ExamplesResponse} for the concordance-examples endpoints.
+     *
+     * <p>The {@code fallback} flag is set to {@code true} in the response when the named relation
+     * was not resolved and a proximity fallback pattern was used; pass {@code null} for normal
+     * (non-fallback) responses, in which case the field is omitted from JSON output.</p>
+     *
+     * @param seed      headword
+     * @param collocate collocate word form
+     * @param relation  resolved relation identifier
+     * @param bcql      the BCQL pattern that was executed
+     * @param top       requested maximum result count
+     * @param fallback  {@code true} if a fallback pattern was used; {@code null} otherwise
+     * @param results   raw query results to convert into example entries
+     * @return fully populated {@link ExamplesResponse}
+     */
+    static @NonNull ExamplesResponse buildExamplesResponse(
+            @NonNull String seed, @NonNull String collocate,
+            @NonNull String relation, @NonNull String bcql,
+            int top, @Nullable Boolean fallback,
+            @NonNull List<QueryResults.CollocateResult> results) {
+        List<ExamplesResponse.ExampleEntry> entries = results.stream()
+                .map(ExploreResponseAssembler::collocateResultToExampleEntry)
+                .toList();
+        return new ExamplesResponse("ok", seed, collocate, relation, bcql, top, entries.size(), fallback, entries);
     }
 
     /**

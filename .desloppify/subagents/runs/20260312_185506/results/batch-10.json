@@ -1,0 +1,40 @@
+{
+  "batch": "incomplete_migration",
+  "batch_index": 10,
+  "assessments": {"incomplete_migration": 91.0},
+  "dimension_notes": {
+    "incomplete_migration": {
+      "evidence": [
+        "Single JSON library (Jackson 2.17.2) used uniformly throughout all 59 production source files — no Gson, Fastjson, or other competing JSON library present in pom.xml or source, despite CLAUDE.md docs listing Fastjson 2.0.25 (migration already completed cleanly).",
+        "Single HTTP server (com.sun.net.httpserver) used consistently across WordSketchApiServer and all handler classes — one forward-looking TODO comment 'migrate to Undertow or Jetty if a multi-module build or custom classloader is needed' is properly conditional, not an in-progress migration.",
+        "GrammarConfigLoader.validateNoLegacyKeys() actively rejects deprecated 'copulas' config key with a clear error message — this is a completed migration guard, not a coexistence of old and new patterns.",
+        "ExplorationService interface with single SemanticFieldExplorer implementation — ExplorationHandlers constructor accepts ExplorationService cleanly; Main.java wires new SemanticFieldExplorer(executor, grammarConfig) directly with no legacy constructor overload coexisting.",
+        "RelationUtils.RELATION_ALIASES maps short API aliases (adj_modifier, adj_predicate, subject_of, object_of) to canonical grammar IDs (noun_modifiers, noun_adj_predicates, etc.) — properly documented as an alias translation layer for external REST API callers, not an undocumented compat shim.",
+        "No @Deprecated annotations anywhere in production source, and no calls to any symbol marked deprecated.",
+        "Test baseline file metadata.txt contains 'Executor: legacy' — this is a test infrastructure metadata label, not a production API pattern."
+      ],
+      "impact_scope": "local",
+      "fix_scope": "single_edit",
+      "confidence": "high"
+    }
+  },
+  "dimension_judgment": {
+    "incomplete_migration": {
+      "strengths": [
+        "validateNoLegacyKeys() in GrammarConfigLoader actively enforces a clean break from the old 'copulas' config format — old format callers get an immediate, clear error rather than silently running on a compatibility shim.",
+        "Single JSON library (Jackson) is used uniformly; a prior Fastjson dependency referenced in CLAUDE.md docs has been fully removed from both pom.xml and source, with no stale import sites remaining.",
+        "ExplorationService interface boundary is clean — WordSketchApiServer and ExplorationHandlers program to the interface; no legacy SemanticFieldExplorer-typed constructor overload coexists alongside the new interface-typed one.",
+        "RelationUtils.RELATION_ALIASES is explicitly documented as a canonical alias map for REST API callers, making it clear this is an intentional translation layer rather than an undocumented migration leftover.",
+        "The single migration-referencing TODO ('migrate to Undertow or Jetty') is properly conditioned on a specific architectural trigger ('multi-module build or custom classloader needed') rather than being an open-ended stale debt item."
+      ],
+      "issue_character": "No substantive incomplete-migration defects found — the one migration-referencing TODO is forward-looking and conditional, and every pattern that could be mistaken for a migration artifact (alias map, legacy-key guard, single-implementation interface) has clear documented intent.",
+      "score_rationale": "From an incomplete_migration perspective, this codebase is exemplary: no deprecated-but-called symbols, no competing library coexistence, no stale migration shims, and only one migration TODO that is properly scoped. The legacy-key guard in GrammarConfigLoader and the completed JSON library migration both demonstrate a pattern of following through on migrations to completion. The score stops slightly short of 100 because the single migration TODO, though well-conditioned, is still open work, and the CLAUDE.md documentation references a dependency (Fastjson) that no longer exists, suggesting minor documentation drift."
+    }
+  },
+  "issues": [],
+  "retrospective": {
+    "root_causes": [],
+    "likely_symptoms": [],
+    "possible_false_positives": ["test-baseline-executor-legacy — 'Executor: legacy' in src/test/resources/baseline/metadata.txt is a test infrastructure generation label, not a production API coexistence signal"]
+  }
+}

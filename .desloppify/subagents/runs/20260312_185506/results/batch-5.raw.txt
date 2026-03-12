@@ -1,0 +1,75 @@
+{
+  "batch": "abstraction_fitness",
+  "batch_index": 5,
+  "assessments": {
+    "abstraction_fitness": 82.0
+  },
+  "dimension_notes": {
+    "abstraction_fitness": {
+      "evidence": [
+        "HttpApiUtils is package-private, combines response-writing and request-parsing as one focused HTTP concern with documented rationale; no unnecessary indirection",
+        "RelationPatternUtils is a pure static utility used by multiple callers (SingleSeedExplorer, SemanticFieldExplorer, ExplorationHandlers) — extraction from RelationConfig keeps the config record as a plain data carrier and is reused across the codebase",
+        "ExploreResponseAssembler separates model-to-presentation translation so ExplorationResult and ComparisonResult carry no JSON concerns; used exclusively by ExplorationHandlers",
+        "CollocateQueryPort is a proper interface-segregation partition: ConcordanceHandlers and CorpusQueryHandlers declare only the narrow port they need (executeBcqlQuery) rather than the full QueryExecutor",
+        "SemanticFieldExplorer.compareCollocateProfiles is a one-liner delegation to CollocateProfileComparator.compareCollocateProfiles with zero added policy or translation; the inner class already validates seed count, so the facade contributes nothing for this method",
+        "ExplorationService interface has one production implementation (SemanticFieldExplorer); justified by constructor injection into WordSketchApiServer and documented explicitly, but the two pass-through methods (compareCollocateProfiles and exploreMultiSeed minus its minimal seed-count guard) mean the facade adds a third hop for those paths: ExplorationHandlers → ExplorationService → SemanticFieldExplorer → algorithm class",
+        "No delegation-heavy classes detected (delegation_heavy_class_count=0); no facade re-export modules (facade_module_count=0); no wrapper rate",
+        "QueryExecutor interface isolates BlackLab index volatility as an adapter — this is the skip-eligible 'adapter that isolates external API volatility' pattern, well justified"
+      ],
+      "impact_scope": "module",
+      "fix_scope": "single_edit",
+      "confidence": "medium",
+      "sub_axes": {
+        "abstraction_leverage": 85.0,
+        "indirection_cost": 78.0,
+        "interface_honesty": 88.0,
+        "delegation_density": 92.0,
+        "definition_directness": 85.0,
+        "type_discipline": 90.0
+      }
+    }
+  },
+  "dimension_judgment": {
+    "abstraction_fitness": {
+      "strengths": [
+        "HttpApiUtils bundles HTTP request/response concerns in a single focused, package-private utility — no leakage and no spurious split",
+        "RelationPatternUtils earns its existence by centralising BCQL pattern construction for multiple callers; keeping it out of RelationConfig preserves the config record as a plain data carrier",
+        "CollocateQueryPort demonstrates genuine interface segregation: two handler classes declare only the narrow executeBcqlQuery method they need rather than the full QueryExecutor",
+        "Algorithm classes (SingleSeedExplorer, MultiSeedExplorer, CollocateProfileComparator) are well-sized and focused — neither over-fragmented nor bloated",
+        "QueryExecutor isolates BlackLab as an external volatile dependency; the interface is constructor-injected and its rationale is clearly documented"
+      ],
+      "issue_character": "The sole issue is a documented but structurally thin pass-through in SemanticFieldExplorer — two of its four interface methods add no coordination, policy, or translation, creating an extra hop that the Javadoc acknowledges as intentional yet that a developer must still navigate.",
+      "score_rationale": "The codebase scores well against the abstraction_fitness rubric: no delegation-heavy classes, no pass-through wrappers, no util dumping grounds, and clear interface segregation. The drag comes from SemanticFieldExplorer.compareCollocateProfiles, which is a pure one-liner delegation through a three-hop call stack; while self-documented, it adds navigational cost without payoff for that specific method. This pulls the score slightly below 'solid but uneven' (80) toward the upper range — abstractions mostly pay for themselves, but a developer tracing the comparison flow will visit one unnecessary stop."
+    }
+  },
+  "issues": [
+    {
+      "dimension": "abstraction_fitness",
+      "identifier": "semantic_field_explorer_compare_passthrough",
+      "summary": "SemanticFieldExplorer.compareCollocateProfiles is a pure one-liner delegation adding no policy, translation, or coordination",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/exploration/SemanticFieldExplorer.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/exploration/CollocateProfileComparator.java"
+      ],
+      "evidence": [
+        "SemanticFieldExplorer.compareCollocateProfiles (line 173-175) is a single-statement delegation: `return comparator.compareCollocateProfiles(seeds, opts);`",
+        "CollocateProfileComparator.compareCollocateProfiles already validates that seedNouns.size() >= 2, so the facade adds no policy",
+        "ExplorationHandlers calls this via ExplorationService interface, creating a three-hop path: ExplorationHandlers → ExplorationService.compareCollocateProfiles → SemanticFieldExplorer.compareCollocateProfiles → CollocateProfileComparator.compareCollocateProfiles",
+        "The Javadoc on SemanticFieldExplorer explicitly labels this as a pass-through ('The two pass-through methods'), confirming no intent to add logic here"
+      ],
+      "suggestion": "Remove the compareCollocateProfiles delegation from SemanticFieldExplorer and expose CollocateProfileComparator directly: add a `compareCollocateProfiles` default method to ExplorationService that delegates, or expose CollocateProfileComparator as a collaborator injected alongside ExplorationService into ExplorationHandlers. Alternatively, accept the pass-through as the intended cost of a unified service facade and document it in ExplorationService's contract explicitly.",
+      "confidence": "medium",
+      "impact_scope": "module",
+      "fix_scope": "single_edit"
+    }
+  ],
+  "retrospective": {
+    "root_causes": [
+      "The ExplorationService facade was designed to present a unified surface to HTTP handlers at the cost of two pass-through methods; the intent is sound but the compareCollocateProfiles case adds a hop without benefit since the inner class already owns the validation"
+    ],
+    "likely_symptoms": [
+      "semantic_field_explorer_compare_passthrough"
+    ],
+    "possible_false_positives": []
+  }
+}

@@ -1,0 +1,61 @@
+{
+  "batch": "package_organization",
+  "batch_index": 11,
+  "assessments": {
+    "package_organization": 80.0
+  },
+  "dimension_notes": {
+    "package_organization": {
+      "evidence": [
+        "Nine top-level packages with non-overlapping concerns: api/ (11 files), config/ (8), exploration/ (7), indexer/blacklab/ (2+1), model/ (3), model/exploration/ (12), query/ (6), utils/ (5), viz/ (2 including package-info)",
+        "Dependency flow is strictly layered with no circular edges: api/ imports exploration/config/query/model; exploration/ imports model/config/query; query/ imports model/utils; config/ imports utils/model — no back-edges observed",
+        "model/exploration/ (12 files) separates exploration DTOs (CollocateProfile, ComparisonResult, ExplorationResult, etc.) from service logic in exploration/ — a deliberate DTO/service split",
+        "viz/ contains a single production file (RadialPlot.java) with exactly one importer (VisualizationHandlers.java in api/) — fan-in of 1 makes this the thinnest package in the codebase",
+        "model/ root holds two cross-cutting types (QueryResults.java with 16 importers, PosGroup.java with 5) while exploration-specific types are correctly sub-packaged under model/exploration/"
+      ],
+      "impact_scope": "module",
+      "fix_scope": "multi_file_refactor",
+      "confidence": "high"
+    }
+  },
+  "dimension_judgment": {
+    "package_organization": {
+      "strengths": [
+        "All nine package names directly reflect their contained responsibility — api/, config/, exploration/, indexer/, model/, query/, utils/, viz/ require no guesswork to navigate",
+        "DTO/service split between model/exploration/ (12 data types) and exploration/ (7 service classes) mirrors a clean ports-and-adapters boundary, making the ownership of each file unambiguous",
+        "Dependency flow is strictly directional: api → exploration/config/query → model → utils, with no bidirectional or circular edges across any directory pair",
+        "Cross-cutting types (QueryResults with 16 importers, PosGroup with 5) are correctly elevated to model/ root rather than buried in a sub-package",
+        "Technology-specific indexing concern is correctly sub-packaged as indexer/blacklab/ rather than polluting the root indexer/ namespace"
+      ],
+      "issue_character": "Issues are cosmetic and isolated — a single thin package (viz/) with one file and one importer adds an unnecessary directory indirection; no structural boundary violations or coupling-direction failures exist.",
+      "score_rationale": "The package layout is deliberate and serves navigation well: naming is clear, separation is purposeful, and no import-affinity mismatches or circular dependencies exist across the nine packages. The main weakness is the viz/ package holding exactly one file (RadialPlot.java) used only by VisualizationHandlers.java in api/, which adds a directory hop without organizational benefit. model/exploration/ at 12 files is at the 'overload' threshold but all files are cohesive exploration DTOs, so no split is warranted. This places the codebase in the 'solid but uneven' band — strong structural clarity with one cosmetic gap."
+    }
+  },
+  "issues": [
+    {
+      "dimension": "package_organization",
+      "identifier": "viz_thin_package",
+      "summary": "viz/ is a single-file package with one importer, adding navigational indirection without organizational benefit",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/viz/RadialPlot.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/api/VisualizationHandlers.java"
+      ],
+      "evidence": [
+        "viz/ contains exactly one production file: RadialPlot.java (RadialPlot is a 255-LOC SVG-generation class)",
+        "The sole importer is VisualizationHandlers.java in the api/ package: 'import pl.marcinmilkowski.word_sketch.viz.RadialPlot;'",
+        "No other package imports from viz/; fan-in is 1 across the entire codebase"
+      ],
+      "suggestion": "Stage 1 — assess growth potential: if no additional visualization classes are planned, move RadialPlot.java into api/ (as a package-private helper) or into a new api/viz/ sub-package to co-locate it with its sole consumer. Stage 2 — if RadialPlot is expected to gain siblings (e.g. D3 data builders, SVG utilities), keep viz/ but document its growth contract in viz/package-info.java. Validation commands: 'mvn compile' after moving the file and updating the package declaration + import in VisualizationHandlers.java; 'mvn test' to confirm no regressions.",
+      "confidence": "medium",
+      "impact_scope": "local",
+      "fix_scope": "multi_file_refactor"
+    }
+  ],
+  "retrospective": {
+    "root_causes": [
+      "The viz/ thin-package pattern likely reflects an early decision to isolate visualization logic that has not yet grown to justify its own package"
+    ],
+    "likely_symptoms": [],
+    "possible_false_positives": []
+  }
+}

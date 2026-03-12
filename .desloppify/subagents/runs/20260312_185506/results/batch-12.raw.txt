@@ -1,0 +1,73 @@
+{
+  "batch": "contract_coherence",
+  "batch_index": 12,
+  "assessments": {"contract_coherence": 82.0},
+  "dimension_notes": {
+    "contract_coherence": {
+      "evidence": [
+        "QueryExecutor interface precisely documents every method: return type, @NonNull/@Nullable params, declared exceptions, and edge cases (e.g., executeCollocations returns emptyList silently for null/empty lemma; executeSurfacePattern throws IllegalArgumentException when lemma cannot be extracted — both contracts are upheld in BlackLabQueryExecutor).",
+        "GrammarConfigLoader documents a two-tier exception contract explicitly at each public method: load() and fromReader() declare throws IOException; createDefaultEnglish() wraps to IllegalStateException for callers that cannot handle checked exceptions, with rationale in Javadoc.",
+        "BlackLabQueryExecutor constructor converts ErrorOpeningIndex (unchecked RuntimeException from BlackLab) to checked IOException, giving callers a predictable contract for index-open failures instead of an undocumented runtime explosion.",
+        "ExplorationService interface methods are all annotated @NonNull on both parameters and return types; SemanticFieldExplorer implements all four with matching annotations and never returns null — sentinel empty objects (ExplorationResult.empty(), ComparisonResult.empty()) substitute for null across the model layer.",
+        "CollocateQueryHelper.start() (WordSketchApiServer.start()) converts IOException to IllegalStateException without declaring it — the method signature 'public void start()' gives no indication it can throw, though a constructor comment mentions port binding is deferred.",
+        "CollocateQueryHelper has @Nullable on the 'index' field even though the production constructor is annotated @NonNull. The null state is only valid via the test-seam no-arg constructor, so the field annotation misrepresents the production invariant."
+      ],
+      "impact_scope": "module",
+      "fix_scope": "single_edit",
+      "confidence": "high"
+    }
+  },
+  "dimension_judgment": {
+    "contract_coherence": {
+      "strengths": [
+        "Interface/implementation alignment is exemplary: QueryExecutor, ExplorationService, and CollocateQueryPort all document parameter nullability, exception contracts, and edge-case return behaviour; implementations honour them precisely.",
+        "@NonNull/@Nullable annotations are used uniformly across public APIs and are respected at runtime — no method annotated @NonNull returns null in any code path I examined.",
+        "Error contract layering is explicitly documented and consistently applied: IOException at the index layer, IllegalArgumentException for bad CQL patterns, IllegalStateException for startup failures — each is documented with rationale at the declaration site.",
+        "Sentinel empty objects (ExplorationResult.empty(), ComparisonResult.empty(), Collections.emptyList()) are used instead of nullable returns across the whole exploration and query layer, making callers' lives predictable.",
+        "The narrow CollocateQueryPort interface lets API handler classes declare only what they actually use, preventing contract confusion about which query capabilities a handler depends on."
+      ],
+      "issue_character": "The two issues found are localised and minor: one undocumented unchecked throw on a lifecycle method, and one @Nullable field annotation that contradicts the production invariant established by the @NonNull constructor — both are documentation-contract gaps rather than behavioural lies.",
+      "score_rationale": "The codebase sits solidly in the 80+ range: contracts between layers are thoughtfully designed, consistently annotated, and faithfully implemented, which is uncommon at this scale. What prevents a higher score is that start() can throw IllegalStateException without any hint in its signature or Javadoc, and the @Nullable index field in CollocateQueryHelper misrepresents the production invariant even though a test-seam comment exists — both are real, if small, divergences between declared and actual contracts that a developer would need to discover by reading more than the method signature."
+    }
+  },
+  "issues": [
+    {
+      "dimension": "contract_coherence",
+      "identifier": "start_throws_undocumented",
+      "summary": "WordSketchApiServer.start() silently converts IOException to IllegalStateException with no declaration or Javadoc",
+      "related_files": ["src/main/java/pl/marcinmilkowski/word_sketch/api/WordSketchApiServer.java"],
+      "evidence": [
+        "public void start() — no throws clause and no @throws Javadoc tag",
+        "Inside start(): catch (IOException e) { throw new IllegalStateException(\"Failed to bind port \" + port, e); } — unchecked throw not surfaced in signature",
+        "Constructor comment says 'Port binding is deferred to start()' but start()'s own Javadoc says nothing about IllegalStateException"
+      ],
+      "suggestion": "Add a Javadoc @throws IllegalStateException tag to start() with the condition ('if the port cannot be bound'); alternatively declare the intent in the method-level Javadoc block so callers know to expect a runtime failure and can wrap it appropriately.",
+      "confidence": "high",
+      "impact_scope": "local",
+      "fix_scope": "single_edit"
+    },
+    {
+      "dimension": "contract_coherence",
+      "identifier": "nullable_field_vs_nonnull_constructor",
+      "summary": "CollocateQueryHelper declares 'index' as @Nullable but the production constructor annotates it @NonNull, creating a contract gap",
+      "related_files": ["src/main/java/pl/marcinmilkowski/word_sketch/query/CollocateQueryHelper.java"],
+      "evidence": [
+        "@Nullable private final BlackLabIndex index; — field declares null as a valid state",
+        "CollocateQueryHelper(@NonNull BlackLabIndex index) — production constructor rejects null via annotation contract",
+        "No-arg constructor is protected and labelled 'Not for production use', but the @Nullable field annotation describes the production invariant as nullable",
+        "requireIndex() throws IllegalStateException when index is null — runtime guard only needed because the field is nullable"
+      ],
+      "suggestion": "Keep @Nullable on the field to reflect the test-seam reality, but add a class-level Javadoc note clarifying that @Nullable on the field is a test-seam accommodation and that all production instances have a non-null index. Alternatively, refactor to a separate test subclass that does not share the nullable field, eliminating the annotation mismatch entirely.",
+      "confidence": "high",
+      "impact_scope": "local",
+      "fix_scope": "single_edit"
+    }
+  ],
+  "retrospective": {
+    "root_causes": [
+      "Both issues are documentation-contract gaps introduced when accommodating test infrastructure (test-seam constructor, deferred binding) without updating the surrounding annotations and Javadoc to reflect the non-standard states."
+    ],
+    "likely_symptoms": [],
+    "possible_false_positives": []
+  }
+}

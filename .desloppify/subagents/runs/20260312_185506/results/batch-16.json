@@ -1,0 +1,73 @@
+{
+  "batch": "cross_module_architecture",
+  "batch_index": 16,
+  "assessments": {
+    "cross_module_architecture": 80.0
+  },
+  "dimension_notes": {
+    "cross_module_architecture": {
+      "evidence": [
+        "Dependency graph is strictly unidirectional: Main → api → exploration/config → query → model/utils, with no upward or lateral cycles confirmed by import analysis.",
+        "api imports two distinct abstraction levels simultaneously: ExplorationService (domain-service interface from exploration) for complex operations, and CollocateQueryPort/QueryExecutor (infrastructure interfaces from query) for concordance and BCQL endpoints. Both are interface-based but at different layers.",
+        "CollocateQueryPort is a deliberate narrow interface (one method: executeBcqlQuery) introduced specifically to minimise the api→query dependency surface for handlers that only need concordance retrieval; ConcordanceHandlers and CorpusQueryHandlers declare it, not the broader QueryExecutor.",
+        "ExplorationService interface co-located with its sole implementation SemanticFieldExplorer in the exploration package. The api layer imports exploration.ExplorationService — this works but couples the api contract to the implementation package rather than an independent port/contract package.",
+        "viz package (RadialPlot) has no internal word_sketch imports at all; the package-info.java explicitly documents the Edge/RelationEdgeType placement decision to avoid an api→viz dependency, showing deliberate boundary reasoning.",
+        "indexer package is fully isolated from query/api/exploration; it is wired only in Main and has no internal cross-package imports.",
+        "config imports model.PosGroup — config depends on the foundational model layer, which is the expected direction.",
+        "No shared mutable state used for cross-module coordination; all inter-module communication passes through constructor-injected interfaces.",
+        "SemanticFieldExplorer (in exploration) is a thin facade coordinating three algorithm classes (SingleSeedExplorer, MultiSeedExplorer, CollocateProfileComparator), all package-private. This keeps the blast radius of algorithm changes contained within exploration."
+      ],
+      "impact_scope": "module",
+      "fix_scope": "multi_file_refactor",
+      "confidence": "high"
+    }
+  },
+  "dimension_judgment": {
+    "cross_module_architecture": {
+      "strengths": [
+        "Strictly unidirectional dependency graph with no cycles: Main wires everything; api sits on top; exploration and config in the middle; query/model/utils at the bottom.",
+        "Interfaces at every key boundary: ExplorationService (exploration ↔ api), CollocateQueryPort and QueryExecutor (query ↔ api/exploration), preventing any concrete-class coupling across package boundaries.",
+        "Package-info.java files on every package document intent and constraints; viz.package-info.java even records the explicit reasoning behind the Edge/RelationEdgeType placement to avoid an api→viz dependency.",
+        "indexer is fully isolated — wired only in Main, no inter-layer imports — keeping the corpus-indexing path cleanly separated from the query/serve path.",
+        "SemanticFieldExplorer as a documented coordination facade with three package-private algorithm delegates (SingleSeedExplorer, MultiSeedExplorer, CollocateProfileComparator) limits the blast radius of exploration algorithm changes to the exploration package."
+      ],
+      "issue_character": "The single architectural tension is that the api layer couples to two different abstraction levels simultaneously — the ExplorationService domain-service interface for exploration operations, and the CollocateQueryPort/QueryExecutor infrastructure interfaces for concordance/BCQL operations — creating an inconsistency in how api accesses query infrastructure that is pragmatic but leaves the layer model incomplete.",
+      "score_rationale": "The codebase scores solidly above the 80 'solid but uneven' anchor for this dimension. The dependency direction is exemplary — no cycles, clear documented layers, interface-based decoupling throughout, and deliberate boundary reasoning captured in package documentation. What prevents a higher score is the split access pattern in api: exploration operations go through a domain service (ExplorationService), while concordance/BCQL operations bypass the service layer and reach directly into query infrastructure via CollocateQueryPort. This is intentional and interface-bounded, but it means api carries knowledge of two abstraction depths, weakening the layer contract. The co-location of ExplorationService interface with its implementation in exploration (rather than an independent port package) is a minor secondary concern. Neither issue creates cycles or blast-radius risk, so the score stays above 75."
+    }
+  },
+  "issues": [
+    {
+      "dimension": "cross_module_architecture",
+      "identifier": "api_dual_abstraction_level",
+      "summary": "api layer accesses query infrastructure at two abstraction depths: service interface for exploration, direct port for concordance/BCQL",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/api/ConcordanceHandlers.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/api/CorpusQueryHandlers.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/api/ExplorationHandlers.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/api/WordSketchApiServer.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/exploration/ExplorationService.java"
+      ],
+      "evidence": [
+        "ExplorationHandlers declares ExplorationService (from exploration package) as its query dependency — a domain-service abstraction.",
+        "ConcordanceHandlers declares CollocateQueryPort (from query package) as its query dependency — an infrastructure-port abstraction.",
+        "CorpusQueryHandlers also declares CollocateQueryPort directly.",
+        "Both abstraction levels are interface-based and no concrete class leaks through, but api imports both pl.marcinmilkowski.word_sketch.exploration and pl.marcinmilkowski.word_sketch.query, making the layer boundary inconsistent.",
+        "WordSketchApiServer wires both ExplorationService and QueryExecutor into different handlers, cementing the split."
+      ],
+      "suggestion": "Introduce a thin application-service facade in the exploration package (or a new application package) that wraps the concordance and BCQL operations currently handled directly by ConcordanceHandlers/CorpusQueryHandlers via CollocateQueryPort. The api layer would then depend exclusively on application-service interfaces, and all query-infrastructure references would be confined to the exploration/service layer. This is a low-urgency refactor; the interface boundaries already prevent concrete coupling.",
+      "confidence": "high",
+      "impact_scope": "module",
+      "fix_scope": "multi_file_refactor",
+      "root_cause_cluster": "api_layer_boundary"
+    }
+  ],
+  "retrospective": {
+    "root_causes": [
+      "The exploration service abstraction was introduced for the complex multi-step exploration feature; simpler pass-through operations (concordance, BCQL) were not wrapped in an equivalent service layer, leaving api with two distinct coupling patterns."
+    ],
+    "likely_symptoms": [
+      "api_dual_abstraction_level"
+    ],
+    "possible_false_positives": []
+  }
+}

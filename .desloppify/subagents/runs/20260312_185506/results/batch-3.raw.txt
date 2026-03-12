@@ -1,0 +1,84 @@
+{
+  "batch": "error_consistency",
+  "batch_index": 3,
+  "assessments": {
+    "error_consistency": 72.0
+  },
+  "dimension_notes": {
+    "error_consistency": {
+      "evidence": [
+        "HttpApiUtils.wrapWithErrorHandling provides a centralized API error boundary mapping IllegalArgumentException→400, IOException→500, broad Exception→500 with logging — all handlers pass through this",
+        "BlackLabQueryExecutor constructor documents and justifies its ErrorOpeningIndex (RuntimeException) → checked IOException conversion explicitly in a block comment",
+        "query/ layer uses returns_null=9 alongside throws=9 — nulls are in BlackLabSnippetParser extraction methods (null = 'token absent in string'), throws are in query-execution methods (error = 'query failed') — semantically distinct but undocumented as a convention",
+        "config/ layer: returns_null=6 for optional field accessors, throws=15 for structural validation — mixes IllegalArgumentException (bad structure) and IllegalStateException (file-not-found at startup) without a written policy",
+        "CollocateQueryHelper.getTotalFrequency and BlackLabQueryExecutor.executeCqlQuery both catch broad RuntimeException and rewrap as IOException with caller context — consistent pattern used twice",
+        "Main.java top-level catch (Exception e) at line 64: logs the full exception, prints message to stderr, shows usage — intentional CLI boundary, not silent swallowing",
+        "No custom exception hierarchy — codebase relies on IOException + IllegalArgumentException + IllegalStateException throughout",
+        "ExplorationService interface declares throws IOException on all four methods — consistent contract that implementations honour"
+      ],
+      "impact_scope": "module",
+      "fix_scope": "multi_file_refactor",
+      "confidence": "high"
+    }
+  },
+  "dimension_judgment": {
+    "error_consistency": {
+      "strengths": [
+        "wrapWithErrorHandling in HttpApiUtils is a well-structured, centralized error boundary that consistently maps exception types to HTTP status codes across all API endpoints",
+        "BlackLab RuntimeException-to-IOException conversions are documented inline with rationale, preserving cause chains",
+        "ExplorationService interface declares throws IOException uniformly, giving the exploration layer a consistent error contract",
+        "No silent swallowing observed — all catches either rethrow with context, map to HTTP error responses, or are the intentional top-level CLI boundary"
+      ],
+      "issue_character": "The codebase has a sound layered strategy (null-for-absent extractors, IllegalArgumentException for bad input, IOException for I/O failure, centralized API boundary) but it is implicit — the null-return convention in BlackLabSnippetParser and the IllegalStateException vs IllegalArgumentException split in config/ are not documented as policy, creating navigational uncertainty for contributors.",
+      "score_rationale": "The error strategy is architecturally coherent: clear boundaries, no context loss at rethrow sites, no silent swallowing, and a reliable API-layer catch-all. This places the codebase above the mid-50s 'chaotic mix' range. It falls short of the 80s because the null-for-absent vs throw-for-error convention in the query/parser layer is undocumented, the config layer mixes two exception types for startup vs validation failures without a written rationale, and there is no custom exception hierarchy to make the strategy machine-checkable or self-documenting."
+    }
+  },
+  "issues": [
+    {
+      "dimension": "error_consistency",
+      "identifier": "undocumented_null_extractor_convention",
+      "summary": "BlackLabSnippetParser returns null for absent tokens with no documented contract, mixing silently with throwing callers in the same query layer",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/query/BlackLabSnippetParser.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/query/BlackLabQueryExecutor.java"
+      ],
+      "evidence": [
+        "BlackLabSnippetParser has 9 return-null sites for absent/malformed tokens (e.g., extractPosFromMatch, extractCollocateFromXmlByPosition, safeParts)",
+        "BlackLabQueryExecutor.collectFrequenciesAndPosFromGroups explicitly guards against null returns ('if (lemma == null || lemma.isEmpty()) continue') — the null contract is known to callers but not stated in Javadoc",
+        "query/ directory-level scan shows returns_null=9 alongside throws=9, signalling two coexisting strategies without a documented dividing line"
+      ],
+      "suggestion": "Add Javadoc to BlackLabSnippetParser extractor methods explicitly declaring '@return null if the token is absent or the input is malformed', and add a class-level contract note distinguishing extractors (null-or-value) from query methods (throw-on-error). This makes the convention explicit and prevents future methods from throwing where null is expected or vice versa.",
+      "confidence": "medium",
+      "impact_scope": "module",
+      "fix_scope": "single_edit"
+    },
+    {
+      "dimension": "error_consistency",
+      "identifier": "config_exception_type_split_undocumented",
+      "summary": "GrammarConfigLoader uses IllegalStateException for file-not-found and IllegalArgumentException for structural errors with no documented rationale for the split",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/config/GrammarConfigLoader.java"
+      ],
+      "evidence": [
+        "Lines 263-267: FileNotFoundException wrapped as IllegalStateException('default grammar config not found'), while structural validation at line 123+ uses IllegalArgumentException — two exception types for two failure modes",
+        "config/ directory scan shows throws=15, returns_null=6 — the null returns are for optional fields but the exception-type split for non-optional failures is not annotated",
+        "Callers in Main.java catch IllegalArgumentException and IllegalStateException separately (lines 237, 243), so the split is load-bearing but requires callers to know the undocumented convention"
+      ],
+      "suggestion": "Add a Javadoc section on GrammarConfigLoader (or a package-info.java) documenting the exception policy: IllegalStateException for filesystem/startup failures (config file missing/unreadable), IllegalArgumentException for content/structural validation failures. This makes the catch hierarchy in Main.java self-explanatory.",
+      "confidence": "medium",
+      "impact_scope": "module",
+      "fix_scope": "single_edit"
+    }
+  ],
+  "retrospective": {
+    "root_causes": [
+      "Layer-appropriate error strategy was applied consistently in practice but never codified as a written policy, so the conventions are implicit and contributor-dependent",
+      "Reliance on three standard JDK exception types (IOException, IllegalArgumentException, IllegalStateException) without a custom hierarchy means the strategy cannot be verified statically or discovered via type hierarchy"
+    ],
+    "likely_symptoms": [
+      "undocumented_null_extractor_convention",
+      "config_exception_type_split_undocumented"
+    ],
+    "possible_false_positives": []
+  }
+}

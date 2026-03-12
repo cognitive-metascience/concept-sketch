@@ -10,7 +10,6 @@ import pl.marcinmilkowski.word_sketch.config.RelationUtils;
 import pl.marcinmilkowski.word_sketch.model.exploration.ComparisonResult;
 import pl.marcinmilkowski.word_sketch.model.exploration.ExplorationResult;
 import pl.marcinmilkowski.word_sketch.model.exploration.FetchExamplesResult;
-import pl.marcinmilkowski.word_sketch.model.QueryResults;
 import pl.marcinmilkowski.word_sketch.model.exploration.ExplorationOptions;
 import pl.marcinmilkowski.word_sketch.model.exploration.SingleSeedExplorationOptions;
 import pl.marcinmilkowski.word_sketch.exploration.ExplorationService;
@@ -82,9 +81,8 @@ class ExplorationHandlers {
 
         ExplorationResult result = semanticFieldExplorer.exploreByPattern(seed, resolvedConfig, opts);
 
-        Map<String, Object> response = buildExploreResponseEnvelope(
-            resolvedConfig.id(), commonParams,
-            Map.of("nouns_per", nounsPerSeed), Map.of("seed", result.seed()));
+        Map<String, Object> response = buildSingleSeedResponseEnvelope(
+            resolvedConfig.id(), commonParams, nounsPerSeed, result.seed());
         ExploreResponseAssembler.populateExploreResponse(response, result);
 
         HttpApiUtils.sendJsonResponse(exchange, response);
@@ -121,9 +119,8 @@ class ExplorationHandlers {
             commonParams.topCollocates(), commonParams.minLogDice(), commonParams.minShared());
         ExplorationResult result = semanticFieldExplorer.exploreMultiSeed(seeds, resolvedConfig, opts);
 
-        Map<String, Object> response = buildExploreResponseEnvelope(
-            resolvedConfig.id(), commonParams,
-            Map.of(), Map.of("seeds", result.seeds(), "seed_count", result.seeds().size()));
+        Map<String, Object> response = buildMultiSeedResponseEnvelope(
+            resolvedConfig.id(), commonParams, result.seeds());
 
         ExploreResponseAssembler.populateExploreResponse(response, result);
 
@@ -165,9 +162,8 @@ class ExplorationHandlers {
             commonParams.topCollocates(), commonParams.minLogDice(), commonParams.minShared());
         ComparisonResult result = semanticFieldExplorer.compareCollocateProfiles(seeds, opts);
 
-        Map<String, Object> response = buildExploreResponseEnvelope(
-            CROSS_RELATIONAL, commonParams,
-            Map.of(), Map.of("seeds", new ArrayList<>(result.nouns()), "seed_count", result.nouns().size()));
+        Map<String, Object> response = buildMultiSeedResponseEnvelope(
+            CROSS_RELATIONAL, commonParams, new ArrayList<>(result.nouns()));
         ExploreResponseAssembler.populateComparisonResponse(response, result);
 
         HttpApiUtils.sendJsonResponse(exchange, response);
@@ -195,35 +191,48 @@ class ExplorationHandlers {
         int top = HttpApiUtils.parseIntParam(params, "top", 10);
         FetchExamplesResult fetched = semanticFieldExplorer.fetchExamples(seed, collocate, resolvedConfig, top);
 
-        List<Map<String, Object>> exampleMaps = fetched.examples().stream()
-            .map(ExploreResponseAssembler::collocateResultToExampleMap)
-            .toList();
-
-        Map<String, Object> response = new HashMap<>();
-        response.put("status", "ok");
-        response.put("seed", seed);
-        response.put("collocate", collocate);
-        response.put("relation", resolvedConfig.id());
-        response.put("bcql", fetched.bcqlPattern());
-        response.put("top", top);
-        response.put("total_results", exampleMaps.size());
-        response.put("examples", exampleMaps);
+        ExamplesResponse response = ExploreResponseAssembler.buildExamplesResponse(
+                seed, collocate, resolvedConfig.id(), fetched.bcqlPattern(), top, null, fetched.examples());
 
         HttpApiUtils.sendJsonResponse(exchange, response);
     }
 
     /**
-     * Builds the response envelope: {@code status}, a {@code parameters}
-     * sub-map containing the four common explore parameters plus any extra param fields
-     * (e.g., {@code nouns_per} for single-seed exploration), and the top-level
-     * variant fields (e.g., {@code seed}, {@code seeds}, {@code seed_count}).
+     * Builds the response envelope for single-seed exploration ({@code /api/semantic-field/explore}).
      *
-     * <p>{@code extraParamFields} entries land inside the {@code parameters} sub-map;
-     * {@code topLevelFields} entries land at the top level of the response envelope.</p>
+     * <p>Puts {@code nouns_per} inside the {@code parameters} sub-map and {@code seed} at the
+     * top level of the response envelope.</p>
      */
-    private Map<String, Object> buildExploreResponseEnvelope(
-            String relationType, SharedExploreParams params,
-            Map<String, Object> extraParamFields, Map<String, Object> topLevelFields) {
+    private Map<String, Object> buildSingleSeedResponseEnvelope(
+            String relationType, SharedExploreParams params, int nounsPerSeed, String seed) {
+        Map<String, Object> response = buildBaseResponseEnvelope(relationType, params);
+        @SuppressWarnings("unchecked")
+        Map<String, Object> paramsUsed = (Map<String, Object>) response.get("parameters");
+        paramsUsed.put("nouns_per", nounsPerSeed);
+        response.put("seed", seed);
+        return response;
+    }
+
+    /**
+     * Builds the response envelope for multi-seed exploration and comparison endpoints
+     * ({@code /api/semantic-field/explore-multi} and {@code /api/semantic-field/compare}).
+     *
+     * <p>Puts {@code seeds} and {@code seed_count} at the top level of the response envelope.</p>
+     */
+    private Map<String, Object> buildMultiSeedResponseEnvelope(
+            String relationType, SharedExploreParams params, List<?> seeds) {
+        Map<String, Object> response = buildBaseResponseEnvelope(relationType, params);
+        response.put("seeds", seeds);
+        response.put("seed_count", seeds.size());
+        return response;
+    }
+
+    /**
+     * Builds the common skeleton shared by all explore response envelopes: {@code status "ok"}
+     * and the {@code parameters} sub-map ({@code relation}, {@code top}, {@code min_shared},
+     * {@code min_logdice}).  Caller adds any variant fields on top.
+     */
+    private Map<String, Object> buildBaseResponseEnvelope(String relationType, SharedExploreParams params) {
         Map<String, Object> response = new HashMap<>();
         response.put("status", "ok");
 
@@ -232,10 +241,8 @@ class ExplorationHandlers {
         paramsUsed.put("top", params.topCollocates());
         paramsUsed.put("min_shared", params.minShared());
         paramsUsed.put("min_logdice", params.minLogDice());
-        paramsUsed.putAll(extraParamFields);
         response.put("parameters", paramsUsed);
 
-        response.putAll(topLevelFields);
         return response;
     }
 

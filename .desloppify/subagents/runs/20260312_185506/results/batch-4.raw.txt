@@ -1,0 +1,92 @@
+{
+  "batch": "naming_quality",
+  "batch_index": 4,
+  "assessments": {"naming_quality": 78.0},
+  "dimension_notes": {
+    "naming_quality": {
+      "evidence": [
+        "BlackLabQueryExecutor uses five precisely differentiated execute* methods: executeCollocations, executeCqlQuery, executeBcqlQuery, executeSurfacePattern, executeDependencyPattern — each name tells you exactly which query mode is used",
+        "HTTP handler classes name all public methods with handle* prefix (handleConcordanceExamples, handleSemanticFieldExplore, handleSemanticFieldExploreMulti, handleSemanticFieldComparison, handleSemanticFieldExamples) — appropriate in handler context, not generic",
+        "RelationEdgeType enum constants use 'COLLOCATE' vocabulary (SEED_COLLOCATE, DISCOVERED_COLLOCATE) but serialized labels use 'adj' vocabulary (seed_adj, discovered_adj) — divergent terminology for the same concept across the Java API and the JSON API",
+        "ExplorationService.exploreByPattern takes a RelationConfig parameter; 'ByPattern' suffix is underspecified — callers cannot tell from the name alone whether pattern refers to a grammar pattern, a search pattern, or an exploration strategy; exploreByRelation or exploreWithRelation would communicate the parameter role",
+        "CollocateProfileComparator stores an adjective-specific CQL constraint ([xpos=\"JJ.*\"]) in a field named collocatePattern; the adjective specificity is invisible from the name; adjCollocatePattern or adjPattern would be accurate",
+        "ExploreResponseAssembler uses abbreviated locals c and nm for Map<String,Object> representing a collocate map and a noun map respectively; these are not standard abbreviations and require reading surrounding context to decode",
+        "Phase-labeled private methods buildRawCollocateProfiles and buildCollocateProfileList in CollocateProfileComparator, together with inline comments 'Phase 1' and 'Phase 2', give a clear named decomposition of the algorithm"
+      ],
+      "impact_scope": "module",
+      "fix_scope": "multi_file_refactor",
+      "confidence": "high"
+    }
+  },
+  "dimension_judgment": {
+    "naming_quality": {
+      "strengths": [
+        "execute* method family in BlackLabQueryExecutor is highly differentiated: each name encodes the specific query mode (CQL vs BCQL vs surface pattern vs dependency pattern vs collocation), eliminating guesswork about dispatch semantics",
+        "handle* prefix on every HTTP handler method is consistent across ConcordanceHandlers, ExplorationHandlers, and SketchHandlers — expected naming for handler classes, not a generic verb smell",
+        "Record types (ConcordanceExamplesRequest, SharedExploreParams) accurately describe their shape and scope; no 'Data', 'Info', or 'Dto' suffixes masking the actual content",
+        "ExploreResponseAssembler uses explicit verb-noun names: buildExplorationEdges, buildComparisonEdges, populateExploreResponse, formatSeedCollocates, formatDiscoveredNouns — all of which commit to a specific transformation",
+        "Phase-labelled methods buildRawCollocateProfiles / buildCollocateProfileList give CollocateProfileComparator a readable two-phase narrative reinforced by inline comments"
+      ],
+      "issue_character": "Issues are isolated vocabulary inconsistencies — one enum whose Java constant names diverge from its serialized labels, one interface method whose 'ByPattern' suffix obscures the RelationConfig parameter role, and one field whose generic name hides adjective specificity — rather than systemic over-use of generic verbs or pervasive abbreviation.",
+      "score_rationale": "The codebase sits above the 'solid but uneven' threshold: the core query and HTTP layers have exemplary method naming, and there are no generic process/handle/do/run antipatterns in non-handler code. What pulls the score below 85 are three concrete vocabulary mismatches — the RelationEdgeType enum's Java-vs-JSON terminology split, the underspecified exploreByPattern name, and the adjective-specific pattern stored under the generic collocatePattern name — that would require a developer to cross-reference code before understanding the distinction. These are fixable single-edit issues but they recur across the public interface boundary (ExplorationService) and the serialization boundary (RelationEdgeType), giving them slightly more than local scope."
+    }
+  },
+  "issues": [
+    {
+      "dimension": "naming_quality",
+      "identifier": "relation_edge_type_label_divergence",
+      "summary": "RelationEdgeType enum constants use 'COLLOCATE' but serialized labels use '_adj', creating a vocabulary split between Java and JSON layers",
+      "related_files": ["src/main/java/pl/marcinmilkowski/word_sketch/model/exploration/RelationEdgeType.java"],
+      "evidence": [
+        "Enum constant SEED_COLLOCATE has label \"seed_adj\"; constant DISCOVERED_COLLOCATE has label \"discovered_adj\"",
+        "The Javadoc on each constant says 'Collocate of a seed noun' and 'Collocate of a discovered noun' — matching the Java name — but the JSON consumers receive _adj suffixed strings",
+        "MODIFIER maps to label \"modifier\" — consistent between Java and JSON — making the divergence in the first two constants more noticeable"
+      ],
+      "suggestion": "Align the Java constant names with their labels: rename SEED_COLLOCATE to SEED_ADJ and DISCOVERED_COLLOCATE to DISCOVERED_ADJ, or conversely change the labels to 'seed_collocate' and 'discovered_collocate' if the serialized API allows it. The former is preferable if only adjective collocates are currently represented; the latter if future generalisation to non-adjective collocates is planned.",
+      "confidence": "high",
+      "impact_scope": "module",
+      "fix_scope": "single_edit"
+    },
+    {
+      "dimension": "naming_quality",
+      "identifier": "explore_by_pattern_underspecified",
+      "summary": "ExplorationService.exploreByPattern 'ByPattern' suffix is underspecified — the method takes a RelationConfig, not a raw pattern string",
+      "related_files": ["src/main/java/pl/marcinmilkowski/word_sketch/exploration/ExplorationService.java"],
+      "evidence": [
+        "Signature: ExplorationResult exploreByPattern(String seed, RelationConfig relationConfig, SingleSeedExplorationOptions opts)",
+        "The parameter is a RelationConfig object, not a pattern string; 'ByPattern' misleads callers into thinking a raw CQL/BCQL pattern is accepted",
+        "Sibling method exploreMultiSeed does not use a 'ByPattern' suffix despite also accepting a RelationConfig — naming is inconsistent between the two"
+      ],
+      "suggestion": "Rename to exploreByRelation or exploreSingleSeed to match its actual parameter (RelationConfig) and distinguish it clearly from exploreMultiSeed.",
+      "confidence": "high",
+      "impact_scope": "module",
+      "fix_scope": "multi_file_refactor"
+    },
+    {
+      "dimension": "naming_quality",
+      "identifier": "collocation_pattern_field_generic_name",
+      "summary": "CollocateProfileComparator.collocatePattern field stores an adjective-specific CQL constraint but is named as if it accepts any collocate type",
+      "related_files": ["src/main/java/pl/marcinmilkowski/word_sketch/exploration/CollocateProfileComparator.java"],
+      "evidence": [
+        "Field declaration: private final String collocatePattern",
+        "FALLBACK_COLLOCATE_PATTERN constant is \"[xpos=\\\"JJ.*\\\"]\", an adjective-only POS constraint",
+        "deriveCollocatePattern also uses the generic name despite fetching a best-match adjective pattern via RelationUtils.findBestCollocatePattern(grammarConfig, PosGroup.ADJ, ...)"
+      ],
+      "suggestion": "Rename the field and its derivation method to adjCollocatePattern and deriveAdjCollocatePattern; rename FALLBACK_COLLOCATE_PATTERN to FALLBACK_ADJ_PATTERN to make the adjective specificity explicit.",
+      "confidence": "medium",
+      "impact_scope": "local",
+      "fix_scope": "single_edit"
+    }
+  ],
+  "retrospective": {
+    "root_causes": [
+      "Vocabulary was established incrementally: the exploration subsystem originally worked only with adjectives, so enum labels and field names use 'adj'; later generalisation added 'collocate' vocabulary to the Java layer without updating the serialized labels",
+      "Interface method naming did not track parameter type evolution: exploreByPattern may have been named when the parameter was a raw pattern string and the name was not updated when it became a RelationConfig"
+    ],
+    "likely_symptoms": [
+      "relation_edge_type_label_divergence",
+      "explore_by_pattern_underspecified"
+    ],
+    "possible_false_positives": []
+  }
+}

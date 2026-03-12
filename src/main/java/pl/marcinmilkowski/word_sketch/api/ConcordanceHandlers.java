@@ -11,7 +11,6 @@ import pl.marcinmilkowski.word_sketch.config.RelationUtils;
 import pl.marcinmilkowski.word_sketch.query.CollocateQueryPort;
 
 import java.io.IOException;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -65,19 +64,9 @@ class ConcordanceHandlers {
             results = executor.executeBcqlQuery(bcqlQuery, req.top());
         }
 
-        Map<String, Object> response = new HashMap<>();
-        response.put("status", "ok");
-        response.put("seed", req.seed());
-        response.put("collocate", req.collocate());
-        response.put("relation", req.relation());
-        response.put("bcql", bcqlQuery);
-        response.put("top", req.top());
-        response.put("total_results", results.size());
-        if (fallback) {
-            response.put("fallback", true);
-        }
-
-        response.put("examples", results.stream().map(ExploreResponseAssembler::collocateResultToExampleMap).toList());
+        ExamplesResponse response = ExploreResponseAssembler.buildExamplesResponse(
+                req.seed(), req.collocate(), req.relation(), bcqlQuery,
+                req.top(), fallback ? true : null, results);
 
         HttpApiUtils.sendJsonResponse(exchange, response);
     }

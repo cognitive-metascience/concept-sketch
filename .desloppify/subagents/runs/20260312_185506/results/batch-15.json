@@ -1,0 +1,86 @@
+{
+  "batch": "design_coherence",
+  "batch_index": 15,
+  "assessments": {
+    "design_coherence": 84.0
+  },
+  "dimension_notes": {
+    "design_coherence": {
+      "evidence": [
+        "ExplorationHandlers has focused per-endpoint handler methods; shared logic extracted into parseSharedExploreParams, resolveRelationConfig, and a three-tier response envelope builder hierarchy (buildBaseResponseEnvelope -> buildSingleSeedResponseEnvelope / buildMultiSeedResponseEnvelope)",
+        "Private records ConcordanceExamplesRequest and SharedExploreParams keep parameter grouping semantically meaningful rather than structural",
+        "SemanticFieldExplorer is documented and implemented as a thin coordination facade delegating to SingleSeedExplorer, MultiSeedExplorer, and CollocateProfileComparator — each with a single responsibility",
+        "buildSingleSeedResponseEnvelope retrieves the 'parameters' nested map from the already-built response via @SuppressWarnings(\"unchecked\") cast (ExplorationHandlers.java line 221) — a minor structural awkwardness caused by the base builder not returning the sub-map it constructs",
+        "CollocateProfileComparator has coherent single responsibility: build raw profiles, compute scores, return results — with well-named private phase methods",
+        "BlackLabQueryExecutor delegates collocate logic to CollocateQueryHelper, keeping itself focused on index lifecycle and dispatch"
+      ],
+      "impact_scope": "local",
+      "fix_scope": "single_edit",
+      "confidence": "medium"
+    }
+  },
+  "dimension_judgment": {
+    "design_coherence": {
+      "strengths": [
+        "Handler classes are sharply focused: ConcordanceHandlers handles exactly one endpoint, ExplorationHandlers handles four related exploration endpoints with shared helper extraction",
+        "Private records (ConcordanceExamplesRequest, SharedExploreParams) encode parameter groupings that have genuine independent semantic meaning rather than being groupings-for-grouping's-sake",
+        "SemanticFieldExplorer acts as a documented, intentional facade that insulates the HTTP layer from the three underlying algorithm classes — delegation density is appropriate",
+        "CollocateProfileComparator cleanly separates its two phases (profile collection and profile scoring) into private methods with clear names",
+        "Response envelope construction uses a three-tier builder hierarchy (base -> single-seed variant / multi-seed variant) rather than repeating the common structure in each handler"
+      ],
+      "issue_character": "Issues are isolated and structural rather than systemic: one minor response-builder awkwardness (the @SuppressWarnings unchecked cast retrieving a nested map the base builder already owns) is the only concrete design friction; all boilerplate signals are false positives from the mechanical scanner.",
+      "score_rationale": "The codebase sits in the solid-but-uneven range: functions are well-focused, abstractions are earned, and delegation patterns are consistent across the exploration subsystem. The single structural wart — buildSingleSeedResponseEnvelope retrieving the 'parameters' sub-map via an unchecked cast from a Map<String,Object> it didn't build — is a localized design awkwardness that a developer would notice when modifying the response envelope, but it doesn't recur elsewhere and doesn't impede understanding of any other part of the code. That keeps the score just below the 90 threshold where a developer would 'trust what they see with only minor friction.'"
+    }
+  },
+  "issues": [
+    {
+      "dimension": "design_coherence",
+      "identifier": "response_envelope_unchecked_cast",
+      "summary": "buildSingleSeedResponseEnvelope retrieves nested 'parameters' map via @SuppressWarnings unchecked cast it could avoid",
+      "related_files": ["src/main/java/pl/marcinmilkowski/word_sketch/api/ExplorationHandlers.java"],
+      "evidence": [
+        "Line 221: @SuppressWarnings(\"unchecked\") Map<String, Object> paramsUsed = (Map<String, Object>) response.get(\"parameters\"); — the sub-map was just created inside buildBaseResponseEnvelope and stored untyped into the outer Map<String,Object>, forcing a cast back out",
+        "buildBaseResponseEnvelope puts paramsUsed into response but returns only the outer map, so callers that need to extend paramsUsed must retrieve it via an untyped get() and cast"
+      ],
+      "suggestion": "Change buildBaseResponseEnvelope to return a small pair or a dedicated record (e.g. ResponseEnvelope(Map<String,Object> response, Map<String,Object> parameters)) so that buildSingleSeedResponseEnvelope can add to parameters directly without a cast. Alternatively, accept an optional Consumer<Map<String,Object>> lambda for parameter post-processing.",
+      "confidence": "medium",
+      "impact_scope": "local",
+      "fix_scope": "single_edit"
+    },
+    {
+      "concern_verdict": "dismissed",
+      "concern_fingerprint": "4e607fb426fb6cea",
+      "reasoning": "The flagged 8-line window at line 1 of each handler file is Java package declaration plus import preamble — unavoidable per-file boilerplate with no extractable duplication"
+    },
+    {
+      "concern_verdict": "dismissed",
+      "concern_fingerprint": "f7a5ad6196931e4d",
+      "reasoning": "The overlap between ExplorationHandlers.java:3 and SemanticFieldExplorer.java:7 is import-statement boilerplate; both files independently import the same annotation package as needed by their own APIs"
+    },
+    {
+      "concern_verdict": "dismissed",
+      "concern_fingerprint": "f3a9327d16d6dc44",
+      "reasoning": "The overlap between CollocateProfileComparator.java:7 and SemanticFieldExplorer.java:6 is import-block boilerplate; both files operate over the same model types and the imports are necessary for each"
+    },
+    {
+      "concern_verdict": "dismissed",
+      "concern_fingerprint": "6c1b1000b5e4d8b7",
+      "reasoning": "ExplorationService is an interface and SemanticFieldExplorer is its implementation; method signatures are expected to match — the 20-line window captures interface method declarations repeated as implementations, which is correct Java structure"
+    },
+    {
+      "concern_verdict": "dismissed",
+      "concern_fingerprint": "6bde7507387d2554",
+      "reasoning": "src/main/java/pl/marcinmilkowski/word_sketch/viz/RelationEdgeType.java does not exist; the duplicate has already been removed; only model/exploration/RelationEdgeType.java remains"
+    },
+    {
+      "concern_verdict": "dismissed",
+      "concern_fingerprint": "261f36e103286590",
+      "reasoning": "The 6-line overlap between BlackLabQueryExecutor.java:15 and CollocateQueryHelper.java:20 is BlackLab import block boilerplate; both classes need these same BlackLab types and the imports are necessary per-class"
+    }
+  ],
+  "retrospective": {
+    "root_causes": ["Mechanical boilerplate_duplication detector cannot distinguish import-block overlap from structural code duplication — all 5 dismissed signals are import or interface/implementation mirrors"],
+    "likely_symptoms": [],
+    "possible_false_positives": ["4e607fb426fb6cea", "f7a5ad6196931e4d", "f3a9327d16d6dc44", "6c1b1000b5e4d8b7", "6bde7507387d2554", "261f36e103286590"]
+  }
+}
