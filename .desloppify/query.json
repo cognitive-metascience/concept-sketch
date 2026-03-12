@@ -1,39 +1,39 @@
 {
   "command": "resolve",
   "patterns": [
-    "77f13cec"
+    "d3628897"
   ],
   "status": "fixed",
   "resolved": [
-    "review::.::holistic::high_level_elegance::semantic_field_explorer_not_abstracted::77f13cec"
+    "review::.::holistic::cross_module_architecture::api_calls_relpatternbuilder::d3628897"
   ],
   "count": 1,
   "next_command": "desloppify next",
-  "overall_score": 78.4,
+  "overall_score": 79.6,
   "objective_score": 99.5,
-  "strict_score": 78.4,
+  "strict_score": 79.6,
   "verified_strict_score": 99.5,
-  "prev_overall_score": 78.4,
+  "prev_overall_score": 79.6,
   "prev_objective_score": 99.5,
-  "prev_strict_score": 78.4,
+  "prev_strict_score": 79.6,
   "prev_verified_strict_score": 99.5,
-  "attestation": "I have actually Extracted ExplorationService interface; SEF implements it and I am not gaming the score.",
+  "attestation": "I have actually Fixed in round-32; all issues addressed in code, all 267 tests pass. and I am not gaming the score.",
   "narrative": {
     "phase": "middle_grind",
     "headline": "\u26a0 2 security issues \u2014 review before other cleanup. All T1 items cleared!",
     "dimensions": {
       "lowest_dimensions": [
         {
-          "name": "Type Discipline",
-          "strict": 43.6,
+          "name": "Test strategy",
+          "strict": 53.2,
           "failing": 0,
           "impact": 0.0,
           "subjective": true,
           "impact_description": "re-review to improve"
         },
         {
-          "name": "Stale Migration",
-          "strict": 51.2,
+          "name": "Cross-module arch",
+          "strict": 54.7,
           "failing": 0,
           "impact": 0.0,
           "subjective": true,
@@ -41,7 +41,7 @@
         },
         {
           "name": "Type safety",
-          "strict": 54.0,
+          "strict": 60.6,
           "failing": 0,
           "impact": 0.0,
           "subjective": true,
@@ -56,44 +56,68 @@
           "stuck_scans": 5
         },
         {
+          "name": "Security",
+          "strict": 98.1,
+          "stuck_scans": 5
+        },
+        {
           "name": "File health",
           "strict": 100.0,
           "stuck_scans": 5
         },
         {
-          "name": "Definition Directness",
-          "strict": 56.7,
+          "name": "Logic clarity",
+          "strict": 70.9,
+          "stuck_scans": 5
+        },
+        {
+          "name": "Contracts",
+          "strict": 68.7,
+          "stuck_scans": 5
+        },
+        {
+          "name": "Error consistency",
+          "strict": 80.4,
+          "stuck_scans": 5
+        },
+        {
+          "name": "AI generated debt",
+          "strict": 79.4,
+          "stuck_scans": 5
+        },
+        {
+          "name": "Init coupling",
+          "strict": 84.5,
+          "stuck_scans": 5
+        },
+        {
+          "name": "Convention drift",
+          "strict": 75.8,
+          "stuck_scans": 5
+        },
+        {
+          "name": "API coherence",
+          "strict": 63.3,
+          "stuck_scans": 5
+        },
+        {
+          "name": "Auth consistency",
+          "strict": 81.6,
+          "stuck_scans": 5
+        },
+        {
+          "name": "Design coherence",
+          "strict": 76.3,
           "stuck_scans": 5
         },
         {
           "name": "Delegation Density",
           "strict": 67.1,
           "stuck_scans": 5
-        },
-        {
-          "name": "Type Discipline",
-          "strict": 43.6,
-          "stuck_scans": 5
-        },
-        {
-          "name": "Stale Migration",
-          "strict": 51.2,
-          "stuck_scans": 5
         }
       ]
     },
     "actions": [
-      {
-        "type": "manual_fix",
-        "detector": "stale_wontfix",
-        "count": 1,
-        "description": "1 stale_wontfix issues \u2014 re-evaluate old wontfix decisions \u2014 fix, document, or escalate",
-        "command": "desloppify show stale_wontfix --status open",
-        "impact": 0.0,
-        "dimension": "Unknown",
-        "priority": 1,
-        "lane": "refactor_0"
-      },
       {
         "type": "manual_fix",
         "detector": "stale_exclude",
@@ -102,8 +126,8 @@
         "command": "desloppify show stale_exclude --status open",
         "impact": 0.0,
         "dimension": "Code quality",
-        "priority": 2,
-        "lane": "refactor_1"
+        "priority": 1,
+        "lane": "refactor_0"
       },
       {
         "type": "manual_fix",
@@ -113,14 +137,14 @@
         "command": "desloppify show security --status open",
         "impact": 0.0,
         "dimension": "Security",
-        "priority": 3,
-        "lane": "refactor_2"
+        "priority": 2,
+        "lane": "refactor_1"
       }
     ],
     "strategy": {
       "fixer_leverage": {
         "auto_fixable_count": 0,
-        "total_count": 8,
+        "total_count": 7,
         "coverage": 0.0,
         "impact_ratio": 0.0,
         "recommendation": "none"
@@ -130,7 +154,7 @@
           "actions": [
             1
           ],
-          "file_count": 1,
+          "file_count": 5,
           "total_impact": 0.0,
           "automation": "manual",
           "run_first": false
@@ -138,15 +162,6 @@
         "refactor_1": {
           "actions": [
             2
-          ],
-          "file_count": 5,
-          "total_impact": 0.0,
-          "automation": "manual",
-          "run_first": false
-        },
-        "refactor_2": {
-          "actions": [
-            3
           ],
           "file_count": 1,
           "total_impact": 0.0,
@@ -178,15 +193,15 @@
     },
     "debt": {
       "overall_gap": 0.0,
-      "wontfix_count": 193,
+      "wontfix_count": 200,
       "worst_dimension": null,
       "worst_gap": 0.0,
       "trend": "shrinking"
     },
     "milestone": "All T1 items cleared!",
     "primary_action": {
-      "command": "desloppify show stale_wontfix --status open",
-      "description": "1 stale_wontfix issues \u2014 re-evaluate old wontfix decisions \u2014 fix, document, or escalate"
+      "command": "desloppify show stale_exclude --status open",
+      "description": "5 stale_exclude issues \u2014 remove stale exclusion or verify it's still needed"
     },
     "why_now": "Work through actions in priority order. Rescan after each fix to track progress.",
     "verification_step": {
@@ -197,13 +212,13 @@
       {
         "type": "wontfix_gap",
         "severity": "high",
-        "message": "Strict/lenient gap is 0.0 pts with 193 wontfix issues"
+        "message": "Strict/lenient gap is 0.0 pts with 200 wontfix issues"
       }
     ],
     "strict_target": {
       "target": 95.0,
-      "current": 78.4,
-      "gap": 16.6,
+      "current": 79.6,
+      "gap": 15.4,
       "state": "below",
       "warning": null
     },
@@ -225,7 +240,7 @@
     ],
     "reminder_history": {
       "zone_classification": 3,
-      "report_scores": 39,
+      "report_scores": 40,
       "review_issues_pending": 3,
       "feedback_nudge": 3,
       "wontfix_growing": 1,

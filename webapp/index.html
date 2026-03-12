@@ -1541,7 +1541,7 @@
             document.getElementById('semanticDetails').innerHTML = '';
             
             try {
-                const url = `${apiUrl}/api/semantic-field?nouns=${encodeURIComponent(nouns)}&min_logdice=${minLogDice}&max_per_noun=${maxPerNoun}`;
+                const url = `${apiUrl}/api/semantic-field/compare?seeds=${encodeURIComponent(nouns)}&min_logdice=${minLogDice}&top=${maxPerNoun}`;
                 const response = await fetch(url);
                 
                 if (!response.ok) {

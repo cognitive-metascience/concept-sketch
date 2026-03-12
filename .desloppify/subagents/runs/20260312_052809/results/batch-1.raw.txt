@@ -1,0 +1,76 @@
+{
+  "batch": "abstraction_fitness",
+  "batch_index": 1,
+  "assessments": {
+    "abstraction_fitness": 84.0
+  },
+  "dimension_notes": {
+    "abstraction_fitness": {
+      "evidence": [
+        "QueryExecutor interface Javadoc explicitly labels it 'primarily a testability seam rather than an abstraction boundary', notes the single production implementation, and records the rationale for deferring a split — this is honest interface documentation, not inadvertent single-impl proliferation",
+        "SemanticFieldExplorer.exploreMultiSeed (line ~356) is a one-liner that unwraps ExplorationOptions into three scalar params and forwards to MultiSeedExplorer.findCollocateIntersection — no added behavior, policy, or translation at the facade level",
+        "SemanticFieldExplorer.compareCollocateProfiles (line ~315) is similarly a direct forward to CollocateProfileComparator.compareCollocateProfiles after unwrapping opts.minLogDice() and opts.topCollocates() — the facade contributes no logic for these two of four interface methods",
+        "ExplorationService interface documents its single implementation with only 'Implemented by SemanticFieldExplorer' — much thinner than QueryExecutor's full design rationale paragraph; a developer cannot tell from ExplorationService alone whether the single-impl is intentional",
+        "API handler decomposition into 5 focused classes (SketchHandlers, ExplorationHandlers, ConcordanceHandlers, CorpusQueryHandlers, VisualizationHandlers) is purposeful — each owns a narrow slice of the API surface",
+        "ExploreResponseAssembler contains genuine presentation translation logic (buildExplorationEdges, formatSeedCollocates, formatDiscoveredNouns, formatCoreCollocates, serializeEdge) — not a pass-through, every method performs real model-to-map conversion",
+        "Config concern separation: GrammarConfigLoader (file I/O + parsing), GrammarConfigSerializer (JSON serialization), RelationConfig (data record), RelationPatternBuilder (pattern construction) — four classes each owning exactly one concern with no cross-bleeding",
+        "HttpApiUtils co-locates response-writing and request-parameter-parsing concerns with explicit Javadoc justification ('both sets serve a single concern — handling the HTTP layer') — justified rather than a dumping ground",
+        "No delegation-heavy classes and no facade/re-export modules detected (scan confirmed 0 for both categories)"
+      ],
+      "impact_scope": "module",
+      "fix_scope": "multi_file_refactor",
+      "confidence": "medium",
+      "sub_axes": {
+        "abstraction_leverage": 88.0,
+        "indirection_cost": 82.0,
+        "interface_honesty": 83.0,
+        "delegation_density": 96.0,
+        "definition_directness": 91.0,
+        "type_discipline": 95.0
+      }
+    }
+  },
+  "dimension_judgment": {
+    "abstraction_fitness": {
+      "strengths": [
+        "QueryExecutor interface Javadoc is a model of honest single-implementation documentation: it names the single implementor, explains the testability-seam rationale, and explicitly records that a split is deferred — a developer never wonders why the interface exists",
+        "API handler decomposition into five focused package-private classes assigns each a narrow, non-overlapping HTTP concern; no handler leaks responsibility into another",
+        "ExploreResponseAssembler is a genuine translation layer — every method performs real domain-to-presentation conversion rather than forwarding fields wholesale",
+        "Config concern separation across four distinct classes (Loader / Serializer / Config record / PatternBuilder) is clean: each class has exactly one reason to change",
+        "Mechanical scan found zero delegation-heavy classes and zero facade/re-export modules, consistent with what direct code reading confirms"
+      ],
+      "issue_character": "Issues are localized to the exploration subsystem: two of four ExplorationService interface methods in SemanticFieldExplorer are pure forwarding delegations that unwrap an options record and pass scalars to inner objects, and ExplorationService's own documentation does not explain the design tradeoff the way QueryExecutor's does — a narrow pattern in one facade class, not a codebase-wide problem.",
+      "score_rationale": "The codebase sits clearly above the 80 'solid but uneven' anchor: abstractions are mostly purposeful, the API layer decomposition is tight, and the two single-implementation interfaces are explicitly documented as testability seams. The primary drag is SemanticFieldExplorer acting as a thin facade for exploreMultiSeed and compareCollocateProfiles — these two methods forward to inner objects after trivial parameter unpacking, adding a navigation hop without contributing behavior, and ExplorationService's documentation omits the rationale that would make this intentional to a new reader. This is a localized concern in one class, not systemic, which keeps the score well above 80 but below the 90 'strong' range where all indirection layers clearly pay for themselves."
+    }
+  },
+  "issues": [
+    {
+      "dimension": "abstraction_fitness",
+      "identifier": "exploration_facade_passthrough",
+      "summary": "SemanticFieldExplorer.exploreMultiSeed and compareCollocateProfiles are parameter-unwrapping pass-throughs, and ExplorationService omits the design rationale",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/exploration/SemanticFieldExplorer.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/exploration/ExplorationService.java"
+      ],
+      "evidence": [
+        "SemanticFieldExplorer.exploreMultiSeed (line ~356) is a single-line method: it unwraps opts.minLogDice(), opts.topCollocates(), opts.minShared() and forwards directly to multiSeedExplorer.findCollocateIntersection — no added behavior, guard, or policy",
+        "SemanticFieldExplorer.compareCollocateProfiles (line ~315) is similarly a direct forward to comparator.compareCollocateProfiles(seedNouns, opts.minLogDice(), opts.topCollocates()) after unwrapping the options record",
+        "ExplorationService Javadoc reads only 'Implemented by SemanticFieldExplorer' — unlike QueryExecutor which has a full paragraph explaining the testability-seam rationale and deferral decision, ExplorationService gives a developer no signal that the single-impl is intentional"
+      ],
+      "suggestion": "Add a design-rationale paragraph to ExplorationService (mirroring QueryExecutor's Javadoc) explaining that the interface exists as a testability seam and that SemanticFieldExplorer is the only production implementation. Separately, consider whether exploreMultiSeed and compareCollocateProfiles belong on SemanticFieldExplorer at all: if the facade's only role for those two methods is parameter unpacking, the ExplorationHandlers could hold references to MultiSeedExplorer and CollocateProfileComparator directly, or ExplorationOptions could expose a method to unpack into the inner call so the delegation line is one expression rather than three arguments.",
+      "confidence": "medium",
+      "impact_scope": "module",
+      "fix_scope": "multi_file_refactor",
+      "root_cause_cluster": "exploration_facade"
+    }
+  ],
+  "retrospective": {
+    "root_causes": [
+      "The ExplorationService interface was introduced to provide a testability seam for WordSketchApiServer but its design rationale was not documented with the same care as QueryExecutor's, leaving the single-implementation intent implicit for two of its four methods"
+    ],
+    "likely_symptoms": [
+      "exploration_facade_passthrough"
+    ],
+    "possible_false_positives": []
+  }
+}

@@ -149,7 +149,7 @@ public class SemanticFieldExplorer implements ExplorationService {
      * @param relationName  human-readable relation name for logging
      * @param bcqlPattern   BCQL pattern with headword already substituted
      * @param simplePattern simple reverse-lookup pattern (e.g., {@code [xpos="JJ.*"]})
-     * @param opts          tuning parameters (topCollocates, collocatesPerSeed, minLogDice, minShared)
+     * @param opts          tuning parameters (topCollocates, reverseExpansionLimit, minLogDice, minShared)
      * @return ExplorationResult with discovered semantic class
      */
     ExplorationResult exploreByPattern(
@@ -160,7 +160,7 @@ public class SemanticFieldExplorer implements ExplorationService {
             SingleSeedExplorationOptions opts) throws IOException {
 
         int topPredicates = opts.base().topCollocates();
-        int nounsPerPredicate = opts.collocatesPerSeed();
+        int nounsPerPredicate = opts.reverseExpansionLimit();
         double minLogDice = opts.base().minLogDice();
         int minShared = opts.base().minShared();
 
@@ -310,14 +310,9 @@ public class SemanticFieldExplorer implements ExplorationService {
      * @param seedNouns   Nouns to compare (e.g., "theory", "model", "hypothesis"); must not be null or empty
      * @param opts        exploration options; {@code topCollocates} and {@code minLogDice} are used
      * @return ComparisonResult with graded adjective profiles
-     * @throws IllegalArgumentException if fewer than 2 seed nouns are provided
      */
     public @NonNull ComparisonResult compareCollocateProfiles(
             @NonNull Set<String> seedNouns, @NonNull ExplorationOptions opts) throws IOException {
-        if (seedNouns.size() < 2) {
-            throw new IllegalArgumentException(
-                "Comparison requires at least 2 seed nouns for a meaningful result");
-        }
         return comparator.compareCollocateProfiles(seedNouns, opts.minLogDice(), opts.topCollocates());
     }
 

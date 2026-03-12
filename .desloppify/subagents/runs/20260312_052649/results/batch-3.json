@@ -1,0 +1,98 @@
+{
+  "batch": "mid_level_elegance",
+  "batch_index": 3,
+  "assessments": {"mid_level_elegance": 74.0},
+  "dimension_notes": {
+    "mid_level_elegance": {
+      "evidence": [
+        "ExploreResponseAssembler centralises all model-to-JSON translation for exploration results; HTTP handlers call populateExploreResponse/populateComparisonResponse and do not inline collocate formatting",
+        "ExplorationService interface provides a minimal, honest seam (4 methods) between the HTTP layer and the exploration implementation; ExplorationHandlers depends only on the interface, not the concrete class",
+        "Options DTOs (ExplorationOptions, SingleSeedExplorationOptions, FetchExamplesOptions) make boundary inputs explicit and typed rather than passing loose primitive bags",
+        "GrammarConfigSerializer is a dedicated translation layer so GrammarConfig/RelationConfig remain pure data carriers with no JSON dependency",
+        "HttpApiUtils.wrapWithErrorHandling provides a uniform, predictable error-propagation wrapper that every route registration uses consistently",
+        "resolveRelationConfig in ExplorationHandlers checks isEmpty() then calls orElseThrow() on line 265 — the terminal orElseThrow is unreachable dead code that obscures the intent",
+        "ExploreResponseAssembler.buildExplorationEdges has a runtime branch: if perSeedCollocates is non-empty use it, else fall back to iterating seeds × collocates — this backward-compat fork means two structurally different ExplorationResult shapes flow through the same assembler path silently",
+        "handleSemanticFieldComparison assembles the response skeleton (status, seeds, seed_count, parameters) inline rather than delegating to buildCoreExploreResponse — asymmetric with the two sibling explore handlers that share a common helper",
+        "ConcordanceHandlers.handleConcordanceExamples assembles the examples list inline with HashMap/ArrayList, a pattern that ExploreResponseAssembler standardised for exploration responses but was not extended to cover concordance responses"
+      ],
+      "impact_scope": "module",
+      "fix_scope": "multi_file_refactor",
+      "confidence": "high"
+    }
+  },
+  "dimension_judgment": {
+    "mid_level_elegance": {
+      "strengths": [
+        "ExploreResponseAssembler is a single, explicit translation seam: all model-to-response mapping for exploration lives there, not scattered across handlers",
+        "ExplorationService interface is minimal and honest — four methods that map directly to the four HTTP endpoint concerns, with no leakage of implementation details",
+        "Typed options DTOs (ExplorationOptions, SingleSeedExplorationOptions, FetchExamplesOptions) make boundary inputs explicit; no multi-parameter loose primitives crossing the HTTP→exploration seam",
+        "GrammarConfigSerializer correctly separates JSON-serialization concern from the config data model, keeping GrammarConfig and RelationConfig dependency-free",
+        "HttpApiUtils.wrapWithErrorHandling provides uniform error-propagation across all route registrations with a single, predictable pattern"
+      ],
+      "issue_character": "Issues are isolated inconsistencies in boundary discipline rather than structural seam failures: a silent legacy-compat fork in ExploreResponseAssembler, a redundant Optional unwrap in resolveRelationConfig, and asymmetric inline assembly in handleSemanticFieldComparison versus its sibling handlers.",
+      "score_rationale": "The handoffs across the API→exploration and config→API boundaries are intentionally designed and mostly clean: the ExplorationService interface, ExploreResponseAssembler, and options DTOs are all good seam design. The codebase sits in the 'solid but uneven' range (80=solid) rather than exemplary (95+) because three real friction points exist: the silent dual-path in buildExplorationEdges degrades transparency at a boundary, the comparison handler assembles its own skeleton rather than using the shared builder, and the redundant orElseThrow in resolveRelationConfig is a minor but visible seam smell. These are all fixable without architectural change, which limits the severity, placing the score comfortably in the low-to-mid 70s."
+    }
+  },
+  "issues": [
+    {
+      "dimension": "mid_level_elegance",
+      "identifier": "legacy_per_seed_fork",
+      "summary": "Silent dual-path in ExploreResponseAssembler.buildExplorationEdges allows two different ExplorationResult shapes without making the distinction explicit at the boundary",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/api/ExploreResponseAssembler.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/model/exploration/ExplorationResult.java"
+      ],
+      "evidence": [
+        "ExploreResponseAssembler line 41: `if (!perSeed.isEmpty()) { ... } else { // Legacy fallback }` — the assembler silently handles two structurally different ExplorationResult instances",
+        "ExplorationResult exposes two public constructors: one with perSeedCollocates and one without (defaults to Map.of()), making the 'legacy' shape easy to produce accidentally",
+        "The legacy fallback duplicates seeds × collocates in a cartesian product that is semantically wrong for multi-seed results where each seed has distinct collocate sets"
+      ],
+      "suggestion": "Remove the no-perSeedCollocates constructor from ExplorationResult and require all callers to supply the per-seed map; delete the legacy fallback branch in buildExplorationEdges. If backward compat is required short-term, at minimum throw in the fallback branch rather than silently executing incorrect multi-seed edge attribution.",
+      "confidence": "high",
+      "impact_scope": "module",
+      "fix_scope": "multi_file_refactor",
+      "root_cause_cluster": "boundary_compat_debt"
+    },
+    {
+      "dimension": "mid_level_elegance",
+      "identifier": "comparison_handler_inline_assembly",
+      "summary": "handleSemanticFieldComparison assembles the response skeleton inline instead of using buildCoreExploreResponse, breaking symmetry with sibling handlers",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/api/ExplorationHandlers.java"
+      ],
+      "evidence": [
+        "handleSemanticFieldComparison (line ~141): `response.put(\"status\", \"ok\"); ... paramsUsed.put(\"relation\", \"all\"); ...` — four response fields assembled inline",
+        "handleSemanticFieldExplore and handleSemanticFieldExploreMulti both delegate to buildCoreExploreResponse for the same fields",
+        "The comparison handler notes in its Javadoc that it 'intentionally does not share the seed/relation parsing preamble' but this doesn't justify the response assembly asymmetry"
+      ],
+      "suggestion": "Have handleSemanticFieldComparison call buildCoreExploreResponse (or a variant) for the shared response scaffold, passing Map.of(\"relation\", \"all\") as extraParams; this keeps the three handlers symmetric at the response-building seam.",
+      "confidence": "high",
+      "impact_scope": "local",
+      "fix_scope": "single_edit"
+    },
+    {
+      "dimension": "mid_level_elegance",
+      "identifier": "redundant_optional_unwrap",
+      "summary": "resolveRelationConfig checks isEmpty() then calls orElseThrow() — the terminal unwrap is unreachable and obscures the error-propagation contract",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/api/ExplorationHandlers.java"
+      ],
+      "evidence": [
+        "Lines 257-265: `if (relationConfig.isEmpty()) { throw new IllegalArgumentException(...) } ... return relationConfig.orElseThrow();` — the orElseThrow on line 265 can never trigger because the isEmpty check on line 257 already throws",
+        "A reader must trace both paths to confirm the orElseThrow is dead code, adding unnecessary cognitive load at the method's return seam"
+      ],
+      "suggestion": "Replace the isEmpty check + orElseThrow pattern with a single `orElseThrow(() -> new IllegalArgumentException(\"Unknown relation: \" + relationId))`, then check relationType on the unwrapped value directly. This makes the error-propagation path readable in one pass.",
+      "confidence": "high",
+      "impact_scope": "local",
+      "fix_scope": "single_edit"
+    }
+  ],
+  "retrospective": {
+    "root_causes": [
+      "Backward-compatibility layering: ExplorationResult and its assembler accumulated a legacy compat path that was not cleaned up once all callers moved to the new perSeedCollocates shape",
+      "Cross-cutting response assembly was centralised for explore endpoints but the comparison handler was not refactored to match when it was added"
+    ],
+    "likely_symptoms": ["legacy_per_seed_fork", "comparison_handler_inline_assembly"],
+    "possible_false_positives": []
+  }
+}

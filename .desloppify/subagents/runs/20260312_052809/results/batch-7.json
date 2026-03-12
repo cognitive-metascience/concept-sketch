@@ -1,0 +1,94 @@
+{
+  "batch": "definition_directness",
+  "batch_index": 7,
+  "assessments": {
+    "definition_directness": 81.0
+  },
+  "dimension_notes": {
+    "definition_directness": {
+      "evidence": [
+        "QueryExecutor interface Javadoc explicitly distinguishes CQL vs BCQL paths and explains why executeSurfacePattern differs from executeCollocations — honest about what each method does differently",
+        "QueryExecutor comment self-declares it is 'primarily a testability seam rather than an abstraction boundary' — interface honesty about its real purpose",
+        "ExplorationResult.seed() returns a comma-joined multi-seed string in multi-seed mode despite a singular accessor name; the companion seeds() accessor exists and is documented, but the singular name creates friction for callers reading just the call site",
+        "CollocateProfile record names its accessor adjective() and uses field name 'adjective' throughout, but the class is used as a general collocate profile in multi-seed contexts (CollocateProfileComparator is adjective-focused, but the JSON response assembler serializes it as a general 'collocate entry')",
+        "SemanticFieldExplorer has two exploreByPattern overloads: the public one takes RelationConfig, the package-private one takes raw pattern strings. The package-private overload is explicitly documented as a 'testing seam' — definition is honest, not hidden",
+        "ExplorationResult has a 5-arg constructor that is a backward-compat shim delegating to the 6-arg canonical constructor; the field comment labels it 'backward compat' but the ctor signature itself gives no signal",
+        "@NonNull/@Nullable annotations from JSpecify are used consistently on public method boundaries across the api, exploration, and query packages",
+        "sealed interface ConcordanceResult permits SnippetResult, CollocateResult provides honest, exhaustive type contract for all concordance result types",
+        "RelationType enum and PosGroup enum are used for type-safe dispatch instead of raw strings in config and pattern-building layers",
+        "buildBcqlWithLemmaSubstitution static method is package-private on BlackLabQueryExecutor with a clear contract: only accepts patterns starting with '[', throws IllegalArgumentException otherwise — documented in Javadoc"
+      ],
+      "impact_scope": "module",
+      "fix_scope": "single_edit",
+      "confidence": "high",
+      "sub_axes": {
+        "abstraction_leverage": 84.0,
+        "indirection_cost": 83.0,
+        "interface_honesty": 79.0,
+        "delegation_density": 82.0,
+        "definition_directness": 80.0,
+        "type_discipline": 88.0
+      }
+    }
+  },
+  "dimension_judgment": {
+    "definition_directness": {
+      "strengths": [
+        "QueryExecutor interface is unusually self-aware: it explicitly documents why each method exists, how they differ from each other, and that it is a testability seam rather than an architectural abstraction — a developer can trust the interface at face value",
+        "JSpecify @NonNull/@Nullable annotations are applied consistently on public API boundaries across all packages, making nullability contracts part of the definition rather than implicit",
+        "sealed interface ConcordanceResult with explicit permits creates an honest, compiler-enforced type contract for the two concordance result kinds",
+        "ExplorationService interface and its methods honestly represent their contracts — exploreByPattern, exploreMultiSeed, and compareCollocateProfiles each carry docstrings that match their behavior and call out design trade-offs explicitly",
+        "Package-info.java files in api, config, exploration, model, and indexer.blacklab establish clear package-level contracts that match what is actually in each package"
+      ],
+      "issue_character": "Issues are isolated naming mismatches — a singular accessor masking plural behavior and an adjective-specific vocabulary applied to a general-purpose type — rather than systemic dishonesty. No mismatched return types, hidden side effects, or fabricated contracts.",
+      "score_rationale": "The codebase lands solidly above the 80-anchor (solid-but-uneven): interfaces are self-documenting, type contracts are explicit and honest, and abstraction layers generally earn their keep. Two isolated frictions keep it below 85: ExplorationResult.seed() implies a single value but returns a comma-joined multi-seed string in multi-seed mode, and CollocateProfile names its accessor adjective() throughout even when used as a general collocate type outside the adjective-comparison context. Both are documented but create call-site confusion. The many strengths — sealed types, nullable annotations, honest single-impl interface documentation — prevent this from dropping below 80."
+    }
+  },
+  "issues": [
+    {
+      "dimension": "definition_directness",
+      "identifier": "exploration_result_seed_singular",
+      "summary": "ExplorationResult.seed() returns a comma-joined string in multi-seed mode despite singular accessor name",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/model/exploration/ExplorationResult.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/api/ExplorationHandlers.java"
+      ],
+      "evidence": [
+        "ExplorationResult.seed() is documented as returning a 'combined display string' that is comma-joined in multi-seed mode (e.g. 'theory,model,hypothesis'), but the method is named seed() — singular — suggesting a single lemma to any reader who does not inspect the Javadoc",
+        "ExplorationHandlers.handleSemanticFieldExplore calls result.seed() and puts it in response.put(\"seed\", result.seed()), which works correctly in single-seed mode but would produce a comma string in multi-seed mode if ever reached on that path"
+      ],
+      "suggestion": "Rename seed() to seedLabel() or displaySeed() to signal that it is a derived display string, not a raw lemma value. Alternatively, deprecate seed() in favor of seeds() for code paths that need the list and make seed() private or package-private so the mismatch is contained.",
+      "confidence": "high",
+      "impact_scope": "module",
+      "fix_scope": "single_edit"
+    },
+    {
+      "dimension": "definition_directness",
+      "identifier": "collocate_profile_adjective_vocabulary",
+      "summary": "CollocateProfile names its accessor adjective() but the type is used as a general collocate profile beyond adjective-only contexts",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/model/exploration/CollocateProfile.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/api/ExploreResponseAssembler.java"
+      ],
+      "evidence": [
+        "CollocateProfile record defines String adjective as its primary key field with accessor adjective(), and the class comment says 'Profile of one collocate' — indicating the designer was already aware the type is general",
+        "ExploreResponseAssembler.formatCollocateProfile serializes the adjective() accessor as the 'word' key, adding an implicit translation step to paper over the vocabulary mismatch",
+        "The type is used inside ComparisonResult.collocates() and the serialized response key is 'word', not 'adjective' — but calling code still reads .adjective() at definition sites"
+      ],
+      "suggestion": "Rename the field and accessor from adjective to collocate (consistent with the class-level comment 'Profile of one collocate') and update all call sites: CollocateProfile.adjective() → CollocateProfile.collocate(). This is a mechanical rename; no behavior changes.",
+      "confidence": "high",
+      "impact_scope": "module",
+      "fix_scope": "single_edit"
+    }
+  ],
+  "retrospective": {
+    "root_causes": [
+      "Both issues share a vocabulary-drift root cause: original adjective-centric naming was not updated when the types were generalised to support multi-seed and arbitrary-collocate modes"
+    ],
+    "likely_symptoms": [
+      "exploration_result_seed_singular",
+      "collocate_profile_adjective_vocabulary"
+    ],
+    "possible_false_positives": []
+  }
+}

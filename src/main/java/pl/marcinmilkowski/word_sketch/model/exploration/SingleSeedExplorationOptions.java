@@ -5,7 +5,7 @@ package pl.marcinmilkowski.word_sketch.model.exploration;
  * ({@code SemanticFieldExplorer#exploreByPattern}).
  *
  * <p>Composes {@link ExplorationOptions} (shared base parameters) with
- * {@code collocatesPerSeed}, which is only meaningful for the single-seed
+ * {@code reverseExpansionLimit}, which is only meaningful for the single-seed
  * reverse-lookup phase. Multi-seed exploration and profile comparison use
  * {@link ExplorationOptions} directly.</p>
  */
@@ -16,5 +16,5 @@ public record SingleSeedExplorationOptions(
          * Maximum candidates to expand per collocate in the reverse lookup phase.
          * Specific to single-seed exploration — not used in multi-seed or comparison.
          */
-        int collocatesPerSeed) {
+        int reverseExpansionLimit) {
 }

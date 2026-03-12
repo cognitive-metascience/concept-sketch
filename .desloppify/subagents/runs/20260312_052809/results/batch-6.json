@@ -1,0 +1,111 @@
+{
+  "batch": "stale_migration",
+  "batch_index": 6,
+  "assessments": {"stale_migration": 79.0},
+  "dimension_notes": {
+    "stale_migration": {
+      "evidence": [
+        "RelationType.java: four enum constants (ADJ_PREDICATE, ADJ_MODIFIER, SUBJECT_OF, OBJECT_OF) are explicitly documented as 'legacy labels from an earlier exploration subsystem design... no longer set in any grammar config, but are retained as valid enum constants because some tests and RelationConfig instances reference them' — dead production constants kept alive for test compat",
+        "ExplorationResult.java lines 40-44: a public 5-arg constructor (without perSeedCollocates) exists as a compat shim; Javadoc on perSeedCollocates() says 'Returns an empty map when not available (legacy backward-compat path)'; only used in ExploreResponseAssemblerTest.java lines 25 and 34",
+        "ExplorationHandlers.java line 131: Javadoc says compare handler is 'Also reachable at the legacy path /api/semantic-field' but WordSketchApiServer.java registers only /api/semantic-field/compare — the undocumented legacy path is not registered, making the Javadoc a ghost reference",
+        "GrammarConfigLoader.java line 159: comment says 'cql_pattern is no longer supported' but unlike 'copulas', no validation rejects it — a config using cql_pattern silently fails with a misleading 'missing pattern' error rather than a migration hint",
+        "RelationUtils.java: RELATION_ALIASES map retains old semantic strings (adj_predicate, modifier, subject_of, object_of) that map to new grammar-config IDs — these serve as live alias resolution for incoming HTTP parameters, not stale shims"
+      ],
+      "impact_scope": "module",
+      "fix_scope": "multi_file_refactor",
+      "confidence": "high",
+      "sub_axes": {
+        "abstraction_leverage": 0.0,
+        "indirection_cost": 0.0,
+        "interface_honesty": 0.0,
+        "delegation_density": 0.0,
+        "definition_directness": 0.0,
+        "type_discipline": 0.0
+      }
+    }
+  },
+  "dimension_judgment": {
+    "stale_migration": {
+      "strengths": [
+        "GrammarConfigLoader.validateNoLegacyKeys() actively throws when the old 'copulas' top-level key is present, enforcing that the deprecated config format cannot silently persist",
+        "All production callers of ExplorationResult use the canonical 6-arg constructor; the 5-arg compat shim is confined to test helpers only",
+        "RelationType.java clearly documents the 4 legacy constants as non-production artifacts, making them discoverable rather than silently dead",
+        "No @Deprecated-annotated methods exist in production code that are still called by active code — the annotation hygiene is clean",
+        "RELATION_ALIASES in RelationUtils is still actively used for legitimate URL parameter resolution, not a dead shim"
+      ],
+      "issue_character": "Issues are isolated, well-documented residuals from a completed migration rather than an ongoing or neglected one — a ghost Javadoc path, four dead enum constants, and one compat constructor kept for test convenience.",
+      "score_rationale": "The codebase has completed its migration from the old semantic-role RelationType design to the grammar-config-driven pattern, and has documented the residuals clearly. No deprecated symbols are silently called by production code, and the loader enforces format hygiene. The score is pulled down by the four dead RelationType enum constants that the grammar config can never set (making findBestCollocatePattern's primaryTypes logic always fall through to the fallback), a Javadoc ghost that references an unregistered legacy API path, and a 5-arg ExplorationResult constructor kept alive only for test convenience. These are manageable isolated artifacts consistent with a score in the high-70s range on the global anchor scale — better than 'significant drag' (60) but short of 'solid but uneven' (80) due to the ghost Javadoc and dead enum constants."
+    }
+  },
+  "issues": [
+    {
+      "dimension": "stale_migration",
+      "identifier": "legacy_relation_type_constants",
+      "summary": "Four legacy semantic-role RelationType constants are never set by any grammar config but remain as live production enum values",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/model/RelationType.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/config/RelationUtils.java"
+      ],
+      "evidence": [
+        "RelationType.java lines 23-29: ADJ_PREDICATE, ADJ_MODIFIER, SUBJECT_OF, OBJECT_OF — Javadoc explicitly states 'Not set in grammar config'",
+        "RelationUtils.findBestCollocatePattern accepts RelationType... primaryTypes but no production caller passes these constants — SemanticFieldExplorer and CollocateProfileComparator call it with no varargs, so the primary-type filter never matches and the fallback always fires"
+      ],
+      "suggestion": "Remove ADJ_PREDICATE, ADJ_MODIFIER, SUBJECT_OF, OBJECT_OF from RelationType — they add no active dispatch value. Update the three test usages in RelationPatternBuilderTest (lines 120, 128, 136) and RelationUtilsTest (lines 61, 65) to use SURFACE or DEP or remove those test cases if they are testing dead branches. Also remove the primaryTypes vararg from findBestCollocatePattern in RelationUtils if no caller ever passes non-empty primary types.",
+      "confidence": "high",
+      "impact_scope": "module",
+      "fix_scope": "multi_file_refactor",
+      "root_cause_cluster": "legacy_relation_type_migration"
+    },
+    {
+      "dimension": "stale_migration",
+      "identifier": "ghost_legacy_api_path_javadoc",
+      "summary": "Javadoc documents a legacy API path /api/semantic-field that is not registered in WordSketchApiServer",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/api/ExplorationHandlers.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/api/ExploreResponseAssembler.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/api/WordSketchApiServer.java"
+      ],
+      "evidence": [
+        "ExplorationHandlers.java line 131: 'Also reachable at the legacy path /api/semantic-field'",
+        "WordSketchApiServer.java registerRoutes(): only /api/semantic-field/compare is registered; no registration for bare /api/semantic-field path",
+        "ExploreResponseAssembler.java line 142: comment references '/api/semantic-field endpoint' without the /compare sub-path, suggesting both files document a path that no longer exists"
+      ],
+      "suggestion": "Remove the sentence 'Also reachable at the legacy path /api/semantic-field' from ExplorationHandlers.java handleSemanticFieldComparison Javadoc and update the ExploreResponseAssembler.java line 142 comment to reference /api/semantic-field/compare instead.",
+      "confidence": "high",
+      "impact_scope": "local",
+      "fix_scope": "single_edit",
+      "root_cause_cluster": "legacy_relation_type_migration"
+    },
+    {
+      "dimension": "stale_migration",
+      "identifier": "explorationresult_compat_constructor",
+      "summary": "Public 5-arg ExplorationResult constructor is a backward-compat shim used only in tests, not in production code",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/model/exploration/ExplorationResult.java",
+        "src/test/java/pl/marcinmilkowski/word_sketch/api/ExploreResponseAssemblerTest.java"
+      ],
+      "evidence": [
+        "ExplorationResult.java lines 40-44: 5-arg constructor without perSeedCollocates, delegates to 6-arg with Map.of()",
+        "ExplorationResult.java perSeedCollocates() Javadoc: 'Returns an empty map when not available (legacy backward-compat path)'",
+        "All production callers (MultiSeedExplorer.java line 77, SemanticFieldExplorer.java line 202) use the 6-arg constructor; only ExploreResponseAssemblerTest.java lines 25 and 34 use the 5-arg form"
+      ],
+      "suggestion": "Remove the 5-arg constructor from ExplorationResult and update ExploreResponseAssemblerTest to pass Map.of() as the sixth argument. This eliminates the compat overload and makes the required perSeedCollocates field explicit at all construction sites.",
+      "confidence": "high",
+      "impact_scope": "local",
+      "fix_scope": "single_edit"
+    }
+  ],
+  "retrospective": {
+    "root_causes": [
+      "An earlier exploration layer used semantic RelationType enum values (ADJ_PREDICATE etc.) to dispatch query strategies; this was replaced by PosGroup-driven grammar config patterns but the enum constants were left in place to avoid breaking tests",
+      "The /api/semantic-field path was the original canonical URL for the compare endpoint; when it was renamed to /api/semantic-field/compare the old path was removed from registration but the Javadoc was not updated"
+    ],
+    "likely_symptoms": [
+      "legacy_relation_type_constants",
+      "ghost_legacy_api_path_javadoc"
+    ],
+    "possible_false_positives": [
+      "RELATION_ALIASES in RelationUtils — these aliases are active and serve legitimate URL parameter resolution, not stale shims despite their legacy-sounding names"
+    ]
+  }
+}

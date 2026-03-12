@@ -262,7 +262,7 @@ class ExplorationHandlers {
             throw new IllegalArgumentException(
                 "Invalid relation config: missing or unrecognised relation_type for '" + relationId + "'");
         }
-        return relationConfig.orElseThrow();
+        return relationConfig.get();
     }
 
     private ExplorationParams parseExplorationParams(Map<String, String> params) {

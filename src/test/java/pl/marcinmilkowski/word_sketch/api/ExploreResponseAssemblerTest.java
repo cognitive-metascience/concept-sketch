@@ -5,7 +5,7 @@ import pl.marcinmilkowski.word_sketch.model.exploration.CoreCollocate;
 import pl.marcinmilkowski.word_sketch.model.exploration.DiscoveredNoun;
 import pl.marcinmilkowski.word_sketch.model.exploration.Edge;
 import pl.marcinmilkowski.word_sketch.model.exploration.ExplorationResult;
-import pl.marcinmilkowski.word_sketch.model.RelationEdgeType;
+import pl.marcinmilkowski.word_sketch.model.exploration.RelationEdgeType;
 import pl.marcinmilkowski.word_sketch.utils.MathUtils;
 
 import java.util.HashMap;

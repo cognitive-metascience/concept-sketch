@@ -1,0 +1,82 @@
+{
+  "batch": "high_level_elegance",
+  "batch_index": 1,
+  "assessments": {
+    "high_level_elegance": 72.0
+  },
+  "dimension_notes": {
+    "high_level_elegance": {
+      "evidence": [
+        "Package layout maps directly to domain capabilities: `api` (HTTP routing/handlers), `config` (grammar loading, serialization, data carriers), `exploration` (semantic field algorithms), `indexer` (corpus ingestion), `query` (BlackLab query execution), `model` (shared data types), `utils` (pure utilities). Each boundary is explicable.",
+        "API handler decomposition is deliberate: one class per concern slice — SketchHandlers, ExplorationHandlers, ConcordanceHandlers, CorpusQueryHandlers, VisualizationHandlers, plus ExploreResponseAssembler. No god-class handler.",
+        "ExplorationService interface insulates the HTTP layer from the concrete SemanticFieldExplorer; WordSketchApiServer accepts ExplorationService injection for testing.",
+        "Config subsystem cleanly separates data (GrammarConfig, RelationConfig records) from loading (GrammarConfigLoader) and serialization (GrammarConfigSerializer). Data carriers have no JSON library dependency.",
+        "SemanticFieldExplorer Javadoc describes it as a 'coordination facade' that owns single-seed exploration directly and delegates multi-seed to MultiSeedExplorer and comparison to CollocateProfileComparator. The stated design intent is documented.",
+        "Both `api` and `exploration` packages have package-info.java summarising their responsibility scope.",
+        "handleSemanticFieldComparison Javadoc states 'Also reachable at the legacy path /api/semantic-field' but WordSketchApiServer.registerRoutes() registers only /api/semantic-field/compare — the legacy path is never bound. Project reference docs do not match runtime reality here.",
+        "SemanticFieldExplorer implements ExplorationService but directly contains the full multi-phase single-seed algorithm (~130 lines across 4 private phase helpers). Its Javadoc describes it as a 'coordination facade' which is accurate for multi-seed and comparison but not for single-seed, where it is the algorithm owner. Two change axes coexist in one class: facade wiring changes and algorithm changes."
+      ],
+      "impact_scope": "subsystem",
+      "fix_scope": "multi_file_refactor",
+      "confidence": "high"
+    }
+  },
+  "dimension_judgment": {
+    "high_level_elegance": {
+      "strengths": [
+        "Package names map one-to-one to domain capabilities (exploration, query, config, indexer, api, model) with no historical-accident packages; a new engineer can state each package's purpose in one sentence.",
+        "API layer is split into fine-grained single-responsibility handler classes (SketchHandlers, ExplorationHandlers, ConcordanceHandlers, CorpusQueryHandlers, VisualizationHandlers) rather than one monolithic server class.",
+        "Config subsystem explicitly separates data carriers (GrammarConfig, RelationConfig), loading logic (GrammarConfigLoader), and serialization (GrammarConfigSerializer) — each class has exactly one reason to change.",
+        "ExplorationService interface decouples the HTTP layer from the implementation, enabling test injection and insulating the API surface from exploration algorithm changes.",
+        "Delegation is explicit and documented: SemanticFieldExplorer's Javadoc names which responsibilities it owns vs. delegates (MultiSeedExplorer, CollocateProfileComparator), making the coordination model inspectable."
+      ],
+      "issue_character": "Issues are isolated rather than systemic: a single role-ambiguity in SemanticFieldExplorer (facade-that-is-also-algorithm-owner) and a single doc/runtime mismatch in the legacy route claim — both concentrated in boundary descriptions rather than pervasive structural rot.",
+      "score_rationale": "The top-level decomposition is domain-aligned and predictable; ownership is clear across all major subsystems and a new engineer can navigate the codebase without surprises. Two concrete problems pull the score below 80: SemanticFieldExplorer carries two change axes (wiring and single-seed algorithm) whose coupling is masked by accurate-but-incomplete documentation, and the legacy-path Javadoc asserts reachability for /api/semantic-field that the route table never registers — a concrete reference-doc/runtime-reality gap. These are contained issues in an otherwise coherent architecture, placing the score solidly above 60 (no significant systemic drag) but short of 80 (uneven in exactly these two spots)."
+    }
+  },
+  "issues": [
+    {
+      "dimension": "high_level_elegance",
+      "identifier": "explorer_dual_role",
+      "summary": "SemanticFieldExplorer is documented as a coordination facade but owns the complete single-seed exploration algorithm, blurring its change boundary",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/exploration/SemanticFieldExplorer.java"
+      ],
+      "evidence": [
+        "Javadoc says: 'This class serves as the stable API surface for the HTTP exploration handlers: it owns the single-seed exploration algorithm directly … and acts as a coordination facade for the remaining operations — delegating multi-seed exploration to MultiSeedExplorer and profile comparison to CollocateProfileComparator.'",
+        "The class contains four private phase-helper methods (fetchSeedCollocates, buildNounToCollocatesMap, filterByMinShared, identifyCoreCollocates) totalling ~130 lines of algorithmic logic, making it both a facade and a substantial algorithm implementation.",
+        "Multi-seed and comparison are fully delegated (one-liner forwards to MultiSeedExplorer and CollocateProfileComparator) while single-seed is not — the delegation pattern is applied inconsistently across the three exploration modes."
+      ],
+      "suggestion": "Extract the single-seed exploration algorithm into a dedicated SingleSeedExplorer class mirroring the MultiSeedExplorer pattern. SemanticFieldExplorer then becomes a pure coordination facade with three one-liner delegates, its stated design fully matching its implementation and making each class's change boundary unambiguous.",
+      "confidence": "high",
+      "impact_scope": "module",
+      "fix_scope": "multi_file_refactor"
+    },
+    {
+      "dimension": "high_level_elegance",
+      "identifier": "legacy_route_doc_mismatch",
+      "summary": "handleSemanticFieldComparison Javadoc claims the legacy path /api/semantic-field is registered but the route table never binds it",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/api/ExplorationHandlers.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/api/WordSketchApiServer.java"
+      ],
+      "evidence": [
+        "ExplorationHandlers.handleSemanticFieldComparison Javadoc: 'Also reachable at the legacy path /api/semantic-field.'",
+        "WordSketchApiServer.registerRoutes() registers /api/semantic-field/compare, /api/semantic-field/explore, /api/semantic-field/explore-multi, and /api/semantic-field/examples — but no /api/semantic-field context is created.",
+        "The class-level Javadoc endpoint table in WordSketchApiServer also omits any /api/semantic-field entry, confirming the legacy path is not active."
+      ],
+      "suggestion": "Either remove the 'Also reachable at the legacy path /api/semantic-field' sentence from the Javadoc (if the legacy route was intentionally dropped), or add a registerGetHandler call for /api/semantic-field mapping to handleSemanticFieldComparison (if the legacy compatibility is still required). The current state makes reference docs untrustworthy for this endpoint.",
+      "confidence": "high",
+      "impact_scope": "subsystem",
+      "fix_scope": "single_edit"
+    }
+  ],
+  "retrospective": {
+    "root_causes": [
+      "Incremental extraction of handlers from a larger class left SemanticFieldExplorer as a partial refactor — delegation was applied to newly-extracted operations but the original single-seed algorithm stayed in place, yielding an inconsistent facade.",
+      "The legacy-route doc was probably accurate at an earlier stage and was not updated when the route was renamed or removed."
+    ],
+    "likely_symptoms": [],
+    "possible_false_positives": []
+  }
+}

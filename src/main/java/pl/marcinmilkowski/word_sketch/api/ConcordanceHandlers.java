@@ -5,10 +5,8 @@ import org.jspecify.annotations.NonNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import pl.marcinmilkowski.word_sketch.config.GrammarConfig;
-import pl.marcinmilkowski.word_sketch.config.RelationPatternBuilder;
 import pl.marcinmilkowski.word_sketch.model.QueryResults;
 import pl.marcinmilkowski.word_sketch.query.QueryExecutor;
-import pl.marcinmilkowski.word_sketch.utils.CqlUtils;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -54,21 +52,17 @@ class ConcordanceHandlers {
         ConcordanceExamplesRequest req = parseConcordanceExamplesRequest(params);
 
         var rel = grammarConfig.relation(req.relation());
-        String resolvedQuery = rel.isPresent()
-            ? CqlUtils.substituteAtPosition(
-                RelationPatternBuilder.buildFullPattern(rel.get(), req.seed()),
-                req.collocate(), rel.get().collocatePosition())
-            : null;
-
-        boolean fallback = resolvedQuery == null || resolvedQuery.isEmpty();
-        String bcqlQuery = fallback
-            ? String.format("\"%s\" []{0,5} \"%s\"", req.seed().toLowerCase(), req.collocate().toLowerCase())
-            : resolvedQuery;
-        if (fallback) {
+        boolean fallback = rel.isEmpty();
+        List<QueryResults.CollocateResult> results;
+        String bcqlQuery;
+        if (!fallback) {
+            results = executor.executeBcqlQueryForRelation(rel.get(), req.seed(), req.collocate(), req.top());
+            bcqlQuery = rel.get().pattern() != null ? rel.get().pattern() : "";
+        } else {
+            bcqlQuery = String.format("\"%s\" []{0,5} \"%s\"", req.seed().toLowerCase(), req.collocate().toLowerCase());
             logger.warn("Relation '{}' not resolved to a BCQL pattern; using proximity fallback: {}", req.relation(), bcqlQuery);
+            results = executor.executeBcqlQuery(bcqlQuery, req.top());
         }
-
-        List<QueryResults.CollocateResult> results = executor.executeBcqlQuery(bcqlQuery, req.top());
 
         Map<String, Object> response = new HashMap<>();
         response.put("status", "ok");

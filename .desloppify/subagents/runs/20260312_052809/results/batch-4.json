@@ -1,0 +1,105 @@
+{
+  "batch": "package_organization",
+  "batch_index": 4,
+  "assessments": {
+    "package_organization": 74.0
+  },
+  "dimension_notes": {
+    "package_organization": {
+      "evidence": [
+        "Directory tree has 8 packages: api/ (11 files), config/ (7 files), exploration/ (5 files), model/ (6 files), model/exploration/ (10 files), query/ (6 files), indexer/blacklab/ (3 files), utils/ (4 files) — all below the flat-overload threshold of 10 files except api/ and model/exploration/",
+        "api/ contains RadialPlot.java — a public SVG rendering class that is not an HTTP handler; its only production caller is VisualizationHandlers in the same package, suggesting visualization rendering leaked into the HTTP layer rather than being placed in a dedicated viz/ or rendering/ package",
+        "GrammarConfigSerializer.java lives in config/ but its test (GrammarConfigSerializerTest) is placed in src/test/.../api/, revealing that contributors already mentally associate serialization with the API layer rather than the config layer; GrammarConfigSerializer depends on fastjson2, an API-tier library, creating a library-level dependency mismatch in config/",
+        "RelationEdgeType is placed at model/ root but is exclusively used by model/exploration/Edge.java (as a field type) and api/ExploreResponseAssembler.java; it is exploration-graph-specific and logically belongs in model/exploration/ alongside Edge",
+        "api/ package at 11 files mixes four distinct concerns: HTTP routing/infrastructure (WordSketchApiServer, HttpApiUtils, RequestEntityTooLargeException), domain handler groups (SketchHandlers, ConcordanceHandlers, ExplorationHandlers, CorpusQueryHandlers, VisualizationHandlers), response assembly (ExploreResponseAssembler), and SVG rendering (RadialPlot)",
+        "Dependency direction is clean: api → exploration → model; config → model; query → model; no bidirectional or downstream→upstream cycles detected across packages",
+        "model/exploration/ sub-package is well-conceived: 10 DTO/value-object types clearly separated from exploration service logic in exploration/; package-info.java documents the design intent thoroughly",
+        "RelationUtils lives in config/ and bridges config aliases to grammar-config IDs; it imports model.PosGroup and model.RelationType, which is appropriate fan-out from config → model"
+      ],
+      "impact_scope": "module",
+      "fix_scope": "multi_file_refactor",
+      "confidence": "high"
+    }
+  },
+  "dimension_judgment": {
+    "package_organization": {
+      "strengths": [
+        "Clean layered dependency direction: api → exploration → model, config → model, query → model with no cycles or back-edges observed",
+        "model/exploration/ sub-package correctly isolates 10 exploration-specific DTOs from general model types, matching change-boundary intuition",
+        "All packages have package-info.java files that accurately describe their responsibilities, aiding navigation",
+        "exploration/ExplorationService interface lives in the domain package, not api/, enabling proper inversion between HTTP and domain layers",
+        "Directories are generally right-sized: most packages are 3–7 files with clear cohesion; config/ (7 files) covers loading, parsing, serialization, and pattern building as one coherent unit"
+      ],
+      "issue_character": "The issues are isolated misplacements rather than systemic boundary failures: one public rendering class (RadialPlot) accumulated in the HTTP handler package, one serializer (GrammarConfigSerializer) sitting in its data package despite having HTTP-layer affinity, and one enum (RelationEdgeType) stranded at the model root instead of its exploration subpackage.",
+      "score_rationale": "The overall structure is solid and navigable: layered packages, meaningful names, correct dependency direction, and no coupling-direction failures. What pulls the score below 80 is the api/ package mixing SVG rendering (RadialPlot) with HTTP handlers — a developer looking for visualization logic would not naturally start in the api/ package — and GrammarConfigSerializer's placement in config/ despite its test living in api/ and its dependency on the JSON HTTP library, creating mild cognitive friction for anyone maintaining the serialization path. These are ownership-clarity issues with measurable navigation impact but do not represent architectural dysfunction, putting the score in the 70s rather than the 80s."
+    }
+  },
+  "issues": [
+    {
+      "dimension": "package_organization",
+      "identifier": "radial_plot_in_api",
+      "summary": "RadialPlot (SVG renderer) lives in api/ despite being a pure rendering class with no HTTP concerns",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/api/RadialPlot.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/api/VisualizationHandlers.java"
+      ],
+      "evidence": [
+        "RadialPlot is declared public with no package-private visibility, suggesting cross-package reuse was anticipated, but it has no importers outside api/",
+        "RadialPlot contains only layout math and SVG string building — no HttpExchange, no HTTP headers, no routing — yet it resides alongside ConcordanceHandlers, ExplorationHandlers, etc.",
+        "VisualizationHandlers.java calls RadialPlot.renderFromItems() — the HTTP handler is a thin wrapper over the renderer, which is the correct pattern, but the renderer should live in a separate package (e.g. api/viz/ or a top-level viz/)"
+      ],
+      "suggestion": "Move RadialPlot to a new api/viz/ subpackage (or a standalone viz/ package if it is expected to be reused outside the API layer). Steps: (1) create src/main/java/pl/marcinmilkowski/word_sketch/api/viz/RadialPlot.java with package api.viz; (2) update VisualizationHandlers to import api.viz.RadialPlot; (3) verify with mvn compile; (4) move the corresponding test if one exists. The package-info for api/ should be updated to exclude 'rendering' from its stated scope.",
+      "confidence": "high",
+      "impact_scope": "module",
+      "fix_scope": "multi_file_refactor"
+    },
+    {
+      "dimension": "package_organization",
+      "identifier": "grammar_serializer_placement",
+      "summary": "GrammarConfigSerializer resides in config/ despite having HTTP-layer affinity and its test living in the api test package",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/config/GrammarConfigSerializer.java",
+        "src/test/java/pl/marcinmilkowski/word_sketch/api/GrammarConfigSerializerTest.java"
+      ],
+      "evidence": [
+        "GrammarConfigSerializer imports com.alibaba.fastjson2.JSONObject and JSONArray — library dependencies shared with the api/ HTTP layer — while config/ otherwise has no JSON library dependency",
+        "The test class GrammarConfigSerializerTest is placed in src/test/java/.../api/, not src/test/java/.../config/, indicating the contributors' mental model aligns it with the API layer",
+        "GrammarConfigSerializer's sole purpose is to produce JSONObject representations for API responses and diagnostic output (per its own Javadoc)"
+      ],
+      "suggestion": "Move GrammarConfigSerializer to api/ (or api/serialization/ if further separation is desired) since it is an API-layer concern: it converts config value objects into HTTP response payloads. Steps: (1) move file to src/main/java/pl/marcinmilkowski/word_sketch/api/GrammarConfigSerializer.java; (2) update its package declaration; (3) update callers (grep for GrammarConfigSerializer imports); (4) move GrammarConfigSerializerTest to the matching api test directory (it may already be there); (5) run mvn test to confirm. Update config/package-info.java to remove 'serialization' from its listed scope.",
+      "confidence": "medium",
+      "impact_scope": "module",
+      "fix_scope": "multi_file_refactor"
+    },
+    {
+      "dimension": "package_organization",
+      "identifier": "relation_edge_type_root_placement",
+      "summary": "RelationEdgeType lives at model/ root but is exclusively used by model/exploration/ and api/ exploration assembly",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/model/RelationEdgeType.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/model/exploration/Edge.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/api/ExploreResponseAssembler.java"
+      ],
+      "evidence": [
+        "RelationEdgeType is a field type on model/exploration/Edge.java — its primary structural home is the exploration graph model",
+        "All three usages (Edge.java, ExploreResponseAssembler.java, ExploreResponseAssemblerTest.java) are exploration-graph-specific; no non-exploration callers exist",
+        "Placing it at model/ root suggests it has general applicability, but its enum values (SEED_ADJ, DISCOVERED_ADJ, MODIFIER) are exploration-domain vocabulary"
+      ],
+      "suggestion": "Move RelationEdgeType to model/exploration/: (1) relocate to src/main/java/pl/marcinmilkowski/word_sketch/model/exploration/RelationEdgeType.java; (2) update the package declaration; (3) update imports in Edge.java and ExploreResponseAssembler.java (two files); (4) run mvn test. This is a low-risk, single-pass import update.",
+      "confidence": "high",
+      "impact_scope": "local",
+      "fix_scope": "multi_file_refactor"
+    }
+  ],
+  "retrospective": {
+    "root_causes": [
+      "Incremental feature additions (visualization, exploration) placed new files in the nearest existing package (api/) rather than creating purpose-specific subpackages",
+      "Config serialization grew alongside config loading in the same file, causing GrammarConfigSerializer to inherit config/'s package even though its concern is HTTP response formatting"
+    ],
+    "likely_symptoms": [
+      "radial_plot_in_api",
+      "grammar_serializer_placement"
+    ],
+    "possible_false_positives": []
+  }
+}

@@ -1,0 +1,67 @@
+{
+  "batch": "incomplete_migration",
+  "batch_index": 3,
+  "assessments": {
+    "incomplete_migration": 68.0
+  },
+  "dimension_notes": {
+    "incomplete_migration": {
+      "evidence": [
+        "webapp/index.html line ~1544 calls `/api/semantic-field?nouns=...&min_logdice=...&max_per_noun=...` — old path with old parameter names, no longer registered on the server",
+        "Server (WordSketchApiServer.java) only registers `/api/semantic-field/compare` with `seeds=` parameter; the bare `/api/semantic-field` path has no handler",
+        "Webapp checks `data.fully_shared`, `data.partially_shared`, `data.specific` — but API now returns `fully_shared_count`, `partially_shared_count`, `specific_count` (with `_count` suffix), a response-shape mismatch",
+        "ExplorationHandlers.java line 131 Javadoc: 'Also reachable at the legacy path /api/semantic-field' — stale claim; that route does not exist in the server",
+        "RelationType.java: four constants (ADJ_PREDICATE, ADJ_MODIFIER, SUBJECT_OF, OBJECT_OF) are documented as 'legacy labels from an earlier exploration subsystem design'; not set in any grammar config, referenced only in tests",
+        "ExplorationResult.java: 5-arg backward-compat constructor delegates to 6-arg; Javadoc on `perSeedCollocates()` says 'Returns an empty map when not available (legacy backward-compat path)'",
+        "ExploreResponseAssembler.java lines 46-55: explicit `// Legacy fallback for ExplorationResult instances without per-seed data` branch retained alongside new per-seed path",
+        "GrammarConfigLoader.java: `validateNoLegacyKeys()` actively rejects the old `copulas` top-level key with a helpful error; comment at line 159 says 'cql_pattern is no longer supported' and the loader does not accept it — clean migration enforcement"
+      ],
+      "impact_scope": "module",
+      "fix_scope": "multi_file_refactor",
+      "confidence": "high"
+    }
+  },
+  "dimension_judgment": {
+    "incomplete_migration": {
+      "strengths": [
+        "`GrammarConfigLoader.validateNoLegacyKeys()` actively rejects the deprecated `copulas` config key with a clear error message, preventing silent use of old config shapes",
+        "The `cql_pattern` → `pattern` field rename is fully enforced: the old name is rejected, not silently accepted, ensuring no dual-path ambiguity in config loading",
+        "Legacy `RelationType` constants (ADJ_PREDICATE etc.) are explicitly documented as retained only for tests, and the production priority-hint logic that used them has been removed",
+        "Server route table is clean with no duplicate legacy/new routes registered for the same functionality — migration residue is restricted to documentation and model backward-compat"
+      ],
+      "issue_character": "A single concrete broken UI feature exposes an incomplete API migration: the webapp's 'Compare noun profiles' section still calls the old endpoint path and parameter names, while the server was migrated to a new path/params without updating the client — resulting in a live 404 and a response-shape mismatch.",
+      "score_rationale": "The backend code is well-migrated: deprecated config keys are actively rejected, old API field names are cleanly removed, and legacy code paths are clearly labeled. This pulls the score above 60. However, the webapp still calls the pre-migration `/api/semantic-field` endpoint with old parameters (`nouns=`, `max_per_noun=`) and expects old response field names (`fully_shared` rather than `fully_shared_count`), which represents a live broken feature. A stale Javadoc in ExplorationHandlers claiming the old path is 'also reachable' compounds the confusion by implying intentional backward compatibility that does not exist. The ~80 anchor ('old and new patterns coexisting, making it unclear which to follow') fits the doc/client mismatch, but the backend itself is cleaner than that, settling the score at 68."
+    }
+  },
+  "issues": [
+    {
+      "dimension": "incomplete_migration",
+      "identifier": "webapp_old_api_path",
+      "summary": "webapp calls removed `/api/semantic-field` endpoint with old params and expects old response field names",
+      "related_files": [
+        "webapp/index.html",
+        "src/main/java/pl/marcinmilkowski/word_sketch/api/WordSketchApiServer.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/api/ExplorationHandlers.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/api/ExploreResponseAssembler.java"
+      ],
+      "evidence": [
+        "webapp/index.html ~line 1544: `fetch(`${apiUrl}/api/semantic-field?nouns=...&min_logdice=...&max_per_noun=...`)` — old endpoint path, old `nouns=` param (now `seeds=`), old `max_per_noun=` param (not accepted)",
+        "WordSketchApiServer registers only `/api/semantic-field/compare`, `/api/semantic-field/explore`, `/api/semantic-field/explore-multi`, and `/api/semantic-field/examples`; bare `/api/semantic-field` is absent",
+        "Webapp checks `data.fully_shared`, `data.partially_shared`, `data.specific` but ExploreResponseAssembler now puts these under `fully_shared_count`, `partially_shared_count`, `specific_count`",
+        "ExplorationHandlers.java line 131 Javadoc says the compare endpoint is 'Also reachable at the legacy path /api/semantic-field' — misleading because that route is not registered"
+      ],
+      "suggestion": "Update webapp/index.html 'Compare noun profiles' fetch call to use the canonical path `/api/semantic-field/compare` with the `seeds=` parameter in place of `nouns=`, remove the `max_per_noun=` parameter (now unused), and update the three stat reads from `data.fully_shared` / `data.partially_shared` / `data.specific` to `data.fully_shared_count` / `data.partially_shared_count` / `data.specific_count`. Also remove the stale Javadoc clause 'Also reachable at the legacy path /api/semantic-field' from `ExplorationHandlers.handleSemanticFieldComparison`.",
+      "confidence": "high",
+      "impact_scope": "module",
+      "fix_scope": "multi_file_refactor",
+      "root_cause_cluster": "api_path_migration"
+    }
+  ],
+  "retrospective": {
+    "root_causes": [
+      "The API path rename from `/api/semantic-field` to `/api/semantic-field/compare` was completed server-side but not propagated to the webapp client, and a stale Javadoc claiming backward compatibility masked the omission"
+    ],
+    "likely_symptoms": [],
+    "possible_false_positives": []
+  }
+}

@@ -5,7 +5,7 @@ import com.alibaba.fastjson2.JSONObject;
 import org.junit.jupiter.api.Test;
 import pl.marcinmilkowski.word_sketch.config.GrammarConfig;
 import pl.marcinmilkowski.word_sketch.config.GrammarConfigHelper;
-import pl.marcinmilkowski.word_sketch.config.GrammarConfigSerializer;
+import pl.marcinmilkowski.word_sketch.api.GrammarConfigSerializer;
 import pl.marcinmilkowski.word_sketch.config.RelationConfig;
 import pl.marcinmilkowski.word_sketch.model.PosGroup;
 

@@ -1,0 +1,109 @@
+{
+  "batch": "cross_module_architecture",
+  "batch_index": 11,
+  "assessments": {"cross_module_architecture": 70.0},
+  "dimension_notes": {
+    "cross_module_architecture": {
+      "evidence": [
+        "model package has zero imports from any other application package — confirmed pure DTO bottom layer; no upward deps from model, query, config, or exploration back to api",
+        "query package (CollocateQueryHelper, BlackLabQueryExecutor) imports only from model and external BlackLab library — clean downward dependency",
+        "exploration package imports from query, config, model but never from api — correct direction",
+        "indexer/blacklab package is entirely self-contained and referenced only from Main.java — no blast radius for server-mode changes",
+        "ExplorationService interface in exploration package correctly insulates api from concrete SemanticFieldExplorer class; ExplorationHandlers depends on the interface",
+        "QueryExecutor interface in query package correctly insulates api from BlackLabQueryExecutor implementation",
+        "VIOLATION: SketchHandlers (api) calls RelationPatternBuilder.buildFullPattern() at lines 206 and 239 — a config-layer pattern-construction call made directly inside HTTP handler logic; pattern building belongs below the API boundary",
+        "VIOLATION: ConcordanceHandlers (api) calls RelationPatternBuilder.buildFullPattern() at line 59 — same cross-boundary call as SketchHandlers; two separate api-layer handlers reach into config internals to construct CQL strings",
+        "PARTIAL CONCERN: ExplorationHandlers (api) imports GrammarConfig, RelationConfig, RelationUtils from config to perform HTTP-param-to-domain-object resolution (resolveRelationConfig method); this tightly couples the api layer to config record types and alias maps",
+        "WordSketchApiServer convenience constructor (line ~57) directly instantiates SemanticFieldExplorer by concrete class name rather than using only the ExplorationService interface — the full constructor correctly accepts ExplorationService, but the production convenience path re-couples the api package to the concrete implementation",
+        "No cycles detected: dependency graph is a strict DAG — Main → api/indexer/query/config; api → exploration/query/config/model; exploration → query/config/model; query → model; config → model/utils",
+        "Package size distribution is balanced: api 1745 lines, query 1035, exploration 756, config 683, model 627, indexer 271 — no God package"
+      ],
+      "impact_scope": "subsystem",
+      "fix_scope": "multi_file_refactor",
+      "confidence": "high"
+    }
+  },
+  "dimension_judgment": {
+    "cross_module_architecture": {
+      "strengths": [
+        "model package is a clean bottom layer with no outward deps — all data flows down to it, never up from it",
+        "QueryExecutor and ExplorationService interfaces establish real isolation seams between the api layer and the concrete implementations in query and exploration",
+        "indexer/blacklab is fully isolated from the runtime server path — only Main.java references it, giving it zero blast radius for API changes",
+        "No circular dependencies anywhere in the package graph",
+        "Package sizes are well-balanced; no single package dominates the codebase"
+      ],
+      "issue_character": "The architecture has a sound layered skeleton, but the api layer repeatedly reaches across its boundary into config internals (RelationPatternBuilder) to do work that logically belongs in a service or query layer — a consistent inside-out coupling pattern rather than isolated one-off leaks.",
+      "score_rationale": "The codebase scores above the midpoint because the core architectural contracts are honoured: no upward dependencies from lower layers, two proper interface seams (QueryExecutor, ExplorationService), a clean model bottom layer, and no cycles. It is docked for the recurring api→config boundary violation (SketchHandlers and ConcordanceHandlers both call RelationPatternBuilder directly) and for the convenience constructor in WordSketchApiServer naming the concrete SemanticFieldExplorer. These are real violations that would force api-layer changes whenever pattern-building logic evolves, but they affect a narrow part of the call graph and are straightforwardly fixable by introducing a query-construction service method or moving pattern-building behind the QueryExecutor or ExplorationService interfaces."
+    }
+  },
+  "issues": [
+    {
+      "dimension": "cross_module_architecture",
+      "identifier": "api_calls_relpatternbuilder",
+      "summary": "api-layer HTTP handlers call RelationPatternBuilder.buildFullPattern() directly, placing query-construction logic in the HTTP layer",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/api/SketchHandlers.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/api/ConcordanceHandlers.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/config/RelationPatternBuilder.java"
+      ],
+      "evidence": [
+        "SketchHandlers line 206: `String fullPattern = RelationPatternBuilder.buildFullPattern(rel, lemma);` then passes fullPattern directly to executor.executeSurfacePattern — the api layer is constructing the CQL string itself",
+        "SketchHandlers line 239: second identical call in a different execution branch (dependency sketch path)",
+        "ConcordanceHandlers line 59: `RelationPatternBuilder.buildFullPattern(rel.get(), req.seed())` passed to executor.executeSurfacePattern — same boundary violation in a third handler",
+        "RelationPatternBuilder is a config-layer utility; its correct callers should be below the api layer (e.g. in ExplorationService or a dedicated SketchQueryService)"
+      ],
+      "suggestion": "Add a method to QueryExecutor (or a new thin SketchQueryService wrapper) that accepts a RelationConfig and headword and returns results — moving the RelationPatternBuilder.buildFullPattern call inside that method. SketchHandlers and ConcordanceHandlers would then call the new method and be free of config imports. Alternatively, add a `executeSurfacePattern(RelationConfig, String, double, int)` overload to QueryExecutor so callers never construct the pattern string.",
+      "confidence": "high",
+      "impact_scope": "subsystem",
+      "fix_scope": "multi_file_refactor"
+    },
+    {
+      "dimension": "cross_module_architecture",
+      "identifier": "apiserver_concrete_explorer",
+      "summary": "WordSketchApiServer convenience constructor names SemanticFieldExplorer concrete class, bypassing the ExplorationService interface",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/api/WordSketchApiServer.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/exploration/SemanticFieldExplorer.java"
+      ],
+      "evidence": [
+        "WordSketchApiServer imports `pl.marcinmilkowski.word_sketch.exploration.SemanticFieldExplorer` (concrete class) in addition to `ExplorationService`",
+        "Convenience constructor body: `this(executor, new SemanticFieldExplorer(executor, grammarConfig), port, grammarConfig)` — hardcodes the concrete type inside api",
+        "The full constructor signature accepts ExplorationService, showing the interface was intentionally introduced as a seam, but the production entry path re-couples to the concrete class"
+      ],
+      "suggestion": "Move the `new SemanticFieldExplorer(...)` factory call to Main.java (which already constructs both executor and grammarConfig) and pass the SemanticFieldExplorer instance (typed as ExplorationService) to the full WordSketchApiServer constructor. This removes the concrete import from the api package entirely and keeps WordSketchApiServer free of exploration implementation knowledge.",
+      "confidence": "high",
+      "impact_scope": "module",
+      "fix_scope": "multi_file_refactor"
+    },
+    {
+      "dimension": "cross_module_architecture",
+      "identifier": "exploration_handlers_config_coupling",
+      "summary": "ExplorationHandlers imports GrammarConfig, RelationConfig, RelationUtils from config to resolve HTTP parameters, leaking config internals into the api layer",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/api/ExplorationHandlers.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/config/RelationUtils.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/config/GrammarConfig.java"
+      ],
+      "evidence": [
+        "ExplorationHandlers.resolveRelationConfig() calls RelationUtils.resolveRelationAlias() and grammarConfig.relation() — coupling api to alias-map internals defined in config",
+        "ExplorationHandlers constructor takes GrammarConfig directly, making config a required api-layer dependency",
+        "If relation alias logic changes (e.g. new canonical IDs added to RELATION_ALIASES), ExplorationHandlers must also be reviewed for impact"
+      ],
+      "suggestion": "Introduce a RelationResolver helper (or extend ExplorationService) that accepts a relation-id string and returns an Optional<RelationConfig>. Move the alias-resolution and GrammarConfig lookup into that helper, which can live in the config or exploration package. ExplorationHandlers would then depend on the resolver interface rather than on GrammarConfig and RelationUtils directly. As a lighter alternative, add a single resolveRelation(String) method to GrammarConfig itself that subsumes the alias lookup, reducing the api's config imports to one type.",
+      "confidence": "medium",
+      "impact_scope": "module",
+      "fix_scope": "multi_file_refactor"
+    }
+  ],
+  "retrospective": {
+    "root_causes": [
+      "The api layer grew to own parameter-parsing, relation-resolution, and query-pattern-construction incrementally; no explicit rule prevented handlers from importing config utilities",
+      "The ExplorationService interface was added as a testing seam but the production wiring was not updated to fully respect it (WordSketchApiServer still names the concrete class)"
+    ],
+    "likely_symptoms": [
+      "Changes to RelationPatternBuilder or RELATION_ALIASES in config will require api-layer handler review",
+      "Adding a new QueryExecutor implementation (e.g. for testing SketchHandlers in isolation) will require mocking pattern-building behaviour not currently surfaced through the interface"
+    ],
+    "possible_false_positives": []
+  }
+}

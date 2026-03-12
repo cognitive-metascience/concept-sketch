@@ -14,7 +14,7 @@ import pl.marcinmilkowski.word_sketch.model.exploration.CoreCollocate;
 import pl.marcinmilkowski.word_sketch.model.exploration.DiscoveredNoun;
 import pl.marcinmilkowski.word_sketch.model.exploration.Edge;
 import pl.marcinmilkowski.word_sketch.model.exploration.ExplorationResult;
-import pl.marcinmilkowski.word_sketch.model.RelationEdgeType;
+import pl.marcinmilkowski.word_sketch.model.exploration.RelationEdgeType;
 
 /**
  * Converts model-layer result objects into graph {@link Edge} lists and JSON-ready maps for API responses.

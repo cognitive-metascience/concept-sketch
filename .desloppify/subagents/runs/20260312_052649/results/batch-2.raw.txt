@@ -1,0 +1,108 @@
+{
+  "batch": "low_level_elegance",
+  "batch_index": 2,
+  "assessments": {
+    "low_level_elegance": 74.0
+  },
+  "dimension_notes": {
+    "low_level_elegance": {
+      "evidence": [
+        "CollocateQueryHelper uses a clear two-phase pipeline (collectHits / scoreHits) with well-named private records (CollocateSearch, HitRecord) that make data flow explicit",
+        "BlackLabSnippetParser is a focused, side-effect-free utility class: each static method does one thing (trimLeftAtSentenceBoundary, extractCollocateLemma, detokenize) with no shared mutable state",
+        "GrammarConfigLoader decomposes parsing into discrete, well-named private helpers (parseAndValidateVersion, validateNoLegacyKeys, parseRelations, parseRelation) making the control flow linear and traceable",
+        "HttpApiUtils.wrapWithErrorHandling centralises exception-to-HTTP-status mapping in a single wrapper, keeping error handling consistent and local across all endpoints",
+        "ExploreResponseAssembler is a pure conversion class with symmetric populateExploreResponse / populateComparisonResponse methods; no HTTP or I/O state leaks in",
+        "MultiSeedExplorer.buildCoreCollocates (lines 137-155) rescans all seed collocate lists for every common collocate in a nested stream: `seedCollocateMap.values().stream().flatMap(List::stream).filter(wsr -> c.equals(wsr.lemma()))`. For K common collocates and N total collocate results this is O(K*N), avoidable with a pre-built Map<String, List<Double>> populated during fetchCollocatesPerSeed",
+        "GrammarConfigLoader.deriveTokenPosition (lines 282-301) manually walks bracket depth with its own `depth++/depth--` loop to count tokens before a label, while countPatternTokens (line 257) already delegates to CqlUtils.splitCqlTokens for the same bracket-group counting. The two approaches diverge without clear reason, creating a subtle inconsistency",
+        "Main.java repeats a structurally identical switch-on-args[i] loop with `++i` inside each case across three separate command handlers (handleBlackLabIndexCommand, handleBlackLabQueryCommand, handleBlackLabServerCommand). There is no shared arg-parser helper, so each handler reimplements the same idiom independently",
+        "SemanticFieldExplorer.exploreByPattern has a spurious double blank line (after the early-return guard for empty seedRelations at line 181) that interrupts the phase-by-phase rhythm of the method body"
+      ],
+      "impact_scope": "module",
+      "fix_scope": "multi_file_refactor",
+      "confidence": "high",
+      "sub_axes": {
+        "abstraction_leverage": 78.0,
+        "indirection_cost": 80.0,
+        "interface_honesty": 82.0,
+        "delegation_density": 72.0,
+        "definition_directness": 74.0,
+        "type_discipline": 76.0
+      }
+    }
+  },
+  "dimension_judgment": {
+    "low_level_elegance": {
+      "strengths": [
+        "CollocateQueryHelper cleanly separates the two phases of BCQL execution (hit collection and scoring) with named intermediate records, making data flow through the pipeline explicit and testable",
+        "BlackLabSnippetParser is a well-bounded, side-effect-free utility: every method is a pure function of its input, patterns are compiled as class-level constants, and null handling is consistent throughout",
+        "GrammarConfigLoader decomposes a multi-step JSON validation into small, well-named private helpers that each do exactly one validation concern, keeping the top-level parse() method a readable orchestration",
+        "HttpApiUtils.wrapWithErrorHandling provides a uniform, local error-mapping layer that prevents exception-handling logic from scattering across all handler classes",
+        "ExploreResponseAssembler achieves clean separation between model-to-presentation translation and HTTP concerns, with symmetric method pairs for the two exploration response shapes"
+      ],
+      "issue_character": "The issues are isolated to three distinct spots — a quadratic inner scan in MultiSeedExplorer, a duplicated bracket-counting implementation in GrammarConfigLoader, and a repeated arg-parsing idiom in Main — rather than a systemic pattern, suggesting localised lapses in helper reuse rather than a broad structural problem.",
+      "score_rationale": "The codebase reads clearly and has genuine low-level elegance in most modules: helper extraction is balanced, control flow is direct, and state mutation is well-bounded. The recurring issues (quadratic re-scan, bracket logic reimplementation, arg-parsing repetition) are real but affect specific callsites rather than representing a pervasive style. This places the code solidly above the 60-level 'significant drag' band; the consistency of good patterns in the majority of the codebase outweighs the handful of localised defects. A score in the mid-70s reflects code that is genuinely well-structured but not yet at the 80+ 'solid throughout' level, held back by the missed helper-reuse opportunities that a careful review would flag."
+    }
+  },
+  "issues": [
+    {
+      "dimension": "low_level_elegance",
+      "identifier": "multiseed_quadratic_scan",
+      "summary": "MultiSeedExplorer.buildCoreCollocates re-scans all collocate lists per common collocate (O(K*N))",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/exploration/MultiSeedExplorer.java"
+      ],
+      "evidence": [
+        "Lines 144-155: for each c in commonCollocates, avgLd is computed by streaming all seedCollocateMap.values(), flatMapping to individual results, and filtering by lemma equality — a full O(N) scan per collocate",
+        "The collocate-to-logDice mapping is already available from fetchCollocatesPerSeed; a pre-built Map<String, List<Double>> accumulated there would reduce this to O(1) lookup per collocate"
+      ],
+      "suggestion": "In fetchCollocatesPerSeed, build a Map<String, List<Double>> (collocate lemma → per-seed logDice scores) alongside the existing collocateSharedCount. Pass it into buildCoreCollocates and use it directly instead of re-scanning seedCollocateMap.",
+      "confidence": "high",
+      "impact_scope": "module",
+      "fix_scope": "single_edit",
+      "root_cause_cluster": "missed_helper_reuse"
+    },
+    {
+      "dimension": "low_level_elegance",
+      "identifier": "grammar_loader_bracket_duplication",
+      "summary": "GrammarConfigLoader.deriveTokenPosition reimplements bracket-depth counting already provided by CqlUtils.splitCqlTokens",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/config/GrammarConfigLoader.java"
+      ],
+      "evidence": [
+        "countPatternTokens (line 257) delegates to CqlUtils.splitCqlTokens(pattern).size() for token counting",
+        "deriveTokenPosition (lines 282-301) manually walks the pattern string with its own depth++ / depth-- loop to count complete bracket groups before the label position, duplicating the bracket-group logic from CqlUtils"
+      ],
+      "suggestion": "Refactor deriveTokenPosition to use CqlUtils.splitCqlTokens: split the pattern into tokens, find the index of the token whose raw string starts with the label prefix (e.g. '1:['), and return that index + 1. This removes the manual bracket-walking and keeps the two callers aligned.",
+      "confidence": "high",
+      "impact_scope": "local",
+      "fix_scope": "single_edit",
+      "root_cause_cluster": "missed_helper_reuse"
+    },
+    {
+      "dimension": "low_level_elegance",
+      "identifier": "main_repeated_arg_parsing",
+      "summary": "Three command handlers in Main.java each reimplement the same switch-on-args[i] with ++i idiom without a shared helper",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/Main.java"
+      ],
+      "evidence": [
+        "handleBlackLabIndexCommand, handleBlackLabQueryCommand, and handleBlackLabServerCommand each contain a for-loop over args with a switch statement and inline ++i; the structure is nearly identical across all three",
+        "Common boilerplate: requireNextArg is extracted, but the surrounding loop body (error reporting for unknown options, null-checking, early return on missing required args) is duplicated verbatim"
+      ],
+      "suggestion": "Introduce a simple ArgumentParser inner class or record that wraps the args array and exposes a next(flag) method, or at minimum extract a parseCommonArgs(args, startIndex, Map<String,Consumer<String>>) helper that takes a map of flag → setter and handles the loop/error pattern once.",
+      "confidence": "medium",
+      "impact_scope": "local",
+      "fix_scope": "single_edit",
+      "root_cause_cluster": "missed_helper_reuse"
+    }
+  ],
+  "retrospective": {
+    "root_causes": [
+      "Localised helper-reuse gaps: in three distinct places the author implemented a sub-algorithm manually rather than reusing an adjacent utility, suggesting that the utility wasn't visible at the time or the refactor was deferred"
+    ],
+    "likely_symptoms": [
+      "multiseed_quadratic_scan — the performance impact may be latent (masked by small real-world seed sets) and only surface under load"
+    ],
+    "possible_false_positives": []
+  }
+}

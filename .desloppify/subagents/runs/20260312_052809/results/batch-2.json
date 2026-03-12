@@ -1,0 +1,68 @@
+{
+  "batch": "dependency_health",
+  "batch_index": 2,
+  "assessments": {"dependency_health": 84.0},
+  "dimension_notes": {
+    "dependency_health": {
+      "evidence": [
+        "pom.xml declares 5 runtime-scoped dependencies: blacklab-engine, blacklab-query-parser, fastjson2, slf4j-api, logback-classic, and jspecify — all six map to distinct purposes with no overlap.",
+        "fastjson2 is used in 6 files (GrammarConfigLoader, GrammarConfigSerializer, HttpApiUtils, CorpusQueryHandlers, VisualizationHandlers, ExplorationHandlers) for both parsing and serialization — not a lodash-for-one-function situation.",
+        "slf4j-api is the only logging API imported in source; logback-classic is correctly declared as runtime scope and has zero direct imports in production code — clean facade pattern.",
+        "jspecify appears 108 times across @NonNull/@Nullable annotations throughout the API, model, and query layers — usage is broad enough to justify the dependency.",
+        "blacklab-query-parser is declared explicitly alongside blacklab-engine; both BlackLabQueryExecutor (ContextualQueryLanguageParser) and CollocateQueryHelper (CorpusQueryLanguageParser) import from nl.inl.blacklab.queryParser.* — the explicit declaration is appropriate for a direct compile-time dependency.",
+        "com.sun.net.httpserver (used in 16 locations for the HTTP server) is a JDK built-in, not an external dependency.",
+        "Version properties are centralised for blacklab (${blacklab.version}=4.0.0 applied to both BlackLab artifacts) and fastjson (${fastjson.version}=2.0.57), keeping both BlackLab artifacts pinned consistently.",
+        "No lock file is present (Maven does not produce one by default), so transitive versions are governed only by BOM-style dependency management of each library.",
+        "fastjson2 is an Alibaba-maintained library; while FastJSON2 is a security-improved rewrite, it is less conventional than Jackson (which is the de-facto standard for Java JSON) and may carry more maintenance risk."
+      ],
+      "impact_scope": "module",
+      "fix_scope": "multi_file_refactor",
+      "confidence": "high"
+    }
+  },
+  "dimension_judgment": {
+    "dependency_health": {
+      "strengths": [
+        "Lean dependency footprint: only 5 runtime dependencies covering corpus search (BlackLab), JSON (fastjson2), logging (slf4j+logback), and null-safety (jspecify) — nothing redundant.",
+        "No duplicate libraries for the same purpose: single JSON library, single logging facade, single logging implementation.",
+        "logback-classic correctly declared as runtime scope, preserving the slf4j abstraction with zero direct logback API calls in production code.",
+        "Version properties centralised for both BlackLab artifacts (4.0.0) preventing version skew between blacklab-engine and blacklab-query-parser.",
+        "jspecify usage is pervasive (108 annotation sites) justifying its inclusion as a purposeful, lightweight annotation library."
+      ],
+      "issue_character": "A single stylistic concern — fastjson2 instead of the more conventional Jackson — is the only real finding; all other dependency hygiene signals are positive.",
+      "score_rationale": "The dependency graph is clean: every declared runtime dependency has a clear, broad role, versions are consistent, no duplication, and the logging facade is used correctly. The sole meaningful deduction is fastjson2 — an Alibaba-backed library rather than the Java-ecosystem-standard Jackson — which introduces a mild long-term maintainability and security-optics risk without providing a compelling advantage over Jackson at the same API surface (JSON.parseObject / JSON.toJSONString). This places the codebase solidly in the 80-85 range: strong overall dependency hygiene with one conventional-choice gap."
+    }
+  },
+  "issues": [
+    {
+      "dimension": "dependency_health",
+      "identifier": "fastjson2_non_standard",
+      "summary": "fastjson2 (Alibaba) used for JSON instead of the ecosystem-standard Jackson",
+      "related_files": [
+        "pom.xml",
+        "src/main/java/pl/marcinmilkowski/word_sketch/config/GrammarConfigLoader.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/config/GrammarConfigSerializer.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/api/HttpApiUtils.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/api/CorpusQueryHandlers.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/api/VisualizationHandlers.java"
+      ],
+      "evidence": [
+        "pom.xml: <artifactId>fastjson2</artifactId> <version>2.0.57</version> — Alibaba library chosen over Jackson Databind",
+        "Only two API entry points are used across the entire codebase: JSON.parseObject() and JSON.toJSONString() — both have direct Jackson equivalents (ObjectMapper.readValue / writeValueAsString)",
+        "FastJSON (predecessor) had multiple critical RCE CVEs; FastJSON2 is a rewrite but the Alibaba JSON lineage is less trusted than Jackson in security-sensitive contexts",
+        "Jackson-databind is already a transitive dependency of BlackLab (common in Lucene-ecosystem libraries), meaning fastjson2 may add a second JSON library to the classpath unnecessarily"
+      ],
+      "suggestion": "Replace fastjson2 with Jackson Databind (com.fasterxml.jackson.core:jackson-databind). The API surface used is minimal: swap JSON.parseObject(str) with objectMapper.readValue(str, Map.class) and JSON.toJSONString(obj) with objectMapper.writeValueAsString(obj). Check whether Jackson is already present as a transitive dependency via BlackLab before adding a new explicit declaration.",
+      "confidence": "medium",
+      "impact_scope": "module",
+      "fix_scope": "multi_file_refactor"
+    }
+  ],
+  "retrospective": {
+    "root_causes": [
+      "Early library selection favoured fastjson2 for its simple static API (JSON.parseObject / JSON.toJSONString) without checking whether Jackson was already on the classpath via BlackLab."
+    ],
+    "likely_symptoms": [],
+    "possible_false_positives": []
+  }
+}

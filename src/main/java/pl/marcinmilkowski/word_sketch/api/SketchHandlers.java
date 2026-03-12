@@ -6,7 +6,6 @@ import org.jspecify.annotations.NonNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import pl.marcinmilkowski.word_sketch.config.GrammarConfig;
-import pl.marcinmilkowski.word_sketch.config.RelationPatternBuilder;
 import pl.marcinmilkowski.word_sketch.model.RelationType;
 import pl.marcinmilkowski.word_sketch.query.QueryExecutor;
 import pl.marcinmilkowski.word_sketch.model.QueryResults;
@@ -203,10 +202,8 @@ class SketchHandlers {
                 "Relation '" + relationId + "' has type " + actualType + "; expected " + relationType.name());
         }
 
-        String fullPattern = RelationPatternBuilder.buildFullPattern(rel, lemma);
-        List<QueryResults.WordSketchResult> results = executor.executeSurfacePattern(
-            fullPattern,
-            0.0, SINGLE_RELATION_RESULTS);
+        List<QueryResults.WordSketchResult> results = executor.executeSurfacePatternForRelation(
+            rel, lemma, 0.0, SINGLE_RELATION_RESULTS);
 
         List<Map<String, Object>> collocations = new ArrayList<>();
         for (QueryResults.WordSketchResult result : results) {
@@ -236,8 +233,8 @@ class SketchHandlers {
      */
     private Optional<ExecutedSketch> buildSketch(String lemma,
             pl.marcinmilkowski.word_sketch.config.RelationConfig rel) throws IOException {
-        String fullPattern = RelationPatternBuilder.buildFullPattern(rel, lemma);
-        List<QueryResults.WordSketchResult> results = executor.executeSurfacePattern(fullPattern, 0.0, DEFAULT_SKETCH_RESULTS);
+        List<QueryResults.WordSketchResult> results = executor.executeSurfacePatternForRelation(
+            rel, lemma, 0.0, DEFAULT_SKETCH_RESULTS);
         if (results.isEmpty()) return Optional.empty();
         List<Map<String, Object>> collocations = new ArrayList<>();
         for (QueryResults.WordSketchResult result : results) {

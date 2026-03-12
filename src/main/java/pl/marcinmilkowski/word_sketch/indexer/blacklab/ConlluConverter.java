@@ -52,7 +52,7 @@ public class ConlluConverter {
         @Nullable BufferedWriter writer = null;
 
         try (BufferedReader reader = Files.newBufferedReader(input, StandardCharsets.UTF_8)) {
-            writer = processLines(reader, outputDir, sentencesPerChunk, state);
+            writer = processConlluLines(reader, outputDir, sentencesPerChunk, state);
         } finally {
             if (writer != null) {
                 try (BufferedWriter toClose = writer) {
@@ -71,7 +71,7 @@ public class ConlluConverter {
      * <p>Invariant: {@code inSentence} implies {@code writer != null}. A new chunk writer
      * is opened at the start of every sentence, so any open sentence always has a writer.
      */
-    private static @Nullable BufferedWriter processLines(
+    private static @Nullable BufferedWriter processConlluLines(
             BufferedReader reader, Path outputDir, int sentencesPerChunk, long[] state)
             throws IOException {
         boolean inSentence = false;

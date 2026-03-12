@@ -1,0 +1,96 @@
+{
+  "batch": "delegation_density",
+  "batch_index": 10,
+  "assessments": {
+    "abstraction_fitness": 76.0
+  },
+  "dimension_notes": {
+    "abstraction_fitness": {
+      "evidence": [
+        "SemanticFieldExplorer.compareCollocateProfiles validates seedNouns.size() < 2, then delegates to CollocateProfileComparator.compareCollocateProfiles which ALSO validates seedNouns.size() < 2 — duplicate guard on both sides of the facade boundary (SemanticFieldExplorer.java:compareCollocateProfiles and CollocateProfileComparator.java:compareCollocateProfiles).",
+        "BlackLabQueryExecutor.executeBcqlQuery is a single-line delegation: 'return collocateQueryHelper.executeBcqlQuery(bcqlPattern, maxResults)' — the interface contract adds no value at this layer, the executor is a pass-through on this method.",
+        "BlackLabQueryExecutor.getTotalFrequency is a single-line delegation: 'return collocateQueryHelper.getTotalFrequency(lemma)' — same hollow pass-through pattern as executeBcqlQuery.",
+        "FetchExamplesOptions is a single-field options record wrapping int maxExamples. The Javadoc acknowledges this is for binary-compatibility future-proofing, but this is a case where the abstraction cost (extra type, extra indirection) currently exceeds the benefit.",
+        "SemanticFieldExplorer.exploreMultiSeed adds only a null-check and delegates entirely to multiSeedExplorer.findCollocateIntersection — thin delegation with minimal policy added. The facade boundary between SemanticFieldExplorer and MultiSeedExplorer is very thin for this path.",
+        "QueryExecutor and ExplorationService each have exactly one production implementation; both Javadocs are honest that they exist as testability seams. These are appropriate per the testability-seam skip rule.",
+        "ExploreResponseAssembler contains real transformation logic (edge attribution handling for single/multi-seed modes, sharing-category dispatch, rounding) — not a hollow assembler.",
+        "RelationPatternBuilder and GrammarConfigSerializer are correctly extracted from their data-carrier records; each has real logic that would otherwise pollute the record types.",
+        "SemanticFieldExplorer owns the full single-seed exploration algorithm directly (~150 lines, phases 1–4 with real scoring logic) and only delegates the two orthogonal algorithms to collaborators — a well-calibrated facade that earns its place.",
+        "CollocateQueryHelper is a package-private class with substantive two-phase logic (collectHits, scoreHits, buildAndRankCollocates) and frequency caching — not a thin wrapper, a real extraction."
+      ],
+      "impact_scope": "module",
+      "fix_scope": "multi_file_refactor",
+      "confidence": "high",
+      "sub_axes": {
+        "abstraction_leverage": 80.0,
+        "indirection_cost": 74.0,
+        "interface_honesty": 85.0,
+        "delegation_density": 71.0,
+        "definition_directness": 79.0,
+        "type_discipline": 78.0
+      }
+    }
+  },
+  "dimension_judgment": {
+    "abstraction_fitness": {
+      "strengths": [
+        "Both single-implementation interfaces (QueryExecutor, ExplorationService) are explicitly documented as testability seams rather than architectural abstractions, showing honest awareness of the pattern and deliberate intent.",
+        "SemanticFieldExplorer owns the full single-seed exploration algorithm directly and delegates only orthogonal algorithms (multi-seed, comparison) to focused collaborators — a well-calibrated coordination facade that earns its cost.",
+        "ExploreResponseAssembler, RelationPatternBuilder, GrammarConfigSerializer, and CollocateQueryHelper all contain substantive non-trivial logic rather than hollow pass-throughs; each extraction is justified by real cohesion.",
+        "Options hierarchy (ExplorationOptions, SingleSeedExplorationOptions) uses clean composition — SingleSeedExplorationOptions wraps ExplorationOptions and adds one contextually appropriate field — with no wide context bags or spurious parameters.",
+        "Static utility classes (CqlUtils, RelationUtils, HttpApiUtils) are documented with clear cohesion rationale and are package-private where possible, limiting blast radius."
+      ],
+      "issue_character": "The issues are mild and mostly structural — redundant validation guarding across a facade boundary, a few true one-liner pass-throughs implementing an interface contract, and one premature single-field options wrapper — rather than systemic pass-through abstraction or hollow layering.",
+      "score_rationale": "This codebase scores solidly above 70 because its abstractions are mostly honest, well-documented, and justified by real logic or testability need. The interfaces are acknowledged seams, the extracted helpers carry real work, and the options hierarchy is clean. What keeps it below 80 is a cluster of mild delegation-density issues: two hollow one-liner methods in BlackLabQueryExecutor that implement an interface contract with zero added logic, a duplicate guard checked on both sides of a facade boundary, and a single-field options wrapper whose future-compatibility argument is currently speculative. These are all localized issues rather than signs of a systemic problem."
+    }
+  },
+  "issues": [
+    {
+      "dimension": "abstraction_fitness",
+      "identifier": "duplicate_facade_guard",
+      "summary": "compareCollocateProfiles validates seeds.size() < 2 in both SemanticFieldExplorer and CollocateProfileComparator",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/exploration/SemanticFieldExplorer.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/exploration/CollocateProfileComparator.java"
+      ],
+      "evidence": [
+        "SemanticFieldExplorer.compareCollocateProfiles (line ~170): 'if (seedNouns.size() < 2) { throw new IllegalArgumentException(\"Comparison requires at least 2 seed nouns...\"); }' then delegates to comparator.compareCollocateProfiles",
+        "CollocateProfileComparator.compareCollocateProfiles (line ~45): 'if (seedNouns.size() < 2) { throw new IllegalArgumentException(\"compareCollocateProfiles requires at least 2 seed nouns; got: ...\"); }'"
+      ],
+      "suggestion": "Decide which layer owns the precondition. If SemanticFieldExplorer is the public API surface and CollocateProfileComparator is a package-private collaborator, move the guard to SemanticFieldExplorer only and remove it from CollocateProfileComparator (add an Objects.requireNonNull instead). If the delegate is intended to be reusable independently, keep the guard there and remove the duplicate from the facade.",
+      "confidence": "high",
+      "impact_scope": "module",
+      "fix_scope": "single_edit",
+      "root_cause_cluster": "facade_boundary_policy"
+    },
+    {
+      "dimension": "abstraction_fitness",
+      "identifier": "hollow_interface_delegation",
+      "summary": "BlackLabQueryExecutor.executeBcqlQuery and getTotalFrequency are single-line pass-throughs to CollocateQueryHelper with no added logic",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/query/BlackLabQueryExecutor.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/query/CollocateQueryHelper.java"
+      ],
+      "evidence": [
+        "BlackLabQueryExecutor.executeBcqlQuery: 'return collocateQueryHelper.executeBcqlQuery(bcqlPattern, maxResults);' — zero added logic",
+        "BlackLabQueryExecutor.getTotalFrequency: 'return collocateQueryHelper.getTotalFrequency(lemma);' — zero added logic",
+        "By contrast, executeCollocations and executeSurfacePattern in the same class build BCQL strings and orchestrate multi-step frequency/group collection before delegating"
+      ],
+      "suggestion": "These methods exist to satisfy the QueryExecutor interface contract, which is fine. To reduce the pass-through feel, consider adding a brief Javadoc line on each noting that they are interface bridges to CollocateQueryHelper (e.g. '@implNote Delegates to {@link CollocateQueryHelper#executeBcqlQuery}'). Alternatively, if getTotalFrequency is only used via the interface for testing, consider whether it should stay on the interface or be made available through the concrete type instead.",
+      "confidence": "medium",
+      "impact_scope": "local",
+      "fix_scope": "single_edit",
+      "root_cause_cluster": "facade_boundary_policy"
+    }
+  ],
+  "retrospective": {
+    "root_causes": [
+      "The facade boundary between SemanticFieldExplorer and its collaborators is not fully resolved — some policy (validation) is duplicated rather than owned at exactly one layer.",
+      "CollocateQueryHelper was a well-motivated extraction but because BlackLabQueryExecutor must still expose getTotalFrequency and executeBcqlQuery through the QueryExecutor interface, it creates unavoidable thin-delegation methods on the executor."
+    ],
+    "likely_symptoms": [
+      "duplicate_facade_guard — policy duplication is a symptom of uncertain boundary ownership, not a root structural flaw"
+    ],
+    "possible_false_positives": []
+  }
+}

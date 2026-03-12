@@ -5,6 +5,8 @@ import java.io.IOException;
 import java.util.List;
 
 import org.jspecify.annotations.Nullable;
+import pl.marcinmilkowski.word_sketch.config.RelationConfig;
+import pl.marcinmilkowski.word_sketch.config.RelationPatternBuilder;
 import pl.marcinmilkowski.word_sketch.model.QueryResults;
 
 /**
@@ -129,6 +131,32 @@ public interface QueryExecutor extends Closeable {
      */
     default String getExecutorType() {
         return this.getClass().getSimpleName();
+    }
+
+    /**
+     * Convenience method: builds the BCQL surface pattern from the relation config and lemma,
+     * then delegates to {@link #executeSurfacePattern}.
+     *
+     * <p>Intended to keep HTTP-layer handlers free of pattern-construction logic;
+     * the pattern is assembled from {@code RelationConfig} here rather than at the call site.</p>
+     */
+    default List<QueryResults.WordSketchResult> executeSurfacePatternForRelation(
+            RelationConfig rel, String lemma, double minLogDice, int maxResults) throws IOException {
+        return executeSurfacePattern(
+            RelationPatternBuilder.buildFullPattern(rel, lemma), minLogDice, maxResults);
+    }
+
+    /**
+     * Convenience method: builds the BCQL concordance pattern from the relation config, seed, and
+     * collocate, then delegates to {@link #executeBcqlQuery}.
+     *
+     * <p>Intended to keep HTTP-layer handlers free of pattern-construction logic;
+     * the pattern is assembled from {@code RelationConfig} here rather than at the call site.</p>
+     */
+    default List<QueryResults.CollocateResult> executeBcqlQueryForRelation(
+            RelationConfig rel, String seed, String collocate, int maxResults) throws IOException {
+        return executeBcqlQuery(
+            RelationPatternBuilder.buildFullPattern(rel, seed, collocate), maxResults);
     }
 
 }

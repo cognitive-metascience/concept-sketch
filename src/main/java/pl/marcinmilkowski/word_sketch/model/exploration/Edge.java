@@ -1,6 +1,6 @@
 package pl.marcinmilkowski.word_sketch.model.exploration;
 
-import pl.marcinmilkowski.word_sketch.model.RelationEdgeType;
+import pl.marcinmilkowski.word_sketch.model.exploration.RelationEdgeType;
 
 /**
  * A weighted, typed edge between two nodes in a semantic-field exploration graph.

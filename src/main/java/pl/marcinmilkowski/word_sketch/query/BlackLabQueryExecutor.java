@@ -39,13 +39,19 @@ import org.jspecify.annotations.Nullable;
 
 /**
  * Query executor using BlackLab for CoNLL-U dependency tree indexing and querying.
+ *
+ * <p><strong>Interface delegation:</strong> this class satisfies the {@link QueryExecutor}
+ * contract by delegating the heavier collocate-query mechanics to
+ * {@link CollocateQueryHelper}.  The pass-through methods ({@link #executeBcqlQuery},
+ * {@link #getTotalFrequency}) are thin wrappers that forward directly to the helper, keeping
+ * {@code BlackLabQueryExecutor} focused on index lifecycle and query dispatch rather than
+ * low-level result assembly.</p>
  */
 public class BlackLabQueryExecutor implements QueryExecutor {
 
     private static final Logger logger = LoggerFactory.getLogger(BlackLabQueryExecutor.class);
 
     private final BlackLabIndex blackLabIndex;
-    private final String indexPath;
     private final CollocateQueryHelper collocateQueryHelper;
 
     /**
@@ -58,7 +64,6 @@ public class BlackLabQueryExecutor implements QueryExecutor {
      * a checked exception if the index is missing or corrupt.</p>
      */
     public BlackLabQueryExecutor(String indexPath) throws IOException {
-        this.indexPath = indexPath;
         try {
             this.blackLabIndex = BlackLab.open(new File(indexPath));
         } catch (ErrorOpeningIndex e) {

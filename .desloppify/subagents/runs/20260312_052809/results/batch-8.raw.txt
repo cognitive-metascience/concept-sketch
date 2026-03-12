@@ -1,0 +1,79 @@
+{
+  "batch": "naming_quality",
+  "batch_index": 8,
+  "assessments": {
+    "naming_quality": 83.0
+  },
+  "dimension_notes": {
+    "naming_quality": {
+      "evidence": [
+        "Class names across all packages precisely predict behaviour: CollocateQueryHelper, BlackLabSnippetParser, ExploreResponseAssembler, CollocateProfileComparator, MultiSeedExplorer all match their implementations exactly.",
+        "QueryExecutor interface distinguishes five similar-looking operations by name: executeCollocations, executeSurfacePattern, executeBcqlQuery, executeCqlQuery, executeDependencyPattern — each name accurately differentiates the query strategy used.",
+        "Domain vocabulary (logDice, collocate, headword, lemma, deprel, bcqlPattern, seedCollocates, coreCollocates, nounsPerPredicate) is applied uniformly across all layers with no abbreviation drift.",
+        "SingleSeedExplorationOptions.collocatesPerSeed() is parsed from the HTTP param 'nouns_per' and assigned in SemanticFieldExplorer.exploreByPattern to a local variable named 'nounsPerPredicate'. The API param and the implementation variable both accurately describe the concept (max nouns per collocate in the reverse lookup), but the intermediate Java type field says 'collocatesPerSeed', reversing the relationship — collocates and nouns are swapped.",
+        "ConlluConverter.processLines is a private method whose name ('process', generic verb) reveals nothing about what it does: it parses CoNLL-U lines, emits <s>/<\\/s> sentence markers, skips comments and multi-word tokens, accumulates token counts, and rotates chunk files."
+      ],
+      "impact_scope": "module",
+      "fix_scope": "multi_file_refactor",
+      "confidence": "medium"
+    }
+  },
+  "dimension_judgment": {
+    "naming_quality": {
+      "strengths": [
+        "Package and class names precisely predict behaviour throughout — CollocateQueryHelper, BlackLabSnippetParser, ExploreResponseAssembler, CollocateProfileComparator are all verifiably accurate.",
+        "QueryExecutor's five execute* methods are distinguishable by name alone (executeCollocations vs executeSurfacePattern vs executeBcqlQuery vs executeCqlQuery vs executeDependencyPattern) despite sharing a prefix.",
+        "Rich, consistent domain vocabulary (logDice, headword, collocate, lemma, deprel, bcqlPattern) is applied uniformly across all layers — no local dialects or abbreviation drift.",
+        "Model records closely describe content: DiscoveredNoun, CoreCollocate, CollocateProfile, WordSketchResult, ExplorationResult all match what they hold.",
+        "Internal variable names track semantic roles precisely: headwordFreq, lemmaPosMap, freqMapOut, seedCollocateScores, collocateSharedCount."
+      ],
+      "issue_character": "Issues are isolated rather than systemic: one vocabulary inversion (collocatesPerSeed names the opposite direction from the concept it controls) and one generic-verb private method (processLines); the rest of the codebase demonstrates strong naming discipline.",
+      "score_rationale": "The codebase sits clearly above the 80-anchor ('regularly encounters names that don't communicate intent'): the vast majority of names are precise and a developer can read class and method names and predict behaviour without opening files. The `collocatesPerSeed` mismatch is the most consequential — it inverts the collocate/noun relationship in the public options type, which would mislead a developer tuning the single-seed exploration algorithm. The `processLines` generic verb is a real but local friction point. Together these two issues create occasional confusion that prevents reaching the 90-anchor ('names are mostly precise; only a few require a second look')."
+    }
+  },
+  "issues": [
+    {
+      "dimension": "naming_quality",
+      "identifier": "collocates_per_seed_inverted",
+      "summary": "SingleSeedExplorationOptions.collocatesPerSeed names the nouns-per-collocate parameter as if it were collocates-per-seed",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/model/exploration/SingleSeedExplorationOptions.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/exploration/SemanticFieldExplorer.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/api/ExplorationHandlers.java"
+      ],
+      "evidence": [
+        "SingleSeedExplorationOptions.collocatesPerSeed() is parsed from the HTTP param 'nouns_per' (ExplorationHandlers:272) and assigned to 'nounsPerPredicate' in SemanticFieldExplorer.exploreByPattern (line 163).",
+        "The parameter controls Phase 2: for each collocate found for the seed, how many nouns to fetch via reverse lookup — i.e. it is 'nouns per collocate', not 'collocates per seed'.",
+        "The HTTP param name ('nouns_per') and implementation variable ('nounsPerPredicate') both correctly describe the concept; only the intermediate Java record field name is inverted."
+      ],
+      "suggestion": "Rename the field and accessor to nounsPerCollocate (or nounsPerPredicate) in SingleSeedExplorationOptions and the matching field in ExplorationHandlers.ExplorationParams. Update construction sites in ExplorationHandlers.parseExplorationParams and handleSemanticFieldExplore accordingly.",
+      "confidence": "high",
+      "impact_scope": "module",
+      "fix_scope": "multi_file_refactor",
+      "root_cause_cluster": "exploration_option_naming"
+    },
+    {
+      "dimension": "naming_quality",
+      "identifier": "process_lines_generic_verb",
+      "summary": "ConlluConverter.processLines uses a generic verb that reveals nothing about its CoNLL-U → WPL chunk conversion behaviour",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/indexer/blacklab/ConlluConverter.java"
+      ],
+      "evidence": [
+        "processLines (line 74) parses CoNLL-U token lines, emits <s>/<\\/s> sentence markers, skips multi-word tokens and comments, accumulates token/sentence counts, and rotates WPL chunk files — none of this is hinted by the name.",
+        "The public entry point convertConlluToWplChunks correctly names the operation; the private helper should mirror that specificity."
+      ],
+      "suggestion": "Rename to convertAndWriteConlluLines (or writeConlluAsWplChunks) to match the precision of the public method name convertConlluToWplChunks.",
+      "confidence": "high",
+      "impact_scope": "local",
+      "fix_scope": "single_edit"
+    }
+  ],
+  "retrospective": {
+    "root_causes": [
+      "The collocatesPerSeed inversion likely arose when the field was named from the caller's perspective (how many results to expand per seed iteration) before the two-phase algorithm (seed→collocates→nouns) was fully articulated; once the API param was named 'nouns_per' the divergence was stabilised rather than propagated back to the type."
+    ],
+    "likely_symptoms": [],
+    "possible_false_positives": []
+  }
+}
