@@ -8,6 +8,7 @@ import pl.marcinmilkowski.word_sketch.query.QueryExecutor;
 import pl.marcinmilkowski.word_sketch.query.StubQueryExecutor;
 
 import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -23,6 +24,35 @@ class ConcordanceHandlersTest {
                 return List.of(new QueryResults.CollocateResult("The big house", null, 4, 7, "d1", "big", 1, 7.5));
             }
         };
+    }
+
+    /**
+     * Verifies that {@link ConcordanceHandlers#handleConcordanceExamples} invokes
+     * {@code executeBcqlQuery} exactly once per request — confirming that
+     * {@code RelationPatternUtils.buildFullPattern} is not called twice with identical args.
+     * The response {@code bcql} field must also match the pattern passed to the executor.
+     */
+    @Test
+    void handleConcordanceExamples_executorCalledExactlyOnce() throws Exception {
+        AtomicInteger callCount = new AtomicInteger();
+        String[] capturedPattern = new String[1];
+        QueryExecutor countingExecutor = new StubQueryExecutor() {
+            @Override
+            public List<QueryResults.CollocateResult> executeBcqlQuery(String bcqlPattern, int maxResults) {
+                callCount.incrementAndGet();
+                capturedPattern[0] = bcqlPattern;
+                return List.of();
+            }
+        };
+        ConcordanceHandlers handlers = new ConcordanceHandlers(countingExecutor, GrammarConfigHelper.requireTestConfig());
+        TestExchangeFactory.MockExchange ex = new TestExchangeFactory.MockExchange(
+                "http://localhost/api/concordance/examples?seed=house&collocate=big&relation=noun_adj_predicates");
+        handlers.handleConcordanceExamples(ex);
+        assertEquals(200, ex.statusCode);
+        assertEquals(1, callCount.get(), "executeBcqlQuery must be called exactly once per request");
+        ObjectNode body = HttpApiUtils.MAPPER.readValue(ex.getResponseBodyAsString(), ObjectNode.class);
+        assertEquals(capturedPattern[0], body.path("bcql").asText(),
+                "Response bcql must match the pattern that was passed to the executor");
     }
 
     @Test

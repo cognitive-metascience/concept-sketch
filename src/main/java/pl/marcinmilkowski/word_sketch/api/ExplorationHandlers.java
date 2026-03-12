@@ -183,23 +183,19 @@ class ExplorationHandlers {
         String collocate = HttpApiUtils.requireParam(params, "collocate");
         String seed = HttpApiUtils.requireParam(params, "seed");
 
-        int maxExamples = HttpApiUtils.parseIntParam(params, "top", 10);
-
         RelationConfig resolvedConfig = resolveRelationConfig(params);
 
-        FetchExamplesResult fetched = semanticFieldExplorer.fetchExamples(seed, collocate, resolvedConfig, maxExamples);
+        CommonExploreParams commonParams = parseCommonExploreParams(params);
+        FetchExamplesResult fetched = semanticFieldExplorer.fetchExamples(seed, collocate, resolvedConfig, commonParams.topCollocates());
 
         List<Map<String, Object>> exampleMaps = fetched.examples().stream()
             .map(ExploreResponseAssembler::collocateResultToExampleMap)
             .toList();
 
-        Map<String, Object> response = new HashMap<>();
-        response.put("status", "ok");
-        response.put("collocate", collocate);
-        response.put("seed", seed);
-        response.put("relation", resolvedConfig.id());
-        response.put("bcql", fetched.bcqlPattern());
-        response.put("top", maxExamples);
+        Map<String, Object> response = buildExploreResponseEnvelope(
+            resolvedConfig.id(), commonParams,
+            Map.of(),
+            Map.of("seed", seed, "collocate", collocate, "bcql", fetched.bcqlPattern()));
         response.put("examples", exampleMaps);
         response.put("total_results", exampleMaps.size());
 

@@ -57,9 +57,8 @@ class ConcordanceHandlers {
         List<QueryResults.CollocateResult> results;
         String bcqlQuery;
         if (!fallback) {
-            results = executor.executeBcqlQuery(
-                RelationPatternUtils.buildFullPattern(rel.get(), req.seed(), req.collocate()), req.top());
             bcqlQuery = RelationPatternUtils.buildFullPattern(rel.get(), req.seed(), req.collocate());
+            results = executor.executeBcqlQuery(bcqlQuery, req.top());
         } else {
             bcqlQuery = String.format("\"%s\" []{0,5} \"%s\"", req.seed().toLowerCase(), req.collocate().toLowerCase());
             logger.warn("Relation '{}' not resolved to a BCQL pattern; using proximity fallback: {}", req.relation(), bcqlQuery);
