@@ -5,7 +5,7 @@ import org.junit.jupiter.api.Test;
 import pl.marcinmilkowski.word_sketch.model.PosGroup;
 import pl.marcinmilkowski.word_sketch.model.RelationType;
 
-import java.util.Optional;
+
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -23,12 +23,12 @@ class RelationPatternBuilderTest {
                 "test_relation", "Test Relation", null,
                 pattern, headPos, collocatePos,
                 false, 0,
-                Optional.of(RelationType.SURFACE),
+                RelationType.SURFACE,
                 true, posGroup);
     }
 
     /** Creates a config with a specific collocate PosGroup and RelationType (for reverse-pattern tests). */
-    private static RelationConfig reverseConfig(PosGroup posGroup, Optional<RelationType> relationType) {
+    private static RelationConfig reverseConfig(PosGroup posGroup, RelationType relationType) {
         return new RelationConfig(
                 "rev_rel", null, null,
                 "[xpos=\"NN.*\"] [xpos=\"JJ.*\"]", 1, 2,
@@ -117,7 +117,7 @@ class RelationPatternBuilderTest {
     @Test
     @DisplayName("buildCollocateReversePattern returns JJ xpos pattern for ADJ collocate")
     void buildCollocateReversePattern_adj_returnsJjPattern() {
-        RelationConfig config = reverseConfig(PosGroup.ADJ, Optional.of(RelationType.SURFACE));
+        RelationConfig config = reverseConfig(PosGroup.ADJ, RelationType.SURFACE);
 
         assertEquals("[xpos=\"JJ.*\"]", RelationPatternBuilder.buildCollocateReversePattern(config));
     }
@@ -125,7 +125,7 @@ class RelationPatternBuilderTest {
     @Test
     @DisplayName("buildCollocateReversePattern returns VB xpos pattern for VERB collocate")
     void buildCollocateReversePattern_verb_returnsVbPattern() {
-        RelationConfig config = reverseConfig(PosGroup.VERB, Optional.of(RelationType.SURFACE));
+        RelationConfig config = reverseConfig(PosGroup.VERB, RelationType.SURFACE);
 
         assertEquals("[xpos=\"VB.*\"]", RelationPatternBuilder.buildCollocateReversePattern(config));
     }
@@ -133,7 +133,7 @@ class RelationPatternBuilderTest {
     @Test
     @DisplayName("buildCollocateReversePattern returns NN xpos pattern for NOUN collocate")
     void buildCollocateReversePattern_noun_returnsNnPattern() {
-        RelationConfig config = reverseConfig(PosGroup.NOUN, Optional.of(RelationType.SURFACE));
+        RelationConfig config = reverseConfig(PosGroup.NOUN, RelationType.SURFACE);
 
         assertEquals("[xpos=\"NN.*\"]", RelationPatternBuilder.buildCollocateReversePattern(config));
     }
@@ -141,7 +141,7 @@ class RelationPatternBuilderTest {
     @Test
     @DisplayName("buildCollocateReversePattern returns RB xpos pattern for ADV collocate")
     void buildCollocateReversePattern_adv_returnsRbPattern() {
-        RelationConfig config = reverseConfig(PosGroup.ADV, Optional.of(RelationType.SURFACE));
+        RelationConfig config = reverseConfig(PosGroup.ADV, RelationType.SURFACE);
 
         assertEquals("[xpos=\"RB.*\"]", RelationPatternBuilder.buildCollocateReversePattern(config));
     }
@@ -149,7 +149,7 @@ class RelationPatternBuilderTest {
     @Test
     @DisplayName("buildCollocateReversePattern throws IllegalStateException when relationType is absent")
     void buildCollocateReversePattern_absentRelationType_throwsIllegalStateException() {
-        RelationConfig config = reverseConfig(PosGroup.ADJ, Optional.empty());
+        RelationConfig config = reverseConfig(PosGroup.ADJ, (RelationType) null);
 
         assertThrows(IllegalStateException.class,
                 () -> RelationPatternBuilder.buildCollocateReversePattern(config));

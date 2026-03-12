@@ -4,7 +4,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import pl.marcinmilkowski.word_sketch.config.GrammarConfigHelper;
 import pl.marcinmilkowski.word_sketch.config.RelationConfig;
-import pl.marcinmilkowski.word_sketch.model.FetchExamplesOptions;
+import pl.marcinmilkowski.word_sketch.model.exploration.FetchExamplesOptions;
 import pl.marcinmilkowski.word_sketch.model.PosGroup;
 import pl.marcinmilkowski.word_sketch.model.QueryResults;
 import pl.marcinmilkowski.word_sketch.model.RelationType;
@@ -13,7 +13,7 @@ import pl.marcinmilkowski.word_sketch.query.StubQueryExecutor;
 
 import java.io.IOException;
 import java.util.List;
-import java.util.Optional;
+
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -26,13 +26,13 @@ class SemanticFieldExplorerFetchExamplesTest {
     /** A minimal RelationConfig with a SURFACE pattern that embeds headword and collocate positions. */
     private static RelationConfig testRelationConfig() {
         return GrammarConfigHelper.requireTestConfig().relations().stream()
-                .filter(r -> r.relationType().isPresent())
+                .filter(r -> r.relationType() != null)
                 .findFirst()
                 .orElseGet(() -> new RelationConfig(
                         "test", "test", "test",
                         "1:[lemma=\"{head}\"] [lemma=\"be\"] 2:[xpos=\"JJ.*\"]",
                         1, 2, false, 0,
-                        Optional.of(RelationType.SURFACE),
+                        RelationType.SURFACE,
                         true, PosGroup.ADJ));
     }
 

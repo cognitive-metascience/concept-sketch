@@ -3,6 +3,8 @@ package pl.marcinmilkowski.word_sketch.config;
 import pl.marcinmilkowski.word_sketch.model.PosGroup;
 import pl.marcinmilkowski.word_sketch.utils.CqlUtils;
 
+import org.jspecify.annotations.Nullable;
+
 import java.util.Locale;
 import java.util.Objects;
 
@@ -25,7 +27,7 @@ public final class RelationPatternBuilder {
      * @param collocateLemma the lemma for the collocate position
      * @return the fully-substituted BCQL pattern string
      */
-    public static String buildFullPattern(RelationConfig config, String headword, String collocateLemma) {
+    public static String buildFullPattern(RelationConfig config, @Nullable String headword, String collocateLemma) {
         String withHead = buildFullPattern(config, headword);
         if (collocateLemma == null || collocateLemma.isBlank()) return withHead;
         return CqlUtils.substituteAtPosition(withHead, collocateLemma, config.collocatePosition());
@@ -42,7 +44,7 @@ public final class RelationPatternBuilder {
      * @return the substituted pattern, or the original pattern when headword is null/blank
      * @throws NullPointerException if {@code config.pattern()} is null
      */
-    public static String buildFullPattern(RelationConfig config, String headword) {
+    public static String buildFullPattern(RelationConfig config, @Nullable String headword) {
         Objects.requireNonNull(config.pattern(),
             "RelationConfig '" + config.id() + "' has no pattern — check grammar config");
         if (headword == null || headword.isBlank()) return config.pattern();
@@ -56,7 +58,7 @@ public final class RelationPatternBuilder {
      * @throws IllegalStateException if relationType is absent or the POS group has no known reverse pattern
      */
     public static String buildCollocateReversePattern(RelationConfig config) {
-        if (config.relationType().isEmpty()) {
+        if (config.relationType() == null) {
             throw new IllegalStateException(
                 "Cannot determine collocate reverse pattern: relationType is absent for relation '"
                     + config.id() + "'");

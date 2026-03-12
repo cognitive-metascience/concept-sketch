@@ -9,7 +9,7 @@ import pl.marcinmilkowski.word_sketch.config.GrammarConfigSerializer;
 import pl.marcinmilkowski.word_sketch.config.RelationConfig;
 import pl.marcinmilkowski.word_sketch.model.PosGroup;
 
-import java.util.Optional;
+
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -42,11 +42,11 @@ class GrammarConfigSerializerTest {
     void toJson_relationConfig_includesRelationType_whenPresent() {
         GrammarConfig config = GrammarConfigHelper.requireTestConfig();
         config.relations().stream()
-            .filter(rel -> rel.relationType().isPresent())
+            .filter(rel -> rel.relationType() != null)
             .findFirst()
             .ifPresent(rel -> {
                 JSONObject json = GrammarConfigSerializer.toJson(rel);
-                assertEquals(rel.relationType().get().name(), json.getString("relation_type"));
+                assertEquals(rel.relationType().name(), json.getString("relation_type"));
             });
     }
 
@@ -54,7 +54,7 @@ class GrammarConfigSerializerTest {
     void toJson_relationConfig_omitsNullOptionalFields() {
         RelationConfig minimal = new RelationConfig(
             "test_rel", null, null, null,
-            1, 2, false, 0, Optional.empty(), false, PosGroup.OTHER);
+            1, 2, false, 0, null, false, PosGroup.OTHER);
         JSONObject json = GrammarConfigSerializer.toJson(minimal);
 
         assertEquals("test_rel", json.getString("id"));

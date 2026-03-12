@@ -82,7 +82,7 @@ class SketchHandlers {
     private void handleRelationsForType(HttpExchange exchange, RelationType relationType) throws IOException {
         JSONArray relationsArray = new JSONArray();
         for (var rel : grammarConfig.relations()) {
-            var rt = rel.relationType().orElse(null);
+            var rt = rel.relationType();
             if (rt == relationType) {
                 Map<String, Object> obj = new HashMap<>();
                 obj.put("id", rel.id());
@@ -163,7 +163,7 @@ class SketchHandlers {
             List<String> relationErrors,
             BiFunction<pl.marcinmilkowski.word_sketch.config.RelationConfig, ExecutedSketch, Map<String, Object>> builder) {
         for (var rel : grammarConfig.relations()) {
-            if (rel.relationType().orElse(null) != relationType) continue;
+            if (rel.relationType() != relationType) continue;
             if (!extraFilter.test(rel)) continue;
             try {
                 Optional<ExecutedSketch> sketchOpt = buildSketch(lemma, rel);
@@ -189,8 +189,8 @@ class SketchHandlers {
         if (rel == null) {
             throw new IllegalArgumentException("Unknown relation: " + relationId);
         }
-        if (rel.relationType().orElse(null) != relationType) {
-            String actualType = rel.relationType().map(t -> t.name()).orElse("(none)");
+        if (rel.relationType() != relationType) {
+            String actualType = rel.relationType() != null ? rel.relationType().name() : "(none)";
             throw new IllegalArgumentException(
                 "Relation '" + relationId + "' has type " + actualType + "; expected " + relationType.name());
         }

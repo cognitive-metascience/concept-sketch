@@ -3,6 +3,7 @@ package pl.marcinmilkowski.word_sketch.config;
 import com.alibaba.fastjson2.JSON;
 import com.alibaba.fastjson2.JSONObject;
 import com.alibaba.fastjson2.JSONArray;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import pl.marcinmilkowski.word_sketch.utils.CqlUtils;
@@ -17,7 +18,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.Optional;
 
 /**
  * Loads grammar configuration from JSON and produces {@link GrammarConfig} value objects.
@@ -234,15 +234,15 @@ public final class GrammarConfigLoader {
     }
 
     /**
-     * Parse a nullable relation-type string to an {@link Optional} {@link RelationType}.
+     * Parse a nullable relation-type string to a {@link RelationType}.
      *
-     * <p>Returns {@code Optional.empty()} when the {@code relation_type} field is absent (which
-     * is valid — not all relations participate in exploration). Logs a warning when the field is
+     * <p>Returns {@code null} when the {@code relation_type} field is absent (which
+     * is valid — not all relations participate in exploration). Throws when the field is
      * present but unrecognised, which typically indicates a typo in the grammar config.</p>
      */
-    private static Optional<RelationType> parseRelationType(String value) {
-        if (value == null || value.isBlank()) return Optional.empty();
-        try { return Optional.of(RelationType.valueOf(value.toUpperCase(Locale.ROOT))); }
+    private static @Nullable RelationType parseRelationType(String value) {
+        if (value == null || value.isBlank()) return null;
+        try { return RelationType.valueOf(value.toUpperCase(Locale.ROOT)); }
         catch (IllegalArgumentException e) {
             throw new IllegalArgumentException(
                 "Unrecognised relation_type '" + value + "' in grammar config; valid values: "

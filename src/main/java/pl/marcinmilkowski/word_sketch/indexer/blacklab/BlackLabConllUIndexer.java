@@ -1,5 +1,6 @@
 package pl.marcinmilkowski.word_sketch.indexer.blacklab;
 
+import nl.inl.blacklab.exceptions.DocumentFormatNotFound;
 import nl.inl.blacklab.search.BlackLab;
 import nl.inl.blacklab.search.BlackLabIndexWriter;
 import nl.inl.blacklab.index.Indexer;
@@ -69,7 +70,7 @@ public class BlackLabConllUIndexer implements AutoCloseable {
                     return true; // continue indexing
                 }
             });
-        } catch (Exception e) {
+        } catch (DocumentFormatNotFound e) {
             throw new IOException("Failed to create index: " + e.getMessage(), e);
         }
     }
@@ -91,18 +92,12 @@ public class BlackLabConllUIndexer implements AutoCloseable {
 
     @Override
     public void close() throws IOException {
-        if (indexer != null) {
-            try {
-                indexer.close(); // commits segments and writes BlackLab field metadata
-            } catch (Exception e) {
-                throw new IOException("Failed to finalize index: " + e.getMessage(), e);
-            }
-            logger.info("Indexing complete! Documents: {}, Tokens: {}, Errors: {}",
-                    documentCount.get(), tokenCount.get(), errorCount.get());
-            if (errorCount.get() > 0) {
-                logger.warn("Indexing completed with {} error(s) — document/token counts may be understated",
-                    errorCount.get());
-            }
+        indexer.close(); // commits segments and writes BlackLab field metadata
+        logger.info("Indexing complete! Documents: {}, Tokens: {}, Errors: {}",
+                documentCount.get(), tokenCount.get(), errorCount.get());
+        if (errorCount.get() > 0) {
+            logger.warn("Indexing completed with {} error(s) — document/token counts may be understated",
+                errorCount.get());
         }
     }
 

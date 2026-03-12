@@ -22,7 +22,7 @@ import pl.marcinmilkowski.word_sketch.model.exploration.CoreCollocate;
 import pl.marcinmilkowski.word_sketch.model.exploration.DiscoveredNoun;
 import pl.marcinmilkowski.word_sketch.model.exploration.ExplorationOptions;
 import pl.marcinmilkowski.word_sketch.model.exploration.ExplorationResult;
-import pl.marcinmilkowski.word_sketch.model.FetchExamplesOptions;
+import pl.marcinmilkowski.word_sketch.model.exploration.FetchExamplesOptions;
 import pl.marcinmilkowski.word_sketch.model.PosGroup;
 import pl.marcinmilkowski.word_sketch.model.QueryResults;
 import pl.marcinmilkowski.word_sketch.model.exploration.SingleSeedExplorationOptions;
@@ -119,7 +119,7 @@ public class SemanticFieldExplorer implements ExplorationService {
             @NonNull String seed,
             @NonNull RelationConfig relationConfig,
             @NonNull SingleSeedExplorationOptions opts) throws IOException {
-        if (relationConfig.relationType().isEmpty()) {
+        if (relationConfig.relationType() == null) {
             throw new IllegalArgumentException(
                 "Relation '" + relationConfig.id() + "' has no relation_type — cannot perform exploration");
         }

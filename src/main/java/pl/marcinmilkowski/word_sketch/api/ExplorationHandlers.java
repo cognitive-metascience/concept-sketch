@@ -9,7 +9,7 @@ import pl.marcinmilkowski.word_sketch.config.RelationConfig;
 import pl.marcinmilkowski.word_sketch.config.RelationUtils;
 import pl.marcinmilkowski.word_sketch.model.exploration.ComparisonResult;
 import pl.marcinmilkowski.word_sketch.model.exploration.ExplorationResult;
-import pl.marcinmilkowski.word_sketch.model.FetchExamplesOptions;
+import pl.marcinmilkowski.word_sketch.model.exploration.FetchExamplesOptions;
 import pl.marcinmilkowski.word_sketch.model.QueryResults;
 import pl.marcinmilkowski.word_sketch.model.exploration.ExplorationOptions;
 import pl.marcinmilkowski.word_sketch.model.exploration.SingleSeedExplorationOptions;
@@ -271,7 +271,7 @@ class ExplorationHandlers {
             throw new IllegalArgumentException("Unknown relation: " + relationId);
         }
         var relType = relationConfig.get().relationType();
-        if (relType.isEmpty()) {
+        if (relType == null) {
             throw new IllegalArgumentException(
                 "Invalid relation config: missing or unrecognised relation_type for '" + relationId + "'");
         }
