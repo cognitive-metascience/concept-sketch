@@ -112,6 +112,32 @@ class SketchHandlersTest {
         assertEquals(400, ex.statusCode);
     }
 
+    /**
+     * Data-shape test: the full-sketch response must include a non-empty collocations array
+     * for at least one relation, and the first entry must carry the lemma and logDice that
+     * the stub injected ("important", 7.5).
+     */
+    @Test
+    void handleSketchRequest_fullSketch_firstCollocateHasCorrectLemmaAndLogDice() throws Exception {
+        MockExchangeFactory.MockExchange ex = new MockExchangeFactory.MockExchange("http://localhost/api/sketch/theory");
+        handlers().routeSketchRequest(ex);
+        assertEquals(200, ex.statusCode);
+        ObjectNode body = HttpApiUtils.mapper().readValue(ex.getResponseBodyAsString(), ObjectNode.class);
+        ObjectNode relations = (ObjectNode) body.get("relations");
+        assertNotNull(relations, "relations map must be present");
+        assertFalse(relations.isEmpty(), "relations map must be non-empty");
+        // The stub returns "important" (JJ, 7.5) for every query — verify first relation entry
+        String firstRelId = relations.fieldNames().next();
+        com.fasterxml.jackson.databind.JsonNode firstRel = relations.get(firstRelId);
+        com.fasterxml.jackson.databind.JsonNode collocations = firstRel.get("collocations");
+        assertNotNull(collocations, "collocations array must be present");
+        assertFalse(collocations.isEmpty(), "collocations must contain at least one entry");
+        assertEquals("important", collocations.get(0).path("lemma").asText(),
+                "first collocate lemma must be 'important' (from stub)");
+        assertEquals(7.5, collocations.get(0).path("log_dice").asDouble(), 0.001,
+                "first collocate log_dice must be 7.5 (from stub)");
+    }
+
     @Test
     void handleSketchRequest_missingRelationType_returns200() throws Exception {
         QueryExecutor executor = collocatingExecutor(Map.of(

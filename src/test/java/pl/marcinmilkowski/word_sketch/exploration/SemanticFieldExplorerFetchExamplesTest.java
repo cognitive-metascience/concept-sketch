@@ -30,12 +30,7 @@ class SemanticFieldExplorerFetchExamplesTest {
         return GrammarConfigHelper.requireTestConfig().relations().stream()
                 .filter(r -> r.relationType().isPresent())
                 .findFirst()
-                .orElseGet(() -> new RelationConfig(
-                        "test", "test", "test",
-                        "1:[lemma=\"{head}\"] [lemma=\"be\"] 2:[xpos=\"JJ.*\"]",
-                        1, 2, false, 0,
-                        RelationType.SURFACE,
-                        PosGroup.ADJ));
+                .orElse(GrammarConfigHelper.minimalSurfaceRelationConfig());
     }
 
     private static CollocateResult collocateResult(String sentence) {

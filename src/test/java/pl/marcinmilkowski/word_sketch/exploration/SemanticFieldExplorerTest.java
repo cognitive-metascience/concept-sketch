@@ -2,6 +2,7 @@ package pl.marcinmilkowski.word_sketch.exploration;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import pl.marcinmilkowski.word_sketch.config.GrammarConfigHelper;
 import pl.marcinmilkowski.word_sketch.exploration.spi.ExplorationService;
 import pl.marcinmilkowski.word_sketch.utils.CqlUtils;
 import pl.marcinmilkowski.word_sketch.query.StubQueryExecutor;
@@ -204,11 +205,7 @@ class SemanticFieldExplorerTest {
 
         ExplorationResult result = explorer.exploreMultiSeed(
             Set.of("theory", "model"),
-            new pl.marcinmilkowski.word_sketch.config.RelationConfig(
-                "test", "test", "test", "[xpos=\"NN.*\"] [xpos=\"JJ.*\"]",
-                1, 2, false, 0,
-                pl.marcinmilkowski.word_sketch.config.RelationType.SURFACE,
-                pl.marcinmilkowski.word_sketch.model.PosGroup.ADJ),
+            GrammarConfigHelper.minimalSurfaceRelationConfig(),
             new pl.marcinmilkowski.word_sketch.model.exploration.ExplorationOptions(10, 0.0, 1));
 
         assertNotNull(result, "Result should not be null");
@@ -246,11 +243,7 @@ class SemanticFieldExplorerTest {
 
         ExplorationResult result = explorer.exploreMultiSeed(
             Set.of("theory", "model"),
-            new pl.marcinmilkowski.word_sketch.config.RelationConfig(
-                "test", "test", "test", "[xpos=\"NN.*\"] [xpos=\"JJ.*\"]",
-                1, 2, false, 0,
-                pl.marcinmilkowski.word_sketch.config.RelationType.SURFACE,
-                pl.marcinmilkowski.word_sketch.model.PosGroup.ADJ),
+            GrammarConfigHelper.minimalSurfaceRelationConfig(),
             new pl.marcinmilkowski.word_sketch.model.exploration.ExplorationOptions(10, 0.0, 2));
 
         assertNotNull(result.seedCollocates(), "Seed collocates should not be null");

@@ -1,5 +1,7 @@
 package pl.marcinmilkowski.word_sketch.model.exploration;
 
+import com.fasterxml.jackson.annotation.JsonValue;
+
 /**
  * Type of an {@link Edge} in a semantic-field exploration graph.
  *
@@ -25,6 +27,7 @@ public enum RelationEdgeType {
     }
 
     /** Stable string label used in JSON serialization. */
+    @JsonValue
     public String label() {
         return label;
     }

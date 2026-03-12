@@ -69,6 +69,25 @@ class ConcordanceHandlersTest {
         assertTrue(body.has("examples"), "Response must contain 'examples' key");
     }
 
+    /**
+     * Data-shape test: the concordance-examples response must include at least one example
+     * entry whose {@code sentence} matches the sentence injected by the stub.
+     */
+    @Test
+    void handleConcordanceExamples_stubData_firstExampleHasKnownSentence() throws Exception {
+        ConcordanceHandlers handlers = new ConcordanceHandlers(stubExecutor(), GrammarConfigHelper.requireTestConfig());
+        MockExchangeFactory.MockExchange ex = new MockExchangeFactory.MockExchange(
+                "http://localhost/api/concordance/examples?seed=house&collocate=big&relation=noun_adj_predicates");
+        handlers.handleConcordanceExamples(ex);
+        assertEquals(200, ex.statusCode);
+        ObjectNode body = HttpApiUtils.mapper().readValue(ex.getResponseBodyAsString(), ObjectNode.class);
+        com.fasterxml.jackson.databind.JsonNode examples = body.get("examples");
+        assertNotNull(examples, "examples array must be present");
+        assertFalse(examples.isEmpty(), "examples must be non-empty when stub returns data");
+        assertEquals("The big house", examples.get(0).path("sentence").asText(),
+                "first example sentence must match the sentence injected by the stub");
+    }
+
     @Test
     void handleConcordanceExamples_missingWord1_returns400() throws Exception {
         ConcordanceHandlers handlers = new ConcordanceHandlers(null, GrammarConfigHelper.requireTestConfig());

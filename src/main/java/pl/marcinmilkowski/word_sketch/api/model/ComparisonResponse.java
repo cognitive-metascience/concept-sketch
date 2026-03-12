@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 
 import java.util.List;
 import java.util.Map;
+import pl.marcinmilkowski.word_sketch.model.exploration.RelationEdgeType;
 
 /**
  * Typed response record for the collocate-profile comparison endpoint
@@ -51,5 +52,5 @@ public record ComparisonResponse(
                     com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL) String specificTo) {}
 
     /** Graph edge connecting a collocate to a seed noun. */
-    public record EdgeEntry(String source, String target, double weight, String type) {}
+    public record EdgeEntry(String source, String target, double weight, RelationEdgeType type) {}
 }

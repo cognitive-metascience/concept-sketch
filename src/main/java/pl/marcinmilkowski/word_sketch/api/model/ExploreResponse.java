@@ -5,6 +5,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import org.jspecify.annotations.Nullable;
 
 import java.util.List;
+import pl.marcinmilkowski.word_sketch.model.exploration.RelationEdgeType;
 
 /**
  * Sealed interface for single-seed and multi-seed semantic field exploration responses
@@ -91,7 +92,7 @@ public sealed interface ExploreResponse
             String source,
             String target,
             @JsonProperty("log_dice") double logDice,
-            String type) {}
+            RelationEdgeType type) {}
 
     // -------------------------------------------------------------------------
     // Concrete variants
