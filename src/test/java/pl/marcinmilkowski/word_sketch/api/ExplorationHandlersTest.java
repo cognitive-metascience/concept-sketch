@@ -11,6 +11,7 @@ import pl.marcinmilkowski.word_sketch.model.Edge;
 import pl.marcinmilkowski.word_sketch.model.ExplorationOptions;
 import pl.marcinmilkowski.word_sketch.model.QueryResults;
 import pl.marcinmilkowski.word_sketch.query.QueryExecutor;
+import pl.marcinmilkowski.word_sketch.query.StubQueryExecutor;
 
 import java.io.IOException;
 import java.util.List;
@@ -29,25 +30,13 @@ class ExplorationHandlersTest {
 
     /** Stub executor that returns empty lists for all operations. */
     private static QueryExecutor emptyExecutor() {
-        return new QueryExecutor() {
-            @Override public List<QueryResults.WordSketchResult> executeCollocations(
-                    String lemma, String cqlPattern, double minLogDice, int maxResults) { return List.of(); }
-            @Override public List<QueryResults.ConcordanceResult> executeCqlQuery(String p, int m) { return List.of(); }
-            @Override public List<QueryResults.CollocateResult> executeBcqlQuery(String p, int m) { return List.of(); }
-            @Override public long getTotalFrequency(String lemma) { return 0; }
-            @Override public List<QueryResults.WordSketchResult> executeSurfacePattern(
-                    String pattern, double minLogDice, int maxResults) { return List.of(); }
-            @Override public List<QueryResults.WordSketchResult> executeDependencyPattern(
-                    String lemma, String deprel, double minLogDice, int maxResults,
-                    String headPosConstraint) { return List.of(); }
-            @Override public void close() {}
-        };
+        return new StubQueryExecutor();
     }
 
     private static ExplorationHandlers handlers() throws IOException {
         GrammarConfig config = GrammarConfigHelper.requireTestConfig();
         SemanticFieldExplorer explorer = new SemanticFieldExplorer(emptyExecutor(), config);
-        return new ExplorationHandlers(config, explorer);
+        return new ExplorationHandlers(explorer, config);
     }
 
     @Test
@@ -101,7 +90,7 @@ class ExplorationHandlersTest {
 
     @Test
     void handleSemanticFieldExplore_missingSeed_returns400() throws Exception {
-        ExplorationHandlers handlers = new ExplorationHandlers(GrammarConfigHelper.requireTestConfig(), null);
+        ExplorationHandlers handlers = new ExplorationHandlers(null, GrammarConfigHelper.requireTestConfig());
         TestExchangeFactory.MockExchange ex = new TestExchangeFactory.MockExchange(
                 "http://localhost/api/semantic-field/explore");
         HttpApiUtils.wrapWithErrorHandling(handlers::handleSemanticFieldExplore, "test").handle(ex);
@@ -110,7 +99,7 @@ class ExplorationHandlersTest {
 
     @Test
     void handleSemanticFieldExploreMulti_missingSeeds_returns400() throws Exception {
-        ExplorationHandlers handlers = new ExplorationHandlers(GrammarConfigHelper.requireTestConfig(), null);
+        ExplorationHandlers handlers = new ExplorationHandlers(null, GrammarConfigHelper.requireTestConfig());
         TestExchangeFactory.MockExchange ex = new TestExchangeFactory.MockExchange(
                 "http://localhost/api/semantic-field/explore-multi");
         HttpApiUtils.wrapWithErrorHandling(handlers::handleSemanticFieldExploreMulti, "test").handle(ex);
@@ -119,7 +108,7 @@ class ExplorationHandlersTest {
 
     @Test
     void handleSemanticFieldExploreMulti_oneSeed_returns400() throws Exception {
-        ExplorationHandlers handlers = new ExplorationHandlers(GrammarConfigHelper.requireTestConfig(), null);
+        ExplorationHandlers handlers = new ExplorationHandlers(null, GrammarConfigHelper.requireTestConfig());
         TestExchangeFactory.MockExchange ex = new TestExchangeFactory.MockExchange(
                 "http://localhost/api/semantic-field/explore-multi?seeds=theory");
         HttpApiUtils.wrapWithErrorHandling(handlers::handleSemanticFieldExploreMulti, "test").handle(ex);
@@ -128,7 +117,7 @@ class ExplorationHandlersTest {
 
     @Test
     void handleSemanticFieldComparison_invalidNumericParam_returns400() throws Exception {
-        ExplorationHandlers handlers = new ExplorationHandlers(GrammarConfigHelper.requireTestConfig(), null);
+        ExplorationHandlers handlers = new ExplorationHandlers(null, GrammarConfigHelper.requireTestConfig());
         TestExchangeFactory.MockExchange ex = new TestExchangeFactory.MockExchange(
                 "http://localhost/api/semantic-field?seeds=theory,model&min_logdice=notanumber");
         HttpApiUtils.wrapWithErrorHandling(handlers::handleSemanticFieldComparison, "test").handle(ex);
@@ -137,7 +126,7 @@ class ExplorationHandlersTest {
 
     @Test
     void handleSemanticFieldExamples_missingAdjective_returns400() throws Exception {
-        ExplorationHandlers handlers = new ExplorationHandlers(GrammarConfigHelper.requireTestConfig(), null);
+        ExplorationHandlers handlers = new ExplorationHandlers(null, GrammarConfigHelper.requireTestConfig());
         TestExchangeFactory.MockExchange ex = new TestExchangeFactory.MockExchange(
                 "http://localhost/api/semantic-field/examples?noun=theory");
         HttpApiUtils.wrapWithErrorHandling(handlers::handleSemanticFieldExamples, "test").handle(ex);
@@ -146,7 +135,7 @@ class ExplorationHandlersTest {
 
     @Test
     void handleSemanticFieldExamples_missingNoun_returns400() throws Exception {
-        ExplorationHandlers handlers = new ExplorationHandlers(GrammarConfigHelper.requireTestConfig(), null);
+        ExplorationHandlers handlers = new ExplorationHandlers(null, GrammarConfigHelper.requireTestConfig());
         TestExchangeFactory.MockExchange ex = new TestExchangeFactory.MockExchange(
                 "http://localhost/api/semantic-field/examples?adjective=important");
         HttpApiUtils.wrapWithErrorHandling(handlers::handleSemanticFieldExamples, "test").handle(ex);
@@ -156,7 +145,7 @@ class ExplorationHandlersTest {
     @Test
     void handleSemanticFieldExamples_validParams_returns200() throws Exception {
         SemanticFieldExplorer explorer = new SemanticFieldExplorer(emptyExecutor(), null);
-        ExplorationHandlers handlers = new ExplorationHandlers(GrammarConfigHelper.requireTestConfig(), explorer);
+        ExplorationHandlers handlers = new ExplorationHandlers(explorer, GrammarConfigHelper.requireTestConfig());
         TestExchangeFactory.MockExchange ex = new TestExchangeFactory.MockExchange(
                 "http://localhost/api/semantic-field/examples?collocate=important&seed=theory&relation=noun_adj_predicates");
         handlers.handleSemanticFieldExamples(ex);
@@ -170,7 +159,7 @@ class ExplorationHandlersTest {
 
     @Test
     void handleSemanticFieldExploreMulti_nounsPerParam_returns400() throws Exception {
-        ExplorationHandlers handlers = new ExplorationHandlers(GrammarConfigHelper.requireTestConfig(), null);
+        ExplorationHandlers handlers = new ExplorationHandlers(null, GrammarConfigHelper.requireTestConfig());
         TestExchangeFactory.MockExchange ex = new TestExchangeFactory.MockExchange(
                 "http://localhost/api/semantic-field/explore-multi?seeds=theory,model&nouns_per=5");
         HttpApiUtils.wrapWithErrorHandling(handlers::handleSemanticFieldExploreMulti, "test").handle(ex);
@@ -179,7 +168,7 @@ class ExplorationHandlersTest {
 
     @Test
     void handleSemanticFieldExplore_unknownRelation_returns400() throws Exception {
-        ExplorationHandlers handlers = new ExplorationHandlers(GrammarConfigHelper.requireTestConfig(), null);
+        ExplorationHandlers handlers = new ExplorationHandlers(null, GrammarConfigHelper.requireTestConfig());
         TestExchangeFactory.MockExchange ex = new TestExchangeFactory.MockExchange(
                 "http://localhost/api/semantic-field/explore?seed=theory&relation=no_such_relation");
         HttpApiUtils.wrapWithErrorHandling(handlers::handleSemanticFieldExplore, "test").handle(ex);
@@ -188,7 +177,7 @@ class ExplorationHandlersTest {
 
     @Test
     void handleSemanticFieldExploreMulti_unknownRelation_returns400() throws Exception {
-        ExplorationHandlers handlers = new ExplorationHandlers(GrammarConfigHelper.requireTestConfig(), null);
+        ExplorationHandlers handlers = new ExplorationHandlers(null, GrammarConfigHelper.requireTestConfig());
         TestExchangeFactory.MockExchange ex = new TestExchangeFactory.MockExchange(
                 "http://localhost/api/semantic-field/explore-multi?seeds=theory,model&relation=no_such_relation");
         HttpApiUtils.wrapWithErrorHandling(handlers::handleSemanticFieldExploreMulti, "test").handle(ex);
@@ -218,25 +207,20 @@ class ExplorationHandlersTest {
     // ── Stub helpers ─────────────────────────────────────────────────────────
 
     private static QueryExecutor collocatingExecutor(Map<String, List<QueryResults.WordSketchResult>> map) {
-        return new QueryExecutor() {
-            @Override public List<QueryResults.WordSketchResult> executeCollocations(
+        return new StubQueryExecutor() {
+            @Override
+            public List<QueryResults.WordSketchResult> executeCollocations(
                     String lemma, String cqlPattern, double minLogDice, int maxResults) {
                 return map.getOrDefault(lemma.toLowerCase(), List.of());
             }
-            @Override public List<QueryResults.ConcordanceResult> executeCqlQuery(String p, int m) { return List.of(); }
-            @Override public List<QueryResults.CollocateResult> executeBcqlQuery(String p, int m) { return List.of(); }
-            @Override public long getTotalFrequency(String lemma) { return 0; }
-            @Override public List<QueryResults.WordSketchResult> executeSurfacePattern(
+            @Override
+            public List<QueryResults.WordSketchResult> executeSurfacePattern(
                     String pattern, double minLogDice, int maxResults) {
                 java.util.regex.Matcher m = java.util.regex.Pattern.compile("lemma=[\"']([^\"']+)[\"']",
                         java.util.regex.Pattern.CASE_INSENSITIVE).matcher(pattern);
                 String lemma = m.find() ? m.group(1) : "";
                 return map.getOrDefault(lemma.toLowerCase(), List.of());
             }
-            @Override public List<QueryResults.WordSketchResult> executeDependencyPattern(
-                    String lemma, String deprel, double minLogDice, int maxResults,
-                    String headPosConstraint) { return List.of(); }
-            @Override public void close() {}
         };
     }
 

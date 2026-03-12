@@ -11,22 +11,22 @@
     "total": 1424,
     "auto_resolved": 273,
     "false_positive": 0,
-    "fixed": 940,
-    "open": 16,
+    "fixed": 946,
+    "open": 10,
     "wontfix": 195,
     "by_tier": {
       "1": {
         "auto_resolved": 135,
         "false_positive": 0,
-        "fixed": 644,
-        "open": 5,
+        "fixed": 646,
+        "open": 3,
         "wontfix": 104
       },
       "2": {
         "auto_resolved": 96,
         "false_positive": 0,
-        "fixed": 278,
-        "open": 5,
+        "fixed": 282,
+        "open": 1,
         "wontfix": 80
       },
       "3": {
@@ -57326,16 +57326,22 @@
         "suggestion": "Reorder ExplorationHandlers constructor parameters to (SemanticFieldExplorer semanticFieldExplorer, GrammarConfig grammarConfig) or, if GrammarConfig must come first, document the rationale; update the construction call in WordSketchApiServer accordingly",
         "reasoning": ""
       },
-      "status": "open",
-      "note": null,
+      "status": "fixed",
+      "note": "Standardized ExplorationHandlers constructor to (SemanticFieldExplorer, GrammarConfig) order matching ConcordanceHandlers and SketchHandlers. Updated WordSketchApiServer and 11 test constructor calls.",
       "first_seen": "2026-03-12T01:41:49+00:00",
       "last_seen": "2026-03-12T01:41:49+00:00",
-      "resolved_at": null,
+      "resolved_at": "2026-03-12T02:56:38+00:00",
       "reopen_count": 0,
       "lang": "java",
       "suppressed": false,
       "suppressed_at": null,
-      "suppression_pattern": null
+      "suppression_pattern": null,
+      "resolution_attestation": {
+        "kind": "manual",
+        "text": "I have actually fixed this issue in the committed code. This is not gaming.",
+        "attested_at": "2026-03-12T02:56:38+00:00",
+        "scan_verified": false
+      }
     },
     "review::.::holistic::convention_outlier::query_results_namespace_container::f67f2a90": {
       "id": "review::.::holistic::convention_outlier::query_results_namespace_container::f67f2a90",
@@ -57360,16 +57366,22 @@
         "suggestion": "Promote WordSketchResult, ConcordanceResult, SnippetResult, and CollocateResult to top-level classes/records to match every other type in the package; if namespace grouping is intentional, add a sentence to package-info.java explaining the rationale",
         "reasoning": ""
       },
-      "status": "open",
-      "note": null,
+      "status": "fixed",
+      "note": "Updated QueryResults.java Javadoc to explain non-instantiable namespace class design. Private constructor was already present.",
       "first_seen": "2026-03-12T01:41:49+00:00",
       "last_seen": "2026-03-12T01:41:49+00:00",
-      "resolved_at": null,
+      "resolved_at": "2026-03-12T02:56:39+00:00",
       "reopen_count": 0,
       "lang": "java",
       "suppressed": false,
       "suppressed_at": null,
-      "suppression_pattern": null
+      "suppression_pattern": null,
+      "resolution_attestation": {
+        "kind": "manual",
+        "text": "I have actually fixed this issue in the committed code. This is not gaming.",
+        "attested_at": "2026-03-12T02:56:39+00:00",
+        "scan_verified": false
+      }
     },
     "review::.::holistic::error_consistency::grammar_config_json_exception_leaks::d94e641f": {
       "id": "review::.::holistic::error_consistency::grammar_config_json_exception_leaks::d94e641f",
@@ -57431,16 +57443,22 @@
         "suggestion": "Change parseRelationType to throw IllegalArgumentException for non-blank unrecognised values (blank/null remains valid for non-exploration relations): if the field is present and non-blank but not a valid enum value, throw new IllegalArgumentException(\"Config error: Unrecognised relation_type '\" + value + \"' for relation \u2014 valid values: \" + Arrays.toString(RelationType.values())). Relations without exploration participation should simply omit the field.",
         "reasoning": ""
       },
-      "status": "open",
-      "note": null,
+      "status": "fixed",
+      "note": "Fixed parseRelationType in GrammarConfigLoader to throw IllegalArgumentException for unrecognised relation types instead of silently warning and returning empty.",
       "first_seen": "2026-03-12T01:41:49+00:00",
       "last_seen": "2026-03-12T01:41:49+00:00",
-      "resolved_at": null,
+      "resolved_at": "2026-03-12T02:56:41+00:00",
       "reopen_count": 0,
       "lang": "java",
       "suppressed": false,
       "suppressed_at": null,
-      "suppression_pattern": null
+      "suppression_pattern": null,
+      "resolution_attestation": {
+        "kind": "manual",
+        "text": "I have actually fixed this issue in the committed code. This is not gaming.",
+        "attested_at": "2026-03-12T02:56:41+00:00",
+        "scan_verified": false
+      }
     },
     "review::.::holistic::naming_quality::fetch_examples_adj_noun_assumption::2a32f140": {
       "id": "review::.::holistic::naming_quality::fetch_examples_adj_noun_assumption::2a32f140",
@@ -57541,16 +57559,22 @@
         "suggestion": "Rename to 'inferPosGroupFromCqlAttribute(String cqlPattern, String attributeName)' or similar. This communicates the input (a CQL pattern + attribute name) and the output (inferred PosGroup) without requiring the reader to trace through the implementation.",
         "reasoning": ""
       },
-      "status": "open",
-      "note": null,
+      "status": "fixed",
+      "note": "Renamed posGroupForPrefix to resolvePosGroupFromPrefix in RelationPatternBuilder.java. Both declaration and call site updated.",
       "first_seen": "2026-03-12T01:41:49+00:00",
       "last_seen": "2026-03-12T01:41:49+00:00",
-      "resolved_at": null,
+      "resolved_at": "2026-03-12T02:56:33+00:00",
       "reopen_count": 0,
       "lang": "java",
       "suppressed": false,
       "suppressed_at": null,
-      "suppression_pattern": null
+      "suppression_pattern": null,
+      "resolution_attestation": {
+        "kind": "manual",
+        "text": "I have actually fixed this issue in the committed code. This is not gaming.",
+        "attested_at": "2026-03-12T02:56:33+00:00",
+        "scan_verified": false
+      }
     },
     "review::.::holistic::naming_quality::seeds_raw_vs_seeds_param_divergence::c866750d": {
       "id": "review::.::holistic::naming_quality::seeds_raw_vs_seeds_param_divergence::c866750d",
@@ -57573,16 +57597,22 @@
         "suggestion": "Standardise on one name \u2014 'seedsParam' is already the name used by the private parseSeedSet method's parameter, so align handleSemanticFieldExploreMulti to also use 'seedsParam'.",
         "reasoning": ""
       },
-      "status": "open",
-      "note": null,
+      "status": "fixed",
+      "note": "Renamed seedsRaw to seedsParam in ExplorationHandlers.handleSemanticFieldExploreMulti for consistency with sibling methods.",
       "first_seen": "2026-03-12T01:41:49+00:00",
       "last_seen": "2026-03-12T01:41:49+00:00",
-      "resolved_at": null,
+      "resolved_at": "2026-03-12T02:56:34+00:00",
       "reopen_count": 0,
       "lang": "java",
       "suppressed": false,
       "suppressed_at": null,
-      "suppression_pattern": null
+      "suppression_pattern": null,
+      "resolution_attestation": {
+        "kind": "manual",
+        "text": "I have actually fixed this issue in the committed code. This is not gaming.",
+        "attested_at": "2026-03-12T02:56:34+00:00",
+        "scan_verified": false
+      }
     },
     "review::.::holistic::logic_clarity::over_fetch_nullified::5a82c98d": {
       "id": "review::.::holistic::logic_clarity::over_fetch_nullified::5a82c98d",
@@ -57684,16 +57714,22 @@
         "suggestion": "Move the seed null check (and optionally an opts null check) to the top of the method, before any field accesses. Add @NonNull annotations to the package-private method parameters to match the public overload, or reorder the guard so seed is validated first.",
         "reasoning": ""
       },
-      "status": "open",
-      "note": null,
+      "status": "fixed",
+      "note": "Added null-before-isEmpty guard in ExplorationHandlers.parseSeedSet. Null is now checked before isEmpty() call.",
       "first_seen": "2026-03-12T01:41:49+00:00",
       "last_seen": "2026-03-12T01:41:49+00:00",
-      "resolved_at": null,
+      "resolved_at": "2026-03-12T02:56:42+00:00",
       "reopen_count": 0,
       "lang": "java",
       "suppressed": false,
       "suppressed_at": null,
-      "suppression_pattern": null
+      "suppression_pattern": null,
+      "resolution_attestation": {
+        "kind": "manual",
+        "text": "I have actually fixed this issue in the committed code. This is not gaming.",
+        "attested_at": "2026-03-12T02:56:42+00:00",
+        "scan_verified": false
+      }
     },
     "review::.::holistic::api_surface_coherence::surface_pattern_redundant_lemma::67165746": {
       "id": "review::.::holistic::api_surface_coherence::surface_pattern_redundant_lemma::67165746",
@@ -58131,7 +58167,7 @@
       "assessed_at": "2026-03-12T01:41:49+00:00",
       "needs_review_refresh": true,
       "refresh_reason": "review_issue_fixed",
-      "stale_since": "2026-03-12T02:25:47+00:00"
+      "stale_since": "2026-03-12T02:56:42+00:00"
     },
     "type_safety": {
       "score": 77.4,
@@ -58170,7 +58206,7 @@
       "assessed_at": "2026-03-12T01:41:49+00:00",
       "needs_review_refresh": true,
       "refresh_reason": "review_issue_fixed",
-      "stale_since": "2026-03-12T02:25:42+00:00"
+      "stale_since": "2026-03-12T02:56:39+00:00"
     },
     "error_consistency": {
       "score": 75.9,
@@ -58178,7 +58214,7 @@
       "assessed_at": "2026-03-12T01:41:49+00:00",
       "needs_review_refresh": true,
       "refresh_reason": "review_issue_fixed",
-      "stale_since": "2026-03-12T02:25:44+00:00"
+      "stale_since": "2026-03-12T02:56:41+00:00"
     },
     "naming_quality": {
       "score": 61.2,
@@ -58186,7 +58222,7 @@
       "assessed_at": "2026-03-12T01:41:49+00:00",
       "needs_review_refresh": true,
       "refresh_reason": "review_issue_fixed",
-      "stale_since": "2026-03-12T02:25:50+00:00"
+      "stale_since": "2026-03-12T02:56:34+00:00"
     },
     "abstraction_fitness": {
       "score": 64.9,
@@ -61106,13 +61142,13 @@
       "strict": 61.2,
       "verified_strict_score": 61.2,
       "checks": 10,
-      "failing": 2,
+      "failing": 0,
       "tier": 4,
       "detectors": {
         "subjective_assessment": {
           "potential": 10,
           "pass_rate": 0.612,
-          "failing": 2,
+          "failing": 0,
           "weighted_failures": 3.88,
           "assessment_score": 61.2,
           "placeholder": false,
@@ -61127,13 +61163,13 @@
       "strict": 66.1,
       "verified_strict_score": 66.1,
       "checks": 10,
-      "failing": 1,
+      "failing": 0,
       "tier": 4,
       "detectors": {
         "subjective_assessment": {
           "potential": 10,
           "pass_rate": 0.661,
-          "failing": 1,
+          "failing": 0,
           "weighted_failures": 3.39,
           "assessment_score": 66.1,
           "placeholder": false,
@@ -61190,13 +61226,13 @@
       "strict": 75.9,
       "verified_strict_score": 75.9,
       "checks": 10,
-      "failing": 1,
+      "failing": 0,
       "tier": 4,
       "detectors": {
         "subjective_assessment": {
           "potential": 10,
           "pass_rate": 0.759,
-          "failing": 1,
+          "failing": 0,
           "weighted_failures": 2.41,
           "assessment_score": 75.9,
           "placeholder": false,
@@ -61373,13 +61409,13 @@
       "strict": 54.8,
       "verified_strict_score": 54.8,
       "checks": 10,
-      "failing": 2,
+      "failing": 0,
       "tier": 4,
       "detectors": {
         "subjective_assessment": {
           "potential": 10,
           "pass_rate": 0.548,
-          "failing": 2,
+          "failing": 0,
           "weighted_failures": 4.52,
           "assessment_score": 54.8,
           "placeholder": false,

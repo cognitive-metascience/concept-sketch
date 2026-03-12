@@ -7,6 +7,7 @@ import pl.marcinmilkowski.word_sketch.config.GrammarConfig;
 import pl.marcinmilkowski.word_sketch.config.GrammarConfigHelper;
 import pl.marcinmilkowski.word_sketch.model.QueryResults;
 import pl.marcinmilkowski.word_sketch.query.QueryExecutor;
+import pl.marcinmilkowski.word_sketch.query.StubQueryExecutor;
 
 import java.io.IOException;
 import java.util.List;
@@ -27,20 +28,21 @@ class SketchHandlersTest {
     private static QueryExecutor stubExecutor() {
         QueryResults.WordSketchResult stub = new QueryResults.WordSketchResult(
                 "important", "JJ", 100L, 7.5, 0.01, List.of("it is important"));
-        return new QueryExecutor() {
-            @Override public List<QueryResults.WordSketchResult> executeCollocations(
+        return new StubQueryExecutor() {
+            @Override
+            public List<QueryResults.WordSketchResult> executeCollocations(
                     String lemma, String cqlPattern, double minLogDice, int maxResults) {
                 return List.of(stub);
             }
-            @Override public List<QueryResults.ConcordanceResult> executeCqlQuery(String p, int m) { return List.of(); }
-            @Override public List<QueryResults.CollocateResult> executeBcqlQuery(String p, int m) { return List.of(); }
-            @Override public long getTotalFrequency(String lemma) { return 10000L; }
-            @Override public List<QueryResults.WordSketchResult> executeSurfacePattern(
+            @Override
+            public long getTotalFrequency(String lemma) { return 10000L; }
+            @Override
+            public List<QueryResults.WordSketchResult> executeSurfacePattern(
                     String pattern, double minLogDice, int maxResults) { return List.of(stub); }
-            @Override public List<QueryResults.WordSketchResult> executeDependencyPattern(
+            @Override
+            public List<QueryResults.WordSketchResult> executeDependencyPattern(
                     String lemma, String deprel, double minLogDice, int maxResults,
                     String headPosConstraint) { return List.of(stub); }
-            @Override public void close() {}
         };
     }
 
@@ -125,25 +127,20 @@ class SketchHandlersTest {
     // ── Stub helpers ─────────────────────────────────────────────────────────
 
     private static QueryExecutor collocatingExecutor(Map<String, List<QueryResults.WordSketchResult>> map) {
-        return new QueryExecutor() {
-            @Override public List<QueryResults.WordSketchResult> executeCollocations(
+        return new StubQueryExecutor() {
+            @Override
+            public List<QueryResults.WordSketchResult> executeCollocations(
                     String lemma, String cqlPattern, double minLogDice, int maxResults) {
                 return map.getOrDefault(lemma.toLowerCase(), List.of());
             }
-            @Override public List<QueryResults.ConcordanceResult> executeCqlQuery(String p, int m) { return List.of(); }
-            @Override public List<QueryResults.CollocateResult> executeBcqlQuery(String p, int m) { return List.of(); }
-            @Override public long getTotalFrequency(String lemma) { return 0; }
-            @Override public List<QueryResults.WordSketchResult> executeSurfacePattern(
+            @Override
+            public List<QueryResults.WordSketchResult> executeSurfacePattern(
                     String pattern, double minLogDice, int maxResults) {
                 java.util.regex.Matcher m = java.util.regex.Pattern.compile("lemma=[\"']([^\"']+)[\"']",
                         java.util.regex.Pattern.CASE_INSENSITIVE).matcher(pattern);
                 String lemma = m.find() ? m.group(1) : "";
                 return map.getOrDefault(lemma.toLowerCase(), List.of());
             }
-            @Override public List<QueryResults.WordSketchResult> executeDependencyPattern(
-                    String lemma, String deprel, double minLogDice, int maxResults,
-                    String headPosConstraint) { return List.of(); }
-            @Override public void close() {}
         };
     }
 

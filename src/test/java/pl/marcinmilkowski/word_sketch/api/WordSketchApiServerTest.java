@@ -9,6 +9,7 @@ import org.junit.jupiter.api.Test;
 import pl.marcinmilkowski.word_sketch.config.GrammarConfigHelper;
 import pl.marcinmilkowski.word_sketch.exploration.SemanticFieldExplorer;
 import pl.marcinmilkowski.word_sketch.query.QueryExecutor;
+import pl.marcinmilkowski.word_sketch.query.StubQueryExecutor;
 import pl.marcinmilkowski.word_sketch.model.QueryResults;
 
 import java.io.IOException;
@@ -37,42 +38,7 @@ class WordSketchApiServerTest {
     private final HttpClient httpClient = HttpClient.newHttpClient();
 
     /** Minimal stub executor that returns empty results for every query. */
-    private static final QueryExecutor STUB_EXECUTOR = new QueryExecutor() {
-        @Override
-        public List<QueryResults.WordSketchResult> executeCollocations(
-                String lemma, String cqlPattern, double minLogDice, int maxResults) {
-            return Collections.emptyList();
-        }
-
-        @Override
-        public List<QueryResults.ConcordanceResult> executeCqlQuery(String cqlPattern, int maxResults) {
-            return Collections.emptyList();
-        }
-
-        @Override
-        public List<QueryResults.CollocateResult> executeBcqlQuery(String bcqlQuery, int maxResults) {
-            return Collections.emptyList();
-        }
-
-        @Override
-        public long getTotalFrequency(String lemma) { return 0; }
-
-        @Override
-        public List<QueryResults.WordSketchResult> executeSurfacePattern(
-                String pattern, double minLogDice, int maxResults) {
-            return Collections.emptyList();
-        }
-
-        @Override
-        public List<QueryResults.WordSketchResult> executeDependencyPattern(
-                String lemma, String deprel, double minLogDice, int maxResults,
-                String headPosConstraint) {
-            return Collections.emptyList();
-        }
-
-        @Override
-        public void close() {}
-    };
+    private static final QueryExecutor STUB_EXECUTOR = new StubQueryExecutor();
 
     @BeforeEach
     void startServer() throws IOException {

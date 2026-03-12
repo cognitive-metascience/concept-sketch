@@ -6,6 +6,7 @@ import pl.marcinmilkowski.word_sketch.config.RelationConfig;
 import pl.marcinmilkowski.word_sketch.model.ExplorationResult;
 import pl.marcinmilkowski.word_sketch.model.QueryResults;
 import pl.marcinmilkowski.word_sketch.query.QueryExecutor;
+import pl.marcinmilkowski.word_sketch.query.StubQueryExecutor;
 
 import java.io.IOException;
 import java.util.LinkedHashMap;
@@ -19,22 +20,15 @@ class MultiSeedExplorerTest {
 
     /** Stub executor returning canned results per lemma via executeSurfacePattern. */
     private static QueryExecutor stubExecutor(Map<String, List<QueryResults.WordSketchResult>> data) {
-        return new QueryExecutor() {
-            @Override public List<QueryResults.WordSketchResult> executeCollocations(
-                    String lemma, String p, double m, int max) { return List.of(); }
-            @Override public List<QueryResults.ConcordanceResult> executeCqlQuery(String p, int m) { return List.of(); }
-            @Override public List<QueryResults.CollocateResult> executeBcqlQuery(String p, int m) { return List.of(); }
-            @Override public long getTotalFrequency(String lemma) { return 0; }
-            @Override public List<QueryResults.WordSketchResult> executeSurfacePattern(
+        return new StubQueryExecutor() {
+            @Override
+            public List<QueryResults.WordSketchResult> executeSurfacePattern(
                     String pattern, double minLogDice, int max) {
                 java.util.regex.Matcher m = java.util.regex.Pattern.compile("lemma=[\"']([^\"']+)[\"']",
                         java.util.regex.Pattern.CASE_INSENSITIVE).matcher(pattern);
                 String lemma = m.find() ? m.group(1) : "";
                 return data.getOrDefault(lemma, List.of());
             }
-            @Override public List<QueryResults.WordSketchResult> executeDependencyPattern(
-                    String l, String d, double m, int max, String pos) { return List.of(); }
-            @Override public void close() {}
         };
     }
 

@@ -1,11 +1,11 @@
 {
   "command": "resolve",
   "patterns": [
-    "67165746"
+    "2c7906aa"
   ],
   "status": "fixed",
   "resolved": [
-    "review::.::holistic::api_surface_coherence::surface_pattern_redundant_lemma::67165746"
+    "review::.::holistic::logic_clarity::seed_null_check_ordering::2c7906aa"
   ],
   "count": 1,
   "next_command": "desloppify next",
@@ -20,7 +20,7 @@
   "attestation": "I have actually fixed this issue in the committed code. This is not gaming.",
   "narrative": {
     "phase": "stagnation",
-    "headline": "Score plateaued at 81.0 for 5 scans. Test strategy (42.0%) is where the breakthrough is. 195 wontfix items may also be worth revisiting. (10 review issues \u2014 run `desloppify show review --status open`)",
+    "headline": "Score plateaued at 81.0 for 5 scans. Test strategy (42.0%) is where the breakthrough is. 195 wontfix items may also be worth revisiting. (4 review issues \u2014 run `desloppify show review --status open`)",
     "dimensions": {
       "lowest_dimensions": [
         {
@@ -168,8 +168,8 @@
       {
         "type": "refactor",
         "detector": "review",
-        "count": 10,
-        "description": "10 review issues need investigation \u2014 run `desloppify show review --status open` to see them",
+        "count": 4,
+        "description": "4 review issues need investigation \u2014 run `desloppify show review --status open` to see them",
         "command": "desloppify show review --status open",
         "impact": 0.0,
         "dimension": "Unknown",
@@ -191,7 +191,7 @@
     "strategy": {
       "fixer_leverage": {
         "auto_fixable_count": 0,
-        "total_count": 36,
+        "total_count": 18,
         "coverage": 0.0,
         "impact_ratio": 0.0,
         "recommendation": "none"
@@ -226,7 +226,7 @@
         }
       },
       "can_parallelize": false,
-      "hint": "Try a different dimension to break the plateau. Review: 10 issue(s) \u2014 `desloppify show review --status open`."
+      "hint": "Try a different dimension to break the plateau. Review: 4 issue(s) \u2014 `desloppify show review --status open`."
     },
     "tools": {
       "fixers": [],
@@ -259,7 +259,7 @@
       "command": "desloppify show boilerplate_duplication --status open",
       "description": "1 boilerplate_duplication issues \u2014 extract shared boilerplate into reusable helpers or base classes"
     },
-    "why_now": "Try a different dimension to break the plateau. Review: 10 issue(s) \u2014 `desloppify show review --status open`.",
+    "why_now": "Try a different dimension to break the plateau. Review: 4 issue(s) \u2014 `desloppify show review --status open`.",
     "verification_step": {
       "command": "desloppify scan",
       "reason": "revalidate after changes"

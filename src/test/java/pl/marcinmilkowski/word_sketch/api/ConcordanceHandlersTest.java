@@ -6,6 +6,7 @@ import org.junit.jupiter.api.Test;
 import pl.marcinmilkowski.word_sketch.config.GrammarConfigHelper;
 import pl.marcinmilkowski.word_sketch.model.QueryResults;
 import pl.marcinmilkowski.word_sketch.query.QueryExecutor;
+import pl.marcinmilkowski.word_sketch.query.StubQueryExecutor;
 
 import java.util.List;
 
@@ -17,22 +18,11 @@ import static org.junit.jupiter.api.Assertions.*;
 class ConcordanceHandlersTest {
 
     private static QueryExecutor stubExecutor() {
-        return new QueryExecutor() {
-            @Override public List<QueryResults.WordSketchResult> executeCollocations(
-                    String lemma, String cqlPattern, double minLogDice, int maxResults) { return List.of(); }
-            @Override public List<QueryResults.ConcordanceResult> executeCqlQuery(
-                    String cqlPattern, int maxResults) { return List.of(); }
-            @Override public long getTotalFrequency(String lemma) { return 0L; }
-            @Override public List<QueryResults.CollocateResult> executeBcqlQuery(
-                    String bcqlPattern, int maxResults) {
+        return new StubQueryExecutor() {
+            @Override
+            public List<QueryResults.CollocateResult> executeBcqlQuery(String bcqlPattern, int maxResults) {
                 return List.of(new QueryResults.CollocateResult("The big house", null, 4, 7, "d1", "big", 1, 7.5));
             }
-            @Override public List<QueryResults.WordSketchResult> executeSurfacePattern(
-                    String bcqlPattern, double minLogDice, int maxResults) { return List.of(); }
-            @Override public List<QueryResults.WordSketchResult> executeDependencyPattern(
-                    String lemma, String deprel, double minLogDice, int maxResults,
-                    String headPosConstraint) { return List.of(); }
-            @Override public void close() {}
         };
     }
 

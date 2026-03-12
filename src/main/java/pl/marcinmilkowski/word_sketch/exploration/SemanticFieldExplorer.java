@@ -151,7 +151,7 @@ public class SemanticFieldExplorer {
      * @param relationName  human-readable relation name for logging
      * @param bcqlPattern   BCQL pattern with headword already substituted
      * @param simplePattern simple reverse-lookup pattern (e.g., {@code [xpos="JJ.*"]})
-     * @param opts          tuning parameters (topCollocates, nounsPerSeed, minLogDice, minShared)
+     * @param opts          tuning parameters (topCollocates, collocatesPerSeed, minLogDice, minShared)
      * @return ExplorationResult with discovered semantic class
      */
     ExplorationResult exploreByPattern(
@@ -162,7 +162,7 @@ public class SemanticFieldExplorer {
             SingleSeedExplorationOptions opts) throws IOException {
 
         int topPredicates = opts.base().topCollocates();
-        int nounsPerPredicate = opts.nounsPerCollocate();
+        int nounsPerPredicate = opts.collocatesPerSeed();
         double minLogDice = opts.base().minLogDice();
         int minShared = opts.base().minShared();
 

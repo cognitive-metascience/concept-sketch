@@ -244,9 +244,9 @@ public final class GrammarConfigLoader {
         if (value == null || value.isBlank()) return Optional.empty();
         try { return Optional.of(RelationType.valueOf(value.toUpperCase(Locale.ROOT))); }
         catch (IllegalArgumentException e) {
-            logger.warn("Unrecognised relation_type '{}' in grammar config — ignoring; valid values: {}",
-                value, java.util.Arrays.toString(RelationType.values()));
-            return Optional.empty();
+            throw new IllegalArgumentException(
+                "Unrecognised relation_type '" + value + "' in grammar config; valid values: "
+                + java.util.Arrays.toString(RelationType.values()), e);
         }
     }
 

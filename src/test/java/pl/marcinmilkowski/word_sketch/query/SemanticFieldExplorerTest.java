@@ -29,7 +29,7 @@ class SemanticFieldExplorerTest {
      * Minimal stub that returns pre-defined adjective lists per noun.
      * The compare() method calls executor.executeCollocations(noun, ADJECTIVE_PATTERN, ...).
      */
-    private static class StubExecutor implements QueryExecutor {
+    private static class StubExecutor extends StubQueryExecutor {
 
         private final Map<String, List<QueryResults.WordSketchResult>> collocations;
 
@@ -44,37 +44,12 @@ class SemanticFieldExplorerTest {
         }
 
         @Override
-        public List<QueryResults.ConcordanceResult> executeCqlQuery(String cqlPattern, int maxResults) {
-            return Collections.emptyList();
-        }
-
-        @Override
-        public long getTotalFrequency(String lemma) {
-            return 0;
-        }
-
-        @Override
-        public List<QueryResults.CollocateResult> executeBcqlQuery(String bcqlPattern, int maxResults) {
-            return Collections.emptyList();
-        }
-
-        @Override
         public List<QueryResults.WordSketchResult> executeSurfacePattern(
                 String bcqlPattern,
                 double minLogDice, int maxResults) {
             String lemma = BlackLabSnippetParser.extractHeadword(bcqlPattern);
             if (lemma == null) lemma = "";
             return collocations.getOrDefault(lemma.toLowerCase(), Collections.emptyList());
-        }
-
-        @Override
-        public void close() {}
-
-        @Override
-        public List<QueryResults.WordSketchResult> executeDependencyPattern(
-                String lemma, String deprel,
-                double minLogDice, int maxResults, String headPosConstraint) {
-            return Collections.emptyList();
         }
     }
 

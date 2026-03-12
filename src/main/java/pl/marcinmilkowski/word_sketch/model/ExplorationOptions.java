@@ -6,7 +6,7 @@ package pl.marcinmilkowski.word_sketch.model;
  * ({@code SemanticFieldExplorer#compareCollocateProfiles}).
  *
  * <p>Single-seed exploration uses {@link SingleSeedExplorationOptions}, which adds the
- * {@code nounsPerCollocate} parameter specific to the reverse-lookup phase.</p>
+ * {@code collocatesPerSeed} parameter specific to the reverse-lookup phase.</p>
  */
 public record ExplorationOptions(
         /** Maximum collocates to retrieve per seed in the first lookup pass. */

@@ -5,6 +5,7 @@ import pl.marcinmilkowski.word_sketch.model.AdjectiveProfile;
 import pl.marcinmilkowski.word_sketch.model.ComparisonResult;
 import pl.marcinmilkowski.word_sketch.model.QueryResults;
 import pl.marcinmilkowski.word_sketch.query.QueryExecutor;
+import pl.marcinmilkowski.word_sketch.query.StubQueryExecutor;
 
 import java.io.IOException;
 import java.util.Collections;
@@ -17,21 +18,12 @@ class CollocateProfileComparatorTest {
 
     /** Stub QueryExecutor that returns predefined collocate lists per lemma. */
     private static QueryExecutor stubExecutor(java.util.Map<String, List<QueryResults.WordSketchResult>> data) {
-        return new QueryExecutor() {
+        return new StubQueryExecutor() {
             @Override
             public List<QueryResults.WordSketchResult> executeCollocations(
                     String lemma, String cqlPattern, double minLogDice, int maxResults) {
                 return data.getOrDefault(lemma, List.of());
             }
-            @Override public List<QueryResults.ConcordanceResult> executeCqlQuery(String p, int m) { return List.of(); }
-            @Override public List<QueryResults.CollocateResult> executeBcqlQuery(String p, int m) { return List.of(); }
-            @Override public long getTotalFrequency(String lemma) { return 0; }
-            @Override public List<QueryResults.WordSketchResult> executeSurfacePattern(
-                    String pattern, double minLogDice, int maxResults) { return List.of(); }
-            @Override public List<QueryResults.WordSketchResult> executeDependencyPattern(
-                    String lemma, String deprel,
-                    double minLogDice, int maxResults, String headPosConstraint) { return List.of(); }
-            @Override public void close() {}
         };
     }
 

@@ -34,7 +34,7 @@ class ExplorationHandlers {
     private final GrammarConfig grammarConfig;
     private final SemanticFieldExplorer semanticFieldExplorer;
 
-    ExplorationHandlers(@NonNull GrammarConfig grammarConfig, SemanticFieldExplorer semanticFieldExplorer) {
+    ExplorationHandlers(SemanticFieldExplorer semanticFieldExplorer, @NonNull GrammarConfig grammarConfig) {
         this.grammarConfig = Objects.requireNonNull(grammarConfig,
             "grammarConfig must not be null; exploration endpoints require a loaded grammar configuration");
         this.semanticFieldExplorer = semanticFieldExplorer;
@@ -63,12 +63,12 @@ class ExplorationHandlers {
 
         SingleSeedExplorationOptions opts = new SingleSeedExplorationOptions(
             new ExplorationOptions(exploreParams.topCollocates(), exploreParams.minLogDice(), exploreParams.minShared()),
-            exploreParams.nounsPerCollocate());
+            exploreParams.collocatesPerSeed());
 
         ExplorationResult result = semanticFieldExplorer.exploreByPattern(seed, relationConfig, opts);
 
         Map<String, Object> extraParams = new HashMap<>();
-        extraParams.put("nouns_per", exploreParams.nounsPerCollocate());
+        extraParams.put("nouns_per", exploreParams.collocatesPerSeed());
         Map<String, Object> response = buildCoreExploreResponse(
             relationType, exploreParams.topCollocates(), exploreParams.minShared(),
             exploreParams.minLogDice(), extraParams);
@@ -98,11 +98,11 @@ class ExplorationHandlers {
             throw new IllegalArgumentException("nouns_per is not supported for multi-seed exploration");
         }
 
-        String seedsRaw = HttpApiUtils.requireParam(params, "seeds");
+        String seedsParam = HttpApiUtils.requireParam(params, "seeds");
         RelationConfig resolvedConfig = resolveRelationConfig(params);
         ExplorationParams exploreParams = parseExplorationParams(params);
 
-        Set<String> seeds = parseSeedSet(seedsRaw);
+        Set<String> seeds = parseSeedSet(seedsParam);
 
         if (seeds.size() < 2) {
             throw new IllegalArgumentException(
@@ -231,6 +231,7 @@ class ExplorationHandlers {
 
     /** Parses a comma-separated seeds parameter into a cleaned, lowercased ordered set. */
     private static Set<String> parseSeedSet(@NonNull String seedsParam) {
+        if (seedsParam == null || seedsParam.isEmpty()) return Set.of();
         Set<String> seeds = new LinkedHashSet<>();
         for (String s : seedsParam.split(",")) {
             String cleaned = s.trim().toLowerCase();
@@ -239,7 +240,7 @@ class ExplorationHandlers {
         return seeds;
     }
 
-    private record ExplorationParams(int topCollocates, int minShared, double minLogDice, int nounsPerCollocate) {}
+    private record ExplorationParams(int topCollocates, int minShared, double minLogDice, int collocatesPerSeed) {}
 
     /**
      * Resolves and validates the relation parameter from request params.
@@ -266,7 +267,7 @@ class ExplorationHandlers {
         int top = HttpApiUtils.parseIntParam(params, "top", 10);
         int minShared = HttpApiUtils.parseIntParam(params, "min_shared", 2);
         double minLogDice = HttpApiUtils.parseDoubleParam(params, "min_logdice", 3.0);
-        int nounsPerCollocate = HttpApiUtils.parseIntParam(params, "nouns_per", 30);
-        return new ExplorationParams(top, minShared, minLogDice, nounsPerCollocate);
+        int collocatesPerSeed = HttpApiUtils.parseIntParam(params, "nouns_per", 30);
+        return new ExplorationParams(top, minShared, minLogDice, collocatesPerSeed);
     }
 }

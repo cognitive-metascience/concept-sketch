@@ -85,7 +85,7 @@ public final class RelationPatternBuilder {
         String pat = pattern.toLowerCase(Locale.ROOT);
         String target = extractLabelContent(pat, 2);
         if (target == null) target = pat;
-        PosGroup result = posGroupForPrefix(target, "xpos=");
+        PosGroup result = resolvePosGroupFromPrefix(target, "xpos=");
         return result != null ? result : PosGroup.OTHER;
     }
 
@@ -103,7 +103,7 @@ public final class RelationPatternBuilder {
         return null;
     }
 
-    private static PosGroup posGroupForPrefix(String s, String attr) {
+    private static PosGroup resolvePosGroupFromPrefix(String s, String attr) {
         String q = attr + "\"";
         if (s.contains(q + "jj") || s.contains(attr + "jj")) return PosGroup.ADJ;
         if (s.contains(q + "vb") || s.contains(attr + "vb")) return PosGroup.VERB;

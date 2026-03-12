@@ -7,6 +7,7 @@ import pl.marcinmilkowski.word_sketch.model.ExplorationOptions;
 import pl.marcinmilkowski.word_sketch.model.SingleSeedExplorationOptions;
 import pl.marcinmilkowski.word_sketch.model.QueryResults;
 import pl.marcinmilkowski.word_sketch.query.QueryExecutor;
+import pl.marcinmilkowski.word_sketch.query.StubQueryExecutor;
 
 import java.io.IOException;
 import java.io.StringReader;
@@ -27,7 +28,7 @@ import static org.junit.jupiter.api.Assertions.*;
 @DisplayName("SemanticFieldExplorerInternal")
 class SemanticFieldExplorerInternalTest {
 
-    private static class StubExecutor implements QueryExecutor {
+    private static class StubExecutor extends StubQueryExecutor {
 
         private final Map<String, List<QueryResults.WordSketchResult>> collocations;
 
@@ -42,21 +43,6 @@ class SemanticFieldExplorerInternalTest {
         }
 
         @Override
-        public List<QueryResults.ConcordanceResult> executeCqlQuery(String cqlPattern, int maxResults) {
-            return Collections.emptyList();
-        }
-
-        @Override
-        public long getTotalFrequency(String lemma) {
-            return 0;
-        }
-
-        @Override
-        public List<QueryResults.CollocateResult> executeBcqlQuery(String bcqlPattern, int maxResults) {
-            return Collections.emptyList();
-        }
-
-        @Override
         public List<QueryResults.WordSketchResult> executeSurfacePattern(
                 String bcqlPattern,
                 double minLogDice, int maxResults) {
@@ -64,16 +50,6 @@ class SemanticFieldExplorerInternalTest {
                     java.util.regex.Pattern.CASE_INSENSITIVE).matcher(bcqlPattern);
             String lemma = m.find() ? m.group(1) : "";
             return collocations.getOrDefault(lemma.toLowerCase(), Collections.emptyList());
-        }
-
-        @Override
-        public void close() {}
-
-        @Override
-        public List<QueryResults.WordSketchResult> executeDependencyPattern(
-                String lemma, String deprel,
-                double minLogDice, int maxResults, String headPosConstraint) {
-            return Collections.emptyList();
         }
     }
 

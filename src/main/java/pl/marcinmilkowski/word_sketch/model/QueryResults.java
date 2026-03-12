@@ -4,11 +4,18 @@ import java.util.List;
 import org.jspecify.annotations.Nullable;
 
 /**
- * Common result classes for word sketch queries.
- * Used by BlackLabQueryExecutor and SemanticFieldExplorer.
+ * Namespace class grouping result record types for word sketch queries.
+ *
+ * <p>This class is intentionally non-instantiable: it exists solely as a namespace container
+ * for the nested record types ({@link WordSketchResult}, {@link SnippetResult},
+ * {@link CollocateResult}) so they share a common qualified name prefix while remaining
+ * public top-level-equivalent types. Do not instantiate this class.</p>
+ *
+ * <p>Used by {@code BlackLabQueryExecutor} and {@code SemanticFieldExplorer}.</p>
  */
 public class QueryResults {
 
+    /** Non-instantiable namespace class — all members are nested types. */
     private QueryResults() {}
 
     /**
