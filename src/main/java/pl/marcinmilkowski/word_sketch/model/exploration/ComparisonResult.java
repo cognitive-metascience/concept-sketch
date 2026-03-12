@@ -15,9 +15,21 @@ public class ComparisonResult {
     private final List<String> nouns;
     private final List<CollocateProfile> collocates;
 
-    public ComparisonResult(List<String> nouns, List<CollocateProfile> collocates) {
+    protected ComparisonResult(List<String> nouns, List<CollocateProfile> collocates) {
         this.nouns = nouns;
         this.collocates = collocates;
+    }
+
+    /**
+     * Factory method for constructing a {@code ComparisonResult}, following the same
+     * convention as {@link pl.marcinmilkowski.word_sketch.model.exploration.ExplorationResult}.
+     *
+     * @param nouns      the seed nouns the comparison was built from; must not be null
+     * @param collocates all collocate profiles; must not be null
+     * @return a new ComparisonResult containing the given data
+     */
+    public static ComparisonResult of(List<String> nouns, List<CollocateProfile> collocates) {
+        return new ComparisonResult(nouns, collocates);
     }
 
     public static ComparisonResult empty() {
@@ -48,27 +60,6 @@ public class ComparisonResult {
             }
         }
         return new SummaryCounts(fullyShared, partiallyShared, specific);
-    }
-
-    /** @return collocates present in every seed noun's collocate profile */
-    public List<CollocateProfile> fullyShared() {
-        return collocates.stream()
-            .filter(CollocateProfile::isFullyShared)
-            .collect(Collectors.toList());
-    }
-
-    /** @return collocates shared by at least 2 nouns but not all */
-    public List<CollocateProfile> partiallyShared() {
-        return collocates.stream()
-            .filter(CollocateProfile::isPartiallyShared)
-            .collect(Collectors.toList());
-    }
-
-    /** @return collocates that occur in the collocate profile of exactly one seed noun */
-    public List<CollocateProfile> specific() {
-        return collocates.stream()
-            .filter(CollocateProfile::isSpecific)
-            .collect(Collectors.toList());
     }
 
     /**

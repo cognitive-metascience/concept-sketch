@@ -76,7 +76,8 @@ class SemanticFieldExplorerTest {
         ComparisonResult result =
             explorer.compareCollocateProfiles(Set.of("theory", "model", "hypothesis"), new pl.marcinmilkowski.word_sketch.model.exploration.ExplorationOptions(50, 0.0, 1));
 
-        List<CollocateProfile> fullyShared = result.fullyShared();
+        List<CollocateProfile> fullyShared = result.collocates().stream()
+                .filter(CollocateProfile::isFullyShared).toList();
         List<String> sharedNames = fullyShared.stream()
             .map(p -> p.collocate()).toList();
 
@@ -98,7 +99,8 @@ class SemanticFieldExplorerTest {
         ComparisonResult result =
             explorer.compareCollocateProfiles(Set.of("theory", "model"), new pl.marcinmilkowski.word_sketch.model.exploration.ExplorationOptions(50, 0.0, 1));
 
-        List<CollocateProfile> specific = result.specific();
+        List<CollocateProfile> specific = result.collocates().stream()
+                .filter(CollocateProfile::isSpecific).toList();
         List<String> specificNames = specific.stream().map(p -> p.collocate()).toList();
 
         assertTrue(specificNames.contains("abstract"),
@@ -144,7 +146,8 @@ class SemanticFieldExplorerTest {
             explorer.compareCollocateProfiles(Set.of("theory", "model"), new pl.marcinmilkowski.word_sketch.model.exploration.ExplorationOptions(50, 0.0, 1));
 
         // empirical is specific to theory (model has no adjectives)
-        List<String> specificNames = result.specific().stream()
+        List<String> specificNames = result.collocates().stream()
+                .filter(CollocateProfile::isSpecific)
             .map(p -> p.collocate()).toList();
         assertTrue(specificNames.contains("empirical"),
             "empirical should be specific when model has no adjectives; got: " + specificNames);
@@ -177,7 +180,8 @@ class SemanticFieldExplorerTest {
         ComparisonResult result =
             explorer.compareCollocateProfiles(Set.of("theory", "model", "hypothesis"), new pl.marcinmilkowski.word_sketch.model.exploration.ExplorationOptions(50, 0.0, 1));
 
-        List<String> partialNames = result.partiallyShared().stream()
+        List<String> partialNames = result.collocates().stream()
+                .filter(CollocateProfile::isPartiallyShared)
             .map(p -> p.collocate()).toList();
 
         assertTrue(partialNames.contains("theoretical"),

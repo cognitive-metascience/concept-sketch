@@ -3,13 +3,10 @@ package pl.marcinmilkowski.word_sketch.exploration;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashSet;
-import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 
 import org.jspecify.annotations.NonNull;
-import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -18,8 +15,6 @@ import pl.marcinmilkowski.word_sketch.config.RelationConfig;
 import pl.marcinmilkowski.word_sketch.config.RelationPatternUtils;
 import pl.marcinmilkowski.word_sketch.config.RelationUtils;
 import pl.marcinmilkowski.word_sketch.model.exploration.ComparisonResult;
-import pl.marcinmilkowski.word_sketch.model.exploration.CoreCollocate;
-import pl.marcinmilkowski.word_sketch.model.exploration.DiscoveredNoun;
 import pl.marcinmilkowski.word_sketch.model.exploration.ExplorationOptions;
 import pl.marcinmilkowski.word_sketch.model.exploration.SingleSeedExplorationOptions;
 import pl.marcinmilkowski.word_sketch.model.exploration.ExplorationResult;
@@ -70,12 +65,17 @@ import pl.marcinmilkowski.word_sketch.query.QueryExecutor;
  * {@code CoreCollocate}, {@code ComparisonResult}, {@code CollocateProfile}, {@code Edge})
  * live in the {@code pl.marcinmilkowski.word_sketch.model} package.</p>
  *
- * <h2>Design: coordination facade for the HTTP exploration layer</h2>
- * <p>This class serves as the stable API surface for the HTTP exploration handlers:
- * it owns the single-seed exploration algorithm directly (see {@link #exploreByPattern}), and acts
- * as a coordination facade for the remaining operations — delegating multi-seed exploration to
- * {@link MultiSeedExplorer} and profile comparison to {@link CollocateProfileComparator}.
- * Keeping this boundary stable insulates the HTTP layer from changes to the individual algorithm
+ * <h2>Design: pure coordination facade for the HTTP exploration layer</h2>
+ * <p>This class is a thin facade that wires and delegates to three algorithm classes:</p>
+ * <ul>
+ *   <li>{@link SingleSeedExplorer} — single-seed exploration algorithm (see {@link #exploreByPattern})</li>
+ *   <li>{@link MultiSeedExplorer} — multi-seed intersection algorithm (see {@link #exploreMultiSeed})</li>
+ *   <li>{@link CollocateProfileComparator} — cross-relational profile comparison (see {@link #compareCollocateProfiles})</li>
+ * </ul>
+ * <p>The two pass-through methods ({@link #exploreMultiSeed} and {@link #compareCollocateProfiles})
+ * exist here rather than being inlined in the HTTP handlers because all three exploration modes
+ * share the same corpus-query infrastructure and are presented as one coherent feature surface
+ * to the HTTP layer. This facade insulates the HTTP handlers from changes to individual algorithm
  * classes and from the wiring logic that connects them.</p>
  *
  * <h2>Computational Limits</h2>
@@ -95,7 +95,7 @@ public class SemanticFieldExplorer implements ExplorationService {
     private final QueryExecutor executor;
     private final CollocateProfileComparator comparator;
     private final MultiSeedExplorer multiSeedExplorer;
-    private final String nounCqlConstraint;
+    private final SingleSeedExplorer singleSeedExplorer;
 
     public SemanticFieldExplorer(QueryExecutor executor, GrammarConfig grammarConfig) {
         this(executor,
@@ -123,12 +123,9 @@ public class SemanticFieldExplorer implements ExplorationService {
         this.executor = executor;
         this.comparator = comparator;
         this.multiSeedExplorer = multiSeedExplorer;
-        this.nounCqlConstraint = deriveNounCqlConstraint(grammarConfig);
-    }
-
-    private static String deriveNounCqlConstraint(GrammarConfig grammarConfig) {
-        return RelationUtils.findBestCollocatePattern(
+        String nounCqlConstraint = RelationUtils.findBestCollocatePattern(
             grammarConfig, PosGroup.NOUN, FALLBACK_NOUN_PATTERN);
+        this.singleSeedExplorer = new SingleSeedExplorer(executor, nounCqlConstraint);
     }
 
     // ==================== EXPLORATION MODE ====================
@@ -150,7 +147,7 @@ public class SemanticFieldExplorer implements ExplorationService {
                 "Relation '" + relationConfig.id() + "' has unsupported collocate POS group (OTHER)" +
                 " — cannot perform reverse pattern lookup");
         }
-        return exploreByPattern(
+        return singleSeedExplorer.explore(
             seed,
             relationConfig.name(),
             RelationPatternUtils.buildFullPattern(relationConfig, seed),
@@ -180,170 +177,7 @@ public class SemanticFieldExplorer implements ExplorationService {
             String bcqlPattern,
             String simplePattern,
             SingleSeedExplorationOptions opts) throws IOException {
-
-        if (seed == null || seed.isEmpty()) {
-            throw new IllegalArgumentException("seed must not be blank");
-        }
-
-        int topPredicates = opts.topCollocates();
-        int nounsPerPredicate = opts.reverseExpansionLimit();
-        double minLogDice = opts.minLogDice();
-        int minShared = opts.minShared();
-
-        String normalizedSeed = seed.toLowerCase().trim();
-
-        logger.debug("Exploring semantic field: seed='{}', relation='{}', top={}, minShared={}, minLogDice={}", normalizedSeed, relationName, topPredicates, minShared, minLogDice);
-
-        List<QueryResults.WordSketchResult> seedRelations = fetchSeedCollocates(
-            normalizedSeed, bcqlPattern, simplePattern, minLogDice, topPredicates);
-
-        if (seedRelations.isEmpty()) {
-            logger.debug("No collocates found for seed '{}' — seed may be too rare", normalizedSeed);
-            return ExplorationResult.empty(normalizedSeed);
-        }
-
-
-        // Build map: collocate -> logDice with seed
-        Map<String, Double> seedCollocateScores = new LinkedHashMap<>();
-        Map<String, Long> seedCollocateFrequencies = new LinkedHashMap<>();
-        for (QueryResults.WordSketchResult r : seedRelations) {
-            String lowerLemma = r.lemma().toLowerCase();
-            seedCollocateScores.put(lowerLemma, r.logDice());
-            seedCollocateFrequencies.put(lowerLemma, r.frequency());
-        }
-
-        Map<String, Map<String, Double>> nounProfiles = buildNounToCollocatesMap(
-            seedCollocateScores, normalizedSeed, minLogDice, nounsPerPredicate, nounCqlConstraint);
-
-        List<DiscoveredNoun> discoveredNouns = filterByMinShared(nounProfiles, minShared);
-        discoveredNouns.sort((a, b) -> Double.compare(b.combinedRelevanceScore(), a.combinedRelevanceScore()));
-
-        List<CoreCollocate> coreCollocates = identifyCoreCollocates(seedCollocateScores, discoveredNouns);
-
-        logger.debug("Exploration complete for '{}': {} nouns discovered, {} core collocates", normalizedSeed, discoveredNouns.size(), coreCollocates.size());
-
-        return new ExplorationResult(List.of(normalizedSeed), seedCollocateScores, seedCollocateFrequencies, discoveredNouns, coreCollocates,
-            Map.of(normalizedSeed, seedCollocateScores));
-    }
-
-    // ==================== EXPLORATION PHASE HELPERS ====================
-
-    /**
-     * Phase 1: Fetch seed collocates using the BCQL pattern, with fallback to simplePattern.
-     *
-     * <h3>Query strategy: executeSurfacePattern primary, executeCollocations fallback</h3>
-     *
-     * <p><b>Primary — {@code executeSurfacePattern(bcqlPattern, ...)}:</b>
-     * The BCQL pattern encodes the full grammatical context from the grammar config (e.g.
-     * {@code [lemma="theory"] [xpos="VB.*"]} for SUBJECT_OF). It identifies collocates that
-     * co-occur with the seed in the expected syntactic position, which yields the highest-quality
-     * results but requires the seed to appear frequently enough to generate matches.</p>
-     *
-     * <p><b>Fallback — {@code executeCollocations(seed, simplePattern, ...)}:</b>
-     * A POS-group-only pattern (e.g. {@code [xpos="JJ.*"]}) passed to the dependency-aware
-     * collocation index. This bypasses syntactic structure but is more reliably populated for
-     * low-frequency seeds. The trade-off is lower precision: results reflect raw co-occurrence
-     * rather than a specific grammatical relation.</p>
-     *
-     * <p><b>Why not use {@code executeCollocations} everywhere?</b>
-     * {@code executeCollocations} relies on the precomputed collocation index and does not
-     * evaluate positional CQL constraints, so it cannot enforce the full grammatical structure
-     * that a BCQL pattern captures. Using {@code executeSurfacePattern} first maximises
-     * grammatical precision; only if that yields nothing do we fall back to the looser approach.</p>
-     *
-     * <p><b>Why {@link MultiSeedExplorer} does not apply this fallback:</b>
-     * Multi-seed exploration compares collocates across seeds and requires a consistent
-     * retrieval strategy for fair cross-seed comparison. Mixing BCQL results for one seed with
-     * simple-pattern results for another would make collocate scores incomparable. Seeds that
-     * return no BCQL results naturally contribute nothing to the intersection, which is the
-     * correct behaviour. See {@link MultiSeedExplorer#fetchCollocatesPerSeed}.</p>
-     */
-    private List<QueryResults.WordSketchResult> fetchSeedCollocates(
-            String seed, String bcqlPattern, String simplePattern,
-            double minLogDice, int topPredicates) throws IOException {
-        List<QueryResults.WordSketchResult> results = executor.executeSurfacePattern(
-            bcqlPattern, minLogDice, topPredicates);
-        if (results.isEmpty()) {
-            logger.debug("  No results found for seed word. Trying fallback to simple pattern...");
-            results = executor.executeCollocations(seed, simplePattern, minLogDice, topPredicates);
-        }
-        return results;
-    }
-
-    /**
-     * Phase 2: For each collocate, find nouns it collocates with (reverse lookup).
-     * Returns a map of noun → {collocate → logDice}.
-     *
-     * <p><b>I/O fan-out:</b> issues one {@code executeCollocations} call per collocate in
-     * {@code seedCollocateScores}, so up to {@code topPredicates} sequential network/disk
-     * round-trips may occur. Keep {@code topPredicates} small (≤ 20) for interactive use.</p>
-     */
-    private Map<String, Map<String, Double>> buildNounToCollocatesMap(
-            Map<String, Double> seedCollocateScores, String seed,
-            double minLogDice, int nounsPerPredicate, String nounConstraint) throws IOException {
-        Map<String, Map<String, Double>> nounProfiles = new LinkedHashMap<>();
-        for (String collocate : seedCollocateScores.keySet()) {
-            List<QueryResults.WordSketchResult> nouns = executor.executeCollocations(
-                collocate, nounConstraint, minLogDice, nounsPerPredicate);
-            for (QueryResults.WordSketchResult r : nouns) {
-                String noun = r.lemma().toLowerCase();
-                if (noun.equals(seed)) continue;
-                nounProfiles.computeIfAbsent(noun, k -> new LinkedHashMap<>())
-                    .put(collocate, r.logDice());
-            }
-        }
-        return nounProfiles;
-    }
-
-    /**
-     * Phase 3: Score candidate nouns by how many shared collocates they have.
-     * Nouns below {@code minShared} are filtered out.
-     */
-    private List<DiscoveredNoun> filterByMinShared(
-            Map<String, Map<String, Double>> nounProfiles, int minShared) {
-        List<DiscoveredNoun> discoveredNouns = new ArrayList<>();
-        for (Map.Entry<String, Map<String, Double>> entry : nounProfiles.entrySet()) {
-            String noun = entry.getKey();
-            Map<String, Double> collocateScores = entry.getValue();
-            int sharedCount = collocateScores.size();
-            if (sharedCount < minShared) continue;
-            double combinedRelevanceScore = collocateScores.values().stream().mapToDouble(Double::doubleValue).sum();
-            double avgLogDice = combinedRelevanceScore / sharedCount;
-            discoveredNouns.add(new DiscoveredNoun(
-                noun, collocateScores, sharedCount, combinedRelevanceScore, avgLogDice));
-        }
-        return discoveredNouns;
-    }
-
-    /**
-     * Phase 4: Identify core collocates — those shared by enough discovered nouns.
-     */
-    private List<CoreCollocate> identifyCoreCollocates(
-            Map<String, Double> seedCollocateScores, List<DiscoveredNoun> discoveredNouns) {
-        Map<String, Integer> collocateFrequency = new LinkedHashMap<>();
-        Map<String, Double> collocateTotalScore = new LinkedHashMap<>();
-        for (DiscoveredNoun dn : discoveredNouns) {
-            for (Map.Entry<String, Double> collocate : dn.sharedCollocates().entrySet()) {
-                collocateFrequency.merge(collocate.getKey(), 1, Integer::sum);
-                collocateTotalScore.merge(collocate.getKey(), collocate.getValue(), Double::sum);
-            }
-        }
-        int minNounsForCore = Math.max(2, discoveredNouns.size() / 3);
-        List<CoreCollocate> coreCollocates = new ArrayList<>();
-        for (String collocate : seedCollocateScores.keySet()) {
-            int freq = collocateFrequency.getOrDefault(collocate, 0);
-            if (freq >= minNounsForCore) {
-                double totalScore = collocateTotalScore.getOrDefault(collocate, 0.0);
-                double seedScore = seedCollocateScores.get(collocate);
-                coreCollocates.add(new CoreCollocate(
-                    collocate, freq, discoveredNouns.size(), seedScore, totalScore / freq));
-            }
-        }
-        coreCollocates.sort((a, b) -> {
-            int cmp = Integer.compare(b.sharedByCount(), a.sharedByCount());
-            return cmp != 0 ? cmp : Double.compare(b.avgLogDice(), a.avgLogDice());
-        });
-        return coreCollocates;
+        return singleSeedExplorer.explore(seed, relationName, bcqlPattern, simplePattern, opts);
     }
 
     // ==================== COMPARISON MODE ====================

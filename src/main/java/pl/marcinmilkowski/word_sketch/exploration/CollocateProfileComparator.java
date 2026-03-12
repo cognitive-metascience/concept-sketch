@@ -76,7 +76,7 @@ public class CollocateProfileComparator {
         logger.debug("Total unique adjectives: {}", profiles.size());
         logTopProfiles(profiles);
 
-        return new ComparisonResult(nounList, profiles);
+        return ComparisonResult.of(nounList, profiles);
     }
 
     /**
