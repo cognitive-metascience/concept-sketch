@@ -1,0 +1,89 @@
+{
+  "batch": "cross_module_architecture",
+  "batch_index": 9,
+  "assessments": {
+    "cross_module_architecture": 72.0
+  },
+  "dimension_notes": {
+    "cross_module_architecture": {
+      "evidence": [
+        "Dependency direction is clean: model \u2192 utils \u2192 config/query \u2192 exploration \u2192 api; no reverse dependencies detected",
+        "QueryExecutor is in query package but is imported by api, exploration, and config \u2014 it functions as a shared port/seam rather than a cycle",
+        "WordSketchApiServer has a convenience constructor 'public WordSketchApiServer(QueryExecutor executor, int port, GrammarConfig grammarConfig)' that constructs SemanticFieldExplorer internally, embedding exploration-layer wiring responsibility inside the api package",
+        "api package contains HttpApiUtils, RequestEntityTooLargeException, all handler classes, WordSketchApiServer, ExploreResponseAssembler, and GrammarConfigSerializer \u2014 HTTP infrastructure concerns and presentation-assembly concerns coexist without a sub-package boundary",
+        "SemanticFieldExplorer (exploration) is a facade that owns single-seed exploration directly and delegates to MultiSeedExplorer and CollocateProfileComparator \u2014 clean internal decomposition with package-private collaborators",
+        "RelationUtils (config) is called from CollocateProfileComparator (exploration) via RelationUtils.findBestCollocatePattern \u2014 the exploration\u2192config direction is expected but RelationUtils has generic utility methods that would fit equally in utils",
+        "No import cycles detected across the six main packages: api, config, exploration, indexer, model, query, utils",
+        "scan_evidence coupling boundary_violations is empty \u2014 no mechanical boundary violations flagged"
+      ],
+      "impact_scope": "module",
+      "fix_scope": "multi_file_refactor",
+      "confidence": "high"
+    }
+  },
+  "dimension_judgment": {
+    "cross_module_architecture": {
+      "strengths": [
+        "Clean single-direction dependency flow: model and utils are foundations, config and query build on them, exploration composes config+query, api orchestrates all \u2014 no upward imports",
+        "QueryExecutor interface provides a proper inversion point between the api/exploration layers and the BlackLab infrastructure, enabling stub-based testing without architectural gymnastics",
+        "exploration package decomposes its algorithms correctly: SemanticFieldExplorer is a public facade, MultiSeedExplorer and CollocateProfileComparator are package-private collaborators \u2014 callers see one stable surface",
+        "model package is a pure DTO layer with zero outgoing imports to other project packages \u2014 it cannot be a cycle source"
+      ],
+      "issue_character": "The issues are containment gaps rather than boundary violations: the api package has grown to include both HTTP infrastructure and presentation-assembly responsibilities without a sub-boundary, and the convenience constructor in WordSketchApiServer pulls domain-object construction into the API layer \u2014 both symptoms of incremental growth in a single-package hub.",
+      "score_rationale": "The codebase has no import cycles, a well-directed dependency graph, and good use of package-private visibility to hide internal collaborators. This is solidly above 'significant drag' (60). What prevents a higher score is the api package acting as a broad hub that mixes HTTP mechanics (HttpApiUtils, handler classes, WordSketchApiServer) with response assembly (ExploreResponseAssembler) and config serialization (GrammarConfigSerializer) without any sub-package structure, and the convenience constructor embedding SemanticFieldExplorer construction inside WordSketchApiServer. Neither is a cycle, but both widen the blast radius of api-layer changes. A score of 72 \u2014 'solid layering with visible boundary gaps that do not yet cause coupling problems' \u2014 is appropriate."
+    }
+  },
+  "issues": [
+    {
+      "dimension": "cross_module_architecture",
+      "identifier": "api_server_convenience_ctor_wires_domain",
+      "summary": "WordSketchApiServer convenience constructor constructs SemanticFieldExplorer inside the API layer",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/api/WordSketchApiServer.java"
+      ],
+      "evidence": [
+        "The convenience constructor 'public WordSketchApiServer(QueryExecutor executor, int port, GrammarConfig grammarConfig) throws IOException' calls 'new SemanticFieldExplorer(executor, grammarConfig)' directly, encoding exploration-layer construction rules inside the api package",
+        "The full constructor accepting an injected SemanticFieldExplorer exists and is correctly used in tests, but production startup in Main.java uses the convenience constructor \u2014 meaning Main\u2192WordSketchApiServer\u2192SemanticFieldExplorer is the actual wiring path",
+        "If SemanticFieldExplorer's constructor signature changes (e.g. gains a new dependency), WordSketchApiServer must also change even though it is nominally a different layer"
+      ],
+      "suggestion": "Move the construction of SemanticFieldExplorer out of WordSketchApiServer and into Main.handleBlackLabServerCommand, then remove the convenience constructor. Main.java is already the composition root and the natural place for wiring. This preserves the full-injection constructor as the only public entry point and eliminates the api\u2192exploration construction coupling.",
+      "confidence": "high",
+      "impact_scope": "module",
+      "fix_scope": "multi_file_refactor"
+    },
+    {
+      "dimension": "cross_module_architecture",
+      "identifier": "api_package_mixed_responsibilities",
+      "summary": "api package blends HTTP infrastructure, response assembly, and config serialization without sub-package separation",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/api/HttpApiUtils.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/api/ExploreResponseAssembler.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/api/GrammarConfigSerializer.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/api/WordSketchApiServer.java"
+      ],
+      "evidence": [
+        "HttpApiUtils contains pure HTTP plumbing (sendJsonResponse, sendError, wrapWithErrorHandling, parseQueryParams) alongside RequestEntityTooLargeException",
+        "ExploreResponseAssembler converts model-layer ExplorationResult/ComparisonResult to JSON-ready maps \u2014 it is a presentation concern that depends on model objects but lives in the api package alongside the HTTP plumbing",
+        "GrammarConfigSerializer converts GrammarConfig\u2192JSONObject for API responses \u2014 another presentation concern that could logically belong to config or a dedicated serialization sub-package",
+        "All 11 production api-package files are in one flat directory; a developer changing HTTP error handling must scan past response assemblers and config serializers to find the relevant files"
+      ],
+      "suggestion": "Introduce sub-packages within api: api/http (HttpApiUtils, RequestEntityTooLargeException, WordSketchApiServer) and api/response (ExploreResponseAssembler, GrammarConfigSerializer). Handlers can remain at api/ level. This is a low-risk rename with no semantic change but meaningfully reduces cognitive width when navigating the package.",
+      "confidence": "medium",
+      "impact_scope": "module",
+      "fix_scope": "multi_file_refactor"
+    }
+  ],
+  "retrospective": {
+    "root_causes": [
+      "The api package grew as a single coordination point without a sub-structure plan \u2014 each new concern (response assembly, serialization) was added flat alongside HTTP plumbing because all files are package-private or closely coupled to the HTTP layer",
+      "The convenience constructor pattern in WordSketchApiServer is a common pragmatic shortcut that subtly spreads construction responsibility across layers over time"
+    ],
+    "likely_symptoms": [
+      "api_server_convenience_ctor_wires_domain would manifest as a ripple change requirement if SemanticFieldExplorer gains a new mandatory constructor parameter",
+      "api_package_mixed_responsibilities would manifest as navigational friction when the package grows beyond its current 11 files"
+    ],
+    "possible_false_positives": [
+      "RelationUtils placement in config rather than utils is intentional \u2014 it operates on GrammarConfig and RelationConfig objects, so config is the correct home; this is not a boundary violation"
+    ]
+  }
+}

@@ -166,7 +166,7 @@ public class SemanticFieldExplorer {
         double minLogDice = opts.base().minLogDice();
         int minShared = opts.base().minShared();
 
-        if (seed.isEmpty()) {
+        if (seed == null || seed.isEmpty()) {
             throw new IllegalArgumentException("seed must not be blank");
         }
 

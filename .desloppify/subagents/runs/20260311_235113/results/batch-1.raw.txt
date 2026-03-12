@@ -1,0 +1,122 @@
+{
+  "batch": "convention_outlier",
+  "batch_index": 1,
+  "assessments": {
+    "convention_outlier": 72.0
+  },
+  "dimension_notes": {
+    "convention_outlier": {
+      "evidence": [
+        "Production code naming is uniformly camelCase throughout: handle*, build*, parse*, resolve* method prefixes applied consistently across all handler classes (SketchHandlers, ConcordanceHandlers, CorpusQueryHandlers, ExplorationHandlers).",
+        "Package-private visibility applied consistently to all handler and internal helper classes (HttpApiUtils, VisualizationHandlers, BlackLabSnippetParser, CollocateQueryHelper, MultiSeedExplorer, CollocateProfileComparator), with public reserved for true API boundaries.",
+        "Utility classes (LogDiceUtils, MathUtils, CqlUtils, RelationPatternBuilder, RelationUtils, GrammarConfig, GrammarConfigLoader) all use `public final class` consistently.",
+        "Model package uses records for simple value objects (CoreCollocate, DiscoveredNoun, Edge, ExplorationOptions, FetchExamplesOptions, SingleSeedExplorationOptions, AdjectiveProfile) and classes for objects needing behaviour, with ExplorationResult carrying explicit Javadoc rationale for the exception.",
+        "RadialPlotTest.java and PatternSubstitutionTest.java both declare `package pl.marcinmilkowski.word_sketch.api` but test classes from different packages: RadialPlot (pl.marcinmilkowski.word_sketch.viz) and CqlUtils (pl.marcinmilkowski.word_sketch.utils). Tests should mirror the package of the class under test.",
+        "HandlersTest.java is a catch-all mixing test cases for SketchHandlers, ConcordanceHandlers, and ExplorationHandlers under the generic name 'Handlers'. Meanwhile the codebase has dedicated ExplorationHandlersTest, SketchHandlersTest, and CorpusQueryHandlersTest following the <ClassName>Test convention.",
+        "BCQLParserTest.java tests nl.inl.blacklab.queryParser.corpusql.CorpusQueryLanguageParser — a third-party class. The name BCQL uses an acronym not present in any production class name; the rest of the codebase uses BlackLab prefix (BlackLabQueryExecutor, BlackLabSnippetParser, BlackLabConllUIndexer).",
+        "ExploreResponseAssembler is declared `public final class` but is only referenced within the api package (ExplorationHandlers and api test classes). Sibling internal helper HttpApiUtils is correctly package-private."
+      ],
+      "impact_scope": "module",
+      "fix_scope": "multi_file_refactor",
+      "confidence": "high"
+    }
+  },
+  "dimension_judgment": {
+    "convention_outlier": {
+      "strengths": [
+        "Production package naming and class visibility are uniformly applied: package-private for internals, public only at true API boundaries, no drift across packages.",
+        "Method naming prefixes (handle*, build*, parse*, resolve*) are applied consistently across all four handler classes.",
+        "Utility classes uniformly follow the `public final class` + private constructor pattern, with no outliers.",
+        "Mixed record/class strategy in the model package is documented where it deviates from the record-first default (ExplorationResult carries explicit rationale Javadoc)."
+      ],
+      "issue_character": "Conventions are solid in production code but the test tree has three localised outliers: two test files placed in the wrong package, one catch-all handler test that mixes concerns against the prevailing per-class test convention, and one test named after a non-existent production class.",
+      "score_rationale": "The production codebase scores highly on convention consistency — naming, visibility, and file organisation are uniform across all packages. The penalty comes from the test layer, where RadialPlotTest and PatternSubstitutionTest are misrouted to the api test package rather than viz and utils respectively, HandlersTest is a residual catch-all that coexists with dedicated per-class test files (a style island in the test tree), and BCQLParserTest uses an acronym convention not present elsewhere. These are genuine outliers against the prevailing convention but are limited to the test layer and do not affect runtime behaviour, placing this in the 70–75 range on a codebase that is otherwise well-organised."
+    }
+  },
+  "issues": [
+    {
+      "dimension": "convention_outlier",
+      "identifier": "test_pkg_mismatch_viz_utils",
+      "summary": "RadialPlotTest and PatternSubstitutionTest declared in api test package but test classes from viz and utils packages",
+      "related_files": [
+        "src/test/java/pl/marcinmilkowski/word_sketch/api/RadialPlotTest.java",
+        "src/test/java/pl/marcinmilkowski/word_sketch/api/PatternSubstitutionTest.java"
+      ],
+      "evidence": [
+        "RadialPlotTest.java line 1: `package pl.marcinmilkowski.word_sketch.api;` — imports and tests `pl.marcinmilkowski.word_sketch.viz.RadialPlot`.",
+        "PatternSubstitutionTest.java line 1: `package pl.marcinmilkowski.word_sketch.api;` — imports and tests `pl.marcinmilkowski.word_sketch.utils.CqlUtils`.",
+        "The prevailing convention places tests in the package matching their subject: BlackLabSnippetParserTest is in query/, LogDiceUtilsTest is in utils/, etc."
+      ],
+      "suggestion": "Move RadialPlotTest to src/test/java/pl/marcinmilkowski/word_sketch/viz/ and PatternSubstitutionTest to src/test/java/pl/marcinmilkowski/word_sketch/utils/ (renaming it CqlUtilsTest or PatternSubstitutionTest under utils to match the tested class). Create the target directories if they don't exist.",
+      "confidence": "high",
+      "impact_scope": "module",
+      "fix_scope": "multi_file_refactor"
+    },
+    {
+      "dimension": "convention_outlier",
+      "identifier": "handlers_test_catch_all",
+      "summary": "HandlersTest is a catch-all mixing tests for three distinct handler classes, coexisting with dedicated per-class test files",
+      "related_files": [
+        "src/test/java/pl/marcinmilkowski/word_sketch/api/HandlersTest.java",
+        "src/test/java/pl/marcinmilkowski/word_sketch/api/ExplorationHandlersTest.java",
+        "src/test/java/pl/marcinmilkowski/word_sketch/api/SketchHandlersTest.java",
+        "src/test/java/pl/marcinmilkowski/word_sketch/api/CorpusQueryHandlersTest.java"
+      ],
+      "evidence": [
+        "HandlersTest.java contains sections marked `// --- SketchHandlers tests ---`, `// --- ExplorationHandlers tests ---`, and tests ConcordanceHandlers — covering three distinct classes in one file.",
+        "The prevailing convention is one test class per production class: ExplorationHandlersTest, SketchHandlersTest, CorpusQueryHandlersTest all exist as dedicated files.",
+        "No production class named 'Handlers' exists; the test file name does not follow the <ClassName>Test convention."
+      ],
+      "suggestion": "Distribute HandlersTest cases into the corresponding dedicated test files (SketchHandlersTest, ExplorationHandlersTest, ConcordanceHandlersTest) and delete HandlersTest. This eliminates the style island and consolidates coverage in predictable locations.",
+      "confidence": "high",
+      "impact_scope": "module",
+      "fix_scope": "multi_file_refactor"
+    },
+    {
+      "dimension": "convention_outlier",
+      "identifier": "bcql_parser_test_naming",
+      "summary": "BCQLParserTest uses an acronym convention absent from production code and names a test after a non-existent production class",
+      "related_files": [
+        "src/test/java/pl/marcinmilkowski/word_sketch/query/BCQLParserTest.java"
+      ],
+      "evidence": [
+        "BCQLParserTest.java: `public class BCQLParserTest` — no production class named BCQLParser exists in src/main.",
+        "The test exercises `nl.inl.blacklab.queryParser.corpusql.CorpusQueryLanguageParser` (a third-party BlackLab class).",
+        "Sibling production classes all use the BlackLab prefix: BlackLabQueryExecutor, BlackLabSnippetParser, BlackLabConllUIndexer — not the BCQL acronym."
+      ],
+      "suggestion": "Rename to BlackLabCqlParserTest (or CorpusQueryLanguageParserTest) to align with the BlackLab-prefix convention used across the query package. Update the class declaration and file name accordingly.",
+      "confidence": "medium",
+      "impact_scope": "local",
+      "fix_scope": "single_edit"
+    },
+    {
+      "dimension": "convention_outlier",
+      "identifier": "explore_response_assembler_public",
+      "summary": "ExploreResponseAssembler declared public but is only consumed within the api package",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/api/ExploreResponseAssembler.java"
+      ],
+      "evidence": [
+        "ExploreResponseAssembler.java line 27: `public final class ExploreResponseAssembler`.",
+        "All references to ExploreResponseAssembler are within the api package (ExplorationHandlers.java and api test classes).",
+        "Sibling internal helper HttpApiUtils is correctly declared package-private: `class HttpApiUtils` (line 32). Handler classes (SketchHandlers, ConcordanceHandlers, ExplorationHandlers, CorpusQueryHandlers, VisualizationHandlers) are also package-private.",
+        "GrammarConfigSerializer is legitimately public because GrammarConfigLoaderTest in the config test package imports it."
+      ],
+      "suggestion": "Change `public final class ExploreResponseAssembler` to `final class ExploreResponseAssembler` (package-private) to match the visibility convention of other internal api helpers. Verify that no test outside the api package references it before making the change.",
+      "confidence": "medium",
+      "impact_scope": "local",
+      "fix_scope": "single_edit"
+    }
+  ],
+  "retrospective": {
+    "root_causes": [
+      "Test files were likely written in proximity to the api package (where integration tests live) without considering that the subjects under test belong to different packages — a common drift when adding tests incrementally.",
+      "HandlersTest appears to predate the split into dedicated per-handler test files; it was not cleaned up after the dedicated files were introduced."
+    ],
+    "likely_symptoms": [
+      "test_pkg_mismatch_viz_utils",
+      "handlers_test_catch_all"
+    ],
+    "possible_false_positives": []
+  }
+}

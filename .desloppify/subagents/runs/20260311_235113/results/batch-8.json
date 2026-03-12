@@ -1,0 +1,129 @@
+{
+  "batch": "test_strategy",
+  "batch_index": 8,
+  "assessments": {"test_strategy": 68.0},
+  "dimension_notes": {
+    "test_strategy": {
+      "evidence": [
+        "252 tests passing; 5 @Disabled (live BlackLab index tests in BlackLabQueryExecutorTest, BlackLabBcqlConcordanceTest, etc.) — the full index→HTTP path is never exercised in CI",
+        "MockExchange inner class is copy-pasted separately into HandlersTest, SketchHandlersTest, ExplorationHandlersTest, CorpusQueryHandlersTest, VisualizationHandlersTest — 5+ independent implementations of the same 25-line boilerplate; any JDK HttpExchange API change requires updating all copies",
+        "HandlersTest.java (24 KB, 25+ tests) is an omnibus test class covering ConcordanceHandlers, SketchHandlers, ExplorationHandlers, VisualizationHandlers, CorpusQueryHandlers AND edge-weight comparison logic; it substantially overlaps with SketchHandlersTest, ExplorationHandlersTest, CorpusQueryHandlersTest, VisualizationHandlersTest which were added later as focused companions",
+        "GrammarConfigSerializer has no test: toJson(GrammarConfig) and toJson(RelationConfig) convert the core config model to JSON but are exercised only implicitly through handler round-trips",
+        "QueryExecutor interface is used correctly as a testability seam — CollocateQueryHelperTest, CollocateProfileComparatorTest, MultiSeedExplorerTest all use clean stubs without touching the index",
+        "Handler tests assert response shape (relations map, collocations nested under relation ID, seeds array, adjectives_count, seed_count) — not just HTTP status codes",
+        "WordSketchApiServerTest starts a real HTTP server on port 18080 and fires real HTTP requests — partial integration coverage at the routing layer",
+        "CollocateQueryHelper is well-tested with a subclass stub pattern for the frequency-lookup seam, covering XML extraction, logDice ranking, and per-position extraction"
+      ],
+      "impact_scope": "module",
+      "fix_scope": "multi_file_refactor",
+      "confidence": "high"
+    }
+  },
+  "dimension_judgment": {
+    "test_strategy": {
+      "strengths": [
+        "QueryExecutor interface used consistently as a stub seam — exploration, handler, and query tests all isolate from the live index cleanly",
+        "Handler tests assert response structure (key presence, value types, nested shapes) rather than only HTTP status codes",
+        "Zero snapshot tests — all assertions are behavioural and won't become stale on unrelated refactors",
+        "WordSketchApiServerTest provides real HTTP round-trip coverage at the routing/lifecycle layer without requiring a corpus index",
+        "CollocateQueryHelperTest uses a protected-override stub pattern to verify logDice ranking and XML extraction in isolation from BlackLab"
+      ],
+      "issue_character": "The test suite shows visible evolutionary layering: an omnibus HandlersTest coexists with four newer focused files covering overlapping ground, and the MockExchange boilerplate has been copy-pasted into every test file rather than extracted — indicating growth without refactoring rather than a systemic design flaw.",
+      "score_rationale": "The breadth of coverage is genuine: 252 tests span handlers, config loading, exploration algorithms, CQL utilities, and index helpers. The QueryExecutor seam and stub patterns are correctly applied throughout. However, the suite carries structural drag: MockExchange is duplicated 5+ times, HandlersTest overlaps substantially with its four focused siblings, GrammarConfigSerializer has no test, and all live-index tests are permanently @Disabled leaving the full BlackLab production path unverified in CI. This places the codebase above 'significant drag' (60) — coverage is real — but below 'solid with minor gaps' (75) because the fragility from MockExchange duplication and the @Disabled critical-path tests are genuine risks that would hurt a developer maintaining this suite."
+    }
+  },
+  "issues": [
+    {
+      "dimension": "test_strategy",
+      "identifier": "mock_exchange_duplication",
+      "summary": "MockExchange inner class copy-pasted into 5+ test files instead of being shared",
+      "related_files": [
+        "src/test/java/pl/marcinmilkowski/word_sketch/api/HandlersTest.java",
+        "src/test/java/pl/marcinmilkowski/word_sketch/api/SketchHandlersTest.java",
+        "src/test/java/pl/marcinmilkowski/word_sketch/api/ExplorationHandlersTest.java",
+        "src/test/java/pl/marcinmilkowski/word_sketch/api/CorpusQueryHandlersTest.java",
+        "src/test/java/pl/marcinmilkowski/word_sketch/api/VisualizationHandlersTest.java"
+      ],
+      "evidence": [
+        "Each file contains a nearly-identical 25-line MockExchange class implementing all abstract HttpExchange methods — getRequestURI, getRequestHeaders, getResponseHeaders, getRequestMethod, getRequestBody, getResponseBody, sendResponseHeaders, close, etc.",
+        "CorpusQueryHandlersTest and VisualizationHandlersTest also define a separate PostMockExchange subclass for POST bodies — both are also duplicated independently",
+        "Any new abstract method added to com.sun.net.httpserver.HttpExchange (or a JDK upgrade changing the signature) would require updating all 5+ copies"
+      ],
+      "suggestion": "Extract a shared MockHttpExchange (and PostMockHttpExchange) into a test-scoped utility class in the api test package, e.g. src/test/java/pl/marcinmilkowski/word_sketch/api/MockHttpExchange.java, and have all handler test classes reference it.",
+      "confidence": "high",
+      "impact_scope": "module",
+      "fix_scope": "multi_file_refactor"
+    },
+    {
+      "dimension": "test_strategy",
+      "identifier": "handlers_test_omnibus_overlap",
+      "summary": "HandlersTest omnibus class substantially overlaps with four newer focused test files",
+      "related_files": [
+        "src/test/java/pl/marcinmilkowski/word_sketch/api/HandlersTest.java",
+        "src/test/java/pl/marcinmilkowski/word_sketch/api/SketchHandlersTest.java",
+        "src/test/java/pl/marcinmilkowski/word_sketch/api/ExplorationHandlersTest.java",
+        "src/test/java/pl/marcinmilkowski/word_sketch/api/CorpusQueryHandlersTest.java",
+        "src/test/java/pl/marcinmilkowski/word_sketch/api/VisualizationHandlersTest.java"
+      ],
+      "evidence": [
+        "HandlersTest.java (24 KB, 25+ @Test methods) covers handleConcordanceExamples (3 tests), handleSemanticFieldExamples (3 tests), handleSketchRequest (3 tests), handleSemanticFieldComparison (3 tests), handleVisualRadial (3 tests), handleCorpusQuery (4 tests)",
+        "CorpusQueryHandlersTest has 5 tests for handleCorpusQuery — 3 of which (invalidJson, missingQueryField, blankQuery) duplicate tests already in HandlersTest",
+        "VisualizationHandlersTest has 4 tests for handleVisualRadial — bodyTooLarge and invalidJson overlap with HandlersTest",
+        "Duplication means a logic change in one handler may require updating test assertions in two test files"
+      ],
+      "suggestion": "Decide whether HandlersTest should be the canonical home for cross-handler integration tests (e.g. wrapWithErrorHandling interactions) while the focused *Test files own happy-path and edge cases — then deduplicate by removing redundant assertions from one location. Alternatively, migrate everything to focused files and retire HandlersTest.",
+      "confidence": "high",
+      "impact_scope": "module",
+      "fix_scope": "multi_file_refactor"
+    },
+    {
+      "dimension": "test_strategy",
+      "identifier": "grammar_config_serializer_untested",
+      "summary": "GrammarConfigSerializer.toJson has no direct test coverage",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/api/GrammarConfigSerializer.java"
+      ],
+      "evidence": [
+        "GrammarConfigSerializer.toJson(GrammarConfig) and toJson(RelationConfig) are the sole callers that convert the config model to JSON for API responses",
+        "No test class for GrammarConfigSerializer exists; it is only exercised indirectly through live server integration tests",
+        "The method has branching logic (optional fields: name, description, pattern, relationType) that could silently omit fields on null inputs"
+      ],
+      "suggestion": "Add a GrammarConfigSerializerTest that loads the test grammar config via GrammarConfigHelper.requireTestConfig(), calls toJson(config), and asserts key fields (version, relations array, id, pattern, relation_type) are correctly serialized; also test a minimal RelationConfig with null optional fields to verify they are omitted.",
+      "confidence": "high",
+      "impact_scope": "local",
+      "fix_scope": "single_edit"
+    },
+    {
+      "dimension": "test_strategy",
+      "identifier": "live_index_tests_permanently_disabled",
+      "summary": "All live-index integration tests are permanently @Disabled, leaving the full BlackLab pipeline unverified in CI",
+      "related_files": [
+        "src/test/java/pl/marcinmilkowski/word_sketch/query/BlackLabQueryExecutorIntegrationTest.java",
+        "src/test/java/pl/marcinmilkowski/word_sketch/query/BlackLabQueryExecutorTest.java",
+        "src/test/java/pl/marcinmilkowski/word_sketch/query/BlackLabBcqlConcordanceTest.java",
+        "src/test/java/pl/marcinmilkowski/word_sketch/query/DependencySketchTest.java",
+        "src/test/java/pl/marcinmilkowski/word_sketch/query/HybridAlgorithmTest.java"
+      ],
+      "evidence": [
+        "BlackLabQueryExecutorTest.LiveIndex is annotated @Disabled(\"Requires a live BlackLab index — set CONCEPT_SKETCH_TEST_INDEX env var and remove @Disabled to run\")",
+        "The critical production paths — executeSurfacePattern, executeDependencyPattern, executeBcqlQuery — are exercised only through static helper unit tests (buildBcqlWithLemmaSubstitution) and stub-based exploration tests, never against a real index in CI",
+        "No small synthetic test index is built as a Maven test resource; BlackLabConllUIndexerTest presumably requires an external corpus"
+      ],
+      "suggestion": "Create a small synthetic CoNLL-U test corpus (20–50 sentences) as a Maven test resource and build a minimal BlackLab index from it in a @BeforeAll fixture; this would unblock the live-index nested tests and give CI coverage of the full executeCollocations→logDice pipeline. Use @Assumptions.assumeTrue as a fallback so the tests still skip gracefully when the index is absent.",
+      "confidence": "medium",
+      "impact_scope": "subsystem",
+      "fix_scope": "multi_file_refactor"
+    }
+  ],
+  "retrospective": {
+    "root_causes": [
+      "Test files appear to have grown by addition rather than refactoring: HandlersTest was the original omnibus class, then focused test files were added without retiring or trimming the original, and MockExchange was re-implemented in each new file rather than extracted",
+      "The live-index dependency is a hard constraint from the BlackLab architecture; no effort has been made to build a synthetic test index, which is the only path to CI-verified integration coverage"
+    ],
+    "likely_symptoms": [
+      "MockExchange duplication will surface as a multi-file conflict if HttpExchange gains a new abstract method in a future JDK",
+      "Overlapping HandlersTest/focused tests create confusion about which file is canonical when a handler changes"
+    ],
+    "possible_false_positives": []
+  }
+}

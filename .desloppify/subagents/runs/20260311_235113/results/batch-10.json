@@ -1,0 +1,67 @@
+{
+  "batch": "authorization_consistency",
+  "batch_index": 10,
+  "assessments": {"authorization_consistency": 82.0},
+  "dimension_notes": {
+    "authorization_consistency": {
+      "evidence": [
+        "WordSketchApiServer Javadoc explicitly documents the security model: 'the server binds exclusively to the loopback address (127.0.0.1) so it is never exposed on any external network interface. All endpoints are unauthenticated — access control is provided by the host firewall and the loopback-only bind.'",
+        "CORS headers are applied via HttpApiUtils.setCorsHeader() which is called by every response-sending method (sendJsonResponse, sendError, sendOptionsResponse, sendBinaryResponse) — no endpoint can bypass the CORS header",
+        "POST endpoints consistently enforce a 65 KB body size limit via HttpApiUtils.readBodyWithSizeLimit: CorpusQueryHandlers passes maxBytes=65_536, VisualizationHandlers passes maxBytes=65_536",
+        "GET endpoints accept arbitrary-length query parameter values (seed, seeds, lemma, adjective, noun) with no length constraint; a very long seed string is passed to BlackLab without truncation",
+        "All routes are wrapped with HttpApiUtils.wrapWithErrorHandling, ensuring that IllegalArgumentException (user input errors) maps to 400 and runtime exceptions to 500 consistently — no endpoint can leak an unhandled exception",
+        "CorpusQueryHandlers validates CQL pattern complexity (bracket depth > 20 → 400) in addition to JSON validity and field presence — additional trust-boundary hardening beyond the standard requireParam check",
+        "No admin vs. regular endpoint distinction exists — there are no privileged operations or bypass paths that would require asymmetric trust enforcement",
+        "The /health endpoint is a simple unauthenticated ping with no access to corpus data — correctly excluded from any validation concern"
+      ],
+      "impact_scope": "codebase",
+      "fix_scope": "multi_file_refactor",
+      "confidence": "high",
+      "issues_preventing_higher_score": "Score is 82 — below 85 — so this field is not required."
+    }
+  },
+  "dimension_judgment": {
+    "authorization_consistency": {
+      "strengths": [
+        "Security model is explicitly documented in WordSketchApiServer Javadoc: loopback-only bind, no auth by design, with a clear note that container deployment would require an additional auth layer",
+        "CORS header is applied through a single shared method (setCorsHeader) called inside every response path — impossible to accidentally omit it on a new endpoint",
+        "POST endpoints uniformly enforce 65 KB body size limits, JSON validity, required-field presence, and business-logic guards (CQL bracket depth) — no sibling POST endpoint skips these checks",
+        "wrapWithErrorHandling wraps every route handler, providing consistent exception→HTTP status mapping across all endpoints without per-handler error handling code"
+      ],
+      "issue_character": "The sole notable inconsistency is that POST endpoints apply an explicit size gate (65 KB limit) and structured validation while GET endpoints accept unbounded query parameter values — a natural HTTP idiom difference, but one that creates an asymmetric trust boundary between the two groups of endpoints.",
+      "score_rationale": "This is a local research tool explicitly designed as unauthenticated, and the security model is consistently applied: all endpoints are equally unauthenticated, CORS is uniformly set, and error handling is uniformly wrapped. The dimension's rubric concerns (some routes with auth, others without; permission magic strings; asymmetric input validation) are largely non-applicable or cleanly handled. The score sits at 82 rather than 90+ because GET endpoints accept unbounded parameter inputs while POST endpoints have explicit size limits — a minor but real asymmetry in input trust boundaries that a developer adding a new GET endpoint would have no guidance to address."
+    }
+  },
+  "issues": [
+    {
+      "dimension": "authorization_consistency",
+      "identifier": "get_params_no_length_limit",
+      "summary": "GET endpoint query parameters (seed, lemma, adjective) have no length limit while POST endpoints enforce 65 KB",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/api/HttpApiUtils.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/api/ExplorationHandlers.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/api/SketchHandlers.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/api/ConcordanceHandlers.java"
+      ],
+      "evidence": [
+        "HttpApiUtils.readBodyWithSizeLimit enforces maxBytes for POST body reads, and both CorpusQueryHandlers and VisualizationHandlers call it with 65_536",
+        "HttpApiUtils.requireParam returns the raw trimmed string for GET parameters with no length check; a seed value of 50,000 characters passes through to SemanticFieldExplorer unchanged",
+        "ExplorationHandlers.handleSemanticFieldExploreMulti accepts a comma-separated 'seeds' parameter and splits on commas — a pathologically long seeds list creates unbounded work in parseSeedSet and downstream query execution",
+        "Given the loopback-only deployment model this is low severity, but it creates an inconsistency: POST body size is guarded, GET parameter size is not"
+      ],
+      "suggestion": "Add a MAX_PARAM_LENGTH constant (e.g. 200 characters) in HttpApiUtils and check it inside requireParam or in a new requireBoundedParam method. Apply it in ExplorationHandlers for seed/seeds/adjective/noun and in SketchHandlers for lemma. This mirrors the body-size discipline already applied to POST endpoints.",
+      "confidence": "medium",
+      "impact_scope": "subsystem",
+      "fix_scope": "multi_file_refactor"
+    }
+  ],
+  "retrospective": {
+    "root_causes": [
+      "POST endpoints received more security attention because they carry a request body that is a natural DDoS vector; GET parameters were treated as inherently bounded by URL length limits imposed by clients/proxies — a reasonable assumption for a loopback-only tool but still an inconsistency in the explicit validation model"
+    ],
+    "likely_symptoms": [],
+    "possible_false_positives": [
+      "The absence of authentication on all endpoints is not an inconsistency — it is the documented design. The dimension's concern about 'some siblings with auth and others without' does not apply here."
+    ]
+  }
+}

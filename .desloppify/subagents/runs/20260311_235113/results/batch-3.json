@@ -1,0 +1,73 @@
+{
+  "batch": "naming_quality",
+  "batch_index": 3,
+  "assessments": {
+    "naming_quality": 84.0
+  },
+  "dimension_notes": {
+    "naming_quality": {
+      "evidence": [
+        "Handler methods use `handle*` prefix uniformly across all handler classes with precise domain suffixes: handleSemanticFieldExplore, handleSemanticFieldExploreMulti, handleSemanticFieldComparison, handleSemanticFieldExamples, handleSketchRequest, handleSurfaceRelations, handleDepRelations.",
+        "Recent renames (resolveRelationConfig, deriveDeprel, buildSketch, buildMultiSeedExplorationResult) have tightened name-to-behavior alignment — no vestige of generic predecessors remains in caller code.",
+        "SketchHandlers.java: `handleFullDependencySketch` (line 114) is a one-line passthrough to `handleDepSketchForType` (line 146). The `ForType` suffix on the inner method is inherited from its sibling `handleFullSketchForType` (which takes a `RelationType` parameter), but `handleDepSketchForType` takes no type parameter — DEP is hardcoded. The suffix suggests parameterizability that does not exist.",
+        "BlackLabQueryExecutor: `collectDependencyFrequencies` (private) not only collects frequencies but also calls `collocateQueryHelper.buildAndRankCollocates(...)` — it executes a full query-collect-rank pipeline. The name covers only the first stage.",
+        "ExploreResponseAssembler: `buildEdges` is overloaded for `ExplorationResult` (produces SEED_ADJ + DISCOVERED_ADJ edges) and `ComparisonResult` (produces MODIFIER edges). The two overloads construct structurally different graph outputs; the shared name does not hint at the difference."
+      ],
+      "impact_scope": "local",
+      "fix_scope": "single_edit",
+      "confidence": "medium"
+    }
+  },
+  "dimension_judgment": {
+    "naming_quality": {
+      "strengths": [
+        "`handle*` prefix is applied uniformly across all four handler classes with specific domain suffixes, letting a developer locate the right handler without reading bodies.",
+        "Factory methods consistently use `build*`, parse methods use `parse*`, and alias-resolution methods use `resolve*` — vocabulary is stable and domain-aligned throughout the codebase.",
+        "Domain terms (collocate, deprel, logDice, seed, minShared) are used consistently and match the linguistics domain, with no invented synonyms or conflated concepts.",
+        "Recent renames (resolveRelationConfig, deriveDeprel, buildSketch, buildMultiSeedExplorationResult) demonstrate active improvement of name precision — the direction of travel is good.",
+        "Records are well-named: ExplorationParams, ExecutedSketch, SeedCollocateData all communicate their held structure at a glance."
+      ],
+      "issue_character": "The issues are isolated to private implementation details — one vestigial suffix, one underselling private method name, one overloaded name masking distinct graph semantics — rather than a systemic naming convention failure.",
+      "score_rationale": "A developer reading this codebase can correctly predict behaviour from names the large majority of the time; the public API surface and handler layer are especially clean. The few friction points (handleDepSketchForType's misleading suffix, collectDependencyFrequencies underselling its ranking step, buildEdges overloaded for structurally different outputs) are confined to private or package-private methods and require only single-edit fixes. This sits comfortably above the 80 anchor ('solid but uneven') because the issues are isolated rather than recurring, but below 90 because each identified friction point represents a real moment where a developer reading the code would be briefly misled."
+    }
+  },
+  "issues": [
+    {
+      "dimension": "naming_quality",
+      "identifier": "dep_sketch_for_type_vestigial_suffix",
+      "summary": "handleDepSketchForType has a vestigial `ForType` suffix — it takes no RelationType parameter, unlike its sibling",
+      "related_files": ["src/main/java/pl/marcinmilkowski/word_sketch/api/SketchHandlers.java"],
+      "evidence": [
+        "handleFullSketchForType (line 118) takes a RelationType parameter — the `ForType` suffix is meaningful there.",
+        "handleDepSketchForType (line 146) takes no type parameter; DEP is hardcoded inside. The suffix implies parameterizability that does not exist.",
+        "handleFullDependencySketch (line 114) is a one-line passthrough to handleDepSketchForType — both are private, the delegation adds no value and doubles the naming surface."
+      ],
+      "suggestion": "Rename handleDepSketchForType to handleFullDepSketch (matching the domain term already used in the Javadoc comment at line 148), then inline or remove the handleFullDependencySketch passthrough so the call from handleSketchRequest calls handleFullDepSketch directly.",
+      "confidence": "medium",
+      "impact_scope": "local",
+      "fix_scope": "single_edit"
+    },
+    {
+      "dimension": "naming_quality",
+      "identifier": "collect_dep_frequencies_undersells_ranking",
+      "summary": "collectDependencyFrequencies (BlackLabQueryExecutor) names only frequency collection but also performs ranking via buildAndRankCollocates",
+      "related_files": ["src/main/java/pl/marcinmilkowski/word_sketch/query/BlackLabQueryExecutor.java"],
+      "evidence": [
+        "Method name suggests a collection step, but the final statement calls collocateQueryHelper.buildAndRankCollocates(freqMap, headwordFreq, minLogDice, maxResults, lemmaPosMap) — a full ranking pass with minLogDice filtering.",
+        "The counterpart collectFrequenciesFromGroups (also in the same class) does only collect and does not rank, making the naming asymmetry visible."
+      ],
+      "suggestion": "Rename to executeDepCollocateQuery or queryAndRankDepCollocates to convey the full execute-collect-rank pipeline rather than just the intermediate collection step.",
+      "confidence": "medium",
+      "impact_scope": "local",
+      "fix_scope": "single_edit"
+    }
+  ],
+  "retrospective": {
+    "root_causes": [
+      "The `ForType` suffix on handleDepSketchForType is a refactoring residue: the method was likely extracted from a parameterised sibling but never renamed after the type parameter was dropped.",
+      "collectDependencyFrequencies may predate the extraction of ranking into buildAndRankCollocates — the name captured what the code did at extraction time but was not updated when ranking was consolidated into the helper."
+    ],
+    "likely_symptoms": [],
+    "possible_false_positives": []
+  }
+}

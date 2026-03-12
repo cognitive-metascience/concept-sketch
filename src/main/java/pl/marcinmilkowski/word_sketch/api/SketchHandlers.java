@@ -106,13 +106,8 @@ class SketchHandlers {
         handleRelationQueryForPattern(exchange, lemma, relation, RelationType.SURFACE);
     }
 
-    /**
-     * Handle full dependency sketch request.
-     * Returns all dependency relations for the given lemma.
-     * DEP relations use surface patterns with [deprel="..."] constraints.
-     */
     private void handleFullDependencySketch(HttpExchange exchange, String lemma) throws IOException {
-        handleDepSketchForType(exchange, lemma);
+        handleDepSketch(exchange, lemma);
     }
 
     private void handleFullSketchForType(HttpExchange exchange, String lemma, RelationType relationType) throws IOException {
@@ -139,11 +134,10 @@ class SketchHandlers {
     }
 
     /**
-     * Handle full dependency sketch — separate dispatch path from surface sketches.
-     * DEP relations always use {@link #buildRelationResponse} and carry a
+     * Full dependency sketch — dispatches DEP-type relations, each carrying a
      * {@code "type": "dependency"} field in the response.
      */
-    private void handleDepSketchForType(HttpExchange exchange, String lemma) throws IOException {
+    private void handleDepSketch(HttpExchange exchange, String lemma) throws IOException {
         Map<String, Object> byRelation = new HashMap<>();
         List<String> relationErrors = new ArrayList<>();
 

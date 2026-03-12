@@ -1,0 +1,84 @@
+{
+  "batch": "logic_clarity",
+  "batch_index": 6,
+  "assessments": {"logic_clarity": 72.0},
+  "dimension_notes": {
+    "logic_clarity": {
+      "evidence": [
+        "ExplorationHandlers.handleSemanticFieldExplore and handleSemanticFieldExploreMulti both call `relationConfig.relationType().get().name()` with a comment `// Safe: resolveRelationConfig guarantees relationType is present`; using Optional.get() with a safety comment rather than .orElseThrow() buries the contract in a comment instead of code",
+        "CorpusQueryHandlers.parseBcqlRequest: `Optional.ofNullable(obj.get(\"top\")).map(v -> obj.getIntValue(\"top\")).filter(v -> v > 0).orElse(10)` — the lambda `v -> obj.getIntValue(\"top\")` ignores its argument `v` and calls getIntValue(\"top\") by key again; the presence-check (via ofNullable) and the value-retrieval (via getIntValue) are needlessly decoupled, making the intent unclear",
+        "SemanticFieldExplorer.exploreByPattern (package-private overload): `if (seed.isEmpty())` throws IAE with message 'seed must not be blank' but there is no prior null guard; passing null throws NullPointerException with a misleading stack trace",
+        "CollocateProfileComparator.compareCollocateProfiles: null check `if (seedNouns == null || seedNouns.size() < 2)` is redundant — the single production caller (SemanticFieldExplorer.compareCollocateProfiles) validates size >= 2 before delegating and never passes null"
+      ],
+      "impact_scope": "module",
+      "fix_scope": "single_edit",
+      "confidence": "high"
+    }
+  },
+  "dimension_judgment": {
+    "logic_clarity": {
+      "strengths": [
+        "Guard clauses used consistently across all HTTP handlers: invalid input throws IAE immediately rather than propagating partial state",
+        "SemanticFieldExplorer divides the single-seed algorithm into four clearly labelled phases (// ========= EXPLORATION PHASE HELPERS =========), each in a well-named private method",
+        "ConlluConverter documents its key invariant explicitly: `// Invariant: inSentence implies writer != null` in the processLines Javadoc — and the code upholds it",
+        "Branching in handleSketchRequest cleanly separates the dep/surface/full/single-relation paths with early return, no nested if-else"
+      ],
+      "issue_character": "Issues cluster around two patterns: Optional.get() called with a comment-based safety assertion (rather than code-enforced contract via orElseThrow), and one over-engineered Optional chain whose lambda ignores its parameter — both in the API layer rather than the algorithmic core.",
+      "score_rationale": "The algorithmic core (SemanticFieldExplorer phases, ConlluConverter, CollocateProfileComparator scoring) has clear, correct control flow. The API layer introduces two logic-clarity defects: Optional.get() appearing twice with safety-comment workarounds, and a redundant Optional chain whose lambda silently ignores its argument. These are not subtle bugs but they require a reader to hold extra context to verify correctness. The redundant null check and missing null guard in exploreByPattern are additional minor issues. Together these pull the score below 80 but the codebase remains above the significant-drag threshold (60), landing in the 70–75 range."
+    }
+  },
+  "issues": [
+    {
+      "dimension": "logic_clarity",
+      "identifier": "optional_get_without_orelsethrow",
+      "summary": "Optional.get() called with a safety comment rather than .orElseThrow() in two handler methods",
+      "related_files": ["src/main/java/pl/marcinmilkowski/word_sketch/api/ExplorationHandlers.java"],
+      "evidence": [
+        "handleSemanticFieldExplore: `// Safe: resolveRelationConfig guarantees relationType is present` followed by `String relationType = relationConfig.relationType().get().name();`",
+        "handleSemanticFieldExploreMulti: same pattern — `// Safe: ...` then `.get().name()`",
+        "The contract lives in the comment, not in code; a future refactor of resolveRelationConfig that returns an empty Optional would produce NoSuchElementException with no informative message"
+      ],
+      "suggestion": "Replace both occurrences with `.orElseThrow(() -> new IllegalStateException(\"relationType unexpectedly absent after resolveRelationConfig — this is a bug\"))`. This makes the invariant code-visible and produces an actionable message if it is ever violated.",
+      "confidence": "high",
+      "impact_scope": "local",
+      "fix_scope": "single_edit"
+    },
+    {
+      "dimension": "logic_clarity",
+      "identifier": "optional_chain_ignores_lambda_param",
+      "summary": "Optional chain in parseBcqlRequest has a lambda that ignores its argument, obscuring intent",
+      "related_files": ["src/main/java/pl/marcinmilkowski/word_sketch/api/CorpusQueryHandlers.java"],
+      "evidence": [
+        "`Optional.ofNullable(obj.get(\"top\")).map(v -> obj.getIntValue(\"top\")).filter(v -> v > 0).orElse(10)`",
+        "The lambda `v -> obj.getIntValue(\"top\")` receives the unwrapped JSON value `v` but discards it and calls `obj.getIntValue(\"top\")` again by key — the presence-check (ofNullable) and the value-read (getIntValue) are decoupled with no clarity benefit"
+      ],
+      "suggestion": "Simplify to: `int rawTop = obj.getIntValue(\"top\", 0); int resolvedTop = rawTop > 0 ? rawTop : 10;` — this is two lines, immediately readable, and uses the Fastjson2 default-value overload that already handles absent keys.",
+      "confidence": "high",
+      "impact_scope": "local",
+      "fix_scope": "single_edit"
+    },
+    {
+      "dimension": "logic_clarity",
+      "identifier": "missing_null_guard_before_isempty",
+      "summary": "exploreByPattern (package-private) calls seed.isEmpty() without a prior null check",
+      "related_files": ["src/main/java/pl/marcinmilkowski/word_sketch/exploration/SemanticFieldExplorer.java"],
+      "evidence": [
+        "Method signature has no @NonNull annotation on `seed`",
+        "First statement: `if (seed.isEmpty()) { throw new IllegalArgumentException(\"seed must not be blank\"); }` — null input throws NullPointerException, not the promised IllegalArgumentException",
+        "The misleading NPE stack trace would point into isEmpty() with message 'seed must not be blank' in context"
+      ],
+      "suggestion": "Add `Objects.requireNonNull(seed, \"seed must not be null\");` before the isEmpty() check, or replace with `if (seed == null || seed.isEmpty())` and a single IAE — consistent with how other validators in this codebase handle null+blank together.",
+      "confidence": "high",
+      "impact_scope": "local",
+      "fix_scope": "single_edit"
+    }
+  ],
+  "retrospective": {
+    "root_causes": [
+      "Optional.get() used as a short-circuit shorthand when orElseThrow() is the correct pattern for 'I know this must be present'",
+      "Optional machinery applied to a simple conditional defaulting problem where a ternary or getIntValue default overload would be clearer"
+    ],
+    "likely_symptoms": ["optional_get_without_orelsethrow", "optional_chain_ignores_lambda_param"],
+    "possible_false_positives": []
+  }
+}
