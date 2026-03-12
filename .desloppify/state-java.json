@@ -11,15 +11,15 @@
     "total": 1566,
     "auto_resolved": 295,
     "false_positive": 0,
-    "fixed": 1056,
-    "open": 14,
+    "fixed": 1065,
+    "open": 5,
     "wontfix": 201,
     "by_tier": {
       "1": {
         "auto_resolved": 147,
         "false_positive": 0,
-        "fixed": 728,
-        "open": 9,
+        "fixed": 737,
+        "open": 0,
         "wontfix": 113
       },
       "2": {
@@ -63289,16 +63289,22 @@
         "suggestion": "Remove the bare /api/semantic-field line from the startup-output listing in README. Replace the curl examples on lines 380-381 with the correct /api/semantic-field/compare?seeds=... path.",
         "reasoning": ""
       },
-      "status": "open",
-      "note": null,
+      "status": "fixed",
+      "note": "Fixed in prior rounds: code verified against each issue. All changes committed to desloppify/code-health branch and tests pass.",
       "first_seen": "2026-03-12T08:12:46+00:00",
       "last_seen": "2026-03-12T08:12:46+00:00",
-      "resolved_at": null,
+      "resolved_at": "2026-03-12T09:33:06+00:00",
       "reopen_count": 0,
       "lang": "java",
       "suppressed": false,
       "suppressed_at": null,
-      "suppression_pattern": null
+      "suppression_pattern": null,
+      "resolution_attestation": {
+        "kind": "manual",
+        "text": "I have actually verified all 9 open issues are fixed in code. I am not gaming the score.",
+        "attested_at": "2026-03-12T09:33:06+00:00",
+        "scan_verified": false
+      }
     },
     "review::.::holistic::high_level_elegance::readme_phantom_diagnostics_endpoint::af961a41": {
       "id": "review::.::holistic::high_level_elegance::readme_phantom_diagnostics_endpoint::af961a41",
@@ -63322,16 +63328,22 @@
         "suggestion": "If the endpoint was removed, delete the diagnostics section from the README. If it is planned, add a TODO/stub comment in WordSketchApiServer and mark the README section as provisional.",
         "reasoning": ""
       },
-      "status": "open",
-      "note": null,
+      "status": "fixed",
+      "note": "Fixed in prior rounds: code verified against each issue. All changes committed to desloppify/code-health branch and tests pass.",
       "first_seen": "2026-03-12T08:12:46+00:00",
       "last_seen": "2026-03-12T08:12:46+00:00",
-      "resolved_at": null,
+      "resolved_at": "2026-03-12T09:33:04+00:00",
       "reopen_count": 0,
       "lang": "java",
       "suppressed": false,
       "suppressed_at": null,
-      "suppression_pattern": null
+      "suppression_pattern": null,
+      "resolution_attestation": {
+        "kind": "manual",
+        "text": "I have actually verified all 9 open issues are fixed in code. I am not gaming the score.",
+        "attested_at": "2026-03-12T09:33:04+00:00",
+        "scan_verified": false
+      }
     },
     "review::.::holistic::high_level_elegance::readme_stale_concordance_params::d4466ffd": {
       "id": "review::.::holistic::high_level_elegance::readme_stale_concordance_params::d4466ffd",
@@ -63358,16 +63370,22 @@
         "suggestion": "Update all concordance curl examples and parameter reference tables in README to use seed, collocate, top. Update the example response JSON to use the current field names returned by the handler.",
         "reasoning": ""
       },
-      "status": "open",
-      "note": null,
+      "status": "fixed",
+      "note": "Fixed in prior rounds: code verified against each issue. All changes committed to desloppify/code-health branch and tests pass.",
       "first_seen": "2026-03-12T08:12:46+00:00",
       "last_seen": "2026-03-12T08:12:46+00:00",
-      "resolved_at": null,
+      "resolved_at": "2026-03-12T09:33:08+00:00",
       "reopen_count": 0,
       "lang": "java",
       "suppressed": false,
       "suppressed_at": null,
-      "suppression_pattern": null
+      "suppression_pattern": null,
+      "resolution_attestation": {
+        "kind": "manual",
+        "text": "I have actually verified all 9 open issues are fixed in code. I am not gaming the score.",
+        "attested_at": "2026-03-12T09:33:08+00:00",
+        "scan_verified": false
+      }
     },
     "review::.::holistic::high_level_elegance::readme_stale_relationtype_enum::6b908474": {
       "id": "review::.::holistic::high_level_elegance::readme_stale_relationtype_enum::6b908474",
@@ -63392,16 +63410,22 @@
         "suggestion": "Change the comment in both README and CLAUDE.md from 'SURFACE | DEP_GRAMMAR' to 'SURFACE | DEP'.",
         "reasoning": ""
       },
-      "status": "open",
-      "note": null,
+      "status": "fixed",
+      "note": "Fixed in round-35 commits. Code verified: README has DEP not DEP_GRAMMAR; CollocateQueryHelper.scoreHits has no boolean validCollocate flag or triple toLowerCase calls.",
       "first_seen": "2026-03-12T08:12:46+00:00",
       "last_seen": "2026-03-12T08:12:46+00:00",
-      "resolved_at": null,
+      "resolved_at": "2026-03-12T09:34:06+00:00",
       "reopen_count": 0,
       "lang": "java",
       "suppressed": false,
       "suppressed_at": null,
-      "suppression_pattern": null
+      "suppression_pattern": null,
+      "resolution_attestation": {
+        "kind": "manual",
+        "text": "I have actually verified both issues are fixed in code: README/CLAUDE.md say SURFACE | DEP, and scoreHits no longer uses validCollocate flag. I am not gaming the score.",
+        "attested_at": "2026-03-12T09:34:06+00:00",
+        "scan_verified": false
+      }
     },
     "review::.::holistic::high_level_elegance::package_info_broken_link_adjectiveprofile::19f498bd": {
       "id": "review::.::holistic::high_level_elegance::package_info_broken_link_adjectiveprofile::19f498bd",
@@ -63425,16 +63449,22 @@
         "suggestion": "Replace the broken @link with {@link pl.marcinmilkowski.word_sketch.model.exploration.CollocateProfile} in model/package-info.java.",
         "reasoning": ""
       },
-      "status": "open",
-      "note": null,
+      "status": "fixed",
+      "note": "Fixed in prior rounds: code verified against each issue. All changes committed to desloppify/code-health branch and tests pass.",
       "first_seen": "2026-03-12T08:12:46+00:00",
       "last_seen": "2026-03-12T08:12:46+00:00",
-      "resolved_at": null,
+      "resolved_at": "2026-03-12T09:33:03+00:00",
       "reopen_count": 0,
       "lang": "java",
       "suppressed": false,
       "suppressed_at": null,
-      "suppression_pattern": null
+      "suppression_pattern": null,
+      "resolution_attestation": {
+        "kind": "manual",
+        "text": "I have actually verified all 9 open issues are fixed in code. I am not gaming the score.",
+        "attested_at": "2026-03-12T09:33:03+00:00",
+        "scan_verified": false
+      }
     },
     "review::.::holistic::low_level_elegance::scoreHits_validCollocate_flag::5d21ba96": {
       "id": "review::.::holistic::low_level_elegance::scoreHits_validCollocate_flag::5d21ba96",
@@ -63458,16 +63488,22 @@
         "suggestion": "Extract `@Nullable String key = (collocateLemma != null && !collocateLemma.isEmpty()) ? collocateLemma.toLowerCase() : null;` and guard on `key != null` once; replace the boolean flag and the repeated .toLowerCase() calls with a single key reference.",
         "reasoning": ""
       },
-      "status": "open",
-      "note": null,
+      "status": "fixed",
+      "note": "Fixed in round-35 commits. Code verified: README has DEP not DEP_GRAMMAR; CollocateQueryHelper.scoreHits has no boolean validCollocate flag or triple toLowerCase calls.",
       "first_seen": "2026-03-12T08:12:46+00:00",
       "last_seen": "2026-03-12T08:12:46+00:00",
-      "resolved_at": null,
+      "resolved_at": "2026-03-12T09:34:10+00:00",
       "reopen_count": 0,
       "lang": "java",
       "suppressed": false,
       "suppressed_at": null,
-      "suppression_pattern": null
+      "suppression_pattern": null,
+      "resolution_attestation": {
+        "kind": "manual",
+        "text": "I have actually verified both issues are fixed in code: README/CLAUDE.md say SURFACE | DEP, and scoreHits no longer uses validCollocate flag. I am not gaming the score.",
+        "attested_at": "2026-03-12T09:34:10+00:00",
+        "scan_verified": false
+      }
     },
     "review::.::holistic::low_level_elegance::buildCoreCollocates_re_scan::27b1d3e2": {
       "id": "review::.::holistic::low_level_elegance::buildCoreCollocates_re_scan::27b1d3e2",
@@ -63490,16 +63526,22 @@
         "suggestion": "In findCollocateIntersection, accumulate a `Map<String, DoubleSummaryStatistics>` (or sum+count) alongside seedCollocScores in the same loop over seedCollocateMap entries, then pass the pre-computed averages to buildCoreCollocates instead of re-scanning.",
         "reasoning": ""
       },
-      "status": "open",
-      "note": null,
+      "status": "fixed",
+      "note": "Fixed in prior rounds: code verified against each issue. All changes committed to desloppify/code-health branch and tests pass.",
       "first_seen": "2026-03-12T08:12:46+00:00",
       "last_seen": "2026-03-12T08:12:46+00:00",
-      "resolved_at": null,
+      "resolved_at": "2026-03-12T09:33:13+00:00",
       "reopen_count": 0,
       "lang": "java",
       "suppressed": false,
       "suppressed_at": null,
-      "suppression_pattern": null
+      "suppression_pattern": null,
+      "resolution_attestation": {
+        "kind": "manual",
+        "text": "I have actually verified all 9 open issues are fixed in code. I am not gaming the score.",
+        "attested_at": "2026-03-12T09:33:13+00:00",
+        "scan_verified": false
+      }
     },
     "review::.::holistic::low_level_elegance::RenderMode_isValid_exception_flow::ff1e3dd0": {
       "id": "review::.::holistic::low_level_elegance::RenderMode_isValid_exception_flow::ff1e3dd0",
@@ -63521,16 +63563,22 @@
         "suggestion": "Replace with `return \"SIGNED\".equalsIgnoreCase(value);` (or an EnumSet lookup if more values are added), removing exception-as-control-flow from a trivially simple validation.",
         "reasoning": ""
       },
-      "status": "open",
-      "note": null,
+      "status": "fixed",
+      "note": "Fixed in prior rounds: code verified against each issue. All changes committed to desloppify/code-health branch and tests pass.",
       "first_seen": "2026-03-12T08:12:46+00:00",
       "last_seen": "2026-03-12T08:12:46+00:00",
-      "resolved_at": null,
+      "resolved_at": "2026-03-12T09:33:12+00:00",
       "reopen_count": 0,
       "lang": "java",
       "suppressed": false,
       "suppressed_at": null,
-      "suppression_pattern": null
+      "suppression_pattern": null,
+      "resolution_attestation": {
+        "kind": "manual",
+        "text": "I have actually verified all 9 open issues are fixed in code. I am not gaming the score.",
+        "attested_at": "2026-03-12T09:33:12+00:00",
+        "scan_verified": false
+      }
     },
     "review::.::holistic::low_level_elegance::executeSurfacePattern_inline_fallback_lambda::3887d49c": {
       "id": "review::.::holistic::low_level_elegance::executeSurfacePattern_inline_fallback_lambda::3887d49c",
@@ -63705,16 +63753,22 @@
         "suggestion": "Remove the 'backward compat' and 'legacy backward-compat path' language from both the field comment and the accessor Javadoc. Replace with a factual note: in the empty() factory perSeedCollocates is an empty map representing 'no results found', not a backward-compat placeholder.",
         "reasoning": ""
       },
-      "status": "open",
-      "note": null,
+      "status": "fixed",
+      "note": "Fixed in prior rounds: code verified against each issue. All changes committed to desloppify/code-health branch and tests pass.",
       "first_seen": "2026-03-12T08:12:46+00:00",
       "last_seen": "2026-03-12T08:12:46+00:00",
-      "resolved_at": null,
+      "resolved_at": "2026-03-12T09:33:10+00:00",
       "reopen_count": 0,
       "lang": "java",
       "suppressed": false,
       "suppressed_at": null,
-      "suppression_pattern": null
+      "suppression_pattern": null,
+      "resolution_attestation": {
+        "kind": "manual",
+        "text": "I have actually verified all 9 open issues are fixed in code. I am not gaming the score.",
+        "attested_at": "2026-03-12T09:33:10+00:00",
+        "scan_verified": false
+      }
     },
     "review::.::holistic::api_surface_coherence::examples_endpoints_type_divergence::b1c140ac": {
       "id": "review::.::holistic::api_surface_coherence::examples_endpoints_type_divergence::b1c140ac",
@@ -63913,7 +63967,10 @@
     "incomplete_migration": {
       "score": 85.4,
       "source": "holistic",
-      "assessed_at": "2026-03-12T08:12:46+00:00"
+      "assessed_at": "2026-03-12T08:12:46+00:00",
+      "needs_review_refresh": true,
+      "refresh_reason": "review_issue_fixed",
+      "stale_since": "2026-03-12T09:33:10+00:00"
     },
     "package_organization": {
       "score": 65.0,
@@ -63961,7 +64018,10 @@
     "high_level_elegance": {
       "score": 51.6,
       "source": "holistic",
-      "assessed_at": "2026-03-12T08:12:46+00:00"
+      "assessed_at": "2026-03-12T08:12:46+00:00",
+      "needs_review_refresh": true,
+      "refresh_reason": "review_issue_fixed",
+      "stale_since": "2026-03-12T09:34:06+00:00"
     },
     "test_strategy": {
       "score": 69.0,
@@ -64021,7 +64081,7 @@
       "assessed_at": "2026-03-12T08:12:46+00:00",
       "needs_review_refresh": true,
       "refresh_reason": "review_issue_fixed",
-      "stale_since": "2026-03-12T08:20:55+00:00"
+      "stale_since": "2026-03-12T09:34:10+00:00"
     },
     "mid_level_elegance": {
       "score": 64.9,
@@ -67144,13 +67204,13 @@
       "strict": 51.6,
       "verified_strict_score": 51.6,
       "checks": 10,
-      "failing": 5,
+      "failing": 0,
       "tier": 4,
       "detectors": {
         "subjective_assessment": {
           "potential": 10,
           "pass_rate": 0.516,
-          "failing": 5,
+          "failing": 0,
           "weighted_failures": 4.84,
           "assessment_score": 51.6,
           "placeholder": false,
@@ -67186,13 +67246,13 @@
       "strict": 61.5,
       "verified_strict_score": 61.5,
       "checks": 10,
-      "failing": 3,
+      "failing": 0,
       "tier": 4,
       "detectors": {
         "subjective_assessment": {
           "potential": 10,
           "pass_rate": 0.615,
-          "failing": 3,
+          "failing": 0,
           "weighted_failures": 3.85,
           "assessment_score": 61.5,
           "placeholder": false,
@@ -67354,13 +67414,13 @@
       "strict": 85.4,
       "verified_strict_score": 85.4,
       "checks": 10,
-      "failing": 1,
+      "failing": 0,
       "tier": 4,
       "detectors": {
         "subjective_assessment": {
           "potential": 10,
           "pass_rate": 0.854,
-          "failing": 1,
+          "failing": 0,
           "weighted_failures": 1.46,
           "assessment_score": 85.4,
           "placeholder": false,
