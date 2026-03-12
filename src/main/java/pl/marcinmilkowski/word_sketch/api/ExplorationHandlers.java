@@ -23,7 +23,6 @@ import java.util.Objects;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
@@ -201,41 +200,6 @@ class ExplorationHandlers {
                 seed, collocate, resolvedConfig.id(), fetched.bcqlPattern(), top, null, fetched.examples());
 
         HttpApiUtils.sendJsonResponse(exchange, response);
-    }
-
-    /** Holds the pre-populated response map returned by {@link #buildBaseResponseEnvelope}. */
-    private record BaseEnvelope(Map<String, Object> response) {}
-
-    /**
-     * Builds the response envelope for multi-seed exploration and comparison endpoints
-     * ({@code /api/semantic-field/compare}).
-     *
-     * <p>Puts {@code seeds} and {@code seed_count} at the top level of the response envelope.</p>
-     */
-    private Map<String, Object> buildMultiSeedResponseEnvelope(
-            String relationType, SharedExploreParams params, List<?> seeds) {
-        BaseEnvelope base = buildBaseResponseEnvelope(relationType, params);
-        base.response().put("seeds", seeds);
-        base.response().put("seed_count", seeds.size());
-        return base.response();
-    }
-
-    /**
-     * Builds the common skeleton shared by comparison response envelopes: {@code status "ok"}
-     * and the {@code parameters} sub-map ({@code relation}, {@code top}, {@code min_shared},
-     * {@code min_logdice}).  Caller adds any variant fields on top.
-     */
-    private BaseEnvelope buildBaseResponseEnvelope(String relationType, SharedExploreParams params) {
-        Map<String, Object> response = new HashMap<>();
-        response.put("status", "ok");
-
-        Map<String, Object> paramsUsed = new HashMap<>();
-        paramsUsed.put("relation", relationType);
-        paramsUsed.put("top", params.topCollocates());
-        paramsUsed.put("min_shared", params.minShared());
-        paramsUsed.put("min_logdice", params.minLogDice());
-        response.put("parameters", paramsUsed);
-        return new BaseEnvelope(response);
     }
 
     /** Parses a comma-separated seeds parameter into a cleaned, lowercased ordered set. */

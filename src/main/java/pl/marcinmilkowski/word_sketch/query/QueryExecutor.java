@@ -4,6 +4,7 @@ import java.io.Closeable;
 import java.io.IOException;
 import java.util.List;
 
+import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
 import pl.marcinmilkowski.word_sketch.model.sketch.*;
 
@@ -49,7 +50,7 @@ public interface QueryExecutor extends CollocateQueryPort, Closeable {
      * @throws IOException if index access fails
      * @throws IllegalArgumentException if {@code cqlPattern} is not in a recognized format
      */
-    List<WordSketchResult> executeCollocations(@Nullable String lemma, String cqlPattern,
+    List<WordSketchResult> executeCollocations(@Nullable String lemma, @NonNull String cqlPattern,
                                              double minLogDice, int maxResults) throws IOException;
 
     /**
@@ -61,7 +62,7 @@ public interface QueryExecutor extends CollocateQueryPort, Closeable {
      * @return Concordance results in hit order
      * @throws IOException if index access fails
      */
-    List<ConcordanceResult> executeCqlQuery(String cqlPattern, int maxResults) throws IOException;
+    List<ConcordanceResult> executeCqlQuery(@NonNull String cqlPattern, int maxResults) throws IOException;
 
     /**
      * Get the total frequency of a lemma in the corpus.
@@ -70,7 +71,7 @@ public interface QueryExecutor extends CollocateQueryPort, Closeable {
      * @return Total occurrence count, or 0 if not found
      * @throws IOException if index access fails
      */
-    long getTotalFrequency(String lemma) throws IOException;
+    long getTotalFrequency(@NonNull String lemma) throws IOException;
 
     /**
      * Execute a surface pattern query for word sketches using a labeled BCQL pattern.
@@ -91,7 +92,7 @@ public interface QueryExecutor extends CollocateQueryPort, Closeable {
      * @throws IllegalArgumentException if the headword lemma cannot be extracted from {@code bcqlPattern}
      */
     List<WordSketchResult> executeSurfacePattern(
-            String bcqlPattern,
+            @NonNull String bcqlPattern,
             double minLogDice, int maxResults) throws IOException;
 
     /**
@@ -107,7 +108,7 @@ public interface QueryExecutor extends CollocateQueryPort, Closeable {
      * @throws IOException if index access fails
      */
     List<WordSketchResult> executeDependencyPattern(
-            String lemma, String deprel,
+            @NonNull String lemma, @NonNull String deprel,
             double minLogDice, int maxResults,
             @Nullable String headPosConstraint) throws IOException;
 

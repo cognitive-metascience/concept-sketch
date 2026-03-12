@@ -9,7 +9,6 @@ import pl.marcinmilkowski.word_sketch.query.CollocateQueryPort;
 
 import java.io.IOException;
 import java.util.List;
-import java.util.Map;
 
 /**
  * HTTP handler for arbitrary corpus query endpoints.
@@ -84,7 +83,21 @@ class CorpusQueryHandlers {
             String query,
             int total_results,
             int top,
-            List<Map<String, Object>> results) {}
+            List<BcqlResultEntry> results) {}
+
+    /**
+     * Typed representation of a single BCQL result row.
+     * Replaces the raw {@code Map<String,Object>} previously produced by
+     * {@code ExploreResponseAssembler.collocateResultToFullMap}.
+     */
+    private record BcqlResultEntry(
+            String sentence,
+            String raw,
+            int match_start,
+            int match_end,
+            String collocate_lemma,
+            long frequency,
+            double log_dice) {}
 
     /** Build the typed BCQL query response from the parsed request and results. */
     private static BcqlQueryResponse buildBcqlResponse(BcqlRequest req, List<CollocateResult> results) {
@@ -93,6 +106,17 @@ class CorpusQueryHandlers {
             req.query(),
             results.size(),
             req.top(),
-            results.stream().map(ExploreResponseAssembler::collocateResultToFullMap).toList());
+            results.stream().map(CorpusQueryHandlers::toBcqlResultEntry).toList());
+    }
+
+    private static BcqlResultEntry toBcqlResultEntry(CollocateResult r) {
+        return new BcqlResultEntry(
+                r.sentence(),
+                r.rawXml() != null ? r.rawXml() : "",
+                r.startOffset(),
+                r.endOffset(),
+                r.collocateLemma() != null ? r.collocateLemma() : "",
+                r.frequency(),
+                r.logDice());
     }
 }

@@ -3,6 +3,7 @@ package pl.marcinmilkowski.word_sketch.query;
 import java.io.IOException;
 import java.util.List;
 
+import org.jspecify.annotations.NonNull;
 import pl.marcinmilkowski.word_sketch.model.sketch.*;
 
 /**
@@ -26,5 +27,5 @@ public interface CollocateQueryPort {
      * @return Concordance results, ranked by logDice
      * @throws IOException if index access or parsing fails
      */
-    List<CollocateResult> executeBcqlQuery(String bcqlPattern, int maxResults) throws IOException;
+    List<CollocateResult> executeBcqlQuery(@NonNull String bcqlPattern, int maxResults) throws IOException;
 }

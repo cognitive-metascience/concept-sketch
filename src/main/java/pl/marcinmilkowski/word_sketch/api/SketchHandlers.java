@@ -4,6 +4,11 @@ import com.sun.net.httpserver.HttpExchange;
 import org.jspecify.annotations.NonNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import pl.marcinmilkowski.word_sketch.api.model.CollocateEntry;
+import pl.marcinmilkowski.word_sketch.api.model.RelationEntry;
+import pl.marcinmilkowski.word_sketch.api.model.RelationListEntry;
+import pl.marcinmilkowski.word_sketch.api.model.RelationListResponse;
+import pl.marcinmilkowski.word_sketch.api.model.SketchResponse;
 import pl.marcinmilkowski.word_sketch.config.GrammarConfig;
 import pl.marcinmilkowski.word_sketch.config.RelationPatternUtils;
 import pl.marcinmilkowski.word_sketch.config.RelationType;
@@ -12,7 +17,7 @@ import pl.marcinmilkowski.word_sketch.model.sketch.*;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -72,40 +77,30 @@ class SketchHandlers {
     }
 
     void handleRelationsForType(HttpExchange exchange, RelationType relationType) throws IOException {
-        List<Map<String, Object>> relationsArray = new ArrayList<>();
+        List<RelationListEntry> relationsArray = new ArrayList<>();
         for (var rel : grammarConfig.relations()) {
             if (rel.relationType().filter(rt -> rt == relationType).isPresent()) {
-                Map<String, Object> obj = new HashMap<>();
-                obj.put("id", rel.id());
-                obj.put("name", rel.name());
-                obj.put("description", rel.description());
-                obj.put("relation_type", relationType.name());
-                obj.put("pattern", rel.pattern());
-                if (relationType == RelationType.DEP) {
-                    obj.put("deprel", rel.deriveDeprel());
-                }
-                relationsArray.add(obj);
+                relationsArray.add(new RelationListEntry(
+                        rel.id(),
+                        rel.name(),
+                        rel.description(),
+                        relationType.name(),
+                        rel.pattern(),
+                        relationType == RelationType.DEP ? rel.deriveDeprel() : null));
             }
         }
-        Map<String, Object> response = new HashMap<>();
-        response.put("status", "ok");
-        response.put("relations", relationsArray);
-        HttpApiUtils.sendJsonResponse(exchange, response);
+        HttpApiUtils.sendJsonResponse(exchange, new RelationListResponse("ok", relationsArray));
     }
 
     private void handleFullSketchForType(HttpExchange exchange, String lemma, RelationType relationType) throws IOException {
-        Map<String, Object> byRelation = new HashMap<>();
+        Map<String, RelationEntry> byRelation = new LinkedHashMap<>();
         List<String> relationErrors = new ArrayList<>();
 
         executeRelationQueries(relationType, rel -> true, lemma, byRelation, relationErrors, (rel, sketch) ->
             SketchResponseAssembler.buildSurfaceRelationEntry(rel, sketch.collocations(),
                 sketch.results().stream().mapToLong(WordSketchResult::frequency).sum()));
 
-        Map<String, Object> response = new HashMap<>();
-        response.put("lemma", lemma);
-        response.put("relations", byRelation);
-        applyStatusFields(response, relationErrors);
-        HttpApiUtils.sendJsonResponse(exchange, response);
+        HttpApiUtils.sendJsonResponse(exchange, buildSketchResponse(lemma, null, byRelation, relationErrors));
     }
 
     /**
@@ -113,50 +108,45 @@ class SketchHandlers {
      * {@code "type": "dependency"} field in the response.
      */
     private void handleDependencySketch(HttpExchange exchange, String lemma) throws IOException {
-        Map<String, Object> byRelation = new HashMap<>();
+        Map<String, RelationEntry> byRelation = new LinkedHashMap<>();
         List<String> relationErrors = new ArrayList<>();
 
         executeRelationQueries(RelationType.DEP, rel -> rel.deriveDeprel() != null, lemma, byRelation, relationErrors,
             (rel, sketch) -> SketchResponseAssembler.buildDepRelationEntry(rel, sketch.results(), sketch.collocations()));
 
-        Map<String, Object> response = new HashMap<>();
-        response.put("lemma", lemma);
-        response.put("type", "dependency");
-        response.put("relations", byRelation);
-        applyStatusFields(response, relationErrors);
-        HttpApiUtils.sendJsonResponse(exchange, response);
+        HttpApiUtils.sendJsonResponse(exchange, buildSketchResponse(lemma, "dependency", byRelation, relationErrors));
     }
 
-    /** Sets {@code "status": "ok"} or {@code "status": "partial"} (plus {@code "warnings"}) on {@code response}. */
-    private static void applyStatusFields(Map<String, Object> response, List<String> relationErrors) {
-        if (!relationErrors.isEmpty()) {
-            response.put("status", "partial");
-            response.put("warnings", relationErrors);
-        } else {
-            response.put("status", "ok");
-        }
+    /** Builds a typed {@link SketchResponse}; {@code type} is {@code null} for surface-sketch responses. */
+    private static SketchResponse buildSketchResponse(
+            String lemma, String type,
+            Map<String, RelationEntry> byRelation,
+            List<String> relationErrors) {
+        String status = relationErrors.isEmpty() ? "ok" : "partial";
+        List<String> warnings = relationErrors.isEmpty() ? null : relationErrors;
+        return new SketchResponse(status, lemma, type, byRelation, warnings);
     }
 
     /**
      * Shared loop that iterates over grammar relations of the given type, executes each one,
-     * and delegates response-map construction to the provided {@code builder} callback.
+     * and delegates response-record construction to the provided {@code builder} callback.
      * Relations that execute with no results are skipped; errors are collected in
      * {@code relationErrors} rather than propagated.
      *
      * @param relationType    the type of relations to process
      * @param extraFilter     additional per-relation predicate (e.g. {@code rel -> rel.deriveDeprel() != null})
      * @param lemma           the head lemma being sketched
-     * @param byRelation      accumulator map from relation-id to response map
+     * @param byRelation      accumulator map from relation-id to {@link RelationEntry}
      * @param relationErrors  accumulator list for error strings
-     * @param builder         callback that converts a relation config + executed sketch into the JSON-ready map
+     * @param builder         callback that converts a relation config + executed sketch into a {@link RelationEntry}
      */
     private void executeRelationQueries(
             RelationType relationType,
             Predicate<pl.marcinmilkowski.word_sketch.config.RelationConfig> extraFilter,
             String lemma,
-            Map<String, Object> byRelation,
+            Map<String, RelationEntry> byRelation,
             List<String> relationErrors,
-            BiFunction<pl.marcinmilkowski.word_sketch.config.RelationConfig, ExecutedSketch, Map<String, Object>> builder) {
+            BiFunction<pl.marcinmilkowski.word_sketch.config.RelationConfig, ExecutedSketch, RelationEntry> builder) {
         for (var rel : grammarConfig.relations()) {
             if (rel.relationType().orElse(null) != relationType) continue;
             if (!extraFilter.test(rel)) continue;
@@ -184,27 +174,20 @@ class SketchHandlers {
         List<WordSketchResult> results = executor.executeSurfacePattern(
             RelationPatternUtils.buildFullPattern(rel, lemma), 0.0, SINGLE_RELATION_RESULTS);
 
-        List<Map<String, Object>> collocations = new ArrayList<>();
-        for (WordSketchResult result : results) {
-            collocations.add(SketchResponseAssembler.formatWordSketchResult(result));
-        }
+        List<CollocateEntry> collocations = results.stream()
+                .map(SketchResponseAssembler::toCollocateEntry)
+                .toList();
 
         long totalMatches = results.stream().mapToLong(WordSketchResult::frequency).sum();
-        Map<String, Object> relData = SketchResponseAssembler.buildSurfaceRelationEntry(rel, collocations, totalMatches);
+        RelationEntry relEntry = SketchResponseAssembler.buildSurfaceRelationEntry(rel, collocations, totalMatches);
+        Map<String, RelationEntry> relationsMap = Map.of(rel.id(), relEntry);
 
-        Map<String, Object> relationsMap = new HashMap<>();
-        relationsMap.put(rel.id(), relData);
-
-        Map<String, Object> response = new HashMap<>();
-        response.put("status", "ok");
-        response.put("lemma", lemma);
-        response.put("relations", relationsMap);
-
-        HttpApiUtils.sendJsonResponse(exchange, response);
+        HttpApiUtils.sendJsonResponse(exchange,
+                new SketchResponse("ok", lemma, null, relationsMap, null));
     }
 
     /**
-     * Executes the surface pattern for a relation and formats the results into the JSON-ready collocations list.
+     * Executes the surface pattern for a relation and formats the results into typed collocate entries.
      * Returns {@link Optional#empty()} when the query returns no results (so callers can skip the relation).
      */
     private Optional<ExecutedSketch> buildSketch(String lemma,
@@ -212,14 +195,13 @@ class SketchHandlers {
         List<WordSketchResult> results = executor.executeSurfacePattern(
             RelationPatternUtils.buildFullPattern(rel, lemma), 0.0, DEFAULT_SKETCH_RESULTS);
         if (results.isEmpty()) return Optional.empty();
-        List<Map<String, Object>> collocations = new ArrayList<>();
-        for (WordSketchResult result : results) {
-            collocations.add(SketchResponseAssembler.formatWordSketchResult(result));
-        }
+        List<CollocateEntry> collocations = results.stream()
+                .map(SketchResponseAssembler::toCollocateEntry)
+                .toList();
         return Optional.of(new ExecutedSketch(results, collocations));
     }
 
     private record ExecutedSketch(
             List<WordSketchResult> results,
-            List<Map<String, Object>> collocations) {}
+            List<CollocateEntry> collocations) {}
 }
