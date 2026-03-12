@@ -53,21 +53,21 @@ public class ComparisonResult {
     /** @return collocates present in every seed noun's collocate profile */
     public List<CollocateProfile> fullyShared() {
         return collocates.stream()
-            .filter(a -> a.presentInCount() == nouns.size())
+            .filter(CollocateProfile::isFullyShared)
             .collect(Collectors.toList());
     }
 
     /** @return collocates shared by at least 2 nouns but not all */
     public List<CollocateProfile> partiallyShared() {
         return collocates.stream()
-            .filter(a -> a.presentInCount() >= 2 && a.presentInCount() < nouns.size())
+            .filter(CollocateProfile::isPartiallyShared)
             .collect(Collectors.toList());
     }
 
     /** @return collocates that occur in the collocate profile of exactly one seed noun */
     public List<CollocateProfile> specific() {
         return collocates.stream()
-            .filter(a -> a.presentInCount() == 1)
+            .filter(CollocateProfile::isSpecific)
             .collect(Collectors.toList());
     }
 
@@ -79,7 +79,7 @@ public class ComparisonResult {
      */
     public List<CollocateProfile> specificTo(String noun) {
         return collocates.stream()
-            .filter(a -> a.presentInCount() == 1 && a.nounScores().getOrDefault(noun, 0.0) > 0)
+            .filter(a -> a.isSpecific() && a.nounScores().getOrDefault(noun, 0.0) > 0)
             .sorted((x, y) -> Double.compare(y.maxLogDice(), x.maxLogDice()))
             .collect(Collectors.toList());
     }

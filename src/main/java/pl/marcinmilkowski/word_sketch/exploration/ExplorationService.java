@@ -53,11 +53,11 @@ public interface ExplorationService {
             @NonNull ExplorationOptions opts) throws IOException;
 
     /**
-     * Fetch example concordance results for a collocate-headword pair using the provided relation pattern.
+     * Fetch example concordance results for a collocate-seed pair using the provided relation pattern.
      */
     @NonNull List<QueryResults.CollocateResult> fetchExamples(
             @NonNull String collocate,
-            @NonNull String headword,
+            @NonNull String seed,
             @NonNull RelationConfig relationConfig,
             @NonNull FetchExamplesOptions opts) throws IOException;
 }

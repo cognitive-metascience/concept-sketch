@@ -15,7 +15,7 @@ import org.slf4j.LoggerFactory;
 
 import pl.marcinmilkowski.word_sketch.config.GrammarConfig;
 import pl.marcinmilkowski.word_sketch.config.RelationConfig;
-import pl.marcinmilkowski.word_sketch.config.RelationPatternBuilder;
+import pl.marcinmilkowski.word_sketch.config.RelationPatternUtils;
 import pl.marcinmilkowski.word_sketch.config.RelationUtils;
 import pl.marcinmilkowski.word_sketch.model.exploration.ComparisonResult;
 import pl.marcinmilkowski.word_sketch.model.exploration.CoreCollocate;
@@ -131,8 +131,8 @@ public class SemanticFieldExplorer implements ExplorationService {
         return exploreByPattern(
             seed,
             relationConfig.name(),
-            RelationPatternBuilder.buildFullPattern(relationConfig, seed),
-            RelationPatternBuilder.buildCollocateReversePattern(relationConfig),
+            RelationPatternUtils.buildFullPattern(relationConfig, seed),
+            RelationPatternUtils.buildCollocateReversePattern(relationConfig),
             opts);
     }
 
@@ -223,6 +223,10 @@ public class SemanticFieldExplorer implements ExplorationService {
     /**
      * Phase 2: For each collocate, find nouns it collocates with (reverse lookup).
      * Returns a map of noun → {collocate → logDice}.
+     *
+     * <p><b>I/O fan-out:</b> issues one {@code executeCollocations} call per collocate in
+     * {@code seedCollocateScores}, so up to {@code topPredicates} sequential network/disk
+     * round-trips may occur. Keep {@code topPredicates} small (≤ 20) for interactive use.</p>
      */
     private Map<String, Map<String, Double>> buildNounToCollocatesMap(
             Map<String, Double> seedCollocateScores, String seed,
@@ -317,18 +321,18 @@ public class SemanticFieldExplorer implements ExplorationService {
     }
 
     /**
-     * Fetch example sentences for a collocate-headword pair using the provided relation pattern.
+     * Fetch example sentences for a collocate-seed pair using the provided relation pattern.
      *
      * @param collocate      The collocate lemma (e.g. an adjective)
-     * @param headword       The headword lemma (e.g. a noun)
-     * @param relationConfig The relation config defining how collocate and headword co-occur
+     * @param seed           The seed lemma (e.g. a noun)
+     * @param relationConfig The relation config defining how collocate and seed co-occur
      * @param opts           Options controlling how many examples to fetch
-     * @return List of example sentences showing the collocate-headword combination
+     * @return List of example sentences showing the collocate-seed combination
      */
-    public @NonNull List<QueryResults.CollocateResult> fetchExamples(@NonNull String collocate, @NonNull String headword,
+    public @NonNull List<QueryResults.CollocateResult> fetchExamples(@NonNull String collocate, @NonNull String seed,
             @NonNull RelationConfig relationConfig, @NonNull FetchExamplesOptions opts)
             throws IOException {
-        String bcqlQuery = RelationPatternBuilder.buildFullPattern(relationConfig, headword.toLowerCase(), collocate.toLowerCase());
+        String bcqlQuery = RelationPatternUtils.buildFullPattern(relationConfig, seed.toLowerCase(), collocate.toLowerCase());
 
         List<QueryResults.CollocateResult> results = executor.executeBcqlQuery(bcqlQuery, opts.maxExamples());
 

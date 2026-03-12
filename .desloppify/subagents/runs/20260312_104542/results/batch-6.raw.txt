@@ -1,0 +1,60 @@
+{
+  "batch": "type_safety",
+  "batch_index": 6,
+  "assessments": {"type_safety": 76.0},
+  "dimension_notes": {
+    "type_safety": {
+      "evidence": [
+        "JSpecify @NonNull/@Nullable annotations used consistently on QueryExecutor interface, HttpApiUtils public methods, BlackLabSnippetParser return types, MultiSeedExplorer parameters, and ExplorationService interface",
+        "Sealed ConcordanceResult interface with 'permits QueryResults.SnippetResult, QueryResults.CollocateResult' enables exhaustive type narrowing at call sites",
+        "Domain layer uses strongly-typed records (WordSketchResult, CollocateResult, ExplorationResult, ComparisonResult) rather than untyped maps — type discipline is strong below the HTTP layer",
+        "RelationType and RelationEdgeType enums used as typed parameters throughout query dispatch and graph serialization paths",
+        "VisualizationHandlers defines a private RenderMode enum but RenderMode.isValid(String) hard-codes the literal \"SIGNED\".equalsIgnoreCase(value) instead of iterating enum values — the enum is defined but not leveraged for validation; also passes mode as raw String to RadialPlot.renderFromItems instead of converting to RenderMode",
+        "API response layer uses pervasive Map<String, Object> (ExploreResponseAssembler, ExplorationHandlers, SketchHandlers, CorpusQueryHandlers) — the response shape contract is invisible at compile time, though this is a deliberate serialization-boundary pattern",
+        "RelationConfig.relationType() is @Nullable, correctly annotated, but callers in SketchHandlers must guard against null; this is handled correctly via null-checks before rt.name()",
+        "CollocateQueryHelper constructor accepts @NonNull BlackLabIndex but also has a no-arg constructor for tests that sets index to @Nullable — the @Nullable field is then accessed via Objects.requireNonNull at the call sites, maintaining safety"
+      ],
+      "impact_scope": "local",
+      "fix_scope": "single_edit",
+      "confidence": "high"
+    }
+  },
+  "dimension_judgment": {
+    "type_safety": {
+      "strengths": [
+        "JSpecify @NonNull/@Nullable annotations applied consistently to public interface methods across QueryExecutor, HttpApiUtils, ExplorationService, and BlackLabSnippetParser",
+        "Sealed ConcordanceResult interface with explicit permits clause enforces exhaustive handling of result subtypes",
+        "Domain model uses well-typed records (WordSketchResult, CollocateResult, ExplorationResult) rather than untyped maps, keeping type contracts strong in the query and exploration layers",
+        "Optional<T> used appropriately in GrammarConfig.relation(String) for nullable-lookup semantics, with Javadoc explaining the design choice vs @Nullable"
+      ],
+      "issue_character": "Issues are isolated to the HTTP presentation layer and amount to one enum-bypass pattern and the universal use of Map<String, Object> for JSON response assembly — neither affects the domain or query layers, which have strong type discipline.",
+      "score_rationale": "The codebase sits in the 75-80 band: the domain and query layers show exemplary Java type discipline — sealed types, JSpecify annotations on public APIs, well-typed records, and appropriate Optional usage — placing it above the 60 'significant drag' anchor. The main drag is the VisualizationHandlers RenderMode enum bypass (an enum is defined but validation uses a raw string literal and the type is never actually used for dispatch), plus the Map<String, Object> response pattern that erases all shape guarantees at the HTTP boundary. These are bounded to the presentation layer, keeping the overall score from reaching the 80+ 'solid but uneven' threshold."
+    }
+  },
+  "issues": [
+    {
+      "dimension": "type_safety",
+      "identifier": "render_mode_enum_bypass",
+      "summary": "RenderMode enum defined but bypassed: validation uses a raw string literal and the type is never used for dispatch",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/api/VisualizationHandlers.java"
+      ],
+      "evidence": [
+        "VisualizationHandlers defines 'private enum RenderMode { SIGNED; static boolean isValid(String value) { return \"SIGNED\".equalsIgnoreCase(value); } }' — the enum constant is not used in the isValid body",
+        "Adding a second mode to the enum (e.g. GRADIENT) would require manually updating the hard-coded string in isValid; the enum's compile-time completeness guarantee is never exercised",
+        "The validated mode string is passed as raw String to RadialPlot.renderFromItems(center, items, width, height, mode) rather than converted to RenderMode, so the enum never participates in downstream dispatch"
+      ],
+      "suggestion": "Replace the isValid helper with an Arrays.stream(RenderMode.values()).anyMatch(m -> m.name().equalsIgnoreCase(value)) check, or use a try/catch around RenderMode.valueOf(value.toUpperCase()). Convert the validated string to RenderMode before passing it to RadialPlot so the downstream API accepts RenderMode rather than String.",
+      "confidence": "high",
+      "impact_scope": "local",
+      "fix_scope": "single_edit"
+    }
+  ],
+  "retrospective": {
+    "root_causes": [
+      "The RenderMode enum was likely introduced as documentation/future-proofing but the actual validation logic was not updated to use enum values, leaving the enum as dead type infrastructure"
+    ],
+    "likely_symptoms": ["render_mode_enum_bypass"],
+    "possible_false_positives": []
+  }
+}

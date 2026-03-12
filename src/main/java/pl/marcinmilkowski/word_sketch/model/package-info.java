@@ -20,6 +20,14 @@
  * </ul>
  * <p>No persistence, I/O, or HTTP concerns belong in this package.</p>
  *
+ * <h2>Sub-package structure</h2>
+ * <p>
+ * Exploration types live in {@code model/exploration/} because they form a large, independently
+ * evolving set. Word-sketch result types ({@link pl.marcinmilkowski.word_sketch.model.QueryResults})
+ * remain as nested types in this root package rather than being split into the reserved
+ * {@code model/sketch/} sub-package — see {@code model/sketch/package-info.java} for rationale.
+ * </p>
+ *
  * <h2>Naming conventions</h2>
  * <p>
  * Record types omit the {@code get} prefix per Java record conventions.

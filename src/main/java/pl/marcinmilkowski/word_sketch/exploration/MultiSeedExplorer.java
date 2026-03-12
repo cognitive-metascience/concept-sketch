@@ -12,7 +12,7 @@ import java.util.Set;
 import org.jspecify.annotations.NonNull;
 
 import pl.marcinmilkowski.word_sketch.config.RelationConfig;
-import pl.marcinmilkowski.word_sketch.config.RelationPatternBuilder;
+import pl.marcinmilkowski.word_sketch.config.RelationPatternUtils;
 import pl.marcinmilkowski.word_sketch.model.exploration.CoreCollocate;
 import pl.marcinmilkowski.word_sketch.model.exploration.DiscoveredNoun;
 import pl.marcinmilkowski.word_sketch.model.exploration.ExplorationResult;
@@ -79,7 +79,7 @@ class MultiSeedExplorer {
         Map<String, List<QueryResults.WordSketchResult>> seedCollocateMap = new LinkedHashMap<>();
         Map<String, Integer> collocateSharedCount = new HashMap<>();
         for (String seed : seeds) {
-            String bcqlPattern = RelationPatternBuilder.buildFullPattern(relationConfig, seed);
+            String bcqlPattern = RelationPatternUtils.buildFullPattern(relationConfig, seed);
             List<QueryResults.WordSketchResult> collocates = executor.executeSurfacePattern(
                 bcqlPattern, minLogDice, topCollocates);
             seedCollocateMap.put(seed, collocates);

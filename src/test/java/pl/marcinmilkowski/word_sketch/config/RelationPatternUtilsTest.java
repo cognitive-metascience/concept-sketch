@@ -10,10 +10,10 @@ import pl.marcinmilkowski.word_sketch.model.RelationType;
 import static org.junit.jupiter.api.Assertions.*;
 
 /**
- * Unit tests for {@link RelationPatternBuilder}.
+ * Unit tests for {@link RelationPatternUtils}.
  */
-@DisplayName("RelationPatternBuilder")
-class RelationPatternBuilderTest {
+@DisplayName("RelationPatternUtils")
+class RelationPatternUtilsTest {
 
     // ─── helpers ────────────────────────────────────────────────────────────────
 
@@ -45,7 +45,7 @@ class RelationPatternBuilderTest {
         RelationConfig config = headConfig(
                 "[xpos=\"NN.*\"] [lemma=\"be\"] [xpos=\"JJ.*\"]", 1, 3, PosGroup.ADJ);
 
-        String result = RelationPatternBuilder.buildFullPattern(config, "theory");
+        String result = RelationPatternUtils.buildFullPattern(config, "theory");
 
         assertEquals("[lemma=\"theory\" & xpos=\"NN.*\"] [lemma=\"be\"] [xpos=\"JJ.*\"]", result);
     }
@@ -56,7 +56,7 @@ class RelationPatternBuilderTest {
         String pattern = "[xpos=\"NN.*\"] [lemma=\"be\"] [xpos=\"JJ.*\"]";
         RelationConfig config = headConfig(pattern, 1, 3, PosGroup.ADJ);
 
-        String result = RelationPatternBuilder.buildFullPattern(config, null);
+        String result = RelationPatternUtils.buildFullPattern(config, null);
 
         assertEquals(pattern, result);
     }
@@ -67,7 +67,7 @@ class RelationPatternBuilderTest {
         String pattern = "[xpos=\"NN.*\"] [lemma=\"be\"] [xpos=\"JJ.*\"]";
         RelationConfig config = headConfig(pattern, 1, 3, PosGroup.ADJ);
 
-        String result = RelationPatternBuilder.buildFullPattern(config, "   ");
+        String result = RelationPatternUtils.buildFullPattern(config, "   ");
 
         assertEquals(pattern, result);
     }
@@ -80,7 +80,7 @@ class RelationPatternBuilderTest {
         RelationConfig config = headConfig(
                 "[xpos=\"NN.*\"] [lemma=\"be\"] [xpos=\"JJ.*\"]", 1, 3, PosGroup.ADJ);
 
-        String result = RelationPatternBuilder.buildFullPattern(config, "theory", "correct");
+        String result = RelationPatternUtils.buildFullPattern(config, "theory", "correct");
 
         assertEquals(
                 "[lemma=\"theory\" & xpos=\"NN.*\"] [lemma=\"be\"] [lemma=\"correct\" & xpos=\"JJ.*\"]",
@@ -93,8 +93,8 @@ class RelationPatternBuilderTest {
         RelationConfig config = headConfig(
                 "[xpos=\"NN.*\"] [lemma=\"be\"] [xpos=\"JJ.*\"]", 1, 3, PosGroup.ADJ);
 
-        String threeArg = RelationPatternBuilder.buildFullPattern(config, "theory", null);
-        String twoArg   = RelationPatternBuilder.buildFullPattern(config, "theory");
+        String threeArg = RelationPatternUtils.buildFullPattern(config, "theory", null);
+        String twoArg   = RelationPatternUtils.buildFullPattern(config, "theory");
 
         assertEquals(twoArg, threeArg);
         assertEquals("[lemma=\"theory\" & xpos=\"NN.*\"] [lemma=\"be\"] [xpos=\"JJ.*\"]", threeArg);
@@ -106,8 +106,8 @@ class RelationPatternBuilderTest {
         RelationConfig config = headConfig(
                 "[xpos=\"NN.*\"] [lemma=\"be\"] [xpos=\"JJ.*\"]", 1, 3, PosGroup.ADJ);
 
-        String threeArg = RelationPatternBuilder.buildFullPattern(config, "theory", "  ");
-        String twoArg   = RelationPatternBuilder.buildFullPattern(config, "theory");
+        String threeArg = RelationPatternUtils.buildFullPattern(config, "theory", "  ");
+        String twoArg   = RelationPatternUtils.buildFullPattern(config, "theory");
 
         assertEquals(twoArg, threeArg);
     }
@@ -119,7 +119,7 @@ class RelationPatternBuilderTest {
     void buildCollocateReversePattern_adj_returnsJjPattern() {
         RelationConfig config = reverseConfig(PosGroup.ADJ, RelationType.SURFACE);
 
-        assertEquals("[xpos=\"JJ.*\"]", RelationPatternBuilder.buildCollocateReversePattern(config));
+        assertEquals("[xpos=\"JJ.*\"]", RelationPatternUtils.buildCollocateReversePattern(config));
     }
 
     @Test
@@ -127,7 +127,7 @@ class RelationPatternBuilderTest {
     void buildCollocateReversePattern_verb_returnsVbPattern() {
         RelationConfig config = reverseConfig(PosGroup.VERB, RelationType.SURFACE);
 
-        assertEquals("[xpos=\"VB.*\"]", RelationPatternBuilder.buildCollocateReversePattern(config));
+        assertEquals("[xpos=\"VB.*\"]", RelationPatternUtils.buildCollocateReversePattern(config));
     }
 
     @Test
@@ -135,7 +135,7 @@ class RelationPatternBuilderTest {
     void buildCollocateReversePattern_noun_returnsNnPattern() {
         RelationConfig config = reverseConfig(PosGroup.NOUN, RelationType.SURFACE);
 
-        assertEquals("[xpos=\"NN.*\"]", RelationPatternBuilder.buildCollocateReversePattern(config));
+        assertEquals("[xpos=\"NN.*\"]", RelationPatternUtils.buildCollocateReversePattern(config));
     }
 
     @Test
@@ -143,7 +143,7 @@ class RelationPatternBuilderTest {
     void buildCollocateReversePattern_adv_returnsRbPattern() {
         RelationConfig config = reverseConfig(PosGroup.ADV, RelationType.SURFACE);
 
-        assertEquals("[xpos=\"RB.*\"]", RelationPatternBuilder.buildCollocateReversePattern(config));
+        assertEquals("[xpos=\"RB.*\"]", RelationPatternUtils.buildCollocateReversePattern(config));
     }
 
     @Test
@@ -152,7 +152,7 @@ class RelationPatternBuilderTest {
         RelationConfig config = reverseConfig(PosGroup.ADJ, (RelationType) null);
 
         assertThrows(IllegalStateException.class,
-                () -> RelationPatternBuilder.buildCollocateReversePattern(config));
+                () -> RelationPatternUtils.buildCollocateReversePattern(config));
     }
 
     // ─── computeCollocatePosGroup ────────────────────────────────────────────────
@@ -160,36 +160,36 @@ class RelationPatternBuilderTest {
     @Test
     @DisplayName("computeCollocatePosGroup returns ADJ for JJ pattern")
     void computeCollocatePosGroup_jjPattern_returnsAdj() {
-        assertEquals(PosGroup.ADJ, RelationPatternBuilder.computeCollocatePosGroup("[xpos=\"JJ.*\"]"));
+        assertEquals(PosGroup.ADJ, RelationPatternUtils.computeCollocatePosGroup("[xpos=\"JJ.*\"]"));
     }
 
     @Test
     @DisplayName("computeCollocatePosGroup returns VERB for VB pattern")
     void computeCollocatePosGroup_vbPattern_returnsVerb() {
-        assertEquals(PosGroup.VERB, RelationPatternBuilder.computeCollocatePosGroup("[xpos=\"VB.*\"]"));
+        assertEquals(PosGroup.VERB, RelationPatternUtils.computeCollocatePosGroup("[xpos=\"VB.*\"]"));
     }
 
     @Test
     @DisplayName("computeCollocatePosGroup returns NOUN for NN pattern")
     void computeCollocatePosGroup_nnPattern_returnsNoun() {
-        assertEquals(PosGroup.NOUN, RelationPatternBuilder.computeCollocatePosGroup("[xpos=\"NN.*\"]"));
+        assertEquals(PosGroup.NOUN, RelationPatternUtils.computeCollocatePosGroup("[xpos=\"NN.*\"]"));
     }
 
     @Test
     @DisplayName("computeCollocatePosGroup returns ADV for RB pattern")
     void computeCollocatePosGroup_rbPattern_returnsAdv() {
-        assertEquals(PosGroup.ADV, RelationPatternBuilder.computeCollocatePosGroup("[xpos=\"RB.*\"]"));
+        assertEquals(PosGroup.ADV, RelationPatternUtils.computeCollocatePosGroup("[xpos=\"RB.*\"]"));
     }
 
     @Test
     @DisplayName("computeCollocatePosGroup returns OTHER for null pattern")
     void computeCollocatePosGroup_null_returnsOther() {
-        assertEquals(PosGroup.OTHER, RelationPatternBuilder.computeCollocatePosGroup(null));
+        assertEquals(PosGroup.OTHER, RelationPatternUtils.computeCollocatePosGroup(null));
     }
 
     @Test
     @DisplayName("computeCollocatePosGroup returns OTHER for unrecognized pattern")
     void computeCollocatePosGroup_unrecognizedPattern_returnsOther() {
-        assertEquals(PosGroup.OTHER, RelationPatternBuilder.computeCollocatePosGroup("[lemma=\"foo\"]"));
+        assertEquals(PosGroup.OTHER, RelationPatternUtils.computeCollocatePosGroup("[lemma=\"foo\"]"));
     }
 }

@@ -97,6 +97,7 @@ public class BlackLabQueryExecutor implements QueryExecutor {
         Map<String, String> lemmaPosMap = new HashMap<>();
 
         collectFrequenciesAndPosFromGroups(groups, identity -> {
+            // extractLemmaWithFallback handles CoNLL-U style matches with explicit lemma= attributes.
             String collocateLemma = BlackLabSnippetParser.extractLemmaWithFallback(identity);
             return collocateLemma.isEmpty() ? null : collocateLemma;
         }, freqMap, lemmaPosMap);
@@ -185,6 +186,8 @@ public class BlackLabQueryExecutor implements QueryExecutor {
         Map<String, String> lemmaPosMap = new HashMap<>();
 
         collectFrequenciesAndPosFromGroups(groups,
+            // Dependency relation identities are plain word-form strings; extractLastLemma
+            // picks the dependent token directly without needing a lemma= attribute fallback.
             BlackLabSnippetParser::extractLastLemma,
             freqMap, lemmaPosMap);
 
@@ -239,6 +242,11 @@ public class BlackLabQueryExecutor implements QueryExecutor {
 
         collectFrequenciesAndPosFromGroups(groups,
                 identity -> {
+                    // collocatePos == -1 when label "2:" is absent from the pattern; fall back to
+                    // extractLastLemma, matching the same sentinel handling in executeBcqlQuery.
+                    if (collocatePos < 0) {
+                        return BlackLabSnippetParser.extractLastLemma(identity);
+                    }
                     String collocate = BlackLabSnippetParser.extractCollocateFromXmlByPosition(identity, collocatePos);
                     if (collocate == null || collocate.isEmpty()) {
                         collocate = BlackLabSnippetParser.extractPlainTextTokenAt(identity, collocatePos);

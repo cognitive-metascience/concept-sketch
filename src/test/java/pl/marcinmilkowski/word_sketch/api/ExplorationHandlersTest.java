@@ -72,9 +72,9 @@ class ExplorationHandlersTest {
         ObjectNode body = HttpApiUtils.MAPPER.readValue(ex.getResponseBodyAsString(), ObjectNode.class);
         assertNotNull(body, "Response body should be valid JSON");
         assertEquals("ok", body.path("status").asText());
-        assertNotNull(body.get("adjectives"), "Response should contain an adjectives array");
+        assertNotNull(body.get("collocates"), "Response should contain a collocates array");
         assertNotNull(body.get("seeds"), "Response should contain a seeds/nouns array");
-        assertNotNull(body.get("adjectives_count"), "Response should contain adjectives_count");
+        assertNotNull(body.get("collocates_count"), "Response should contain collocates_count");
         assertNotNull(body.get("seed_count"), "Response should contain seed_count");
     }
 

@@ -6,7 +6,7 @@ import java.util.List;
 
 import org.jspecify.annotations.Nullable;
 import pl.marcinmilkowski.word_sketch.config.RelationConfig;
-import pl.marcinmilkowski.word_sketch.config.RelationPatternBuilder;
+import pl.marcinmilkowski.word_sketch.config.RelationPatternUtils;
 import pl.marcinmilkowski.word_sketch.model.QueryResults;
 
 /**
@@ -92,7 +92,7 @@ public interface QueryExecutor extends Closeable {
      * and the headword lemma is extracted from the pattern's {@code lemma=} attribute.
      *
      * <p>The headword lemma must be embedded in {@code bcqlPattern} (typically by the caller via
-     * {@link pl.marcinmilkowski.word_sketch.config.RelationPatternBuilder#buildFullPattern}).
+     * {@link pl.marcinmilkowski.word_sketch.config.RelationPatternUtils#buildFullPattern}).
      * It is extracted internally to look up the head-word's total corpus frequency for logDice
      * scoring, keeping the interface free of redundant parameters.
      *
@@ -143,7 +143,7 @@ public interface QueryExecutor extends Closeable {
     default List<QueryResults.WordSketchResult> executeSurfacePatternForRelation(
             RelationConfig rel, String lemma, double minLogDice, int maxResults) throws IOException {
         return executeSurfacePattern(
-            RelationPatternBuilder.buildFullPattern(rel, lemma), minLogDice, maxResults);
+            RelationPatternUtils.buildFullPattern(rel, lemma), minLogDice, maxResults);
     }
 
     /**
@@ -156,7 +156,7 @@ public interface QueryExecutor extends Closeable {
     default List<QueryResults.CollocateResult> executeBcqlQueryForRelation(
             RelationConfig rel, String seed, String collocate, int maxResults) throws IOException {
         return executeBcqlQuery(
-            RelationPatternBuilder.buildFullPattern(rel, seed, collocate), maxResults);
+            RelationPatternUtils.buildFullPattern(rel, seed, collocate), maxResults);
     }
 
 }

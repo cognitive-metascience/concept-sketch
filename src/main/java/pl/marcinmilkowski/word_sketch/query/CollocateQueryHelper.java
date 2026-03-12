@@ -38,12 +38,14 @@ import java.util.Objects;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.Collection;
 
 /**
  * Package-private helper that encapsulates collocate search, scoring, and ranking logic
@@ -159,6 +161,19 @@ class CollocateQueryHelper {
     // -------------------------------------------------------------------------
 
     /**
+     * Pre-fetches the corpus frequency for each lemma in the given collection,
+     * returning a map from lemma to total frequency.
+     * Avoids redundant I/O calls when the same lemma appears multiple times.
+     */
+    private Map<String, Long> prefetchCorpusFrequencies(Collection<String> lemmas) throws IOException {
+        Map<String, Long> freqs = new HashMap<>();
+        for (String lemma : lemmas) {
+            freqs.put(lemma, getTotalFrequency(lemma));
+        }
+        return freqs;
+    }
+
+    /**
      * Build and rank collocate results from a frequency map using logDice scoring.
      *
      * @param freqMap       joint co-occurrence frequencies (collocate lemma → count)
@@ -174,11 +189,7 @@ class CollocateQueryHelper {
             double minLogDice,
             int maxResults,
             Map<String, String> posMap) throws IOException {
-        // Pre-fetch corpus frequency for each unique collocate to avoid one I/O call per entry.
-        Map<String, Long> collocateCorpusFreqs = new HashMap<>();
-        for (String lemma : freqMap.keySet()) {
-            collocateCorpusFreqs.put(lemma, getTotalFrequency(lemma));
-        }
+        Map<String, Long> collocateCorpusFreqs = prefetchCorpusFrequencies(freqMap.keySet());
 
         List<QueryResults.WordSketchResult> results = new ArrayList<>();
         for (Map.Entry<String, Long> entry : freqMap.entrySet()) {
@@ -292,10 +303,7 @@ class CollocateQueryHelper {
     private List<QueryResults.CollocateResult> scoreHits(List<HitRecord> records,
             Map<String, Long> collocateFreqMap, long headwordFreq) throws IOException {
         // Pre-compute corpus frequency for each unique collocate to avoid one call per hit.
-        Map<String, Long> collocateCorpusFreqs = new HashMap<>();
-        for (String collocate : collocateFreqMap.keySet()) {
-            collocateCorpusFreqs.put(collocate, getTotalFrequency(collocate));
-        }
+        Map<String, Long> collocateCorpusFreqs = prefetchCorpusFrequencies(collocateFreqMap.keySet());
 
         List<QueryResults.CollocateResult> results = new ArrayList<>();
 

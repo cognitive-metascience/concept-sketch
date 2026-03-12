@@ -1,4 +1,4 @@
-package pl.marcinmilkowski.word_sketch.api;
+package pl.marcinmilkowski.word_sketch.viz;
 
 import org.junit.jupiter.api.Test;
 

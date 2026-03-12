@@ -15,9 +15,9 @@ import java.util.Objects;
  * config record remains a plain data carrier. All methods are stateless functions of their
  * arguments; none require instantiation.</p>
  */
-public final class RelationPatternBuilder {
+public final class RelationPatternUtils {
 
-    private RelationPatternBuilder() {}
+    private RelationPatternUtils() {}
 
     /**
      * Builds the BCQL pattern with both headword and collocate lemmas substituted.

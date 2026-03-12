@@ -189,6 +189,8 @@ class ExplorationHandlers {
 
         RelationConfig resolvedConfig = resolveRelationConfig(params);
 
+        String bcqlQuery = pl.marcinmilkowski.word_sketch.config.RelationPatternUtils.buildFullPattern(
+            resolvedConfig, seed.toLowerCase(), collocate.toLowerCase());
         List<QueryResults.CollocateResult> examples = semanticFieldExplorer.fetchExamples(collocate, seed, resolvedConfig, new FetchExamplesOptions(maxExamples));
 
         List<Map<String, Object>> exampleMaps = examples.stream()
@@ -200,6 +202,7 @@ class ExplorationHandlers {
         response.put("collocate", collocate);
         response.put("seed", seed);
         response.put("relation", resolvedConfig.id());
+        response.put("bcql", bcqlQuery);
         response.put("top", maxExamples);
         response.put("examples", exampleMaps);
         response.put("total_results", exampleMaps.size());

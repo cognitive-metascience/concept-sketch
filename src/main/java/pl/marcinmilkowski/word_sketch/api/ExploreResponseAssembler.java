@@ -170,8 +170,8 @@ final class ExploreResponseAssembler {
         for (CollocateProfile adj : result.collocates()) {
             adjectives.add(formatCollocateProfile(adj));
         }
-        response.put("adjectives", adjectives);
-        response.put("adjectives_count", result.collocates().size());
+        response.put("collocates", adjectives);
+        response.put("collocates_count", result.collocates().size());
 
         ComparisonResult.SummaryCounts counts = result.summaryCounts();
         response.put("fully_shared_count", counts.fullyShared());

@@ -71,11 +71,11 @@ public final class RelationUtils {
             .filter(r -> r.relationType() != null && primary.contains(r.relationType())
                 && r.collocatePosGroup() == posGroup)
             .findFirst()
-            .map(r -> RelationPatternBuilder.buildCollocateReversePattern(r))
+            .map(r -> RelationPatternUtils.buildCollocateReversePattern(r))
             .orElseGet(() -> grammarConfig.relations().stream()
                 .filter(r -> r.collocatePosGroup() == posGroup && r.relationType() != null)
                 .findFirst()
-                .map(r -> RelationPatternBuilder.buildCollocateReversePattern(r))
+                .map(r -> RelationPatternUtils.buildCollocateReversePattern(r))
                 .orElse(fallback));
     }
 }

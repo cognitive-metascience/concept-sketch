@@ -1,0 +1,58 @@
+{
+  "batch": "dependency_health",
+  "batch_index": 2,
+  "assessments": {"dependency_health": 82.0},
+  "dimension_notes": {
+    "dependency_health": {
+      "evidence": [
+        "pom.xml declares 5 production dependencies: blacklab-engine, blacklab-query-parser, jackson-databind, jackson-core, slf4j-api, logback-classic, jspecify — each is actively used.",
+        "jackson-core (com.fasterxml.jackson.core:jackson-core) is declared explicitly alongside jackson-databind at the same version (2.17.2 via shared property), but jackson-core is already a mandatory transitive dependency of jackson-databind. Direct uses (JsonProcessingException in CorpusQueryHandlers.java, VisualizationHandlers.java, GrammarConfigLoader.java) are valid but do not require the explicit pom entry.",
+        "No duplicate JSON libraries: only Jackson is used for JSON serialisation/deserialisation across the entire codebase.",
+        "SLF4J API + Logback classic is the standard API/implementation split; no mixing of log4j, JUL or commons-logging observed.",
+        "jspecify is used consistently in 116 import locations across query, model, config, and indexer packages — clearly earning its place despite being annotation-only.",
+        "blacklab-query-parser is a genuinely used separate artifact: ContextualQueryLanguageParser in BlackLabQueryExecutor.java and CorpusQueryLanguageParser (inline import) in CollocateQueryHelper.java both resolve from this artifact.",
+        "blacklab-engine and blacklab-query-parser at version 4.0.0 are NOT published to Maven Central (latest Central release is 3.0.1); they require a manual install step (install-blacklab.sh/ps1) documented in the pom and a github-raw fallback profile — this is a procurement friction issue, not a version conflict."
+      ],
+      "impact_scope": "module",
+      "fix_scope": "single_edit",
+      "confidence": "high"
+    }
+  },
+  "dimension_judgment": {
+    "dependency_health": {
+      "strengths": [
+        "Minimal, purposeful dependency list: only 6 production artifacts, each with a clear and fully utilised role.",
+        "No duplicate libraries for the same purpose — single JSON library (Jackson), single logging stack (SLF4J + Logback), no competing HTTP client libraries.",
+        "Jackson versions are pinned consistently using a shared ${jackson.version} property, eliminating version drift between jackson-core and jackson-databind.",
+        "jspecify annotation library is used widely and consistently rather than mixing multiple nullable-annotation libraries (e.g. javax, JetBrains, Checker).",
+        "Test-scoped dependencies (JUnit 5 jupiter-api, jupiter-engine, platform-launcher) are properly scoped and do not leak into production classpath."
+      ],
+      "issue_character": "The single structural issue is one redundant explicit declaration (jackson-core alongside jackson-databind), plus an environmental procurement concern around BlackLab 4.x not being on Maven Central — neither is a code defect, both are low-severity.",
+      "score_rationale": "This codebase scores well on dependency health: the dependency graph is intentionally lean, every artifact is justified by actual usage, and there are no competing libraries for the same concern. The score stops short of the high 80s primarily because jackson-core is declared redundantly (it is always transitively provided by jackson-databind), which adds a minor maintenance surface, and because the BlackLab 4.x artifacts require an out-of-band install step that is unusual friction for a Maven project. These are minor and cosmetic compared to the healthy overall picture."
+    }
+  },
+  "issues": [
+    {
+      "dimension": "dependency_health",
+      "identifier": "jackson_core_redundant_explicit_dep",
+      "summary": "jackson-core declared explicitly in pom.xml despite being a mandatory transitive dependency of jackson-databind",
+      "related_files": ["pom.xml"],
+      "evidence": [
+        "pom.xml lines 47-50 declare com.fasterxml.jackson.core:jackson-core:${jackson.version} as an explicit compile-scope dependency.",
+        "jackson-databind always pulls in jackson-core as a mandatory transitive dependency at the same version; the explicit entry is therefore redundant.",
+        "The three files that import com.fasterxml.jackson.core.JsonProcessingException (CorpusQueryHandlers.java, VisualizationHandlers.java, GrammarConfigLoader.java) would continue to compile correctly even if the explicit entry were removed, because jackson-databind is still present."
+      ],
+      "suggestion": "Remove the explicit jackson-core dependency block from pom.xml. If a specific jackson-core version must be enforced (e.g. to override a transitive version), use a <dependencyManagement> entry instead of a compile-scope dependency declaration.",
+      "confidence": "high",
+      "impact_scope": "local",
+      "fix_scope": "single_edit"
+    }
+  ],
+  "retrospective": {
+    "root_causes": [
+      "Defensive explicit pinning of jackson-core likely added to ensure version alignment, but the shared ${jackson.version} property already achieves that without the explicit dep entry."
+    ],
+    "likely_symptoms": [],
+    "possible_false_positives": []
+  }
+}

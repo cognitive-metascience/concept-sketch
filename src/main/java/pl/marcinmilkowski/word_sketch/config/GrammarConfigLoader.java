@@ -184,7 +184,7 @@ public final class GrammarConfigLoader {
             relObj.path("default_slop").asInt(10),
             parseRelationType(relObj.path("relation_type").textValue()),
             relObj.path("exploration_enabled").asBoolean(false),
-            RelationPatternBuilder.computeCollocatePosGroup(pattern)
+            RelationPatternUtils.computeCollocatePosGroup(pattern)
         );
     }
 

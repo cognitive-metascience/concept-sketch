@@ -1,0 +1,85 @@
+{
+  "batch": "structure_nav",
+  "batch_index": 7,
+  "assessments": {
+    "structure_nav": 80.0
+  },
+  "dimension_notes": {
+    "structure_nav": {
+      "evidence": [
+        "Seven clearly-scoped top-level packages: api, config, exploration, indexer, model, query, utils — each with a package-info.java description",
+        "model/exploration/ sub-package cleanly separates 11 exploration-specific DTOs (CollocateProfile, Edge, ExplorationResult, etc.) from general model types (PosGroup, QueryResults, RelationType) in model/",
+        "api/ package-info.java states 'HTTP request handlers, routing utilities, and response assembly' but RadialPlot.java — a 200-line SVG rendering engine — lives there as a package-private class",
+        "GrammarConfigSerializer.java in config/ introduces a Jackson ObjectMapper dependency; the class Javadoc says it serves 'API responses and diagnostic output' yet it lives in the config loading package",
+        "config/ package-info.java lists 'serialization' as one of its concerns, showing the mismatch is acknowledged but accepted rather than resolved",
+        "Package-private visibility is used consistently for internals: RadialPlot, MultiSeedExplorer, CollocateProfileComparator, ExplorationHandlers, SketchHandlers, etc. keep concerns contained within their packages",
+        "ExplorationService interface lives in exploration/ where its implementation resides; callers in api/ import it from exploration/ — standard DI wiring but the interface is the API seam, not an exploration-layer internal"
+      ],
+      "impact_scope": "module",
+      "fix_scope": "multi_file_refactor",
+      "confidence": "medium"
+    }
+  },
+  "dimension_judgment": {
+    "structure_nav": {
+      "strengths": [
+        "Seven clearly-named top-level packages each with a package-info.java description make the top-level map easy to read for a new developer",
+        "model/exploration/ sub-package isolates exploration-specific types from shared model types, avoiding a flat model package that mixes concerns",
+        "Package-private visibility is applied consistently to internal helpers (RadialPlot, MultiSeedExplorer, CollocateProfileComparator), keeping accidental cross-package coupling low",
+        "Handler decomposition in api/ (SketchHandlers, ConcordanceHandlers, ExplorationHandlers, CorpusQueryHandlers, VisualizationHandlers) gives each HTTP concern its own class without scattering them across packages"
+      ],
+      "issue_character": "Placement outliers where a class's actual concern does not match its package's declared scope — SVG rendering in the HTTP handler package, JSON serialization in the config loading package — create small but real moments of 'why is this here?' for a developer navigating by package.",
+      "score_rationale": "The codebase sits at the solid-but-uneven tier. A developer can predict where to find most things from the directory tree alone, and the consistent use of package-info files and package-private visibility reduces noise. However, RadialPlot (SVG engine) in api/ and GrammarConfigSerializer (presentation-layer JSON serializer) in config/ each contradict their package's stated purpose, producing the recurring friction characteristic of an 80 rather than a 90. Neither misplacement is severe enough to impede navigation significantly, but they represent the pattern of accepting boundary drift when a concern only has one caller."
+    }
+  },
+  "issues": [
+    {
+      "dimension": "structure_nav",
+      "identifier": "radial_plot_in_api_package",
+      "summary": "RadialPlot SVG renderer lives in the api/ package whose stated purpose is HTTP handlers and routing",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/api/RadialPlot.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/api/VisualizationHandlers.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/api/package-info.java"
+      ],
+      "evidence": [
+        "api/package-info.java declares the package purpose as 'HTTP request handlers, routing utilities, and response assembly'",
+        "RadialPlot.java is a 200-line SVG generation class with spiral-layout maths, canvas scaling, and XML escaping — none of which are HTTP handler concerns",
+        "RadialPlot is package-private and consumed only by VisualizationHandlers, so moving it would require no public-API changes"
+      ],
+      "suggestion": "Move RadialPlot.java to a new api/viz/ sub-package (or a top-level viz/ package) so the api/ package contains only HTTP-protocol classes; update the package-info to reflect the narrower scope. Since RadialPlot is package-private, widen its access to package-private in the new package and update VisualizationHandlers to import from the new location.",
+      "confidence": "medium",
+      "impact_scope": "local",
+      "fix_scope": "multi_file_refactor"
+    },
+    {
+      "dimension": "structure_nav",
+      "identifier": "grammar_config_serializer_in_config_package",
+      "summary": "GrammarConfigSerializer (a Jackson-backed JSON presenter) lives in config/ whose concern is configuration loading and data",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/config/GrammarConfigSerializer.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/config/package-info.java"
+      ],
+      "evidence": [
+        "GrammarConfigSerializer.java Javadoc says it produces ObjectNode 'for API responses and diagnostic output' — a presentation concern",
+        "GrammarConfigSerializer introduces a Jackson ObjectMapper static field into the config package, which otherwise depends only on JDK and jspecify",
+        "config/package-info.java lists 'serialization' as a concern to acknowledge the mismatch, but the class is a JSON presenter, not a configuration concern",
+        "The class is public and imported by test code in the config test package, making it an exposed API of the config package despite serving the HTTP layer"
+      ],
+      "suggestion": "Move GrammarConfigSerializer to api/ (as a package-private class used only by SketchHandlers) or to a dedicated config/serialization/ sub-package. This removes Jackson from the config package's dependency surface and makes the config package a pure data-loading module. Tests that reference GrammarConfigSerializer should move to the api test package alongside it.",
+      "confidence": "medium",
+      "impact_scope": "module",
+      "fix_scope": "multi_file_refactor"
+    }
+  ],
+  "retrospective": {
+    "root_causes": [
+      "Single-caller convenience: both RadialPlot and GrammarConfigSerializer have exactly one production caller, so they were placed in the caller's package rather than their own package, gradually eroding the package-info accuracy"
+    ],
+    "likely_symptoms": [
+      "radial_plot_in_api_package",
+      "grammar_config_serializer_in_config_package"
+    ],
+    "possible_false_positives": []
+  }
+}
