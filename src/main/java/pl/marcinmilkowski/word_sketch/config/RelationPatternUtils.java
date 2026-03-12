@@ -32,7 +32,7 @@ public final class RelationPatternUtils {
      * @param collocateLemma the lemma for the collocate position
      * @return the fully-substituted BCQL pattern string
      */
-    public static String buildFullPattern(RelationConfig config, @Nullable String headword, String collocateLemma) {
+    public static String buildFullPattern(RelationConfig config, @Nullable String headword, @Nullable String collocateLemma) {
         String withHead = buildFullPattern(config, headword);
         if (collocateLemma == null || collocateLemma.isBlank()) return withHead;
         return CqlUtils.substituteAtPosition(withHead, collocateLemma, config.collocatePosition());
@@ -87,7 +87,7 @@ public final class RelationPatternUtils {
      * @param pattern the raw BCQL pattern; may be null (returns {@link PosGroup#OTHER})
      * @return the inferred POS group
      */
-    public static PosGroup computeCollocatePosGroup(String pattern) {
+    public static PosGroup computeCollocatePosGroup(@Nullable String pattern) {
         if (pattern == null) return PosGroup.OTHER;
         String pat = pattern.toLowerCase(Locale.ROOT);
         String target = extractLabelContent(pat, 2);
@@ -97,7 +97,7 @@ public final class RelationPatternUtils {
     }
 
     /** Extract the bracket content of the nth labeled position (e.g. "2:[...]"). */
-    private static String extractLabelContent(String pat, int label) {
+    private static @Nullable String extractLabelContent(String pat, int label) {
         String prefix = label + ":[";
         int idx = pat.indexOf(prefix);
         if (idx < 0) return null;
@@ -110,7 +110,7 @@ public final class RelationPatternUtils {
         return null;
     }
 
-    private static PosGroup resolvePosGroupFromPrefix(String s, String attr) {
+    private static @Nullable PosGroup resolvePosGroupFromPrefix(String s, String attr) {
         String q = attr + "\"";
         if (s.contains(q + "jj") || s.contains(attr + "jj")) return PosGroup.ADJ;
         if (s.contains(q + "vb") || s.contains(attr + "vb")) return PosGroup.VERB;

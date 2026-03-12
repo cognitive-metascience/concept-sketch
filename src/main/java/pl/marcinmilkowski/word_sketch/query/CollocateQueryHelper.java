@@ -54,6 +54,7 @@ class CollocateQueryHelper {
     /** Over-fetch factor: request 3x as many hits as needed to compensate for scoring discards. */
     private static final int OVER_FETCH_FACTOR = 3;
 
+    @Nullable
     private final BlackLabIndex index;
 
     /**

@@ -14,6 +14,7 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
+import org.jspecify.annotations.Nullable;
 
 /**
  * HTTP handler for visualization endpoints.
@@ -35,7 +36,8 @@ class VisualizationHandlers {
          *
          * @throws IllegalArgumentException if the value is non-blank but not a recognised mode
          */
-        static RenderMode parse(String value) {
+        @Nullable
+        static RenderMode parse(@Nullable String value) {
             if (value == null || value.isBlank()) return null;
             try {
                 return valueOf(value.toUpperCase());

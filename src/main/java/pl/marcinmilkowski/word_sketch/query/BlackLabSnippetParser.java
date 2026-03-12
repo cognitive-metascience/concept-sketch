@@ -59,7 +59,7 @@ class BlackLabSnippetParser {
      * @return the POS tag string, or {@code null} if not found
      */
     @Nullable
-    static String extractPosFromMatch(String matchText) {
+    static String extractPosFromMatch(@Nullable String matchText) {
         if (matchText == null || matchText.isEmpty()) {
             return null;
         }
@@ -206,6 +206,7 @@ class BlackLabSnippetParser {
     }
 
     /** Returns the last {@code lemma="..."} value in {@code xml}, or {@code null}. */
+    @Nullable
     static String extractLastLemma(String xml) {
         if (xml == null || xml.isEmpty()) return null;
         java.util.regex.Matcher m = LEMMA_ATTR.matcher(xml);
