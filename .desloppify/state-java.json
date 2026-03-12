@@ -11,22 +11,22 @@
     "total": 1566,
     "auto_resolved": 295,
     "false_positive": 0,
-    "fixed": 1049,
-    "open": 17,
+    "fixed": 1052,
+    "open": 14,
     "wontfix": 205,
     "by_tier": {
       "1": {
         "auto_resolved": 147,
         "false_positive": 0,
-        "fixed": 726,
-        "open": 10,
+        "fixed": 727,
+        "open": 9,
         "wontfix": 114
       },
       "2": {
         "auto_resolved": 97,
         "false_positive": 0,
-        "fixed": 305,
-        "open": 2,
+        "fixed": 307,
+        "open": 0,
         "wontfix": 84
       },
       "3": {
@@ -63830,16 +63830,22 @@
         "suggestion": "Change ExplorationService.fetchExamples (and SemanticFieldExplorer implementation) to return List<QueryResults.CollocateResult> and have handleSemanticFieldExamples call collocateToExampleMap to produce the same {sentence, raw} structure as the concordance handler.",
         "reasoning": ""
       },
-      "status": "open",
-      "note": null,
+      "status": "fixed",
+      "note": "Changed handleSemanticFieldExamples to return {sentence,raw} maps matching /api/concordance/examples format; updated ExplorationService interface and SemanticFieldExplorer.fetchExamples return type",
       "first_seen": "2026-03-12T08:12:46+00:00",
       "last_seen": "2026-03-12T08:12:46+00:00",
-      "resolved_at": null,
+      "resolved_at": "2026-03-12T08:26:04+00:00",
       "reopen_count": 0,
       "lang": "java",
       "suppressed": false,
       "suppressed_at": null,
-      "suppression_pattern": null
+      "suppression_pattern": null,
+      "resolution_attestation": {
+        "kind": "manual",
+        "text": "I have actually Changed handleSemanticFieldExamples to return {sentence,raw} maps matching /api/concordance/examples format; updated ExplorationService interface and SemanticFieldExplorer.fetchExamples return type and I am not gaming the score.",
+        "attested_at": "2026-03-12T08:26:04+00:00",
+        "scan_verified": false
+      }
     },
     "review::.::holistic::api_surface_coherence::dep_vs_surface_relation_shape_asymmetry::0c6bbf47": {
       "id": "review::.::holistic::api_surface_coherence::dep_vs_surface_relation_shape_asymmetry::0c6bbf47",
@@ -63862,16 +63868,22 @@
         "suggestion": "Include a type discriminator field (e.g., relation_type: 'surface'|'dependency') and align shared fields where possible; or document the distinct shapes as intentional in the API reference so clients know to branch on the type field that is already emitted in the /api/relations endpoint.",
         "reasoning": ""
       },
-      "status": "open",
-      "note": null,
+      "status": "fixed",
+      "note": "Aligned DEP relation objects to also emit pattern and collocate_pos_group fields for consistent shape",
       "first_seen": "2026-03-12T08:12:46+00:00",
       "last_seen": "2026-03-12T08:12:46+00:00",
-      "resolved_at": null,
+      "resolved_at": "2026-03-12T08:25:57+00:00",
       "reopen_count": 0,
       "lang": "java",
       "suppressed": false,
       "suppressed_at": null,
-      "suppression_pattern": null
+      "suppression_pattern": null,
+      "resolution_attestation": {
+        "kind": "manual",
+        "text": "I have actually Aligned DEP relation objects to also emit pattern and collocate_pos_group fields for consistent shape and I am not gaming the score.",
+        "attested_at": "2026-03-12T08:25:57+00:00",
+        "scan_verified": false
+      }
     },
     "review::.::holistic::api_surface_coherence::comparison_hardcoded_all_relation_sentinel::2af95db6": {
       "id": "review::.::holistic::api_surface_coherence::comparison_hardcoded_all_relation_sentinel::2af95db6",
@@ -63894,16 +63906,22 @@
         "suggestion": "Extract a named constant (e.g., CROSS_RELATIONAL = \"cross_relational\") or omit the relation field entirely from comparison responses since the comparison endpoint explicitly does not accept a relation parameter. Alternatively include a separate field relation_scope: 'all' to distinguish it from a single-relation id.",
         "reasoning": ""
       },
-      "status": "open",
-      "note": null,
+      "status": "fixed",
+      "note": "Replaced hardcoded 'all' string with named constant CROSS_RELATIONAL in comparison response",
       "first_seen": "2026-03-12T08:12:46+00:00",
       "last_seen": "2026-03-12T08:12:46+00:00",
-      "resolved_at": null,
+      "resolved_at": "2026-03-12T08:25:36+00:00",
       "reopen_count": 0,
       "lang": "java",
       "suppressed": false,
       "suppressed_at": null,
-      "suppression_pattern": null
+      "suppression_pattern": null,
+      "resolution_attestation": {
+        "kind": "manual",
+        "text": "I have actually Replaced hardcoded 'all' string with named constant CROSS_RELATIONAL in comparison response and I am not gaming the score.",
+        "attested_at": "2026-03-12T08:25:36+00:00",
+        "scan_verified": false
+      }
     }
   },
   "scan_coverage": {
@@ -64020,7 +64038,10 @@
     "api_surface_coherence": {
       "score": 57.4,
       "source": "holistic",
-      "assessed_at": "2026-03-12T08:12:46+00:00"
+      "assessed_at": "2026-03-12T08:12:46+00:00",
+      "needs_review_refresh": true,
+      "refresh_reason": "review_issue_fixed",
+      "stale_since": "2026-03-12T08:26:04+00:00"
     },
     "authorization_consistency": {
       "score": 81.6,
@@ -67378,13 +67399,13 @@
       "strict": 57.4,
       "verified_strict_score": 57.4,
       "checks": 10,
-      "failing": 3,
+      "failing": 0,
       "tier": 4,
       "detectors": {
         "subjective_assessment": {
           "potential": 10,
           "pass_rate": 0.574,
-          "failing": 3,
+          "failing": 0,
           "weighted_failures": 4.26,
           "assessment_score": 57.4,
           "placeholder": false,

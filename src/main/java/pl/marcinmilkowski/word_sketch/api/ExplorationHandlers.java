@@ -10,6 +10,7 @@ import pl.marcinmilkowski.word_sketch.config.RelationUtils;
 import pl.marcinmilkowski.word_sketch.model.exploration.ComparisonResult;
 import pl.marcinmilkowski.word_sketch.model.exploration.ExplorationResult;
 import pl.marcinmilkowski.word_sketch.model.FetchExamplesOptions;
+import pl.marcinmilkowski.word_sketch.model.QueryResults;
 import pl.marcinmilkowski.word_sketch.model.exploration.ExplorationOptions;
 import pl.marcinmilkowski.word_sketch.model.exploration.SingleSeedExplorationOptions;
 import pl.marcinmilkowski.word_sketch.exploration.ExplorationService;
@@ -33,6 +34,8 @@ class ExplorationHandlers {
 
     private final GrammarConfig grammarConfig;
     private final ExplorationService semanticFieldExplorer;
+
+    private static final String CROSS_RELATIONAL = "cross_relational";
 
     ExplorationHandlers(ExplorationService semanticFieldExplorer, @NonNull GrammarConfig grammarConfig) {
         this.grammarConfig = Objects.requireNonNull(grammarConfig,
@@ -163,7 +166,7 @@ class ExplorationHandlers {
         variantFields.put("seeds", new ArrayList<>(result.nouns()));
         variantFields.put("seed_count", result.nouns().size());
         Map<String, Object> response = buildCoreExploreResponse(
-            "all", commonParams.topCollocates(), commonParams.minShared(),
+            CROSS_RELATIONAL, commonParams.topCollocates(), commonParams.minShared(),
             commonParams.minLogDice(), Map.of(), variantFields);
         ExploreResponseAssembler.populateComparisonResponse(response, result);
 
@@ -191,7 +194,11 @@ class ExplorationHandlers {
 
         RelationConfig resolvedConfig = resolveRelationConfig(params);
 
-        List<String> examples = semanticFieldExplorer.fetchExamples(collocate, seed, resolvedConfig, new FetchExamplesOptions(maxExamples));
+        List<QueryResults.CollocateResult> examples = semanticFieldExplorer.fetchExamples(collocate, seed, resolvedConfig, new FetchExamplesOptions(maxExamples));
+
+        List<Map<String, Object>> exampleMaps = examples.stream()
+            .map(ExploreResponseAssembler::collocateToExampleMap)
+            .collect(java.util.stream.Collectors.toList());
 
         Map<String, Object> response = new HashMap<>();
         response.put("status", "ok");
@@ -199,8 +206,8 @@ class ExplorationHandlers {
         response.put("seed", seed);
         response.put("relation", resolvedConfig.id());
         response.put("top", maxExamples);
-        response.put("examples", examples);
-        response.put("total_results", examples.size());
+        response.put("examples", exampleMaps);
+        response.put("total_results", exampleMaps.size());
 
         HttpApiUtils.sendJsonResponse(exchange, response);
     }

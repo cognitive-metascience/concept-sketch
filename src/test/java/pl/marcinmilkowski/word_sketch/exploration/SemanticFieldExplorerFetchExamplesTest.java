@@ -55,13 +55,13 @@ class SemanticFieldExplorerFetchExamplesTest {
         };
 
         SemanticFieldExplorer explorer = new SemanticFieldExplorer(executor, null);
-        List<String> examples = explorer.fetchExamples(
+        List<QueryResults.CollocateResult> examples = explorer.fetchExamples(
                 "important", "theory", testRelationConfig(), new FetchExamplesOptions(10));
 
         assertEquals(3, examples.size(), "Should return all 3 sentences");
-        assertTrue(examples.contains("a"));
-        assertTrue(examples.contains("b"));
-        assertTrue(examples.contains("c"));
+        assertTrue(examples.stream().anyMatch(r -> "a".equals(r.sentence())));
+        assertTrue(examples.stream().anyMatch(r -> "b".equals(r.sentence())));
+        assertTrue(examples.stream().anyMatch(r -> "c".equals(r.sentence())));
     }
 
     @Test
@@ -79,12 +79,12 @@ class SemanticFieldExplorerFetchExamplesTest {
         };
 
         SemanticFieldExplorer explorer = new SemanticFieldExplorer(executor, null);
-        List<String> examples = explorer.fetchExamples(
+        List<QueryResults.CollocateResult> examples = explorer.fetchExamples(
                 "important", "theory", testRelationConfig(), new FetchExamplesOptions(10));
 
         assertEquals(2, examples.size(), "Should deduplicate: expect [a, b]");
-        assertTrue(examples.contains("a"));
-        assertTrue(examples.contains("b"));
+        assertTrue(examples.stream().anyMatch(r -> "a".equals(r.sentence())));
+        assertTrue(examples.stream().anyMatch(r -> "b".equals(r.sentence())));
     }
 
     @Test
@@ -104,7 +104,7 @@ class SemanticFieldExplorerFetchExamplesTest {
         };
 
         SemanticFieldExplorer explorer = new SemanticFieldExplorer(executor, null);
-        List<String> examples = explorer.fetchExamples(
+        List<QueryResults.CollocateResult> examples = explorer.fetchExamples(
                 "important", "theory", testRelationConfig(), new FetchExamplesOptions(3));
 
         assertEquals(3, examples.size(), "Should not exceed maxExamples=3");

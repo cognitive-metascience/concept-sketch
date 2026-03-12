@@ -1,11 +1,11 @@
 {
   "command": "resolve",
   "patterns": [
-    "review::.::holistic::low_level_elegance::executeSurfacePattern_inline_fallback_lambda::3887d49c"
+    "review::.::holistic::api_surface_coherence::examples_endpoints_type_divergence::b1c140ac"
   ],
   "status": "fixed",
   "resolved": [
-    "review::.::holistic::low_level_elegance::executeSurfacePattern_inline_fallback_lambda::3887d49c"
+    "review::.::holistic::api_surface_coherence::examples_endpoints_type_divergence::b1c140ac"
   ],
   "count": 1,
   "next_command": "desloppify next",
@@ -17,10 +17,10 @@
   "prev_objective_score": 100.0,
   "prev_strict_score": 79.5,
   "prev_verified_strict_score": 100.0,
-  "attestation": "I have actually Extracted two-step fallback (extractCollocateFromXmlByPosition then extractPlainTextTokenAt) into named private static helper extractCollocateAtPosition(String identity, int pos) in BlackLabQueryExecutor; called as lambda from executeSurfacePattern and I am not gaming the score.",
+  "attestation": "I have actually Changed handleSemanticFieldExamples to return {sentence,raw} maps matching /api/concordance/examples format; updated ExplorationService interface and SemanticFieldExplorer.fetchExamples return type and I am not gaming the score.",
   "narrative": {
     "phase": "stagnation",
-    "headline": "Score plateaued at 79.5 for 5 scans. Stale Migration (49.8%) is where the breakthrough is. 205 wontfix items may also be worth revisiting. (12 review issues \u2014 run `desloppify show review --status open`)",
+    "headline": "Score plateaued at 79.5 for 5 scans. Stale Migration (49.8%) is where the breakthrough is. 205 wontfix items may also be worth revisiting. (9 review issues \u2014 run `desloppify show review --status open`)",
     "dimensions": {
       "lowest_dimensions": [
         {
@@ -42,7 +42,7 @@
         {
           "name": "API coherence",
           "strict": 57.4,
-          "failing": 3,
+          "failing": 0,
           "impact": 0.0,
           "subjective": true,
           "impact_description": "re-review to improve"
@@ -121,8 +121,8 @@
       {
         "type": "refactor",
         "detector": "review",
-        "count": 12,
-        "description": "12 review issues need investigation \u2014 run `desloppify show review --status open` to see them",
+        "count": 9,
+        "description": "9 review issues need investigation \u2014 run `desloppify show review --status open` to see them",
         "command": "desloppify show review --status open",
         "impact": 0.0,
         "dimension": "Unknown",
@@ -144,7 +144,7 @@
     "strategy": {
       "fixer_leverage": {
         "auto_fixable_count": 0,
-        "total_count": 41,
+        "total_count": 32,
         "coverage": 0.0,
         "impact_ratio": 0.0,
         "recommendation": "none"
@@ -170,7 +170,7 @@
         }
       },
       "can_parallelize": false,
-      "hint": "Try a different dimension to break the plateau. Review: 12 issue(s) \u2014 `desloppify show review --status open`."
+      "hint": "Try a different dimension to break the plateau. Review: 9 issue(s) \u2014 `desloppify show review --status open`."
     },
     "tools": {
       "fixers": [],
@@ -201,9 +201,9 @@
     "milestone": null,
     "primary_action": {
       "command": "desloppify show review --status open",
-      "description": "12 review issues need investigation \u2014 run `desloppify show review --status open` to see them"
+      "description": "9 review issues need investigation \u2014 run `desloppify show review --status open` to see them"
     },
-    "why_now": "Try a different dimension to break the plateau. Review: 12 issue(s) \u2014 `desloppify show review --status open`.",
+    "why_now": "Try a different dimension to break the plateau. Review: 9 issue(s) \u2014 `desloppify show review --status open`.",
     "verification_step": {
       "command": "desloppify scan",
       "reason": "revalidate after changes"

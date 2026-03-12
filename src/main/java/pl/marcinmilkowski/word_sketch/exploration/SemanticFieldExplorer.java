@@ -325,7 +325,7 @@ public class SemanticFieldExplorer implements ExplorationService {
      * @param opts           Options controlling how many examples to fetch
      * @return List of example sentences showing the collocate-headword combination
      */
-    public @NonNull List<String> fetchExamples(@NonNull String collocate, @NonNull String headword,
+    public @NonNull List<QueryResults.CollocateResult> fetchExamples(@NonNull String collocate, @NonNull String headword,
             @NonNull RelationConfig relationConfig, @NonNull FetchExamplesOptions opts)
             throws IOException {
         String bcqlQuery = RelationPatternBuilder.buildFullPattern(relationConfig, headword.toLowerCase(), collocate.toLowerCase());
@@ -333,10 +333,17 @@ public class SemanticFieldExplorer implements ExplorationService {
         List<QueryResults.CollocateResult> results = executor.executeBcqlQuery(bcqlQuery, opts.maxExamples());
 
         return results.stream()
-            .map(QueryResults.CollocateResult::sentence)
-            .distinct()
-            .limit(opts.maxExamples())
-            .collect(Collectors.toList());
+            .filter(r -> {
+                String s = r.sentence();
+                return s != null && !s.isEmpty();
+            })
+            .collect(Collectors.collectingAndThen(
+                Collectors.toMap(
+                    QueryResults.CollocateResult::sentence,
+                    r -> r,
+                    (a, b) -> a,
+                    java.util.LinkedHashMap::new),
+                m -> m.values().stream().limit(opts.maxExamples()).collect(Collectors.toList())));
     }
 
     /**

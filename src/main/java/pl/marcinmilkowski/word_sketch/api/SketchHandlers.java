@@ -268,6 +268,8 @@ class SketchHandlers {
         relData.put("name", rel.name());
         relData.put("description", rel.description());
         relData.put("deprel", rel.deriveDeprel());
+        relData.put("pattern", rel.pattern());
+        relData.put("collocate_pos_group", rel.collocatePosGroup().label());
         relData.put("total_matches", results.stream().mapToLong(QueryResults.WordSketchResult::frequency).sum());
         relData.put("collocations", collocations);
         return relData;
