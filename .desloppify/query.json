@@ -2,49 +2,17 @@
   "command": "next",
   "items": [
     {
-      "id": "workflow::deferred-disposition",
+      "id": "workflow::run-scan",
       "confidence": "high",
       "detector": "workflow",
       "file": ".",
-      "summary": "Deferred backlog decision required: 1 cluster + 2 individual items must be reactivated or marked wontfix.",
+      "summary": "Run post-flight scan to refresh queue and surface follow-up review work.",
       "detail": {
-        "temporary_skipped_count": 7,
-        "deferred_cluster_count": 1,
-        "deferred_individual_count": 2,
-        "reactivate_command": "desloppify plan unskip \"*\"",
-        "wontfix_command": "desloppify plan skip --permanent \"*\" --note \"<why this deferred work should stay wontfix>\" --attest \"I have actually reviewed these deferred items and I am not gaming the score by skipping them permanently.\" --confirm",
-        "planning_tools": [
-          {
-            "label": "Review deferred backlog",
-            "command": "desloppify plan queue --include-skipped"
-          },
-          {
-            "label": "Inspect a specific cluster or item",
-            "command": "desloppify show <cluster-or-id>"
-          },
-          {
-            "label": "Reactivate a subset",
-            "command": "desloppify plan unskip <cluster-or-id>"
-          },
-          {
-            "label": "Mark a subset as permanent wontfix",
-            "command": "desloppify plan skip --permanent <cluster-or-id> --note \"<why this deferred work should stay wontfix>\" --attest \"I have actually reviewed these deferred items and I am not gaming the score by skipping them permanently.\""
-          }
-        ],
-        "decision_options": [
-          {
-            "label": "Reactivate deferred work",
-            "command": "desloppify plan unskip \"*\""
-          },
-          {
-            "label": "Convert deferred work to wontfix",
-            "command": "desloppify plan skip --permanent \"*\" --note \"<why this deferred work should stay wontfix>\" --attest \"I have actually reviewed these deferred items and I am not gaming the score by skipping them permanently.\" --confirm"
-          }
-        ]
+        "phase": "postflight_scan"
       },
       "status": null,
       "kind": "workflow_action",
-      "primary_command": "desloppify plan unskip \"*\"",
+      "primary_command": "desloppify scan",
       "queue_position": 1
     }
   ],
@@ -53,14 +21,14 @@
     "mode": "execution"
   },
   "narrative": {
-    "phase": "middle_grind",
-    "headline": "\u26a0 1 security issue \u2014 review before other cleanup. 33 issues open. Duplication (0.0%) needs attention \u2014 run `desloppify next` to start. (24 review issues \u2014 run `desloppify show review --status open`)",
+    "phase": "regression",
+    "headline": "Score shifted 7.8 pts \u2014 this is normal after structural changes. Rescan after your next fix to see the real trend. (24 review issues \u2014 run `desloppify show review --status open`)",
     "dimensions": {
       "lowest_dimensions": [
         {
           "name": "Duplication",
           "strict": 0.0,
-          "failing": 3,
+          "failing": 6,
           "impact": 0.0
         },
         {
@@ -83,37 +51,27 @@
       "biggest_gap_dimensions": [
         {
           "name": "Duplication",
-          "lenient": 79.0,
+          "lenient": 47.5,
           "strict": 0.0,
-          "gap": 79.0,
+          "gap": 47.5,
           "wontfix_count": 0
         },
         {
           "name": "Security",
-          "lenient": 98.8,
-          "strict": 80.8,
-          "gap": 18.0,
+          "lenient": 100.0,
+          "strict": 80.2,
+          "gap": 19.8,
           "wontfix_count": 0
         },
         {
           "name": "File health",
           "lenient": 100.0,
-          "strict": 91.7,
-          "gap": 8.3,
+          "strict": 91.4,
+          "gap": 8.6,
           "wontfix_count": 0
         }
       ],
       "stagnant_dimensions": [
-        {
-          "name": "Code quality",
-          "strict": 92.8,
-          "stuck_scans": 5
-        },
-        {
-          "name": "File health",
-          "strict": 91.7,
-          "stuck_scans": 5
-        },
         {
           "name": "Definition Directness",
           "strict": 73.3,
@@ -145,8 +103,8 @@
       {
         "type": "refactor",
         "detector": "boilerplate_duplication",
-        "count": 3,
-        "description": "3 boilerplate_duplication issues \u2014 extract shared boilerplate into reusable helpers or base classes",
+        "count": 6,
+        "description": "6 boilerplate_duplication issues \u2014 extract shared boilerplate into reusable helpers or base classes",
         "command": "desloppify show boilerplate_duplication --status open",
         "impact": 0.0,
         "dimension": "Duplication",
@@ -165,45 +123,19 @@
         "lane": "refactor_1"
       },
       {
-        "type": "manual_fix",
-        "detector": "stale_exclude",
-        "count": 5,
-        "description": "5 stale_exclude issues \u2014 remove stale exclusion or verify it's still needed",
-        "command": "desloppify show stale_exclude --status open",
-        "impact": 0.0,
-        "dimension": "Code quality",
-        "priority": 3,
-        "lane": "refactor_2"
-      },
-      {
-        "type": "manual_fix",
-        "detector": "security",
-        "count": 1,
-        "description": "1 security issues in 1 cluster(s) \u2014 run `desloppify next`",
-        "command": "desloppify next",
-        "impact": 0.0,
-        "dimension": "Security",
-        "priority": 4,
-        "clusters": [
-          "auto/security"
-        ],
-        "cluster_count": 1,
-        "lane": "refactor_3"
-      },
-      {
         "type": "debt_review",
         "detector": null,
-        "description": "3.2 pts of wontfix debt \u2014 review stale decisions",
+        "description": "2.4 pts of wontfix debt \u2014 review stale decisions",
         "command": "desloppify show --status wontfix",
-        "gap": 3.2,
-        "priority": 5,
+        "gap": 2.4,
+        "priority": 3,
         "lane": "debt_review"
       }
     ],
     "strategy": {
       "fixer_leverage": {
         "auto_fixable_count": 0,
-        "total_count": 81,
+        "total_count": 78,
         "coverage": 0.0,
         "impact_ratio": 0.0,
         "recommendation": "none"
@@ -213,7 +145,7 @@
           "actions": [
             1
           ],
-          "file_count": 3,
+          "file_count": 6,
           "total_impact": 0.0,
           "automation": "manual",
           "run_first": false
@@ -227,27 +159,9 @@
           "automation": "manual",
           "run_first": false
         },
-        "refactor_2": {
-          "actions": [
-            3
-          ],
-          "file_count": 5,
-          "total_impact": 0.0,
-          "automation": "manual",
-          "run_first": false
-        },
-        "refactor_3": {
-          "actions": [
-            4
-          ],
-          "file_count": 1,
-          "total_impact": 0.0,
-          "automation": "manual",
-          "run_first": false
-        },
         "debt_review": {
           "actions": [
-            5
+            3
           ],
           "file_count": 0,
           "total_impact": 0.0,
@@ -278,16 +192,16 @@
       }
     },
     "debt": {
-      "overall_gap": 3.2,
-      "wontfix_count": 207,
+      "overall_gap": 2.4,
+      "wontfix_count": 212,
       "worst_dimension": "Duplication",
-      "worst_gap": 79.0,
-      "trend": "stable"
+      "worst_gap": 47.5,
+      "trend": "growing"
     },
     "milestone": null,
     "primary_action": {
       "command": "desloppify show boilerplate_duplication --status open",
-      "description": "3 boilerplate_duplication issues \u2014 extract shared boilerplate into reusable helpers or base classes"
+      "description": "6 boilerplate_duplication issues \u2014 extract shared boilerplate into reusable helpers or base classes"
     },
     "why_now": "Work through actions in priority order. Rescan after each fix to track progress. Review: 24 issue(s) \u2014 `desloppify show review --status open`.",
     "verification_step": {
@@ -298,23 +212,23 @@
       {
         "type": "wontfix_gap",
         "severity": "high",
-        "message": "Strict/lenient gap is 3.2 pts with 207 wontfix issues"
+        "message": "Strict/lenient gap is 2.4 pts with 212 wontfix issues"
       }
     ],
     "strict_target": {
       "target": 95.0,
-      "current": 73.1,
-      "gap": 21.9,
+      "current": 73.2,
+      "gap": 21.8,
       "state": "below",
       "warning": null
     },
     "reminders": [],
     "reminder_history": {
       "zone_classification": 3,
-      "report_scores": 48,
+      "report_scores": 49,
       "review_issues_pending": 3,
       "feedback_nudge": 3,
-      "wontfix_growing": 2,
+      "wontfix_growing": 3,
       "stagnant_nudge": 5,
       "review_not_run": 3
     }
@@ -1762,21 +1676,56 @@
         "name": "security_logging",
         "description": "Add INFO audit log for BCQL queries; annotate GitHub fallback pom profile with SLA warning and local-install alternative",
         "item_count": 3
+      },
+      {
+        "name": "auto/review-naming_quality",
+        "description": "Address 4 naming_quality review issues",
+        "item_count": 4
+      },
+      {
+        "name": "auto/review-abstraction_fitness",
+        "description": "Address 2 abstraction_fitness review issues",
+        "item_count": 2
+      },
+      {
+        "name": "auto/review-mid_level_elegance",
+        "description": "Address 2 mid_level_elegance review issues",
+        "item_count": 2
+      },
+      {
+        "name": "auto/review-contract_coherence",
+        "description": "Address 2 contract_coherence review issues",
+        "item_count": 2
+      },
+      {
+        "name": "auto/review-test_strategy",
+        "description": "Address 3 test_strategy review issues",
+        "item_count": 3
+      },
+      {
+        "name": "auto/review-api_surface_coherence",
+        "description": "Address 2 api_surface_coherence review issues",
+        "item_count": 2
+      },
+      {
+        "name": "auto/stale-review",
+        "description": "Re-review 10 stale subjective dimensions",
+        "item_count": 10
       }
     ],
-    "total_ordered": 34,
-    "total_skipped": 22,
+    "total_ordered": 54,
+    "total_skipped": 8,
     "plan_overrides_narrative": true
   },
-  "overall_score": 76.6,
-  "objective_score": 98.7,
-  "strict_score": 73.1,
+  "overall_score": 76.4,
+  "objective_score": 98.0,
+  "strict_score": 73.2,
   "scorecard_dimensions": [
     {
       "name": "File health",
       "score": 100.0,
-      "strict": 91.7,
-      "checks": 59,
+      "strict": 91.4,
+      "checks": 57,
       "failing": 0,
       "tier": 3,
       "subjective": false
@@ -1896,10 +1845,10 @@
     },
     {
       "name": "Duplication",
-      "score": 79.0,
+      "score": 47.5,
       "strict": 0.0,
-      "checks": 10,
-      "failing": 3,
+      "checks": 8,
+      "failing": 6,
       "tier": 3,
       "subjective": false
     },
@@ -1972,10 +1921,10 @@
     },
     {
       "name": "Security",
-      "score": 98.8,
-      "strict": 80.8,
-      "checks": 59,
-      "failing": 1,
+      "score": 100.0,
+      "strict": 80.2,
+      "checks": 57,
+      "failing": 0,
       "tier": 4,
       "subjective": false
     },
