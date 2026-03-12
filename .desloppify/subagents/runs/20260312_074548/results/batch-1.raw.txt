@@ -1,0 +1,132 @@
+{
+  "batch": "high_level_elegance",
+  "batch_index": 1,
+  "assessments": {"high_level_elegance": 68},
+  "dimension_notes": {
+    "high_level_elegance": {
+      "evidence": [
+        "Package layout is domain-aligned: api/, config/, exploration/, indexer/, model/, query/, utils/, viz/ each map to a recognisable domain capability and have package-info.java files",
+        "ExplorationService interface cleanly defines multi-mode exploration surface; SemanticFieldExplorer implements it and delegates to MultiSeedExplorer and CollocateProfileComparator",
+        "model/exploration/ sub-package correctly separates result DTOs from the service layer",
+        "README (line 122 server startup output) lists 'GET /api/semantic-field' as a live endpoint, but WordSketchApiServer registers no handler at that exact path — the canonical endpoint is /api/semantic-field/compare",
+        "README lines 380-381 show curl examples to /api/semantic-field?seeds=... and /api/semantic-field?nouns=... — these paths are not registered and would return 404",
+        "README line 393 documents 'GET /api/diagnostics/collocation-integrity' but no handler for this path exists in WordSketchApiServer or anywhere in the source tree",
+        "README concordance section (lines 386, 411-412, 421-449) documents the /api/concordance/examples endpoint with parameters word1, word2, limit; actual ConcordanceHandlers.java uses seed, collocate, top",
+        "README Code Structure section (line 666): 'RelationType.java # Enum: SURFACE | DEP_GRAMMAR' — the actual enum values are SURFACE and DEP (DEP_GRAMMAR does not exist)",
+        "CLAUDE.md line 134 repeats the same stale 'SURFACE | DEP_GRAMMAR' description",
+        "model/package-info.java line 10 references '{@link pl.marcinmilkowski.word_sketch.model.exploration.AdjectiveProfile}' — that class does not exist; the actual class is CollocateProfile"
+      ],
+      "impact_scope": "Multiple reference docs (README, CLAUDE.md, package-info) diverge from runtime reality. A new engineer following README to test the concordance endpoint or the semantic-field comparison endpoint would encounter 404s or parameter-rejected requests. The stale enum name in two places and the broken @link in package-info erode trust in all doc-driven navigation.",
+      "fix_scope": "Update README concordance examples section to use seed/collocate/top; remove or correct the /api/semantic-field bare-path and /api/diagnostics entries from startup listing and curl examples; correct RelationType description in README and CLAUDE.md; fix AdjectiveProfile -> CollocateProfile in model/package-info.java.",
+      "confidence": "high"
+    }
+  },
+  "dimension_judgment": {
+    "high_level_elegance": {
+      "strengths": [
+        "Package decomposition maps cleanly to domain capabilities: api (HTTP), config (grammar config data + loading), exploration (SEF logic), indexer (corpus indexing), model (pure domain types), query (corpus query execution), utils (shared math/CQL helpers), viz (visualization data)",
+        "Explicit ExplorationService interface gives the API layer a stable, domain-stated seam to depend on, avoiding direct coupling to the concrete explorer",
+        "model/exploration/ sub-package correctly co-locates all exploration result types and keeps them free of I/O and HTTP concerns, consistent with the stated package philosophy",
+        "API handler split across SketchHandlers, ConcordanceHandlers, CorpusQueryHandlers, ExplorationHandlers, VisualizationHandlers is coherent — each class owns one recognisable surface-area",
+        "config/ cleanly separates immutable data (GrammarConfig), loading (GrammarConfigLoader), and per-relation data (RelationConfig, RelationPatternBuilder, RelationUtils)"
+      ],
+      "issue_character": "The structural decomposition is genuinely good; the problems are concentrated in reference documentation failing to match runtime reality. Four distinct doc-reality gaps exist: (1) two phantom endpoint paths in README (bare /api/semantic-field and /api/diagnostics/collocation-integrity), (2) stale concordance parameter names (word1/word2/limit vs seed/collocate/top), (3) a wrong enum value name (DEP_GRAMMAR) repeated in README and CLAUDE.md, and (4) a broken @link to a non-existent class in model/package-info.java. These failures mean the primary reference materials a new engineer would consult are untrustworthy.",
+      "score_rationale": "The code structure itself earns a high score — domain-aligned packages, clear ownership, single-responsibility handlers, and a well-factored model layer. The score is pulled down to 68 by the concentration of documentation-vs-reality failures. Four separate doc inaccuracies affecting the two most-consulted reference artifacts (README and package-info) are not negligible for 'project contracts and reference docs match runtime reality' — a first-class criterion for this dimension."
+    }
+  },
+  "issues": [
+    {
+      "dimension": "high_level_elegance",
+      "identifier": "readme_phantom_semantic_field_path",
+      "summary": "README documents /api/semantic-field (bare path) as a registered endpoint, but no such route exists",
+      "related_files": ["README.md", "src/main/java/pl/marcinmilkowski/word_sketch/api/WordSketchApiServer.java"],
+      "evidence": [
+        "README line 122 (server startup listing): 'GET /api/semantic-field'",
+        "README lines 380-381: curl examples to /api/semantic-field?seeds=... and /api/semantic-field?nouns=...",
+        "WordSketchApiServer registers /api/semantic-field/explore, /api/semantic-field/explore-multi, /api/semantic-field/compare, /api/semantic-field/examples — no bare /api/semantic-field handler"
+      ],
+      "suggestion": "Remove the bare /api/semantic-field line from the startup-output listing in README. Replace the curl examples on lines 380-381 with the correct /api/semantic-field/compare?seeds=... path.",
+      "confidence": "high",
+      "impact_scope": "A developer following the README to exercise the comparison endpoint gets a 404; the documented API surface is incorrect.",
+      "fix_scope": "README-only edit: update startup listing and fix two curl example lines."
+    },
+    {
+      "dimension": "high_level_elegance",
+      "identifier": "readme_phantom_diagnostics_endpoint",
+      "summary": "README documents /api/diagnostics/collocation-integrity as a live endpoint, but no handler is registered for it",
+      "related_files": ["README.md", "src/main/java/pl/marcinmilkowski/word_sketch/api/WordSketchApiServer.java"],
+      "evidence": [
+        "README line 393: curl http://localhost:8080/api/diagnostics/collocation-integrity?top=10",
+        "README lines 394-402 describe its response format",
+        "No context registration for /api/diagnostics in WordSketchApiServer; no handler class found in api/ package"
+      ],
+      "suggestion": "If the endpoint was removed, delete the diagnostics section from the README. If it is planned, add a TODO/stub comment in WordSketchApiServer and mark the README section as provisional.",
+      "confidence": "high",
+      "impact_scope": "Misleads engineers and integrators into expecting a diagnostic tool that produces 404 at runtime.",
+      "fix_scope": "README deletion or annotation; no code changes required."
+    },
+    {
+      "dimension": "high_level_elegance",
+      "identifier": "readme_stale_concordance_params",
+      "summary": "README concordance endpoint documentation uses old parameter names (word1, word2, limit) that were renamed to seed, collocate, top",
+      "related_files": ["README.md", "src/main/java/pl/marcinmilkowski/word_sketch/api/ConcordanceHandlers.java"],
+      "evidence": [
+        "README line 155: curl '.../api/concordance/examples?word1=house&word2=big&limit=5'",
+        "README line 386: curl '.../api/concordance/examples?word1=house&word2=big&limit=10'",
+        "README lines 411-412: '- word1 (required)... - word2 (required)... - limit (optional)'",
+        "README lines 421-422: response shows 'word1': 'house', 'word2': 'big'",
+        "README lines 430-431, 438: response shows word1_positions, word2_positions",
+        "ConcordanceHandlers.java parseConcordanceExamplesRequest uses: HttpApiUtils.requireParam(params, 'seed'), requireParam(params, 'collocate'), parseIntParam(params, 'top', 10)"
+      ],
+      "suggestion": "Update all concordance curl examples and parameter reference tables in README to use seed, collocate, top. Update the example response JSON to use the current field names returned by the handler.",
+      "confidence": "high",
+      "impact_scope": "Every developer testing the concordance endpoint from the README gets a 400 'Missing required parameter: seed' error.",
+      "fix_scope": "README-only edit: update ~8 occurrences in the concordance section."
+    },
+    {
+      "dimension": "high_level_elegance",
+      "identifier": "readme_stale_relationtype_enum",
+      "summary": "README and CLAUDE.md document RelationType as 'SURFACE | DEP_GRAMMAR' but the enum values are SURFACE and DEP",
+      "related_files": ["README.md", "CLAUDE.md", "src/main/java/pl/marcinmilkowski/word_sketch/model/RelationType.java"],
+      "evidence": [
+        "README line 666: 'RelationType.java # Enum: SURFACE | DEP_GRAMMAR'",
+        "CLAUDE.md line 134: 'RelationType.java               # Enum: SURFACE | DEP_GRAMMAR'",
+        "RelationType.java defines: SURFACE, DEP — no DEP_GRAMMAR constant"
+      ],
+      "suggestion": "Change the comment in both README and CLAUDE.md from 'SURFACE | DEP_GRAMMAR' to 'SURFACE | DEP'.",
+      "confidence": "high",
+      "impact_scope": "Engineer reading the code structure section will look for a DEP_GRAMMAR constant that does not exist; minor but erodes doc trustworthiness.",
+      "fix_scope": "One-line fix in README and one-line fix in CLAUDE.md."
+    },
+    {
+      "dimension": "high_level_elegance",
+      "identifier": "package_info_broken_link_adjectiveprofile",
+      "summary": "model/package-info.java references non-existent class AdjectiveProfile in a @link tag; the actual class is CollocateProfile",
+      "related_files": ["src/main/java/pl/marcinmilkowski/word_sketch/model/package-info.java", "src/main/java/pl/marcinmilkowski/word_sketch/model/exploration/CollocateProfile.java"],
+      "evidence": [
+        "model/package-info.java line 10: '{@link pl.marcinmilkowski.word_sketch.model.exploration.AdjectiveProfile}'",
+        "No class AdjectiveProfile exists anywhere in the source tree",
+        "The equivalent class is CollocateProfile at model/exploration/CollocateProfile.java"
+      ],
+      "suggestion": "Replace the broken @link with {@link pl.marcinmilkowski.word_sketch.model.exploration.CollocateProfile} in model/package-info.java.",
+      "confidence": "high",
+      "impact_scope": "package-info.java is the primary source of package-level documentation; a broken @link reference misleads IDE navigation and Javadoc consumers.",
+      "fix_scope": "Single @link update in model/package-info.java."
+    }
+  ],
+  "retrospective": {
+    "root_causes": [
+      "The concordance endpoint parameters were renamed (word1/word2/limit → seed/collocate/top) during a refactor but the README was not updated, leaving a stale API contract in the docs",
+      "Endpoints removed or not yet implemented (/api/semantic-field bare path, /api/diagnostics/collocation-integrity) were left in README without a corresponding deletion",
+      "The model type CollocateProfile appears to have been renamed from AdjectiveProfile at some point; the package-info.java and code comments in CollocateProfileComparator still use the old name in prose (while the class was correctly renamed), indicating a find-and-replace that missed the Javadoc"
+    ],
+    "likely_symptoms": [
+      "400 errors when developers follow README curl examples for /api/concordance/examples (wrong parameter names)",
+      "404 errors when developers test /api/semantic-field and /api/diagnostics/collocation-integrity from README",
+      "Javadoc generation warnings for the broken @link in model/package-info.java"
+    ],
+    "possible_false_positives": [
+      "The /api/semantic-field bare path might have existed as an undocumented legacy alias that was removed but the README not updated — the fix is the same regardless"
+    ]
+  }
+}

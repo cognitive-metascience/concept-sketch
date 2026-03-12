@@ -1,0 +1,102 @@
+{
+  "batch": "api_surface_coherence",
+  "batch_index": 5,
+  "assessments": {"api_surface_coherence": 66},
+  "dimension_notes": {
+    "api_surface_coherence": {
+      "evidence": [
+        "Both 'examples' endpoints (/api/semantic-field/examples and /api/concordance/examples) accept the same seed/collocate/relation/top parameters and are documented as siblings, but return different types for the examples field: List<String> plain sentences vs List<{sentence, raw}> structured maps.",
+        "Surface relation response shape ({id, name, pattern, collocate_pos_group, total_matches, collocations}) differs structurally from DEP relation response shape ({id, name, description, deprel, total_matches, collocations}) — clients handling both relation types from a single sketch endpoint need two separate code paths.",
+        "handleSemanticFieldComparison hardcodes 'all' as the relation field in parameters map while the other explore handlers insert the actual resolved relation ID — the comparison endpoint's parameters.relation value is not a valid relation ID that could be round-tripped to another endpoint.",
+        "buildCoreExploreResponse takes 6 parameters including two separate Map<String,Object> parameters (extraParams for nested parameters sub-map, variantFields for top-level fields) — the distinction between these two accumulator maps is easy to misuse; both hold key-value string data but at different response nesting levels.",
+        "/api/concordance/examples response includes bcql and fallback fields absent from /api/semantic-field/examples, further diverging the shape of these two sibling endpoints."
+      ],
+      "impact_scope": "Clients consuming both examples endpoints or both sketch relation types need divergent handling code despite conceptually similar operations",
+      "fix_scope": "ExplorationService.fetchExamples return type could be changed to List<CollocateResult> and the HTTP handler adapted to call collocateToExampleMap; DEP response could include a subset of surface fields for uniformity; comparison endpoint could omit the relation field or use a documented sentinel constant",
+      "confidence": "high"
+    }
+  },
+  "dimension_judgment": {
+    "api_surface_coherence": {
+      "strengths": [
+        "Parameter naming is consistent across all endpoints: seed, collocate, relation, top — no legacy word1/word2 or cql vs pattern divergence.",
+        "buildSurfaceRelationEntry helper ensures full-sketch and single-relation sketch endpoints emit exactly the same per-relation JSON fields.",
+        "Error contract is uniform: IllegalArgumentException throughout the handler layer maps to 400 via wrapWithErrorHandling, and all required/optional parameter parsing is centralised in HttpApiUtils.",
+        "The CollocateResult projection is explicitly bifurcated into collocateToExampleMap and collocateToFullResultMap — the distinction between compact and full projections is named and reusable.",
+        "ExplorationService interface is cleanly separated from HTTP concerns and exposes a typed, IOException-declaring contract with no overloaded methods."
+      ],
+      "issue_character": "The issues are isolated to one structural seam — the boundary between the exploration and concordance subsystems — where two endpoint families that share vocabulary diverge on response shape, plus minor sentinel-value inconsistency in the comparison handler.",
+      "score_rationale": "The codebase has undergone deliberate surface-coherence work (renamed cql→pattern, shared buildSurfaceRelationEntry, collocateToExampleMap/Full bifurcation) and most of the API reads consistently. The most significant remaining issue is that the two 'examples' endpoints are explicitly called siblings in the Javadoc but return structurally incompatible examples fields (strings vs maps), which will surprise any client that tries to unify them. The DEP/surface response shape divergence is a secondary concern. These issues are real but localised, not systemic, pulling the score from 'solid' down to 'uneven in one subsystem'."
+    }
+  },
+  "issues": [
+    {
+      "dimension": "api_surface_coherence",
+      "identifier": "examples_endpoints_type_divergence",
+      "summary": "/api/semantic-field/examples returns examples as List<String> while the sibling /api/concordance/examples returns List<{sentence,raw}> maps",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/api/ExplorationHandlers.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/api/ConcordanceHandlers.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/exploration/ExplorationService.java"
+      ],
+      "evidence": [
+        "ExplorationHandlers.handleSemanticFieldExamples: List<String> examples = semanticFieldExplorer.fetchExamples(...); response.put(\"examples\", examples);",
+        "ConcordanceHandlers.handleConcordanceExamples: response.put(\"examples\", results.stream().map(ConcordanceHandlers::toResultMap).toList()); where toResultMap calls ExploreResponseAssembler.collocateToExampleMap returning {sentence, raw}",
+        "ExplorationService.fetchExamples declares return type @NonNull List<String>",
+        "ConcordanceHandlers Javadoc explicitly states: 'Parameter names seed and collocate mirror those used by the sibling /api/semantic-field/examples endpoint' — making the response divergence surprising"
+      ],
+      "suggestion": "Change ExplorationService.fetchExamples (and SemanticFieldExplorer implementation) to return List<QueryResults.CollocateResult> and have handleSemanticFieldExamples call collocateToExampleMap to produce the same {sentence, raw} structure as the concordance handler.",
+      "confidence": "high",
+      "impact_scope": "Any client that handles both examples endpoints generically will break or require a special case",
+      "fix_scope": "Change ExplorationService.fetchExamples return type and update the implementation and handler — single-file change propagating to ~3 files"
+    },
+    {
+      "dimension": "api_surface_coherence",
+      "identifier": "dep_vs_surface_relation_shape_asymmetry",
+      "summary": "Surface sketch relation objects emit pattern/collocate_pos_group while DEP relation objects emit description/deprel — the same collocations array field is the only shared structure",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/api/SketchHandlers.java"
+      ],
+      "evidence": [
+        "buildSurfaceRelationEntry: relData.put(\"pattern\", ...); relData.put(\"collocate_pos_group\", ...); — no description or deprel",
+        "buildRelationResponse: relData.put(\"description\", ...); relData.put(\"deprel\", ...); — no pattern or collocate_pos_group",
+        "Both are stored under the same relations map key in the response and served from the same /api/sketch/{lemma} route hierarchy — clients cannot uniformly iterate the relations map"
+      ],
+      "suggestion": "Include a type discriminator field (e.g., relation_type: 'surface'|'dependency') and align shared fields where possible; or document the distinct shapes as intentional in the API reference so clients know to branch on the type field that is already emitted in the /api/relations endpoint.",
+      "confidence": "medium",
+      "impact_scope": "Clients consuming both /api/sketch/{lemma} (surface) and /api/sketch/{lemma}/dep (dependency) results in a unified loop",
+      "fix_scope": "Add type discriminator to buildSurfaceRelationEntry and buildRelationResponse, and optionally add the missing cross-fields as null"
+    },
+    {
+      "dimension": "api_surface_coherence",
+      "identifier": "comparison_hardcoded_all_relation_sentinel",
+      "summary": "handleSemanticFieldComparison hardcodes 'all' as parameters.relation in the response instead of a null or documented sentinel constant",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/api/ExplorationHandlers.java"
+      ],
+      "evidence": [
+        "Line 166: buildCoreExploreResponse(\"all\", ...) — the string literal 'all' is not a valid relation ID in the grammar config",
+        "The other two explore handlers pass resolvedConfig.id() which is a real, resolvable relation identifier",
+        "A client that reads parameters.relation to feed back into another request would receive 'all' and get a 400 Unknown relation error"
+      ],
+      "suggestion": "Extract a named constant (e.g., CROSS_RELATIONAL = \"cross_relational\") or omit the relation field entirely from comparison responses since the comparison endpoint explicitly does not accept a relation parameter. Alternatively include a separate field relation_scope: 'all' to distinguish it from a single-relation id.",
+      "confidence": "medium",
+      "impact_scope": "Clients that inspect or round-trip the parameters.relation field",
+      "fix_scope": "One-line change in ExplorationHandlers.handleSemanticFieldComparison"
+    }
+  ],
+  "retrospective": {
+    "root_causes": [
+      "ExplorationService.fetchExamples was designed to return simple strings (hiding the CollocateResult) before the concordance handler was added, creating an impedance mismatch when the two examples endpoints became siblings",
+      "The DEP and SURFACE relation sketches evolved independently and were never normalised around a shared response schema — each captures only the fields relevant to its relation type",
+      "The comparison endpoint does not accept a relation parameter but still uses the shared buildCoreExploreResponse helper that embeds a relation field in parameters, forcing a sentinel value"
+    ],
+    "likely_symptoms": [
+      "Front-end code that handles the two examples endpoints will have divergent JSON parsing paths despite the endpoints appearing to do the same thing",
+      "A generic client iterating all sketch relations will need to detect whether it is in a surface or DEP context to know which extra fields to expect"
+    ],
+    "possible_false_positives": [
+      "The DEP/surface shape divergence may be intentional product design rather than an oversight — they genuinely represent different linguistic phenomena and the distinct fields could be considered appropriate specialisation rather than inconsistency"
+    ]
+  }
+}

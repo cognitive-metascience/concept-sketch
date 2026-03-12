@@ -1,0 +1,456 @@
+{
+  "assessments": {
+    "api_surface_coherence": 57.4,
+    "high_level_elegance": 51.6,
+    "incomplete_migration": 85.4,
+    "low_level_elegance": 61.5,
+    "mid_level_elegance": 64.9
+  },
+  "dimension_notes": {
+    "high_level_elegance": {
+      "evidence": [
+        "Package layout is domain-aligned: api/, config/, exploration/, indexer/, model/, query/, utils/, viz/ each map to a recognisable domain capability and have package-info.java files",
+        "ExplorationService interface cleanly defines multi-mode exploration surface; SemanticFieldExplorer implements it and delegates to MultiSeedExplorer and CollocateProfileComparator",
+        "model/exploration/ sub-package correctly separates result DTOs from the service layer",
+        "README (line 122 server startup output) lists 'GET /api/semantic-field' as a live endpoint, but WordSketchApiServer registers no handler at that exact path \u2014 the canonical endpoint is /api/semantic-field/compare",
+        "README lines 380-381 show curl examples to /api/semantic-field?seeds=... and /api/semantic-field?nouns=... \u2014 these paths are not registered and would return 404",
+        "README line 393 documents 'GET /api/diagnostics/collocation-integrity' but no handler for this path exists in WordSketchApiServer or anywhere in the source tree",
+        "README concordance section (lines 386, 411-412, 421-449) documents the /api/concordance/examples endpoint with parameters word1, word2, limit; actual ConcordanceHandlers.java uses seed, collocate, top",
+        "README Code Structure section (line 666): 'RelationType.java # Enum: SURFACE | DEP_GRAMMAR' \u2014 the actual enum values are SURFACE and DEP (DEP_GRAMMAR does not exist)",
+        "CLAUDE.md line 134 repeats the same stale 'SURFACE | DEP_GRAMMAR' description",
+        "model/package-info.java line 10 references '{@link pl.marcinmilkowski.word_sketch.model.exploration.AdjectiveProfile}' \u2014 that class does not exist; the actual class is CollocateProfile"
+      ],
+      "impact_scope": "Multiple reference docs (README, CLAUDE.md, package-info) diverge from runtime reality. A new engineer following README to test the concordance endpoint or the semantic-field comparison endpoint would encounter 404s or parameter-rejected requests. The stale enum name in two places and the broken @link in package-info erode trust in all doc-driven navigation.",
+      "fix_scope": "Update README concordance examples section to use seed/collocate/top; remove or correct the /api/semantic-field bare-path and /api/diagnostics entries from startup listing and curl examples; correct RelationType description in README and CLAUDE.md; fix AdjectiveProfile -> CollocateProfile in model/package-info.java.",
+      "confidence": "high",
+      "issues_preventing_higher_score": ""
+    },
+    "low_level_elegance": {
+      "evidence": [
+        "scoreHits uses a `boolean validCollocate` flag with `.toLowerCase()` repeated on three separate lines rather than extracting a single nullable key variable",
+        "buildCoreCollocates re-scans entire seedCollocateMap with flatMap+filter per common collocate to compute avgLd, when the data could be aggregated in the same pass that builds seedCollocScores",
+        "RenderMode.isValid uses try/catch IllegalArgumentException as primary control flow for a 1-value enum, with no hot-path justification",
+        "executeSurfacePattern passes a two-fallback lambda (extractCollocateFromXmlByPosition then extractPlainTextTokenAt) into the generic collectFrequenciesAndPosFromGroups, obscuring fallback logic inside an anonymous function",
+        "Guard clauses are used consistently across all snippet-parser helpers and HTTP param parsers; null/empty checks are co-located with the value they guard",
+        "Two-phase collectHits/scoreHits pipeline cleanly separates IO from scoring; safeParts() extraction eliminates repeated null+length boilerplate at both call sites",
+        "parseCommonExploreParams consolidates three repeated parseIntParam/parseDoubleParam calls into one record return, shared by all three exploration handlers"
+      ],
+      "impact_scope": "Localised to 3-4 methods across CollocateQueryHelper, MultiSeedExplorer, and VisualizationHandlers; no systemic pattern",
+      "fix_scope": "Each issue is a 5-15 line local refactor within a single method; no cross-cutting changes required",
+      "confidence": "high",
+      "issues_preventing_higher_score": ""
+    },
+    "mid_level_elegance": {
+      "evidence": [
+        "ExploreResponseAssembler centralises all model-to-presentation translation for CollocateResult, ExplorationResult, and ComparisonResult \u2014 a single obvious place for boundary translation",
+        "parseCommonExploreParams extracts the shared param-parsing preamble used by all three sibling exploration handlers, avoiding repetition at each callsite",
+        "buildCoreExploreResponse assembles the full response envelope in one call via variantFields, keeping handler bodies clean",
+        "handleSemanticFieldExamples builds its response map with scattered inline response.put() calls instead of using buildCoreExploreResponse, breaking the envelope pattern the other three handlers follow",
+        "ConcordanceHandlers.toResultMap is a trivial private static that does nothing but delegate to ExploreResponseAssembler.collocateToExampleMap \u2014 needless indirection at the boundary",
+        "Fallback proximity BCQL pattern is constructed inline in handleConcordanceExamples with raw string formatting \u2014 a presentation/service concern inside the HTTP handler",
+        "populateExploreResponse and populateComparisonResponse mutate an out-parameter map rather than returning a complete response \u2014 callers must pre-populate a partial map and pass it in, creating implicit ordering dependency"
+      ],
+      "impact_scope": "api package (ExplorationHandlers, ConcordanceHandlers, ExploreResponseAssembler)",
+      "fix_scope": "Small targeted changes in 2-3 handler methods",
+      "confidence": "high",
+      "issues_preventing_higher_score": ""
+    },
+    "incomplete_migration": {
+      "evidence": [
+        "GrammarConfigLoader line 159: comment 'cql_pattern is no longer supported' \u2014 no shim, just strict validation, clean.",
+        "GrammarConfigLoader validateNoLegacyKeys actively rejects 'copulas' key at parse time with descriptive error \u2014 enforced migration, not a shim.",
+        "ExplorationResult line 37 field comment: 'empty map means not available (backward compat)' \u2014 the 5-arg backward-compat constructor was deleted; this comment now refers to an absent code path and misleads.",
+        "ExplorationResult perSeedCollocates() Javadoc line 84: 'Returns an empty map when not available (legacy backward-compat path)' \u2014 same stale comment; the only callers (SemanticFieldExplorer and MultiSeedExplorer) always supply a populated map.",
+        "SketchHandlers uses 'pattern' key exclusively and consistently \u2014 the rename from 'cql' is complete.",
+        "GrammarConfigSerializer serialises using 'pattern' key \u2014 consistent with loader.",
+        "RelationType has only SURFACE and DEP \u2014 dead constants already removed.",
+        "No TODO/FIXME migration markers found anywhere in production code."
+      ],
+      "impact_scope": "Single file (ExplorationResult); isolated stale comment, no runtime shim or dual-path code.",
+      "fix_scope": "Remove or reword the 'legacy backward-compat path' language in ExplorationResult field comment and perSeedCollocates() Javadoc to reflect that the backward-compat constructor no longer exists.",
+      "confidence": "high",
+      "issues_preventing_higher_score": ""
+    },
+    "api_surface_coherence": {
+      "evidence": [
+        "Both 'examples' endpoints (/api/semantic-field/examples and /api/concordance/examples) accept the same seed/collocate/relation/top parameters and are documented as siblings, but return different types for the examples field: List<String> plain sentences vs List<{sentence, raw}> structured maps.",
+        "Surface relation response shape ({id, name, pattern, collocate_pos_group, total_matches, collocations}) differs structurally from DEP relation response shape ({id, name, description, deprel, total_matches, collocations}) \u2014 clients handling both relation types from a single sketch endpoint need two separate code paths.",
+        "handleSemanticFieldComparison hardcodes 'all' as the relation field in parameters map while the other explore handlers insert the actual resolved relation ID \u2014 the comparison endpoint's parameters.relation value is not a valid relation ID that could be round-tripped to another endpoint.",
+        "buildCoreExploreResponse takes 6 parameters including two separate Map<String,Object> parameters (extraParams for nested parameters sub-map, variantFields for top-level fields) \u2014 the distinction between these two accumulator maps is easy to misuse; both hold key-value string data but at different response nesting levels.",
+        "/api/concordance/examples response includes bcql and fallback fields absent from /api/semantic-field/examples, further diverging the shape of these two sibling endpoints."
+      ],
+      "impact_scope": "Clients consuming both examples endpoints or both sketch relation types need divergent handling code despite conceptually similar operations",
+      "fix_scope": "ExplorationService.fetchExamples return type could be changed to List<CollocateResult> and the HTTP handler adapted to call collocateToExampleMap; DEP response could include a subset of surface fields for uniformity; comparison endpoint could omit the relation field or use a documented sentinel constant",
+      "confidence": "high",
+      "issues_preventing_higher_score": ""
+    }
+  },
+  "dimension_judgment": {
+    "high_level_elegance": {
+      "strengths": [
+        "Package decomposition maps cleanly to domain capabilities: api (HTTP), config (grammar config data + loading), exploration (SEF logic), indexer (corpus indexing), model (pure domain types), query (corpus query execution), utils (shared math/CQL helpers), viz (visualization data)",
+        "Explicit ExplorationService interface gives the API layer a stable, domain-stated seam to depend on, avoiding direct coupling to the concrete explorer",
+        "model/exploration/ sub-package correctly co-locates all exploration result types and keeps them free of I/O and HTTP concerns, consistent with the stated package philosophy",
+        "API handler split across SketchHandlers, ConcordanceHandlers, CorpusQueryHandlers, ExplorationHandlers, VisualizationHandlers is coherent \u2014 each class owns one recognisable surface-area",
+        "config/ cleanly separates immutable data (GrammarConfig), loading (GrammarConfigLoader), and per-relation data (RelationConfig, RelationPatternBuilder, RelationUtils)"
+      ],
+      "issue_character": "The structural decomposition is genuinely good; the problems are concentrated in reference documentation failing to match runtime reality. Four distinct doc-reality gaps exist: (1) two phantom endpoint paths in README (bare /api/semantic-field and /api/diagnostics/collocation-integrity), (2) stale concordance parameter names (word1/word2/limit vs seed/collocate/top), (3) a wrong enum value name (DEP_GRAMMAR) repeated in README and CLAUDE.md, and (4) a broken @link to a non-existent class in model/package-info.java. These failures mean the primary reference materials a new engineer would consult are untrustworthy.",
+      "score_rationale": "The code structure itself earns a high score \u2014 domain-aligned packages, clear ownership, single-responsibility handlers, and a well-factored model layer. The score is pulled down to 68 by the concentration of documentation-vs-reality failures. Four separate doc inaccuracies affecting the two most-consulted reference artifacts (README and package-info) are not negligible for 'project contracts and reference docs match runtime reality' \u2014 a first-class criterion for this dimension."
+    },
+    "low_level_elegance": {
+      "strengths": [
+        "Guard clauses are used consistently and co-located with the variables they protect across all snippet-parser helpers (extractPosFromMatch, extractCollocateFromXmlByPosition, extractPlainTextTokenAt) and HTTP param parsers (parseIntParam, parseDoubleParam, requireParam)",
+        "safeParts() extraction correctly eliminates a repeated null-concordance+length check that previously appeared at both BlackLabQueryExecutor and CollocateQueryHelper call sites",
+        "The two-phase collectHits/scoreHits pipeline keeps IO concerns separate from scoring; freqMapOut is passed explicitly rather than captured implicitly",
+        "parseCommonExploreParams groups the three repeated param-parsing calls into one record, keeping all three exploration handler preambles symmetric",
+        "buildAndRankCollocates is a direct pre-fetch \u2192 score \u2192 filter \u2192 sort \u2192 limit pipeline with no hidden state or branches"
+      ],
+      "issue_character": "The issues are isolated to specific methods rather than systemic: each is a localised awkwardness (a boolean-flag dance, a stream re-scan, an exception-as-control-flow check, a two-fallback lambda) that slightly obscures intent without causing bugs.",
+      "score_rationale": "The codebase is solid at the function level: control flow is mostly direct, state mutation is explicit and bounded, and helper extraction is consistent across the HTTP and parsing layers. The identified issues are all in single methods and none hides a defect or creates defensive sprawl. The score is pulled down from the 80s primarily by the validCollocate boolean dance in scoreHits (awkward triple reference to the same nullable), the buildCoreCollocates re-scan (data already available but not pre-aggregated), and the exception-based enum check (indirect control flow for a trivially small enum). These are real but minor friction points."
+    },
+    "mid_level_elegance": {
+      "strengths": [
+        "ExploreResponseAssembler is a genuinely clean boundary class: all model-to-presentation translation for CollocateResult, ExplorationResult, and ComparisonResult happens in one obvious place, so handlers never contain serialization logic",
+        "parseCommonExploreParams record + helper eliminates duplicated param-parsing boilerplate across three sibling handlers with a clean, named abstraction",
+        "buildCoreExploreResponse with variantFields composes the full response envelope in one call \u2014 handlers pass variant-specific fields explicitly rather than scattering response.put() calls",
+        "ExplorationService interface provides a clean, narrow seam between the HTTP layer and exploration logic: handlers hold only an interface reference and stay decoupled from implementation",
+        "GrammarConfig / GrammarConfigLoader split cleanly separates I/O machinery from the loaded data value object, so dependents can accept only the data they need"
+      ],
+      "issue_character": "Mostly isolated inconsistencies \u2014 one handler (handleSemanticFieldExamples) bypasses the shared envelope builder, and one needless delegating wrapper (toResultMap) remained after the assembler was introduced \u2014 rather than a deep structural problem.",
+      "score_rationale": "The codebase has done the hard work: translation is centralised, shared param parsing is extracted, and the envelope builder eliminates repetitive put() chains. These are genuine seam-quality improvements. The score is held back by handleSemanticFieldExamples breaking the established envelope pattern (inline scattered puts instead of buildCoreExploreResponse), the vestigial toResultMap wrapper that adds an indirection layer at the ConcordanceHandlers boundary for no benefit, and the fallback BCQL pattern construction living inside the HTTP handler rather than the query/service layer. None of these are deep structural problems \u2014 they are surface inconsistencies \u2014 which puts the overall quality solidly in the 'solid but uneven' band."
+    },
+    "incomplete_migration": {
+      "strengths": [
+        "GrammarConfigLoader enforces the completed 'cql_pattern\u2192pattern' rename at parse time: no silent fallback shim, just a hard error \u2014 a model of how to close off a migration.",
+        "validateNoLegacyKeys actively rejects the old 'copulas' top-level key with a concrete error message pointing to the new pattern, so there is no accidental dual-support path.",
+        "SketchHandlers, GrammarConfigSerializer, and RelationPatternBuilder all use the canonical 'pattern' field consistently \u2014 zero old-API coexistence across the API layer.",
+        "No TODO/FIXME referencing migration, legacy, or 'remove after' was found anywhere in production code.",
+        "RelationType enum is clean \u2014 dead constants removed, only active values remain."
+      ],
+      "issue_character": "Isolated to a single stale comment in ExplorationResult that refers to a 5-arg backward-compat constructor which was deleted; the comment is the only migration residue in the entire codebase.",
+      "score_rationale": "The migrations documented in the dimension context (5-arg constructor removal, RelationType dead constants, 'cql' rename, legacy Javadoc removal) are all confirmed complete. The codebase actively enforces migration completion \u2014 old keys throw, not silently fall back. The sole issue is stale Javadoc language in ExplorationResult.perSeedCollocates() that calls an empty map a 'legacy backward-compat path' when the constructor that could produce such a path no longer exists. This is a documentation inaccuracy, not a runtime shim or dual API path. It scores high because the migration hygiene is exemplary; the stale comment is a minor finishing detail that pulls the score marginally below perfect."
+    },
+    "api_surface_coherence": {
+      "strengths": [
+        "Parameter naming is consistent across all endpoints: seed, collocate, relation, top \u2014 no legacy word1/word2 or cql vs pattern divergence.",
+        "buildSurfaceRelationEntry helper ensures full-sketch and single-relation sketch endpoints emit exactly the same per-relation JSON fields.",
+        "Error contract is uniform: IllegalArgumentException throughout the handler layer maps to 400 via wrapWithErrorHandling, and all required/optional parameter parsing is centralised in HttpApiUtils.",
+        "The CollocateResult projection is explicitly bifurcated into collocateToExampleMap and collocateToFullResultMap \u2014 the distinction between compact and full projections is named and reusable.",
+        "ExplorationService interface is cleanly separated from HTTP concerns and exposes a typed, IOException-declaring contract with no overloaded methods."
+      ],
+      "issue_character": "The issues are isolated to one structural seam \u2014 the boundary between the exploration and concordance subsystems \u2014 where two endpoint families that share vocabulary diverge on response shape, plus minor sentinel-value inconsistency in the comparison handler.",
+      "score_rationale": "The codebase has undergone deliberate surface-coherence work (renamed cql\u2192pattern, shared buildSurfaceRelationEntry, collocateToExampleMap/Full bifurcation) and most of the API reads consistently. The most significant remaining issue is that the two 'examples' endpoints are explicitly called siblings in the Javadoc but return structurally incompatible examples fields (strings vs maps), which will surprise any client that tries to unify them. The DEP/surface response shape divergence is a secondary concern. These issues are real but localised, not systemic, pulling the score from 'solid' down to 'uneven in one subsystem'."
+    }
+  },
+  "issues": [
+    {
+      "dimension": "high_level_elegance",
+      "identifier": "readme_phantom_semantic_field_path",
+      "summary": "README documents /api/semantic-field (bare path) as a registered endpoint, but no such route exists",
+      "confidence": "high",
+      "suggestion": "Remove the bare /api/semantic-field line from the startup-output listing in README. Replace the curl examples on lines 380-381 with the correct /api/semantic-field/compare?seeds=... path.",
+      "related_files": [
+        "README.md",
+        "src/main/java/pl/marcinmilkowski/word_sketch/api/WordSketchApiServer.java"
+      ],
+      "evidence": [
+        "README line 122 (server startup listing): 'GET /api/semantic-field'",
+        "README lines 380-381: curl examples to /api/semantic-field?seeds=... and /api/semantic-field?nouns=...",
+        "WordSketchApiServer registers /api/semantic-field/explore, /api/semantic-field/explore-multi, /api/semantic-field/compare, /api/semantic-field/examples \u2014 no bare /api/semantic-field handler"
+      ],
+      "impact_scope": "A developer following the README to exercise the comparison endpoint gets a 404; the documented API surface is incorrect.",
+      "fix_scope": "README-only edit: update startup listing and fix two curl example lines."
+    },
+    {
+      "dimension": "high_level_elegance",
+      "identifier": "readme_phantom_diagnostics_endpoint",
+      "summary": "README documents /api/diagnostics/collocation-integrity as a live endpoint, but no handler is registered for it",
+      "confidence": "high",
+      "suggestion": "If the endpoint was removed, delete the diagnostics section from the README. If it is planned, add a TODO/stub comment in WordSketchApiServer and mark the README section as provisional.",
+      "related_files": [
+        "README.md",
+        "src/main/java/pl/marcinmilkowski/word_sketch/api/WordSketchApiServer.java"
+      ],
+      "evidence": [
+        "README line 393: curl http://localhost:8080/api/diagnostics/collocation-integrity?top=10",
+        "README lines 394-402 describe its response format",
+        "No context registration for /api/diagnostics in WordSketchApiServer; no handler class found in api/ package"
+      ],
+      "impact_scope": "Misleads engineers and integrators into expecting a diagnostic tool that produces 404 at runtime.",
+      "fix_scope": "README deletion or annotation; no code changes required."
+    },
+    {
+      "dimension": "high_level_elegance",
+      "identifier": "readme_stale_concordance_params",
+      "summary": "README concordance endpoint documentation uses old parameter names (word1, word2, limit) that were renamed to seed, collocate, top",
+      "confidence": "high",
+      "suggestion": "Update all concordance curl examples and parameter reference tables in README to use seed, collocate, top. Update the example response JSON to use the current field names returned by the handler.",
+      "related_files": [
+        "README.md",
+        "src/main/java/pl/marcinmilkowski/word_sketch/api/ConcordanceHandlers.java"
+      ],
+      "evidence": [
+        "README line 155: curl '.../api/concordance/examples?word1=house&word2=big&limit=5'",
+        "README line 386: curl '.../api/concordance/examples?word1=house&word2=big&limit=10'",
+        "README lines 411-412: '- word1 (required)... - word2 (required)... - limit (optional)'",
+        "README lines 421-422: response shows 'word1': 'house', 'word2': 'big'",
+        "README lines 430-431, 438: response shows word1_positions, word2_positions",
+        "ConcordanceHandlers.java parseConcordanceExamplesRequest uses: HttpApiUtils.requireParam(params, 'seed'), requireParam(params, 'collocate'), parseIntParam(params, 'top', 10)"
+      ],
+      "impact_scope": "Every developer testing the concordance endpoint from the README gets a 400 'Missing required parameter: seed' error.",
+      "fix_scope": "README-only edit: update ~8 occurrences in the concordance section."
+    },
+    {
+      "dimension": "high_level_elegance",
+      "identifier": "readme_stale_relationtype_enum",
+      "summary": "README and CLAUDE.md document RelationType as 'SURFACE | DEP_GRAMMAR' but the enum values are SURFACE and DEP",
+      "confidence": "high",
+      "suggestion": "Change the comment in both README and CLAUDE.md from 'SURFACE | DEP_GRAMMAR' to 'SURFACE | DEP'.",
+      "related_files": [
+        "README.md",
+        "CLAUDE.md",
+        "src/main/java/pl/marcinmilkowski/word_sketch/model/RelationType.java"
+      ],
+      "evidence": [
+        "README line 666: 'RelationType.java # Enum: SURFACE | DEP_GRAMMAR'",
+        "CLAUDE.md line 134: 'RelationType.java               # Enum: SURFACE | DEP_GRAMMAR'",
+        "RelationType.java defines: SURFACE, DEP \u2014 no DEP_GRAMMAR constant"
+      ],
+      "impact_scope": "Engineer reading the code structure section will look for a DEP_GRAMMAR constant that does not exist; minor but erodes doc trustworthiness.",
+      "fix_scope": "One-line fix in README and one-line fix in CLAUDE.md."
+    },
+    {
+      "dimension": "high_level_elegance",
+      "identifier": "package_info_broken_link_adjectiveprofile",
+      "summary": "model/package-info.java references non-existent class AdjectiveProfile in a @link tag; the actual class is CollocateProfile",
+      "confidence": "high",
+      "suggestion": "Replace the broken @link with {@link pl.marcinmilkowski.word_sketch.model.exploration.CollocateProfile} in model/package-info.java.",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/model/package-info.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/model/exploration/CollocateProfile.java"
+      ],
+      "evidence": [
+        "model/package-info.java line 10: '{@link pl.marcinmilkowski.word_sketch.model.exploration.AdjectiveProfile}'",
+        "No class AdjectiveProfile exists anywhere in the source tree",
+        "The equivalent class is CollocateProfile at model/exploration/CollocateProfile.java"
+      ],
+      "impact_scope": "package-info.java is the primary source of package-level documentation; a broken @link reference misleads IDE navigation and Javadoc consumers.",
+      "fix_scope": "Single @link update in model/package-info.java."
+    },
+    {
+      "dimension": "low_level_elegance",
+      "identifier": "scoreHits_validCollocate_flag",
+      "summary": "scoreHits uses a boolean validCollocate flag causing collocateLemma.toLowerCase() to appear three times across separate statements",
+      "confidence": "high",
+      "suggestion": "Extract `@Nullable String key = (collocateLemma != null && !collocateLemma.isEmpty()) ? collocateLemma.toLowerCase() : null;` and guard on `key != null` once; replace the boolean flag and the repeated .toLowerCase() calls with a single key reference.",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/query/CollocateQueryHelper.java"
+      ],
+      "evidence": [
+        "Line ~302: `boolean validCollocate = collocateLemma != null && !collocateLemma.isEmpty();`",
+        "Then `jointFreq` is initialised to 0L and conditionally updated inside an `if (validCollocate)` block",
+        "Then `collocateFreq` uses a ternary: `validCollocate ? collocateCorpusFreqs.getOrDefault(collocateLemma.toLowerCase(), 0L) : 0L`",
+        "The pattern repeats .toLowerCase() on collocateLemma at three different points rather than extracting a single `@Nullable String key = validCollocate ? collocateLemma.toLowerCase() : null`"
+      ],
+      "impact_scope": "Single method, CollocateQueryHelper.scoreHits",
+      "fix_scope": "5-line local refactor within scoreHits"
+    },
+    {
+      "dimension": "low_level_elegance",
+      "identifier": "buildCoreCollocates_re_scan",
+      "summary": "buildCoreCollocates re-scans the entire seedCollocateMap with a flatMap+filter stream per common collocate to compute avgLd, when the data is already available in the caller",
+      "confidence": "high",
+      "suggestion": "In findCollocateIntersection, accumulate a `Map<String, DoubleSummaryStatistics>` (or sum+count) alongside seedCollocScores in the same loop over seedCollocateMap entries, then pass the pre-computed averages to buildCoreCollocates instead of re-scanning.",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/exploration/MultiSeedExplorer.java"
+      ],
+      "evidence": [
+        "buildCoreCollocates iterates commonCollocates (could be 10-50 items) and for each one does: `seedCollocateMap.values().stream().flatMap(List::stream).filter(wsr -> c.equals(wsr.lemma())).mapToDouble(...).average()`",
+        "This is O(C * S * N) where C=common collocates, S=seeds, N=collocates per seed; avgLd could be accumulated in the same loop that builds seedCollocScores in findCollocateIntersection",
+        "seedCollocScores is passed to buildCoreCollocates but only used for seedLd (max), while avgLd still requires the full re-scan"
+      ],
+      "impact_scope": "Single method, MultiSeedExplorer.buildCoreCollocates",
+      "fix_scope": "10-15 line change across findCollocateIntersection and buildCoreCollocates"
+    },
+    {
+      "dimension": "low_level_elegance",
+      "identifier": "RenderMode_isValid_exception_flow",
+      "summary": "RenderMode.isValid uses try/catch IllegalArgumentException as primary control flow for a 1-value enum",
+      "confidence": "high",
+      "suggestion": "Replace with `return \"SIGNED\".equalsIgnoreCase(value);` (or an EnumSet lookup if more values are added), removing exception-as-control-flow from a trivially simple validation.",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/api/VisualizationHandlers.java"
+      ],
+      "evidence": [
+        "`static boolean isValid(String value) { try { RenderMode.valueOf(value.toUpperCase(...)); return true; } catch (IllegalArgumentException e) { return false; } }`",
+        "The enum has exactly one constant (SIGNED); a direct `\"SIGNED\".equals(value.toUpperCase(...))` or a `switch` would express the same intent without using an exception for a normal code path"
+      ],
+      "impact_scope": "Single static method, VisualizationHandlers.RenderMode.isValid",
+      "fix_scope": "1-3 line change"
+    },
+    {
+      "dimension": "low_level_elegance",
+      "identifier": "executeSurfacePattern_inline_fallback_lambda",
+      "summary": "executeSurfacePattern passes a two-step fallback lambda into the generic collectFrequenciesAndPosFromGroups, burying fallback logic inside an anonymous function body",
+      "confidence": "medium",
+      "suggestion": "Extract the two-step fallback into a named static helper, e.g. `extractCollocateAtPosition(String identity, int pos)`, and pass that as a method reference for consistency with the other call sites.",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/query/BlackLabQueryExecutor.java"
+      ],
+      "evidence": [
+        "The lambda passed to collectFrequenciesAndPosFromGroups first tries extractCollocateFromXmlByPosition, checks null/empty, then falls back to extractPlainTextTokenAt \u2014 a two-step resolution that is harder to read than a named helper",
+        "Other call sites of collectFrequenciesAndPosFromGroups pass single method references (BlackLabSnippetParser::extractLastLemma, BlackLabSnippetParser::extractLemmaWithFallback), making this lambda's complexity stand out"
+      ],
+      "impact_scope": "Single lambda inside BlackLabQueryExecutor.executeSurfacePattern",
+      "fix_scope": "Extract one 4-6 line static helper method"
+    },
+    {
+      "dimension": "mid_level_elegance",
+      "identifier": "examples_handler_bypasses_envelope_builder",
+      "summary": "handleSemanticFieldExamples builds its response with scattered inline put() calls instead of reusing buildCoreExploreResponse like all three sibling handlers",
+      "confidence": "high",
+      "suggestion": "Route handleSemanticFieldExamples through buildCoreExploreResponse, passing {\"collocate\": collocate, \"seed\": seed} as variantFields and {\"total_results\": examples.size()} as extraParams or a post-build put; the examples list can be added after since it is the payload rather than the envelope.",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/api/ExplorationHandlers.java"
+      ],
+      "evidence": [
+        "Lines 197-203: response.put(\"status\", \"ok\"); response.put(\"collocate\", ...) etc. \u2014 7 inline puts",
+        "Three sibling handlers (handleSemanticFieldExplore, handleSemanticFieldExploreMulti, handleSemanticFieldComparison) all delegate to buildCoreExploreResponse for the envelope",
+        "handleSemanticFieldExamples is in the same class and handles the same relation param, but never calls buildCoreExploreResponse"
+      ],
+      "impact_scope": "ExplorationHandlers.handleSemanticFieldExamples",
+      "fix_scope": "Replace 7 inline put() calls with a buildCoreExploreResponse call and one payload put"
+    },
+    {
+      "dimension": "mid_level_elegance",
+      "identifier": "concordance_handlers_needless_toResultMap_wrapper",
+      "summary": "ConcordanceHandlers.toResultMap is a private static method whose sole body is a delegation to ExploreResponseAssembler.collocateToExampleMap \u2014 glue-code indirection at the boundary that adds nothing",
+      "confidence": "high",
+      "suggestion": "Delete toResultMap and replace its only call site (line 76) with ExploreResponseAssembler::collocateToExampleMap as a direct method reference, mirroring CorpusQueryHandlers.",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/api/ConcordanceHandlers.java"
+      ],
+      "evidence": [
+        "Lines 87-89: private static Map<String, Object> toResultMap(QueryResults.CollocateResult r) { return ExploreResponseAssembler.collocateToExampleMap(r); }",
+        "CorpusQueryHandlers (line 96) directly references ExploreResponseAssembler::collocateToFullResultMap as a method reference \u2014 no wrapper",
+        "ConcordanceHandlers uses ConcordanceHandlers::toResultMap (line 76) where ExploreResponseAssembler::collocateToExampleMap would be equally readable and direct"
+      ],
+      "impact_scope": "ConcordanceHandlers only",
+      "fix_scope": "Delete one 3-line private method, update one call site"
+    },
+    {
+      "dimension": "mid_level_elegance",
+      "identifier": "concordance_fallback_pattern_in_http_handler",
+      "summary": "The proximity-fallback BCQL pattern is constructed with raw string formatting inside handleConcordanceExamples, placing query-construction logic in the HTTP layer",
+      "confidence": "medium",
+      "suggestion": "Move the fallback pattern construction to QueryExecutor or a helper method on the executor/service side; the handler should only detect that no relation config was found and pass both words to a method that returns appropriately-scoped results.",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/api/ConcordanceHandlers.java"
+      ],
+      "evidence": [
+        "Lines 62-64: bcqlQuery = String.format(\"\\\"%s\\\" []{0,5} \\\"%s\\\"\", req.seed().toLowerCase(), req.collocate().toLowerCase());",
+        "The HTTP handler decides the fallback pattern syntax (window size 5, lowercasing), which is a query concern not an HTTP concern",
+        "The corresponding fallback result from executor.executeBcqlQuery is the same path as the normal BCQL endpoint in CorpusQueryHandlers \u2014 the seam leaks query policy into the handler"
+      ],
+      "impact_scope": "ConcordanceHandlers.handleConcordanceExamples and QueryExecutor boundary",
+      "fix_scope": "Extract fallback pattern construction to executor or a static factory; update handler to call the extracted method"
+    },
+    {
+      "dimension": "incomplete_migration",
+      "identifier": "stale_backward_compat_comment_exploration_result",
+      "summary": "ExplorationResult.perSeedCollocates() Javadoc and field comment reference a 'legacy backward-compat path' that no longer exists after the 5-arg constructor was deleted",
+      "confidence": "high",
+      "suggestion": "Remove the 'backward compat' and 'legacy backward-compat path' language from both the field comment and the accessor Javadoc. Replace with a factual note: in the empty() factory perSeedCollocates is an empty map representing 'no results found', not a backward-compat placeholder.",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/model/exploration/ExplorationResult.java"
+      ],
+      "evidence": [
+        "Field comment on line 37: '/** seed lemma \u2192 (collocate lemma \u2192 logDice); empty map means not available (backward compat). */'",
+        "Javadoc on perSeedCollocates() accessor: 'Returns an empty map when not available (legacy backward-compat path).'",
+        "All three production call sites (SemanticFieldExplorer line 202, MultiSeedExplorer line 77, ExplorationResult.empty() factory) always supply a proper perSeedCollocates argument \u2014 the 'not available' path described in the comment is unreachable.",
+        "The 5-arg backward-compat constructor that could have left perSeedCollocates absent was already deleted in a prior cleanup round."
+      ],
+      "impact_scope": "Single file; documentation only, no runtime effect.",
+      "fix_scope": "Two-line Javadoc rewording in ExplorationResult.java."
+    },
+    {
+      "dimension": "api_surface_coherence",
+      "identifier": "examples_endpoints_type_divergence",
+      "summary": "/api/semantic-field/examples returns examples as List<String> while the sibling /api/concordance/examples returns List<{sentence,raw}> maps",
+      "confidence": "high",
+      "suggestion": "Change ExplorationService.fetchExamples (and SemanticFieldExplorer implementation) to return List<QueryResults.CollocateResult> and have handleSemanticFieldExamples call collocateToExampleMap to produce the same {sentence, raw} structure as the concordance handler.",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/api/ExplorationHandlers.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/api/ConcordanceHandlers.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/exploration/ExplorationService.java"
+      ],
+      "evidence": [
+        "ExplorationHandlers.handleSemanticFieldExamples: List<String> examples = semanticFieldExplorer.fetchExamples(...); response.put(\"examples\", examples);",
+        "ConcordanceHandlers.handleConcordanceExamples: response.put(\"examples\", results.stream().map(ConcordanceHandlers::toResultMap).toList()); where toResultMap calls ExploreResponseAssembler.collocateToExampleMap returning {sentence, raw}",
+        "ExplorationService.fetchExamples declares return type @NonNull List<String>",
+        "ConcordanceHandlers Javadoc explicitly states: 'Parameter names seed and collocate mirror those used by the sibling /api/semantic-field/examples endpoint' \u2014 making the response divergence surprising"
+      ],
+      "impact_scope": "Any client that handles both examples endpoints generically will break or require a special case",
+      "fix_scope": "Change ExplorationService.fetchExamples return type and update the implementation and handler \u2014 single-file change propagating to ~3 files"
+    },
+    {
+      "dimension": "api_surface_coherence",
+      "identifier": "dep_vs_surface_relation_shape_asymmetry",
+      "summary": "Surface sketch relation objects emit pattern/collocate_pos_group while DEP relation objects emit description/deprel \u2014 the same collocations array field is the only shared structure",
+      "confidence": "medium",
+      "suggestion": "Include a type discriminator field (e.g., relation_type: 'surface'|'dependency') and align shared fields where possible; or document the distinct shapes as intentional in the API reference so clients know to branch on the type field that is already emitted in the /api/relations endpoint.",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/api/SketchHandlers.java"
+      ],
+      "evidence": [
+        "buildSurfaceRelationEntry: relData.put(\"pattern\", ...); relData.put(\"collocate_pos_group\", ...); \u2014 no description or deprel",
+        "buildRelationResponse: relData.put(\"description\", ...); relData.put(\"deprel\", ...); \u2014 no pattern or collocate_pos_group",
+        "Both are stored under the same relations map key in the response and served from the same /api/sketch/{lemma} route hierarchy \u2014 clients cannot uniformly iterate the relations map"
+      ],
+      "impact_scope": "Clients consuming both /api/sketch/{lemma} (surface) and /api/sketch/{lemma}/dep (dependency) results in a unified loop",
+      "fix_scope": "Add type discriminator to buildSurfaceRelationEntry and buildRelationResponse, and optionally add the missing cross-fields as null"
+    },
+    {
+      "dimension": "api_surface_coherence",
+      "identifier": "comparison_hardcoded_all_relation_sentinel",
+      "summary": "handleSemanticFieldComparison hardcodes 'all' as parameters.relation in the response instead of a null or documented sentinel constant",
+      "confidence": "medium",
+      "suggestion": "Extract a named constant (e.g., CROSS_RELATIONAL = \"cross_relational\") or omit the relation field entirely from comparison responses since the comparison endpoint explicitly does not accept a relation parameter. Alternatively include a separate field relation_scope: 'all' to distinguish it from a single-relation id.",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/api/ExplorationHandlers.java"
+      ],
+      "evidence": [
+        "Line 166: buildCoreExploreResponse(\"all\", ...) \u2014 the string literal 'all' is not a valid relation ID in the grammar config",
+        "The other two explore handlers pass resolvedConfig.id() which is a real, resolvable relation identifier",
+        "A client that reads parameters.relation to feed back into another request would receive 'all' and get a 400 Unknown relation error"
+      ],
+      "impact_scope": "Clients that inspect or round-trip the parameters.relation field",
+      "fix_scope": "One-line change in ExplorationHandlers.handleSemanticFieldComparison"
+    }
+  ],
+  "review_quality": {
+    "batch_count": 5,
+    "dimension_coverage": 1.0,
+    "evidence_density": 3.15,
+    "high_score_missing_issue_note": 1,
+    "issue_pressure": 18.4,
+    "dimensions_with_issues": 5
+  },
+  "provenance": {
+    "kind": "blind_review_batch_import",
+    "blind": true,
+    "runner": "claude",
+    "run_stamp": "20260312_074548",
+    "created_at": "2026-03-12T08:12:45+00:00",
+    "batch_count": 5,
+    "batch_indexes": [
+      1,
+      2,
+      3,
+      4,
+      5
+    ],
+    "packet_path": "/mnt/d/git/word-sketch-lucene/.desloppify/review_packet_blind.json",
+    "packet_sha256": "1ba9d22925fa4550d23d9e4b0d5e7cd99ed419140a1cbeaa640d4ff6e4d901b1"
+  }
+}

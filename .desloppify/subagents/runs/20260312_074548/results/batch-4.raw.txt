@@ -1,0 +1,66 @@
+{
+  "batch": "incomplete_migration",
+  "batch_index": 4,
+  "assessments": {"incomplete_migration": 88},
+  "dimension_notes": {
+    "incomplete_migration": {
+      "evidence": [
+        "GrammarConfigLoader line 159: comment 'cql_pattern is no longer supported' — no shim, just strict validation, clean.",
+        "GrammarConfigLoader validateNoLegacyKeys actively rejects 'copulas' key at parse time with descriptive error — enforced migration, not a shim.",
+        "ExplorationResult line 37 field comment: 'empty map means not available (backward compat)' — the 5-arg backward-compat constructor was deleted; this comment now refers to an absent code path and misleads.",
+        "ExplorationResult perSeedCollocates() Javadoc line 84: 'Returns an empty map when not available (legacy backward-compat path)' — same stale comment; the only callers (SemanticFieldExplorer and MultiSeedExplorer) always supply a populated map.",
+        "SketchHandlers uses 'pattern' key exclusively and consistently — the rename from 'cql' is complete.",
+        "GrammarConfigSerializer serialises using 'pattern' key — consistent with loader.",
+        "RelationType has only SURFACE and DEP — dead constants already removed.",
+        "No TODO/FIXME migration markers found anywhere in production code."
+      ],
+      "impact_scope": "Single file (ExplorationResult); isolated stale comment, no runtime shim or dual-path code.",
+      "fix_scope": "Remove or reword the 'legacy backward-compat path' language in ExplorationResult field comment and perSeedCollocates() Javadoc to reflect that the backward-compat constructor no longer exists.",
+      "confidence": "high"
+    }
+  },
+  "dimension_judgment": {
+    "incomplete_migration": {
+      "strengths": [
+        "GrammarConfigLoader enforces the completed 'cql_pattern→pattern' rename at parse time: no silent fallback shim, just a hard error — a model of how to close off a migration.",
+        "validateNoLegacyKeys actively rejects the old 'copulas' top-level key with a concrete error message pointing to the new pattern, so there is no accidental dual-support path.",
+        "SketchHandlers, GrammarConfigSerializer, and RelationPatternBuilder all use the canonical 'pattern' field consistently — zero old-API coexistence across the API layer.",
+        "No TODO/FIXME referencing migration, legacy, or 'remove after' was found anywhere in production code.",
+        "RelationType enum is clean — dead constants removed, only active values remain."
+      ],
+      "issue_character": "Isolated to a single stale comment in ExplorationResult that refers to a 5-arg backward-compat constructor which was deleted; the comment is the only migration residue in the entire codebase.",
+      "score_rationale": "The migrations documented in the dimension context (5-arg constructor removal, RelationType dead constants, 'cql' rename, legacy Javadoc removal) are all confirmed complete. The codebase actively enforces migration completion — old keys throw, not silently fall back. The sole issue is stale Javadoc language in ExplorationResult.perSeedCollocates() that calls an empty map a 'legacy backward-compat path' when the constructor that could produce such a path no longer exists. This is a documentation inaccuracy, not a runtime shim or dual API path. It scores high because the migration hygiene is exemplary; the stale comment is a minor finishing detail that pulls the score marginally below perfect."
+    }
+  },
+  "issues": [
+    {
+      "dimension": "incomplete_migration",
+      "identifier": "stale_backward_compat_comment_exploration_result",
+      "summary": "ExplorationResult.perSeedCollocates() Javadoc and field comment reference a 'legacy backward-compat path' that no longer exists after the 5-arg constructor was deleted",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/model/exploration/ExplorationResult.java"
+      ],
+      "evidence": [
+        "Field comment on line 37: '/** seed lemma → (collocate lemma → logDice); empty map means not available (backward compat). */'",
+        "Javadoc on perSeedCollocates() accessor: 'Returns an empty map when not available (legacy backward-compat path).'",
+        "All three production call sites (SemanticFieldExplorer line 202, MultiSeedExplorer line 77, ExplorationResult.empty() factory) always supply a proper perSeedCollocates argument — the 'not available' path described in the comment is unreachable.",
+        "The 5-arg backward-compat constructor that could have left perSeedCollocates absent was already deleted in a prior cleanup round."
+      ],
+      "suggestion": "Remove the 'backward compat' and 'legacy backward-compat path' language from both the field comment and the accessor Javadoc. Replace with a factual note: in the empty() factory perSeedCollocates is an empty map representing 'no results found', not a backward-compat placeholder.",
+      "confidence": "high",
+      "impact_scope": "Single file; documentation only, no runtime effect.",
+      "fix_scope": "Two-line Javadoc rewording in ExplorationResult.java."
+    }
+  ],
+  "retrospective": {
+    "root_causes": [
+      "The 5-arg constructor was deleted but the accompanying Javadoc was only partially updated — the accessor comment was not revisited when the constructor was removed."
+    ],
+    "likely_symptoms": [
+      "A future developer reading perSeedCollocates() may write a defensive null/empty check expecting the 'not available' case, adding dead code branches that can never execute."
+    ],
+    "possible_false_positives": [
+      "The empty() factory legitimately returns an empty perSeedCollocates map for 'no results' cases; a reader might classify this as the 'backward compat' path the comment describes, but it is an intentional design choice unrelated to migration."
+    ]
+  }
+}

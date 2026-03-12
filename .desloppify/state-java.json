@@ -1,32 +1,32 @@
 {
   "version": 1,
   "created": "2026-03-09T18:35:28+00:00",
-  "last_scan": "2026-03-12T07:13:51+00:00",
-  "scan_count": 100,
-  "overall_score": 79.1,
+  "last_scan": "2026-03-12T08:12:46+00:00",
+  "scan_count": 101,
+  "overall_score": 79.5,
   "objective_score": 100.0,
-  "strict_score": 79.1,
+  "strict_score": 79.5,
   "verified_strict_score": 100.0,
   "stats": {
-    "total": 1550,
+    "total": 1566,
     "auto_resolved": 295,
     "false_positive": 0,
-    "fixed": 1045,
-    "open": 5,
+    "fixed": 1049,
+    "open": 17,
     "wontfix": 205,
     "by_tier": {
       "1": {
         "auto_resolved": 147,
         "false_positive": 0,
-        "fixed": 724,
-        "open": 0,
+        "fixed": 726,
+        "open": 10,
         "wontfix": 114
       },
       "2": {
         "auto_resolved": 97,
         "false_positive": 0,
-        "fixed": 303,
-        "open": 0,
+        "fixed": 305,
+        "open": 2,
         "wontfix": 84
       },
       "3": {
@@ -63356,6 +63356,554 @@
         "attested_at": "2026-03-12T07:35:40+00:00",
         "scan_verified": false
       }
+    },
+    "review::.::holistic::high_level_elegance::readme_phantom_semantic_field_path::cc657868": {
+      "id": "review::.::holistic::high_level_elegance::readme_phantom_semantic_field_path::cc657868",
+      "detector": "review",
+      "file": ".",
+      "tier": 1,
+      "confidence": "high",
+      "summary": "README documents /api/semantic-field (bare path) as a registered endpoint, but no such route exists",
+      "detail": {
+        "holistic": true,
+        "dimension": "high_level_elegance",
+        "related_files": [
+          "README.md",
+          "src/main/java/pl/marcinmilkowski/word_sketch/api/WordSketchApiServer.java"
+        ],
+        "evidence": [
+          "README line 122 (server startup listing): 'GET /api/semantic-field'",
+          "README lines 380-381: curl examples to /api/semantic-field?seeds=... and /api/semantic-field?nouns=...",
+          "WordSketchApiServer registers /api/semantic-field/explore, /api/semantic-field/explore-multi, /api/semantic-field/compare, /api/semantic-field/examples \u2014 no bare /api/semantic-field handler"
+        ],
+        "suggestion": "Remove the bare /api/semantic-field line from the startup-output listing in README. Replace the curl examples on lines 380-381 with the correct /api/semantic-field/compare?seeds=... path.",
+        "reasoning": ""
+      },
+      "status": "open",
+      "note": null,
+      "first_seen": "2026-03-12T08:12:46+00:00",
+      "last_seen": "2026-03-12T08:12:46+00:00",
+      "resolved_at": null,
+      "reopen_count": 0,
+      "lang": "java",
+      "suppressed": false,
+      "suppressed_at": null,
+      "suppression_pattern": null
+    },
+    "review::.::holistic::high_level_elegance::readme_phantom_diagnostics_endpoint::af961a41": {
+      "id": "review::.::holistic::high_level_elegance::readme_phantom_diagnostics_endpoint::af961a41",
+      "detector": "review",
+      "file": ".",
+      "tier": 1,
+      "confidence": "high",
+      "summary": "README documents /api/diagnostics/collocation-integrity as a live endpoint, but no handler is registered for it",
+      "detail": {
+        "holistic": true,
+        "dimension": "high_level_elegance",
+        "related_files": [
+          "README.md",
+          "src/main/java/pl/marcinmilkowski/word_sketch/api/WordSketchApiServer.java"
+        ],
+        "evidence": [
+          "README line 393: curl http://localhost:8080/api/diagnostics/collocation-integrity?top=10",
+          "README lines 394-402 describe its response format",
+          "No context registration for /api/diagnostics in WordSketchApiServer; no handler class found in api/ package"
+        ],
+        "suggestion": "If the endpoint was removed, delete the diagnostics section from the README. If it is planned, add a TODO/stub comment in WordSketchApiServer and mark the README section as provisional.",
+        "reasoning": ""
+      },
+      "status": "open",
+      "note": null,
+      "first_seen": "2026-03-12T08:12:46+00:00",
+      "last_seen": "2026-03-12T08:12:46+00:00",
+      "resolved_at": null,
+      "reopen_count": 0,
+      "lang": "java",
+      "suppressed": false,
+      "suppressed_at": null,
+      "suppression_pattern": null
+    },
+    "review::.::holistic::high_level_elegance::readme_stale_concordance_params::d4466ffd": {
+      "id": "review::.::holistic::high_level_elegance::readme_stale_concordance_params::d4466ffd",
+      "detector": "review",
+      "file": ".",
+      "tier": 1,
+      "confidence": "high",
+      "summary": "README concordance endpoint documentation uses old parameter names (word1, word2, limit) that were renamed to seed, collocate, top",
+      "detail": {
+        "holistic": true,
+        "dimension": "high_level_elegance",
+        "related_files": [
+          "README.md",
+          "src/main/java/pl/marcinmilkowski/word_sketch/api/ConcordanceHandlers.java"
+        ],
+        "evidence": [
+          "README line 155: curl '.../api/concordance/examples?word1=house&word2=big&limit=5'",
+          "README line 386: curl '.../api/concordance/examples?word1=house&word2=big&limit=10'",
+          "README lines 411-412: '- word1 (required)... - word2 (required)... - limit (optional)'",
+          "README lines 421-422: response shows 'word1': 'house', 'word2': 'big'",
+          "README lines 430-431, 438: response shows word1_positions, word2_positions",
+          "ConcordanceHandlers.java parseConcordanceExamplesRequest uses: HttpApiUtils.requireParam(params, 'seed'), requireParam(params, 'collocate'), parseIntParam(params, 'top', 10)"
+        ],
+        "suggestion": "Update all concordance curl examples and parameter reference tables in README to use seed, collocate, top. Update the example response JSON to use the current field names returned by the handler.",
+        "reasoning": ""
+      },
+      "status": "open",
+      "note": null,
+      "first_seen": "2026-03-12T08:12:46+00:00",
+      "last_seen": "2026-03-12T08:12:46+00:00",
+      "resolved_at": null,
+      "reopen_count": 0,
+      "lang": "java",
+      "suppressed": false,
+      "suppressed_at": null,
+      "suppression_pattern": null
+    },
+    "review::.::holistic::high_level_elegance::readme_stale_relationtype_enum::6b908474": {
+      "id": "review::.::holistic::high_level_elegance::readme_stale_relationtype_enum::6b908474",
+      "detector": "review",
+      "file": ".",
+      "tier": 1,
+      "confidence": "high",
+      "summary": "README and CLAUDE.md document RelationType as 'SURFACE | DEP_GRAMMAR' but the enum values are SURFACE and DEP",
+      "detail": {
+        "holistic": true,
+        "dimension": "high_level_elegance",
+        "related_files": [
+          "README.md",
+          "CLAUDE.md",
+          "src/main/java/pl/marcinmilkowski/word_sketch/model/RelationType.java"
+        ],
+        "evidence": [
+          "README line 666: 'RelationType.java # Enum: SURFACE | DEP_GRAMMAR'",
+          "CLAUDE.md line 134: 'RelationType.java               # Enum: SURFACE | DEP_GRAMMAR'",
+          "RelationType.java defines: SURFACE, DEP \u2014 no DEP_GRAMMAR constant"
+        ],
+        "suggestion": "Change the comment in both README and CLAUDE.md from 'SURFACE | DEP_GRAMMAR' to 'SURFACE | DEP'.",
+        "reasoning": ""
+      },
+      "status": "open",
+      "note": null,
+      "first_seen": "2026-03-12T08:12:46+00:00",
+      "last_seen": "2026-03-12T08:12:46+00:00",
+      "resolved_at": null,
+      "reopen_count": 0,
+      "lang": "java",
+      "suppressed": false,
+      "suppressed_at": null,
+      "suppression_pattern": null
+    },
+    "review::.::holistic::high_level_elegance::package_info_broken_link_adjectiveprofile::19f498bd": {
+      "id": "review::.::holistic::high_level_elegance::package_info_broken_link_adjectiveprofile::19f498bd",
+      "detector": "review",
+      "file": ".",
+      "tier": 1,
+      "confidence": "high",
+      "summary": "model/package-info.java references non-existent class AdjectiveProfile in a @link tag; the actual class is CollocateProfile",
+      "detail": {
+        "holistic": true,
+        "dimension": "high_level_elegance",
+        "related_files": [
+          "src/main/java/pl/marcinmilkowski/word_sketch/model/package-info.java",
+          "src/main/java/pl/marcinmilkowski/word_sketch/model/exploration/CollocateProfile.java"
+        ],
+        "evidence": [
+          "model/package-info.java line 10: '{@link pl.marcinmilkowski.word_sketch.model.exploration.AdjectiveProfile}'",
+          "No class AdjectiveProfile exists anywhere in the source tree",
+          "The equivalent class is CollocateProfile at model/exploration/CollocateProfile.java"
+        ],
+        "suggestion": "Replace the broken @link with {@link pl.marcinmilkowski.word_sketch.model.exploration.CollocateProfile} in model/package-info.java.",
+        "reasoning": ""
+      },
+      "status": "open",
+      "note": null,
+      "first_seen": "2026-03-12T08:12:46+00:00",
+      "last_seen": "2026-03-12T08:12:46+00:00",
+      "resolved_at": null,
+      "reopen_count": 0,
+      "lang": "java",
+      "suppressed": false,
+      "suppressed_at": null,
+      "suppression_pattern": null
+    },
+    "review::.::holistic::low_level_elegance::scoreHits_validCollocate_flag::5d21ba96": {
+      "id": "review::.::holistic::low_level_elegance::scoreHits_validCollocate_flag::5d21ba96",
+      "detector": "review",
+      "file": ".",
+      "tier": 1,
+      "confidence": "high",
+      "summary": "scoreHits uses a boolean validCollocate flag causing collocateLemma.toLowerCase() to appear three times across separate statements",
+      "detail": {
+        "holistic": true,
+        "dimension": "low_level_elegance",
+        "related_files": [
+          "src/main/java/pl/marcinmilkowski/word_sketch/query/CollocateQueryHelper.java"
+        ],
+        "evidence": [
+          "Line ~302: `boolean validCollocate = collocateLemma != null && !collocateLemma.isEmpty();`",
+          "Then `jointFreq` is initialised to 0L and conditionally updated inside an `if (validCollocate)` block",
+          "Then `collocateFreq` uses a ternary: `validCollocate ? collocateCorpusFreqs.getOrDefault(collocateLemma.toLowerCase(), 0L) : 0L`",
+          "The pattern repeats .toLowerCase() on collocateLemma at three different points rather than extracting a single `@Nullable String key = validCollocate ? collocateLemma.toLowerCase() : null`"
+        ],
+        "suggestion": "Extract `@Nullable String key = (collocateLemma != null && !collocateLemma.isEmpty()) ? collocateLemma.toLowerCase() : null;` and guard on `key != null` once; replace the boolean flag and the repeated .toLowerCase() calls with a single key reference.",
+        "reasoning": ""
+      },
+      "status": "open",
+      "note": null,
+      "first_seen": "2026-03-12T08:12:46+00:00",
+      "last_seen": "2026-03-12T08:12:46+00:00",
+      "resolved_at": null,
+      "reopen_count": 0,
+      "lang": "java",
+      "suppressed": false,
+      "suppressed_at": null,
+      "suppression_pattern": null
+    },
+    "review::.::holistic::low_level_elegance::buildCoreCollocates_re_scan::27b1d3e2": {
+      "id": "review::.::holistic::low_level_elegance::buildCoreCollocates_re_scan::27b1d3e2",
+      "detector": "review",
+      "file": ".",
+      "tier": 1,
+      "confidence": "high",
+      "summary": "buildCoreCollocates re-scans the entire seedCollocateMap with a flatMap+filter stream per common collocate to compute avgLd, when the data is already available in the caller",
+      "detail": {
+        "holistic": true,
+        "dimension": "low_level_elegance",
+        "related_files": [
+          "src/main/java/pl/marcinmilkowski/word_sketch/exploration/MultiSeedExplorer.java"
+        ],
+        "evidence": [
+          "buildCoreCollocates iterates commonCollocates (could be 10-50 items) and for each one does: `seedCollocateMap.values().stream().flatMap(List::stream).filter(wsr -> c.equals(wsr.lemma())).mapToDouble(...).average()`",
+          "This is O(C * S * N) where C=common collocates, S=seeds, N=collocates per seed; avgLd could be accumulated in the same loop that builds seedCollocScores in findCollocateIntersection",
+          "seedCollocScores is passed to buildCoreCollocates but only used for seedLd (max), while avgLd still requires the full re-scan"
+        ],
+        "suggestion": "In findCollocateIntersection, accumulate a `Map<String, DoubleSummaryStatistics>` (or sum+count) alongside seedCollocScores in the same loop over seedCollocateMap entries, then pass the pre-computed averages to buildCoreCollocates instead of re-scanning.",
+        "reasoning": ""
+      },
+      "status": "open",
+      "note": null,
+      "first_seen": "2026-03-12T08:12:46+00:00",
+      "last_seen": "2026-03-12T08:12:46+00:00",
+      "resolved_at": null,
+      "reopen_count": 0,
+      "lang": "java",
+      "suppressed": false,
+      "suppressed_at": null,
+      "suppression_pattern": null
+    },
+    "review::.::holistic::low_level_elegance::RenderMode_isValid_exception_flow::ff1e3dd0": {
+      "id": "review::.::holistic::low_level_elegance::RenderMode_isValid_exception_flow::ff1e3dd0",
+      "detector": "review",
+      "file": ".",
+      "tier": 1,
+      "confidence": "high",
+      "summary": "RenderMode.isValid uses try/catch IllegalArgumentException as primary control flow for a 1-value enum",
+      "detail": {
+        "holistic": true,
+        "dimension": "low_level_elegance",
+        "related_files": [
+          "src/main/java/pl/marcinmilkowski/word_sketch/api/VisualizationHandlers.java"
+        ],
+        "evidence": [
+          "`static boolean isValid(String value) { try { RenderMode.valueOf(value.toUpperCase(...)); return true; } catch (IllegalArgumentException e) { return false; } }`",
+          "The enum has exactly one constant (SIGNED); a direct `\"SIGNED\".equals(value.toUpperCase(...))` or a `switch` would express the same intent without using an exception for a normal code path"
+        ],
+        "suggestion": "Replace with `return \"SIGNED\".equalsIgnoreCase(value);` (or an EnumSet lookup if more values are added), removing exception-as-control-flow from a trivially simple validation.",
+        "reasoning": ""
+      },
+      "status": "open",
+      "note": null,
+      "first_seen": "2026-03-12T08:12:46+00:00",
+      "last_seen": "2026-03-12T08:12:46+00:00",
+      "resolved_at": null,
+      "reopen_count": 0,
+      "lang": "java",
+      "suppressed": false,
+      "suppressed_at": null,
+      "suppression_pattern": null
+    },
+    "review::.::holistic::low_level_elegance::executeSurfacePattern_inline_fallback_lambda::3887d49c": {
+      "id": "review::.::holistic::low_level_elegance::executeSurfacePattern_inline_fallback_lambda::3887d49c",
+      "detector": "review",
+      "file": ".",
+      "tier": 2,
+      "confidence": "medium",
+      "summary": "executeSurfacePattern passes a two-step fallback lambda into the generic collectFrequenciesAndPosFromGroups, burying fallback logic inside an anonymous function body",
+      "detail": {
+        "holistic": true,
+        "dimension": "low_level_elegance",
+        "related_files": [
+          "src/main/java/pl/marcinmilkowski/word_sketch/query/BlackLabQueryExecutor.java"
+        ],
+        "evidence": [
+          "The lambda passed to collectFrequenciesAndPosFromGroups first tries extractCollocateFromXmlByPosition, checks null/empty, then falls back to extractPlainTextTokenAt \u2014 a two-step resolution that is harder to read than a named helper",
+          "Other call sites of collectFrequenciesAndPosFromGroups pass single method references (BlackLabSnippetParser::extractLastLemma, BlackLabSnippetParser::extractLemmaWithFallback), making this lambda's complexity stand out"
+        ],
+        "suggestion": "Extract the two-step fallback into a named static helper, e.g. `extractCollocateAtPosition(String identity, int pos)`, and pass that as a method reference for consistency with the other call sites.",
+        "reasoning": ""
+      },
+      "status": "fixed",
+      "note": "Extracted two-step fallback (extractCollocateFromXmlByPosition then extractPlainTextTokenAt) into named private static helper extractCollocateAtPosition(String identity, int pos) in BlackLabQueryExecutor; called as lambda from executeSurfacePattern",
+      "first_seen": "2026-03-12T08:12:46+00:00",
+      "last_seen": "2026-03-12T08:12:46+00:00",
+      "resolved_at": "2026-03-12T08:20:55+00:00",
+      "reopen_count": 0,
+      "lang": "java",
+      "suppressed": false,
+      "suppressed_at": null,
+      "suppression_pattern": null,
+      "resolution_attestation": {
+        "kind": "manual",
+        "text": "I have actually Extracted two-step fallback (extractCollocateFromXmlByPosition then extractPlainTextTokenAt) into named private static helper extractCollocateAtPosition(String identity, int pos) in BlackLabQueryExecutor; called as lambda from executeSurfacePattern and I am not gaming the score.",
+        "attested_at": "2026-03-12T08:20:55+00:00",
+        "scan_verified": false
+      }
+    },
+    "review::.::holistic::mid_level_elegance::examples_handler_bypasses_envelope_builder::43701685": {
+      "id": "review::.::holistic::mid_level_elegance::examples_handler_bypasses_envelope_builder::43701685",
+      "detector": "review",
+      "file": ".",
+      "tier": 1,
+      "confidence": "high",
+      "summary": "handleSemanticFieldExamples builds its response with scattered inline put() calls instead of reusing buildCoreExploreResponse like all three sibling handlers",
+      "detail": {
+        "holistic": true,
+        "dimension": "mid_level_elegance",
+        "related_files": [
+          "src/main/java/pl/marcinmilkowski/word_sketch/api/ExplorationHandlers.java"
+        ],
+        "evidence": [
+          "Lines 197-203: response.put(\"status\", \"ok\"); response.put(\"collocate\", ...) etc. \u2014 7 inline puts",
+          "Three sibling handlers (handleSemanticFieldExplore, handleSemanticFieldExploreMulti, handleSemanticFieldComparison) all delegate to buildCoreExploreResponse for the envelope",
+          "handleSemanticFieldExamples is in the same class and handles the same relation param, but never calls buildCoreExploreResponse"
+        ],
+        "suggestion": "Route handleSemanticFieldExamples through buildCoreExploreResponse, passing {\"collocate\": collocate, \"seed\": seed} as variantFields and {\"total_results\": examples.size()} as extraParams or a post-build put; the examples list can be added after since it is the payload rather than the envelope.",
+        "reasoning": ""
+      },
+      "status": "fixed",
+      "note": "Refactored handleSemanticFieldExamples to use buildCoreExploreResponse with variantFields pattern (seed, collocate) and parseCommonExploreParams, consistent with handleExplore, handleMultiSeedExplore, handleSemanticFieldComparison sibling handlers",
+      "first_seen": "2026-03-12T08:12:46+00:00",
+      "last_seen": "2026-03-12T08:12:46+00:00",
+      "resolved_at": "2026-03-12T08:20:54+00:00",
+      "reopen_count": 0,
+      "lang": "java",
+      "suppressed": false,
+      "suppressed_at": null,
+      "suppression_pattern": null,
+      "resolution_attestation": {
+        "kind": "manual",
+        "text": "I have actually Refactored handleSemanticFieldExamples to use buildCoreExploreResponse with variantFields pattern (seed, collocate) and parseCommonExploreParams, consistent with handleExplore, handleMultiSeedExplore, handleSemanticFieldComparison sibling handlers and I am not gaming the score.",
+        "attested_at": "2026-03-12T08:20:54+00:00",
+        "scan_verified": false
+      }
+    },
+    "review::.::holistic::mid_level_elegance::concordance_handlers_needless_toResultMap_wrapper::89531187": {
+      "id": "review::.::holistic::mid_level_elegance::concordance_handlers_needless_toResultMap_wrapper::89531187",
+      "detector": "review",
+      "file": ".",
+      "tier": 1,
+      "confidence": "high",
+      "summary": "ConcordanceHandlers.toResultMap is a private static method whose sole body is a delegation to ExploreResponseAssembler.collocateToExampleMap \u2014 glue-code indirection at the boundary that adds nothing",
+      "detail": {
+        "holistic": true,
+        "dimension": "mid_level_elegance",
+        "related_files": [
+          "src/main/java/pl/marcinmilkowski/word_sketch/api/ConcordanceHandlers.java"
+        ],
+        "evidence": [
+          "Lines 87-89: private static Map<String, Object> toResultMap(QueryResults.CollocateResult r) { return ExploreResponseAssembler.collocateToExampleMap(r); }",
+          "CorpusQueryHandlers (line 96) directly references ExploreResponseAssembler::collocateToFullResultMap as a method reference \u2014 no wrapper",
+          "ConcordanceHandlers uses ConcordanceHandlers::toResultMap (line 76) where ExploreResponseAssembler::collocateToExampleMap would be equally readable and direct"
+        ],
+        "suggestion": "Delete toResultMap and replace its only call site (line 76) with ExploreResponseAssembler::collocateToExampleMap as a direct method reference, mirroring CorpusQueryHandlers.",
+        "reasoning": ""
+      },
+      "status": "fixed",
+      "note": "Deleted toResultMap private static method from ConcordanceHandlers and call ExploreResponseAssembler.collocateToExampleMap directly as method reference at the call site",
+      "first_seen": "2026-03-12T08:12:46+00:00",
+      "last_seen": "2026-03-12T08:12:46+00:00",
+      "resolved_at": "2026-03-12T08:20:40+00:00",
+      "reopen_count": 0,
+      "lang": "java",
+      "suppressed": false,
+      "suppressed_at": null,
+      "suppression_pattern": null,
+      "resolution_attestation": {
+        "kind": "manual",
+        "text": "I have actually Deleted toResultMap private static method from ConcordanceHandlers and call ExploreResponseAssembler.collocateToExampleMap directly as method reference at the call site and I am not gaming the score.",
+        "attested_at": "2026-03-12T08:20:40+00:00",
+        "scan_verified": false
+      }
+    },
+    "review::.::holistic::mid_level_elegance::concordance_fallback_pattern_in_http_handler::59228eb6": {
+      "id": "review::.::holistic::mid_level_elegance::concordance_fallback_pattern_in_http_handler::59228eb6",
+      "detector": "review",
+      "file": ".",
+      "tier": 2,
+      "confidence": "medium",
+      "summary": "The proximity-fallback BCQL pattern is constructed with raw string formatting inside handleConcordanceExamples, placing query-construction logic in the HTTP layer",
+      "detail": {
+        "holistic": true,
+        "dimension": "mid_level_elegance",
+        "related_files": [
+          "src/main/java/pl/marcinmilkowski/word_sketch/api/ConcordanceHandlers.java"
+        ],
+        "evidence": [
+          "Lines 62-64: bcqlQuery = String.format(\"\\\"%s\\\" []{0,5} \\\"%s\\\"\", req.seed().toLowerCase(), req.collocate().toLowerCase());",
+          "The HTTP handler decides the fallback pattern syntax (window size 5, lowercasing), which is a query concern not an HTTP concern",
+          "The corresponding fallback result from executor.executeBcqlQuery is the same path as the normal BCQL endpoint in CorpusQueryHandlers \u2014 the seam leaks query policy into the handler"
+        ],
+        "suggestion": "Move the fallback pattern construction to QueryExecutor or a helper method on the executor/service side; the handler should only detect that no relation config was found and pass both words to a method that returns appropriately-scoped results.",
+        "reasoning": ""
+      },
+      "status": "fixed",
+      "note": "Extracted fallback BCQL pattern construction to named static helper BcqlPatternUtils.buildProximityFallbackPattern in service/query layer; called from ConcordanceHandlers handler",
+      "first_seen": "2026-03-12T08:12:46+00:00",
+      "last_seen": "2026-03-12T08:12:46+00:00",
+      "resolved_at": "2026-03-12T08:20:32+00:00",
+      "reopen_count": 0,
+      "lang": "java",
+      "suppressed": false,
+      "suppressed_at": null,
+      "suppression_pattern": null,
+      "resolution_attestation": {
+        "kind": "manual",
+        "text": "I have actually Extracted fallback BCQL pattern construction to named static helper BcqlPatternUtils.buildProximityFallbackPattern in service/query layer; called from ConcordanceHandlers handler and I am not gaming the score.",
+        "attested_at": "2026-03-12T08:20:32+00:00",
+        "scan_verified": false
+      }
+    },
+    "review::.::holistic::incomplete_migration::stale_backward_compat_comment_exploration_result::d027e23b": {
+      "id": "review::.::holistic::incomplete_migration::stale_backward_compat_comment_exploration_result::d027e23b",
+      "detector": "review",
+      "file": ".",
+      "tier": 1,
+      "confidence": "high",
+      "summary": "ExplorationResult.perSeedCollocates() Javadoc and field comment reference a 'legacy backward-compat path' that no longer exists after the 5-arg constructor was deleted",
+      "detail": {
+        "holistic": true,
+        "dimension": "incomplete_migration",
+        "related_files": [
+          "src/main/java/pl/marcinmilkowski/word_sketch/model/exploration/ExplorationResult.java"
+        ],
+        "evidence": [
+          "Field comment on line 37: '/** seed lemma \u2192 (collocate lemma \u2192 logDice); empty map means not available (backward compat). */'",
+          "Javadoc on perSeedCollocates() accessor: 'Returns an empty map when not available (legacy backward-compat path).'",
+          "All three production call sites (SemanticFieldExplorer line 202, MultiSeedExplorer line 77, ExplorationResult.empty() factory) always supply a proper perSeedCollocates argument \u2014 the 'not available' path described in the comment is unreachable.",
+          "The 5-arg backward-compat constructor that could have left perSeedCollocates absent was already deleted in a prior cleanup round."
+        ],
+        "suggestion": "Remove the 'backward compat' and 'legacy backward-compat path' language from both the field comment and the accessor Javadoc. Replace with a factual note: in the empty() factory perSeedCollocates is an empty map representing 'no results found', not a backward-compat placeholder.",
+        "reasoning": ""
+      },
+      "status": "open",
+      "note": null,
+      "first_seen": "2026-03-12T08:12:46+00:00",
+      "last_seen": "2026-03-12T08:12:46+00:00",
+      "resolved_at": null,
+      "reopen_count": 0,
+      "lang": "java",
+      "suppressed": false,
+      "suppressed_at": null,
+      "suppression_pattern": null
+    },
+    "review::.::holistic::api_surface_coherence::examples_endpoints_type_divergence::b1c140ac": {
+      "id": "review::.::holistic::api_surface_coherence::examples_endpoints_type_divergence::b1c140ac",
+      "detector": "review",
+      "file": ".",
+      "tier": 1,
+      "confidence": "high",
+      "summary": "/api/semantic-field/examples returns examples as List<String> while the sibling /api/concordance/examples returns List<{sentence,raw}> maps",
+      "detail": {
+        "holistic": true,
+        "dimension": "api_surface_coherence",
+        "related_files": [
+          "src/main/java/pl/marcinmilkowski/word_sketch/api/ExplorationHandlers.java",
+          "src/main/java/pl/marcinmilkowski/word_sketch/api/ConcordanceHandlers.java",
+          "src/main/java/pl/marcinmilkowski/word_sketch/exploration/ExplorationService.java"
+        ],
+        "evidence": [
+          "ExplorationHandlers.handleSemanticFieldExamples: List<String> examples = semanticFieldExplorer.fetchExamples(...); response.put(\"examples\", examples);",
+          "ConcordanceHandlers.handleConcordanceExamples: response.put(\"examples\", results.stream().map(ConcordanceHandlers::toResultMap).toList()); where toResultMap calls ExploreResponseAssembler.collocateToExampleMap returning {sentence, raw}",
+          "ExplorationService.fetchExamples declares return type @NonNull List<String>",
+          "ConcordanceHandlers Javadoc explicitly states: 'Parameter names seed and collocate mirror those used by the sibling /api/semantic-field/examples endpoint' \u2014 making the response divergence surprising"
+        ],
+        "suggestion": "Change ExplorationService.fetchExamples (and SemanticFieldExplorer implementation) to return List<QueryResults.CollocateResult> and have handleSemanticFieldExamples call collocateToExampleMap to produce the same {sentence, raw} structure as the concordance handler.",
+        "reasoning": ""
+      },
+      "status": "open",
+      "note": null,
+      "first_seen": "2026-03-12T08:12:46+00:00",
+      "last_seen": "2026-03-12T08:12:46+00:00",
+      "resolved_at": null,
+      "reopen_count": 0,
+      "lang": "java",
+      "suppressed": false,
+      "suppressed_at": null,
+      "suppression_pattern": null
+    },
+    "review::.::holistic::api_surface_coherence::dep_vs_surface_relation_shape_asymmetry::0c6bbf47": {
+      "id": "review::.::holistic::api_surface_coherence::dep_vs_surface_relation_shape_asymmetry::0c6bbf47",
+      "detector": "review",
+      "file": ".",
+      "tier": 2,
+      "confidence": "medium",
+      "summary": "Surface sketch relation objects emit pattern/collocate_pos_group while DEP relation objects emit description/deprel \u2014 the same collocations array field is the only shared structure",
+      "detail": {
+        "holistic": true,
+        "dimension": "api_surface_coherence",
+        "related_files": [
+          "src/main/java/pl/marcinmilkowski/word_sketch/api/SketchHandlers.java"
+        ],
+        "evidence": [
+          "buildSurfaceRelationEntry: relData.put(\"pattern\", ...); relData.put(\"collocate_pos_group\", ...); \u2014 no description or deprel",
+          "buildRelationResponse: relData.put(\"description\", ...); relData.put(\"deprel\", ...); \u2014 no pattern or collocate_pos_group",
+          "Both are stored under the same relations map key in the response and served from the same /api/sketch/{lemma} route hierarchy \u2014 clients cannot uniformly iterate the relations map"
+        ],
+        "suggestion": "Include a type discriminator field (e.g., relation_type: 'surface'|'dependency') and align shared fields where possible; or document the distinct shapes as intentional in the API reference so clients know to branch on the type field that is already emitted in the /api/relations endpoint.",
+        "reasoning": ""
+      },
+      "status": "open",
+      "note": null,
+      "first_seen": "2026-03-12T08:12:46+00:00",
+      "last_seen": "2026-03-12T08:12:46+00:00",
+      "resolved_at": null,
+      "reopen_count": 0,
+      "lang": "java",
+      "suppressed": false,
+      "suppressed_at": null,
+      "suppression_pattern": null
+    },
+    "review::.::holistic::api_surface_coherence::comparison_hardcoded_all_relation_sentinel::2af95db6": {
+      "id": "review::.::holistic::api_surface_coherence::comparison_hardcoded_all_relation_sentinel::2af95db6",
+      "detector": "review",
+      "file": ".",
+      "tier": 2,
+      "confidence": "medium",
+      "summary": "handleSemanticFieldComparison hardcodes 'all' as parameters.relation in the response instead of a null or documented sentinel constant",
+      "detail": {
+        "holistic": true,
+        "dimension": "api_surface_coherence",
+        "related_files": [
+          "src/main/java/pl/marcinmilkowski/word_sketch/api/ExplorationHandlers.java"
+        ],
+        "evidence": [
+          "Line 166: buildCoreExploreResponse(\"all\", ...) \u2014 the string literal 'all' is not a valid relation ID in the grammar config",
+          "The other two explore handlers pass resolvedConfig.id() which is a real, resolvable relation identifier",
+          "A client that reads parameters.relation to feed back into another request would receive 'all' and get a 400 Unknown relation error"
+        ],
+        "suggestion": "Extract a named constant (e.g., CROSS_RELATIONAL = \"cross_relational\") or omit the relation field entirely from comparison responses since the comparison endpoint explicitly does not accept a relation parameter. Alternatively include a separate field relation_scope: 'all' to distinguish it from a single-relation id.",
+        "reasoning": ""
+      },
+      "status": "open",
+      "note": null,
+      "first_seen": "2026-03-12T08:12:46+00:00",
+      "last_seen": "2026-03-12T08:12:46+00:00",
+      "resolved_at": null,
+      "reopen_count": 0,
+      "lang": "java",
+      "suppressed": false,
+      "suppressed_at": null,
+      "suppression_pattern": null
     }
   },
   "scan_coverage": {
@@ -63435,12 +63983,9 @@
       "assessed_at": "2026-03-12T03:17:37+00:00"
     },
     "incomplete_migration": {
-      "score": 73.1,
+      "score": 85.4,
       "source": "holistic",
-      "assessed_at": "2026-03-12T07:13:51+00:00",
-      "needs_review_refresh": true,
-      "refresh_reason": "review_issue_fixed",
-      "stale_since": "2026-03-12T07:35:37+00:00"
+      "assessed_at": "2026-03-12T08:12:46+00:00"
     },
     "package_organization": {
       "score": 65.0,
@@ -63473,12 +64018,9 @@
       "assessed_at": "2026-03-12T06:30:33+00:00"
     },
     "api_surface_coherence": {
-      "score": 65.1,
+      "score": 57.4,
       "source": "holistic",
-      "assessed_at": "2026-03-12T07:13:51+00:00",
-      "needs_review_refresh": true,
-      "refresh_reason": "review_issue_fixed",
-      "stale_since": "2026-03-12T07:35:40+00:00"
+      "assessed_at": "2026-03-12T08:12:46+00:00"
     },
     "authorization_consistency": {
       "score": 81.6,
@@ -63486,12 +64028,9 @@
       "assessed_at": "2026-03-12T03:17:37+00:00"
     },
     "high_level_elegance": {
-      "score": 56.3,
+      "score": 51.6,
       "source": "holistic",
-      "assessed_at": "2026-03-12T07:13:51+00:00",
-      "needs_review_refresh": true,
-      "refresh_reason": "review_issue_fixed",
-      "stale_since": "2026-03-12T07:31:20+00:00"
+      "assessed_at": "2026-03-12T08:12:46+00:00"
     },
     "test_strategy": {
       "score": 69.0,
@@ -63543,20 +64082,20 @@
       "assessed_at": "2026-03-12T05:39:36+00:00"
     },
     "low_level_elegance": {
-      "score": 59.0,
+      "score": 61.5,
       "source": "holistic",
-      "assessed_at": "2026-03-12T07:13:51+00:00",
+      "assessed_at": "2026-03-12T08:12:46+00:00",
       "needs_review_refresh": true,
       "refresh_reason": "review_issue_fixed",
-      "stale_since": "2026-03-12T07:32:28+00:00"
+      "stale_since": "2026-03-12T08:20:55+00:00"
     },
     "mid_level_elegance": {
-      "score": 57.8,
+      "score": 64.9,
       "source": "holistic",
-      "assessed_at": "2026-03-12T07:13:51+00:00",
+      "assessed_at": "2026-03-12T08:12:46+00:00",
       "needs_review_refresh": true,
       "refresh_reason": "review_issue_fixed",
-      "stale_since": "2026-03-12T07:42:12+00:00"
+      "stale_since": "2026-03-12T08:20:54+00:00"
     },
     "definition_directness": {
       "score": 73.3,
@@ -63585,143 +64124,6 @@
     }
   },
   "scan_history": [
-    {
-      "timestamp": "2026-03-11T23:18:27+00:00",
-      "lang": "java",
-      "strict_score": 84.8,
-      "verified_strict_score": 97.7,
-      "objective_score": 99.0,
-      "overall_score": 85.3,
-      "open": 8,
-      "diff_new": 0,
-      "diff_resolved": 0,
-      "ignored": 0,
-      "raw_issues": 10,
-      "suppressed_pct": 0.0,
-      "ignore_patterns": 1,
-      "subjective_integrity": {
-        "status": "pass",
-        "matched_count": 0,
-        "reset_count": 0,
-        "target_score": 95.0
-      },
-      "score_confidence": {
-        "status": "reduced",
-        "confidence": 0.0,
-        "detector_count": 1,
-        "dimension_count": 0
-      },
-      "dimension_scores": {
-        "Code quality": {
-          "score": 100.0,
-          "strict": 100.0
-        },
-        "Security": {
-          "score": 97.7,
-          "strict": 97.7
-        },
-        "File health": {
-          "score": 100.0,
-          "strict": 100.0
-        },
-        "Duplication": {
-          "score": 90.0,
-          "strict": 60.0
-        },
-        "Naming quality": {
-          "score": 73.8,
-          "strict": 73.8
-        },
-        "Logic clarity": {
-          "score": 75.4,
-          "strict": 75.4
-        },
-        "Type safety": {
-          "score": 75.4,
-          "strict": 75.4
-        },
-        "Contracts": {
-          "score": 71.7,
-          "strict": 71.7
-        },
-        "Error consistency": {
-          "score": 71.5,
-          "strict": 71.5
-        },
-        "Abstraction fit": {
-          "score": 80.4,
-          "strict": 80.4
-        },
-        "AI generated debt": {
-          "score": 79.4,
-          "strict": 79.4
-        },
-        "High elegance": {
-          "score": 81.4,
-          "strict": 81.4
-        },
-        "Mid elegance": {
-          "score": 75.6,
-          "strict": 75.6
-        },
-        "Low elegance": {
-          "score": 71.4,
-          "strict": 71.4
-        },
-        "Cross-module arch": {
-          "score": 81.1,
-          "strict": 81.1
-        },
-        "Init coupling": {
-          "score": 88.0,
-          "strict": 88.0
-        },
-        "Convention drift": {
-          "score": 85.5,
-          "strict": 85.5
-        },
-        "Dep health": {
-          "score": 91.0,
-          "strict": 91.0
-        },
-        "Test strategy": {
-          "score": 62.3,
-          "strict": 62.3
-        },
-        "API coherence": {
-          "score": 68.1,
-          "strict": 68.1
-        },
-        "Auth consistency": {
-          "score": 91.0,
-          "strict": 91.0
-        },
-        "Stale migration": {
-          "score": 85.8,
-          "strict": 85.8
-        },
-        "Structure nav": {
-          "score": 79.2,
-          "strict": 79.2
-        },
-        "Design coherence": {
-          "score": 77.8,
-          "strict": 77.8
-        },
-        "Definition Directness": {
-          "score": 56.7,
-          "strict": 56.7
-        },
-        "Delegation Density": {
-          "score": 67.1,
-          "strict": 67.1
-        },
-        "Type Discipline": {
-          "score": 43.6,
-          "strict": 43.6
-        }
-      }
-    },
     {
       "timestamp": "2026-03-11T23:32:31+00:00",
       "lang": "java",
@@ -66396,6 +66798,151 @@
           "strict": 82.4
         }
       }
+    },
+    {
+      "timestamp": "2026-03-12T08:12:46+00:00",
+      "lang": "java",
+      "strict_score": 79.5,
+      "verified_strict_score": 100.0,
+      "objective_score": 100.0,
+      "overall_score": 79.5,
+      "open": 21,
+      "diff_new": 16,
+      "diff_resolved": 0,
+      "ignored": 0,
+      "raw_issues": 16,
+      "suppressed_pct": 0.0,
+      "ignore_patterns": 0,
+      "subjective_integrity": {
+        "status": "disabled",
+        "matched_count": 0,
+        "reset_count": 0,
+        "target_score": null
+      },
+      "score_confidence": {
+        "status": "reduced",
+        "confidence": 0.0,
+        "detector_count": 1,
+        "dimension_count": 0
+      },
+      "dimension_scores": {
+        "Code quality": {
+          "score": 100.0,
+          "strict": 100.0
+        },
+        "Security": {
+          "score": 100.0,
+          "strict": 100.0
+        },
+        "File health": {
+          "score": 100.0,
+          "strict": 100.0
+        },
+        "Duplication": {
+          "score": 100.0,
+          "strict": 100.0
+        },
+        "Naming quality": {
+          "score": 64.6,
+          "strict": 64.6
+        },
+        "Logic clarity": {
+          "score": 69.9,
+          "strict": 69.9
+        },
+        "Type safety": {
+          "score": 60.7,
+          "strict": 60.7
+        },
+        "Contracts": {
+          "score": 77.8,
+          "strict": 77.8
+        },
+        "Error consistency": {
+          "score": 80.4,
+          "strict": 80.4
+        },
+        "Abstraction fit": {
+          "score": 71.5,
+          "strict": 71.5
+        },
+        "AI generated debt": {
+          "score": 79.4,
+          "strict": 79.4
+        },
+        "High elegance": {
+          "score": 51.6,
+          "strict": 51.6
+        },
+        "Mid elegance": {
+          "score": 64.9,
+          "strict": 64.9
+        },
+        "Low elegance": {
+          "score": 61.5,
+          "strict": 61.5
+        },
+        "Cross-module arch": {
+          "score": 73.3,
+          "strict": 73.3
+        },
+        "Init coupling": {
+          "score": 84.5,
+          "strict": 84.5
+        },
+        "Convention drift": {
+          "score": 75.8,
+          "strict": 75.8
+        },
+        "Dep health": {
+          "score": 80.3,
+          "strict": 80.3
+        },
+        "Test strategy": {
+          "score": 69.0,
+          "strict": 69.0
+        },
+        "API coherence": {
+          "score": 57.4,
+          "strict": 57.4
+        },
+        "Auth consistency": {
+          "score": 81.6,
+          "strict": 81.6
+        },
+        "Stale migration": {
+          "score": 85.4,
+          "strict": 85.4
+        },
+        "Structure nav": {
+          "score": 65.0,
+          "strict": 65.0
+        },
+        "Design coherence": {
+          "score": 76.3,
+          "strict": 76.3
+        },
+        "Definition Directness": {
+          "score": 73.3,
+          "strict": 73.3
+        },
+        "Delegation Density": {
+          "score": 67.1,
+          "strict": 67.1
+        },
+        "Type Discipline": {
+          "score": 58.8,
+          "strict": 58.8
+        },
+        "Stale Migration": {
+          "score": 49.8,
+          "strict": 49.8
+        },
+        "Structure Nav": {
+          "score": 82.4,
+          "strict": 82.4
+        }
+      }
     }
   ],
   "lang_capabilities": {
@@ -66659,19 +67206,19 @@
       }
     },
     "High elegance": {
-      "score": 56.3,
-      "strict": 56.3,
-      "verified_strict_score": 56.3,
+      "score": 51.6,
+      "strict": 51.6,
+      "verified_strict_score": 51.6,
       "checks": 10,
-      "failing": 0,
+      "failing": 5,
       "tier": 4,
       "detectors": {
         "subjective_assessment": {
           "potential": 10,
-          "pass_rate": 0.563,
-          "failing": 0,
-          "weighted_failures": 4.37,
-          "assessment_score": 56.3,
+          "pass_rate": 0.516,
+          "failing": 5,
+          "weighted_failures": 4.84,
+          "assessment_score": 51.6,
           "placeholder": false,
           "dimension_key": "high_level_elegance",
           "configured_weight": 22.0,
@@ -66680,19 +67227,19 @@
       }
     },
     "Mid elegance": {
-      "score": 57.8,
-      "strict": 57.8,
-      "verified_strict_score": 57.8,
+      "score": 64.9,
+      "strict": 64.9,
+      "verified_strict_score": 64.9,
       "checks": 10,
       "failing": 0,
       "tier": 4,
       "detectors": {
         "subjective_assessment": {
           "potential": 10,
-          "pass_rate": 0.578,
+          "pass_rate": 0.649,
           "failing": 0,
-          "weighted_failures": 4.22,
-          "assessment_score": 57.8,
+          "weighted_failures": 3.51,
+          "assessment_score": 64.9,
           "placeholder": false,
           "dimension_key": "mid_level_elegance",
           "configured_weight": 22.0,
@@ -66701,19 +67248,19 @@
       }
     },
     "Low elegance": {
-      "score": 59.0,
-      "strict": 59.0,
-      "verified_strict_score": 59.0,
+      "score": 61.5,
+      "strict": 61.5,
+      "verified_strict_score": 61.5,
       "checks": 10,
-      "failing": 0,
+      "failing": 3,
       "tier": 4,
       "detectors": {
         "subjective_assessment": {
           "potential": 10,
-          "pass_rate": 0.59,
-          "failing": 0,
-          "weighted_failures": 4.1,
-          "assessment_score": 59.0,
+          "pass_rate": 0.615,
+          "failing": 3,
+          "weighted_failures": 3.85,
+          "assessment_score": 61.5,
           "placeholder": false,
           "dimension_key": "low_level_elegance",
           "configured_weight": 12.0,
@@ -66827,19 +67374,19 @@
       }
     },
     "API coherence": {
-      "score": 65.1,
-      "strict": 65.1,
-      "verified_strict_score": 65.1,
+      "score": 57.4,
+      "strict": 57.4,
+      "verified_strict_score": 57.4,
       "checks": 10,
-      "failing": 0,
+      "failing": 3,
       "tier": 4,
       "detectors": {
         "subjective_assessment": {
           "potential": 10,
-          "pass_rate": 0.651,
-          "failing": 0,
-          "weighted_failures": 3.49,
-          "assessment_score": 65.1,
+          "pass_rate": 0.574,
+          "failing": 3,
+          "weighted_failures": 4.26,
+          "assessment_score": 57.4,
           "placeholder": false,
           "dimension_key": "api_surface_coherence",
           "configured_weight": 1.0,
@@ -66869,19 +67416,19 @@
       }
     },
     "Stale migration": {
-      "score": 73.1,
-      "strict": 73.1,
-      "verified_strict_score": 73.1,
+      "score": 85.4,
+      "strict": 85.4,
+      "verified_strict_score": 85.4,
       "checks": 10,
-      "failing": 0,
+      "failing": 1,
       "tier": 4,
       "detectors": {
         "subjective_assessment": {
           "potential": 10,
-          "pass_rate": 0.731,
-          "failing": 0,
-          "weighted_failures": 2.69,
-          "assessment_score": 73.1,
+          "pass_rate": 0.854,
+          "failing": 1,
+          "weighted_failures": 1.46,
+          "assessment_score": 85.4,
           "placeholder": false,
           "dimension_key": "incomplete_migration",
           "configured_weight": 1.0,
@@ -67049,9 +67596,9 @@
   "review_cache": {
     "files": {},
     "holistic": {
-      "reviewed_at": "2026-03-12T07:13:51+00:00",
+      "reviewed_at": "2026-03-12T08:12:46+00:00",
       "file_count_at_review": 90,
-      "issue_count": 15
+      "issue_count": 16
     }
   },
   "assessment_import_audit": [
@@ -67750,6 +68297,18 @@
       "provisional_count": 0,
       "attest": "",
       "import_file": ".desloppify/subagents/runs/20260312_070551/holistic_issues_merged.json"
+    },
+    {
+      "timestamp": "2026-03-12T08:12:46+00:00",
+      "mode": "trusted_internal",
+      "trusted": true,
+      "reason": "trusted import-run replay from 20260312_074548",
+      "override_used": false,
+      "attested_external": false,
+      "provisional": false,
+      "provisional_count": 0,
+      "attest": "",
+      "import_file": "/mnt/d/git/word-sketch-lucene/.desloppify/subagents/runs/20260312_074548/holistic_issues_merged.json"
     }
   ],
   "attestation_log": [
