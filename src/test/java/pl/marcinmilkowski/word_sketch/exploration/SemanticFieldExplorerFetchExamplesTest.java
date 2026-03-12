@@ -3,6 +3,7 @@ package pl.marcinmilkowski.word_sketch.exploration;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import pl.marcinmilkowski.word_sketch.config.GrammarConfigHelper;
+import pl.marcinmilkowski.word_sketch.exploration.ExplorationException;
 import pl.marcinmilkowski.word_sketch.config.RelationConfig;
 import pl.marcinmilkowski.word_sketch.model.exploration.FetchExamplesOptions;
 import pl.marcinmilkowski.word_sketch.model.exploration.FetchExamplesResult;
@@ -112,7 +113,7 @@ class SemanticFieldExplorerFetchExamplesTest {
     }
 
     @Test
-    @DisplayName("fetchExamples_propagatesIOExceptionFromExecutor: IOException from executeBcqlQuery is not swallowed")
+    @DisplayName("fetchExamples_propagatesIOExceptionFromExecutor: IOException from executeBcqlQuery is wrapped in ExplorationException")
     void fetchExamples_propagatesIOExceptionFromExecutor() {
         QueryExecutor executor = new StubQueryExecutor() {
             @Override
@@ -124,11 +125,12 @@ class SemanticFieldExplorerFetchExamplesTest {
 
         SemanticFieldExplorer explorer = new SemanticFieldExplorer(executor, null);
 
-        IOException thrown = assertThrows(IOException.class,
+        ExplorationException thrown = assertThrows(ExplorationException.class,
                 () -> explorer.fetchExamples("theory", "important", testRelationConfig(), new FetchExamplesOptions(10)),
-                "IOException from the underlying executor must propagate through fetchExamples, not be caught and swallowed");
+                "IOException from the underlying executor must be wrapped in ExplorationException");
 
-        assertEquals("simulated executor failure", thrown.getMessage(),
-                "The propagated IOException should carry the original message unchanged");
+        assertNotNull(thrown.getCause(), "ExplorationException should carry the original IOException as cause");
+        assertEquals("simulated executor failure", thrown.getCause().getMessage(),
+                "The wrapped IOException should carry the original message unchanged");
     }
 }

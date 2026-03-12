@@ -28,6 +28,26 @@ import java.util.Map;
  * returns immutable {@link GrammarConfig} instances. Callers that only need to query the
  * loaded data should accept {@link GrammarConfig} rather than this class.
  *
+ * <h2>Exception-type contract</h2>
+ * <p>This class uses a two-tier exception strategy that distinguishes <em>I/O failures</em>
+ * from <em>structural/validation failures</em>:
+ *
+ * <ul>
+ *   <li>{@link java.io.IOException} (and its subtype {@link java.io.FileNotFoundException}) —
+ *       thrown by the checked {@link #load(java.nio.file.Path)} and {@link #fromReader(Reader)}
+ *       methods when the underlying storage cannot be read (file not found, permission denied,
+ *       broken stream, or unparseable JSON).  Callers that cannot handle checked exceptions
+ *       should use {@link #createDefaultEnglish()} / {@link #createDefaultEnglish(String)},
+ *       which wrap I/O errors in {@link IllegalStateException}.</li>
+ *   <li>{@link IllegalArgumentException} — thrown from any public method when the config
+ *       content is structurally invalid: missing {@code version} field, missing or empty
+ *       {@code relations} array, missing {@code pattern} field in a relation, duplicate
+ *       relation ids, use of deprecated keys, etc.  Because these conditions represent a
+ *       programmer / configuration error rather than an environmental failure, they are not
+ *       wrapped and propagate regardless of whether the caller uses the checked or unchecked
+ *       entry point.</li>
+ * </ul>
+ *
  * Expected JSON structure:
  * <pre>{@code
  * {
@@ -70,8 +90,9 @@ public final class GrammarConfigLoader {
      *
      * @param reader  reader over a valid grammar JSON document
      * @return immutable {@link GrammarConfig} with the parsed relations
-     * @throws IOException if reading fails or the JSON is invalid
-     * @throws IllegalArgumentException if the config is structurally invalid
+     * @throws IOException if reading fails or the JSON is syntactically invalid
+     * @throws IllegalArgumentException if the JSON is readable but structurally invalid
+     *         (e.g. missing {@code version}, empty {@code relations}, duplicate ids)
      */
     public static GrammarConfig fromReader(Reader reader) throws IOException {
         var sw = new java.io.StringWriter();
@@ -203,7 +224,10 @@ public final class GrammarConfigLoader {
      * Create the default grammar config from the given {@code configPath}.
      *
      * @param configPath path to the grammar config JSON file; must not be null
-     * @throws IllegalStateException if the file is not found or cannot be parsed
+     * @throws IllegalStateException if the file is not found or cannot be read (wraps
+     *         {@link java.io.FileNotFoundException} or {@link java.io.IOException})
+     * @throws IllegalArgumentException if the file is found but its content is structurally
+     *         invalid (missing {@code version}, bad {@code relations} entries, duplicate ids, etc.)
      */
     public static GrammarConfig createDefaultEnglish(String configPath) {
         return loadUnchecked(Path.of(configPath), configPath, "");
@@ -213,6 +237,12 @@ public final class GrammarConfigLoader {
      * Create the default grammar config, resolving the path from the
      * {@code grammar.config} system property (default: {@code grammars/relations.json}).
      * Wraps {@link IOException} in {@link IllegalStateException}.
+     *
+     * @throws IllegalStateException if the file is not found or cannot be read (wraps
+     *         {@link java.io.FileNotFoundException} or {@link java.io.IOException}).
+     *         Use {@code -Dgrammar.config=&lt;path&gt;} to override the default location.
+     * @throws IllegalArgumentException if the file is found but its content is structurally
+     *         invalid (missing {@code version}, bad {@code relations} entries, duplicate ids, etc.)
      */
     public static GrammarConfig createDefaultEnglish() {
         String path = System.getProperty("grammar.config", "grammars/relations.json");

@@ -79,11 +79,12 @@ class ExplorationHandlersTest {
     }
 
     @Test
-    void handleSemanticFieldComparison_missingSeeds_throws() throws Exception {
+    void handleSemanticFieldComparison_missingSeeds_returns400() throws Exception {
+        ExplorationHandlers handlers = new ExplorationHandlers(null, GrammarConfigHelper.requireTestConfig());
         TestExchangeFactory.MockExchange ex = new TestExchangeFactory.MockExchange(
                 "http://localhost/api/semantic-field/compare?min_logdice=0.0");
-        assertThrows(IllegalArgumentException.class,
-            () -> handlers().handleSemanticFieldComparison(ex));
+        HttpApiUtils.wrapWithErrorHandling(handlers::handleSemanticFieldComparison, "test").handle(ex);
+        assertEquals(400, ex.statusCode);
     }
 
     // ── Validation / negative-path tests (migrated from HandlersTest) ────────

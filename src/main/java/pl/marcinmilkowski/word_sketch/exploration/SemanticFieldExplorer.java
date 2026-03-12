@@ -1,6 +1,5 @@
 package pl.marcinmilkowski.word_sketch.exploration;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -95,22 +94,24 @@ public class SemanticFieldExplorer implements ExplorationService {
     public @NonNull ExplorationResult exploreByRelation(
             @NonNull String seed,
             @NonNull RelationConfig relationConfig,
-            @NonNull SingleSeedExplorationOptions opts) throws IOException {
-        if (relationConfig.relationType().isEmpty()) {
-            throw new IllegalArgumentException(
-                "Relation '" + relationConfig.id() + "' has no relation_type — cannot perform exploration");
-        }
+            @NonNull SingleSeedExplorationOptions opts) throws ExplorationException {
+        relationConfig.validate();
         if (relationConfig.collocatePosGroup() == PosGroup.OTHER) {
             throw new IllegalArgumentException(
                 "Relation '" + relationConfig.id() + "' has unsupported collocate POS group (OTHER)" +
                 " — cannot perform reverse pattern lookup");
         }
-        return singleSeedExplorer.explore(
-            seed,
-            relationConfig.name(),
-            RelationPatternUtils.buildFullPattern(relationConfig, seed),
-            RelationPatternUtils.buildCollocateReversePattern(relationConfig),
-            opts);
+        try {
+            return singleSeedExplorer.explore(
+                seed,
+                relationConfig.name(),
+                RelationPatternUtils.buildFullPattern(relationConfig, seed),
+                RelationPatternUtils.buildCollocateReversePattern(relationConfig),
+                opts);
+        } catch (java.io.IOException e) {
+            throw new ExplorationException("Failed to explore relation '" + relationConfig.id() +
+                "' for seed '" + seed + "'", e);
+        }
     }
 
 
@@ -137,8 +138,12 @@ public class SemanticFieldExplorer implements ExplorationService {
      * @return ComparisonResult with graded adjective profiles
      */
     public @NonNull ComparisonResult compareCollocateProfiles(
-            @NonNull Set<String> seeds, @NonNull ExplorationOptions opts) throws IOException {
-        return comparator.compareCollocateProfiles(seeds, opts);
+            @NonNull Set<String> seeds, @NonNull ExplorationOptions opts) throws ExplorationException {
+        try {
+            return comparator.compareCollocateProfiles(seeds, opts);
+        } catch (java.io.IOException e) {
+            throw new ExplorationException("Failed to compare collocate profiles for seeds " + seeds, e);
+        }
     }
 
     /**
@@ -152,11 +157,18 @@ public class SemanticFieldExplorer implements ExplorationService {
      */
     public @NonNull FetchExamplesResult fetchExamples(@NonNull String seed, @NonNull String collocate,
             @NonNull RelationConfig relationConfig, @NonNull FetchExamplesOptions opts)
-            throws IOException {
+            throws ExplorationException {
+        relationConfig.validate();
         int maxExamples = opts.maxExamples();
         String bcqlQuery = RelationPatternUtils.buildFullPattern(relationConfig, seed.toLowerCase(), collocate.toLowerCase());
 
-        List<QueryResults.CollocateResult> results = executor.executeBcqlQuery(bcqlQuery, maxExamples);
+        List<QueryResults.CollocateResult> results;
+        try {
+            results = executor.executeBcqlQuery(bcqlQuery, maxExamples);
+        } catch (java.io.IOException e) {
+            throw new ExplorationException("Failed to fetch examples for seed '" + seed +
+                "' / collocate '" + collocate + "'", e);
+        }
 
         Set<String> seen = new HashSet<>();
         List<QueryResults.CollocateResult> deduped = new ArrayList<>();
@@ -183,12 +195,18 @@ public class SemanticFieldExplorer implements ExplorationService {
     public @NonNull ExplorationResult exploreMultiSeed(
             @NonNull Set<String> seeds,
             @NonNull RelationConfig relationConfig,
-            @NonNull ExplorationOptions opts) throws IOException {
+            @NonNull ExplorationOptions opts) throws ExplorationException {
         if (seeds.size() < 2) {
             throw new IllegalArgumentException(
                 "Multi-seed exploration requires at least 2 seeds; received " + seeds.size());
         }
-        return multiSeedExplorer.findCollocateIntersection(seeds, relationConfig, opts);
+        relationConfig.validate();
+        try {
+            return multiSeedExplorer.findCollocateIntersection(seeds, relationConfig, opts);
+        } catch (java.io.IOException e) {
+            throw new ExplorationException("Failed to explore multi-seed for relation '" +
+                relationConfig.id() + "' with seeds " + seeds, e);
+        }
     }
 
 }

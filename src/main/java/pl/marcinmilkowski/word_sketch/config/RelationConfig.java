@@ -46,6 +46,22 @@ public record RelationConfig(
     }
 
     /**
+     * Validates that this relation configuration is complete enough for exploration use.
+     *
+     * <p>Throws {@link IllegalArgumentException} if {@link #relationType()} is absent, so that
+     * mis-configured relations are rejected with a clear message at the service layer rather
+     * than failing midway through a corpus query.</p>
+     *
+     * @throws IllegalArgumentException if {@code relationType} is absent
+     */
+    public void validate() {
+        if (relationType().isEmpty()) {
+            throw new IllegalArgumentException(
+                "Invalid relation config: missing or unrecognised relation_type for '" + id + "'");
+        }
+    }
+
+    /**
      * Extracts and computes the dependency relation (deprel) from the pattern.
      * For DEP relations, looks for deprel="xxx" attribute constraint in the pattern.
      * If not found, extracts from the relation ID (e.g., "dep_amod" -> "amod").
