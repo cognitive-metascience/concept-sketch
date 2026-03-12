@@ -34,7 +34,7 @@ public class ExplorationResult {
     private final @NonNull Map<String, Long> seedCollocateFrequencies;  // collocate -> raw frequency
     private final @NonNull List<DiscoveredNoun> discoveredNouns;
     private final @NonNull List<CoreCollocate> coreCollocates;
-    /** seed lemma → (collocate lemma → logDice); empty map means not available (backward compat). */
+    /** seed lemma → (collocate lemma → logDice); empty map means not available. */
     private final @NonNull Map<String, Map<String, Double>> perSeedCollocates;
 
     public ExplorationResult(List<String> seeds, Map<String, Double> seedCollocates,
@@ -81,8 +81,6 @@ public class ExplorationResult {
     /**
      * Returns per-seed collocate maps for accurate edge attribution.
      * In single-seed mode contains one entry; in multi-seed mode one entry per seed.
-     * Returns an empty map when not available (legacy backward-compat path).
-     *
      * @return seed lemma → (collocate lemma → logDice); never null, may be empty
      */
     public Map<String, Map<String, Double>> perSeedCollocates() { return perSeedCollocates; }

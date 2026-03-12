@@ -7,7 +7,7 @@
  * </p>
  * <ul>
  *   <li><strong>Pure DTOs</strong> — records with no logic beyond field access:
- *       {@link pl.marcinmilkowski.word_sketch.model.exploration.AdjectiveProfile},
+ *       {@link pl.marcinmilkowski.word_sketch.model.exploration.CollocateProfile},
  *       {@link pl.marcinmilkowski.word_sketch.model.exploration.CoreCollocate},
  *       {@link pl.marcinmilkowski.word_sketch.model.exploration.DiscoveredNoun},
  *       {@link pl.marcinmilkowski.word_sketch.model.exploration.Edge}, etc.</li>

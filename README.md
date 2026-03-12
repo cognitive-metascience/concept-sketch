@@ -119,7 +119,6 @@ Endpoints:
   GET /api/relations/dep
   GET /api/semantic-field/explore
   GET /api/semantic-field/explore-multi
-  GET /api/semantic-field
   GET /api/semantic-field/examples
   GET /api/concordance/examples
   GET /api/visual/radial
@@ -152,7 +151,7 @@ And you use some semantic exploration features:
 curl "http://localhost:8080/api/sketch/house"
 
 # Get example sentences for "house" + "big"
-curl "http://localhost:8080/api/concordance/examples?word1=house&word2=big&limit=5"
+curl "http://localhost:8080/api/concordance/examples?seed=house&collocate=big&top=5"
 
 # Explore semantic field from "theory" (ADJ_PREDICATE relation)
 curl "http://localhost:8080/api/semantic-field/explore?seed=theory&relation=adj_predicate"
@@ -374,26 +373,12 @@ curl "http://localhost:8080/api/semantic-field/explore-multi?seeds=theory,model,
 
 > **Note:** All `seed_collocates` items have the same shape `{word, log_dice, frequency}` across both endpoints.
 
-#### Semantic Field Comparison
-```bash
-# Both `seeds` and `nouns` param names are accepted (seeds takes priority):
-curl "http://localhost:8080/api/semantic-field?seeds=theory,model,hypothesis&min_logdice=3.0"
-curl "http://localhost:8080/api/semantic-field?nouns=theory,model,hypothesis&min_logdice=3.0"
-```
-
 #### Concordance Examples for Word Pairs
 ```bash
-curl "http://localhost:8080/api/concordance/examples?word1=house&word2=big&limit=10"
+curl "http://localhost:8080/api/concordance/examples?seed=house&collocate=big&top=10"
 ```
 
 Get actual example sentences from the corpus containing both words (lemmas). This feature validates collocations by showing real usage contexts.
-
-#### Diagnostics — collocation integrity
-```bash
-curl "http://localhost:8080/api/diagnostics/collocation-integrity?top=10"
-```
-
-Compares `collocations.bin` entries with the active index and reports suspicious headwords where precomputed collocates are missing from the index or have no supporting span examples. Useful to detect stale or incorrect precomputed data.
 
 **How It Works:**
 1. Uses **SpanNearQuery** to efficiently find sentences where both lemmas appear within 10 words
@@ -408,34 +393,28 @@ Compares `collocations.bin` entries with the active index and reports suspicious
 - Query complexity: O(log N) for SpanQuery + O(k) for decoding k matching documents
 
 **Parameters:**
-- `word1` (required) - First word (lemma)
-- `word2` (required) - Second word (lemma)
-- `limit` (optional) - Number of examples to return (default: 10)
-- `relation` (optional) - Grammatical relation metadata (not used in query)
+- `seed` (required) - Headword (lemma)
+- `collocate` (required) - Collocate word (lemma)
+- `top` (optional) - Number of examples to return (default: 10)
+- `relation` (optional) - Grammatical relation ID (default: noun_adj_predicates)
 
 **Response:**
 ```json
 {
   "status": "ok",
-  "count": 3,
-  "word1": "house",
-  "word2": "big",
-  "relation": "",
-  "limit_requested": 10,
+  "seed": "house",
+  "collocate": "big",
+  "relation": "noun_adj_predicates",
+  "top": 10,
+  "total_results": 3,
   "examples": [
     {
       "sentence": "The big house! - The big house.",
-      "highlighted": "The <mark>big</mark> <mark>house</mark> ! - The <mark>big</mark> <mark>house</mark> .",
-      "raw": "The big house ! - The big house .",
-      "word1_positions": [2, 7],
-      "word2_positions": [1, 6]
+      "raw": "The big house ! - The big house ."
     },
     {
       "sentence": "Houses Big and beautiful house with 4 bedrooms Houses big...",
-      "highlighted": "<mark>Houses</mark> <mark>Big</mark> and beautiful <mark>house</mark> with 4 bedrooms <mark>Houses</mark> <mark>big</mark> ...",
-      "raw": "Houses Big and beautiful house with 4 bedrooms Houses big ...",
-      "word1_positions": [0, 4, 8],
-      "word2_positions": [1, 9]
+      "raw": "Houses Big and beautiful house with 4 bedrooms Houses big ..."
     }
   ]
 }
@@ -443,10 +422,7 @@ Compares `collocations.bin` entries with the active index and reports suspicious
 
 **Response Fields:**
 - `sentence` - Raw sentence text from the corpus
-- `highlighted` - HTML with `<mark>` tags around matching words
 - `raw` - Tokenized sentence (space-separated)
-- `word1_positions` - Array of token positions where word1 appears (0-indexed)
-- `word2_positions` - Array of token positions where word2 appears (0-indexed)
 
 **Use Cases:**
 - Validate collocations before citing in research
@@ -663,7 +639,7 @@ concept-sketch/
 │   │   ├── FetchExamplesOptions.java         # Options for fetchExamples
 │   │   ├── PosGroup.java                     # POS group enum: NOUN, VERB, ADJ, ADV, OTHER
 │   │   ├── QueryResults.java                 # Result DTOs: WordSketchResult, ConcordanceResult
-│   │   ├── RelationType.java                 # Enum: SURFACE | DEP_GRAMMAR
+│   │   ├── RelationType.java                 # Enum: SURFACE | DEP
 │   │   └── exploration/
 │   │       ├── CollocateProfile.java         # Adjective collocate profile for SEF comparison
 │   │       ├── ComparisonResult.java         # Result DTO for compareCollocateProfiles()

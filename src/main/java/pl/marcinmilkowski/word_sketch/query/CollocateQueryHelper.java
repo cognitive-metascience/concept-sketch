@@ -300,18 +300,23 @@ class CollocateQueryHelper {
 
         for (HitRecord rec : records) {
             String collocateLemma = rec.collocateLemma();
-            boolean validCollocate = collocateLemma != null && !collocateLemma.isEmpty();
-
-            long jointFreq = 0L;
-            if (validCollocate) {
-                jointFreq = collocateFreqMap.getOrDefault(collocateLemma.toLowerCase(), 0L);
-                if (jointFreq == 0L) {
-                    // Trace-level: this fires once per hit in a hot loop; debug would flood logs.
-                    logger.trace("No joint frequency found for collocate '{}' — logDice will be 0", collocateLemma);
-                }
+            if (collocateLemma == null || collocateLemma.isEmpty()) {
+                String plainText = BlackLabSnippetParser.trimToSentence(
+                        rec.leftText(), rec.matchText(), rec.rightText());
+                results.add(new QueryResults.CollocateResult(
+                        plainText, rec.xmlSnippet(),
+                        rec.start(), rec.end(), String.valueOf(rec.docId()),
+                        null, 0L, 0.0));
+                continue;
             }
-            long collocateFreq = validCollocate
-                    ? collocateCorpusFreqs.getOrDefault(collocateLemma.toLowerCase(), 0L) : 0L;
+
+            String key = collocateLemma.toLowerCase();
+            long jointFreq = collocateFreqMap.getOrDefault(key, 0L);
+            if (jointFreq == 0L) {
+                // Trace-level: this fires once per hit in a hot loop; debug would flood logs.
+                logger.trace("No joint frequency found for collocate '{}' — logDice will be 0", collocateLemma);
+            }
+            long collocateFreq = collocateCorpusFreqs.getOrDefault(key, 0L);
 
             double logDice = (headwordFreq > 0 && collocateFreq > 0)
                     ? LogDiceUtils.compute(jointFreq, headwordFreq, collocateFreq) : 0.0;

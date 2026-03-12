@@ -55,15 +55,21 @@ class MultiSeedExplorer {
 
         Map<String, Double> seedCollocScores = new LinkedHashMap<>();
         Map<String, Long> seedCollocFreqs = new LinkedHashMap<>();
+        Map<String, Double> collocLdSum = new HashMap<>();
+        Map<String, Integer> collocLdCount = new HashMap<>();
         for (List<QueryResults.WordSketchResult> collocs : data.seedCollocateMap().values()) {
             for (QueryResults.WordSketchResult wsr : collocs) {
                 seedCollocScores.merge(wsr.lemma(), wsr.logDice(), Math::max);
                 seedCollocFreqs.merge(wsr.lemma(), wsr.frequency(), Long::sum);
+                collocLdSum.merge(wsr.lemma(), wsr.logDice(), Double::sum);
+                collocLdCount.merge(wsr.lemma(), 1, Integer::sum);
             }
         }
+        Map<String, Double> avgLdMap = new HashMap<>();
+        collocLdSum.forEach((lemma, sum) -> avgLdMap.put(lemma, sum / collocLdCount.get(lemma)));
         List<DiscoveredNoun> discoveredNounsList = buildDiscoveredNouns(seeds, data.seedCollocateMap(), commonCollocates);
         List<CoreCollocate> coreCollocatesList = buildCoreCollocates(
-                commonCollocates, data.collocateSharedCount(), seedCollocScores, data.seedCollocateMap(), seeds.size());
+                commonCollocates, data.collocateSharedCount(), seedCollocScores, avgLdMap, seeds.size());
 
         Map<String, Map<String, Double>> perSeedCollocates = new LinkedHashMap<>();
         for (Map.Entry<String, List<QueryResults.WordSketchResult>> entry : data.seedCollocateMap().entrySet()) {
@@ -139,16 +145,12 @@ class MultiSeedExplorer {
             Set<String> commonCollocates,
             Map<String, Integer> collocateSharedCount,
             Map<String, Double> seedCollocScores,
-            Map<String, List<QueryResults.WordSketchResult>> seedCollocateMap,
+            Map<String, Double> avgLdMap,
             int numSeeds) {
         List<CoreCollocate> coreCollocatesList = new ArrayList<>();
         for (String c : commonCollocates) {
             int sharedBy = collocateSharedCount.getOrDefault(c, 0);
-            double avgLd = seedCollocateMap.values().stream()
-                .flatMap(List::stream)
-                .filter(wsr -> c.equals(wsr.lemma()))
-                .mapToDouble(QueryResults.WordSketchResult::logDice)
-                .average().orElse(0.0);
+            double avgLd = avgLdMap.getOrDefault(c, 0.0);
             double seedLd = seedCollocScores.getOrDefault(c, 0.0);
             coreCollocatesList.add(new CoreCollocate(c, sharedBy, numSeeds, seedLd, avgLd));
         }

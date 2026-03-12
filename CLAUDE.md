@@ -131,7 +131,7 @@ src/main/java/pl/marcinmilkowski/word_sketch/
 │   ├── FetchExamplesOptions.java       # Options for fetchExamples
 │   ├── PosGroup.java                   # POS group enum: NOUN, VERB, ADJ, ADV, OTHER
 │   ├── QueryResults.java               # Result DTOs: WordSketchResult, ConcordanceResult
-│   ├── RelationType.java               # Enum: SURFACE | DEP_GRAMMAR
+│   ├── RelationType.java               # Enum: SURFACE | DEP
 │   └── exploration/
 │       ├── CollocateProfile.java       # Adjective collocate profile for SEF comparison
 │       ├── ComparisonResult.java       # Result DTO for compareCollocateProfiles()
