@@ -37,6 +37,21 @@ public class BlackLabConllUIndexer implements AutoCloseable {
     private final AtomicLong errorCount = new AtomicLong(0);
 
     /**
+     * Injection constructor for test subclasses that supply pre-built BlackLab components,
+     * allowing unit tests to exercise indexing logic without real file-system I/O.
+     * Not for production use — use {@link #BlackLabConllUIndexer(String, String, String)} instead.
+     *
+     * @param indexPath   logical index path (used only for logging)
+     * @param indexWriter pre-built writer (may be a stub or mock)
+     * @param indexer     pre-built indexer (may be a stub or mock)
+     */
+    protected BlackLabConllUIndexer(Path indexPath, BlackLabIndexWriter indexWriter, Indexer indexer) {
+        this.indexPath = indexPath;
+        this.indexWriter = indexWriter;
+        this.indexer = indexer;
+    }
+
+    /**
      * Creates an indexer that writes to {@code indexPath} using the named BlackLab format.
      *
      * <p>The format configuration is loaded from {@code formatDir} (typically the working
