@@ -21,6 +21,7 @@ import pl.marcinmilkowski.word_sketch.model.exploration.ComparisonResult;
 import pl.marcinmilkowski.word_sketch.model.exploration.CoreCollocate;
 import pl.marcinmilkowski.word_sketch.model.exploration.DiscoveredNoun;
 import pl.marcinmilkowski.word_sketch.model.exploration.ExplorationOptions;
+import pl.marcinmilkowski.word_sketch.model.exploration.SingleSeedExplorationOptions;
 import pl.marcinmilkowski.word_sketch.model.exploration.ExplorationResult;
 import pl.marcinmilkowski.word_sketch.model.exploration.FetchExamplesResult;
 import pl.marcinmilkowski.word_sketch.model.PosGroup;
@@ -139,8 +140,7 @@ public class SemanticFieldExplorer implements ExplorationService {
     public @NonNull ExplorationResult exploreByPattern(
             @NonNull String seed,
             @NonNull RelationConfig relationConfig,
-            @NonNull ExplorationOptions opts,
-            int reverseExpansionLimit) throws IOException {
+            @NonNull SingleSeedExplorationOptions opts) throws IOException {
         if (relationConfig.relationType().isEmpty()) {
             throw new IllegalArgumentException(
                 "Relation '" + relationConfig.id() + "' has no relation_type — cannot perform exploration");
@@ -155,25 +155,23 @@ public class SemanticFieldExplorer implements ExplorationService {
             relationConfig.name(),
             RelationPatternUtils.buildFullPattern(relationConfig, seed),
             RelationPatternUtils.buildCollocateReversePattern(relationConfig),
-            opts,
-            reverseExpansionLimit);
+            opts);
     }
 
     /**
      * Explore semantic field using pre-resolved BCQL pattern strings.
      *
      * <p><strong>Package-private testing seam.</strong> Production code should always call
-     * {@link #exploreByPattern(String, RelationConfig, ExplorationOptions, int)}, which
+     * {@link #exploreByPattern(String, RelationConfig, SingleSeedExplorationOptions)}, which
      * extracts the pattern strings from a {@link RelationConfig} and preserves the config
      * abstraction. This overload exists solely to enable unit tests that exercise exploration
      * logic with programmatically constructed patterns without requiring a full grammar config.
      *
-     * @param seed                   the seed noun to explore from
-     * @param relationName           human-readable relation name for logging
-     * @param bcqlPattern            BCQL pattern with headword already substituted
-     * @param simplePattern          simple reverse-lookup pattern (e.g., {@code [xpos="JJ.*"]})
-     * @param opts                   tuning parameters (topCollocates, minLogDice, minShared)
-     * @param reverseExpansionLimit  maximum candidates to expand per collocate in reverse lookup
+     * @param seed          the seed noun to explore from
+     * @param relationName  human-readable relation name for logging
+     * @param bcqlPattern   BCQL pattern with headword already substituted
+     * @param simplePattern simple reverse-lookup pattern (e.g., {@code [xpos="JJ.*"]})
+     * @param opts          all tuning parameters including {@code reverseExpansionLimit}
      * @return ExplorationResult with discovered semantic class
      */
     ExplorationResult exploreByPattern(
@@ -181,15 +179,14 @@ public class SemanticFieldExplorer implements ExplorationService {
             String relationName,
             String bcqlPattern,
             String simplePattern,
-            ExplorationOptions opts,
-            int reverseExpansionLimit) throws IOException {
+            SingleSeedExplorationOptions opts) throws IOException {
 
         if (seed == null || seed.isEmpty()) {
             throw new IllegalArgumentException("seed must not be blank");
         }
 
         int topPredicates = opts.topCollocates();
-        int nounsPerPredicate = reverseExpansionLimit;
+        int nounsPerPredicate = opts.reverseExpansionLimit();
         double minLogDice = opts.minLogDice();
         int minShared = opts.minShared();
 
