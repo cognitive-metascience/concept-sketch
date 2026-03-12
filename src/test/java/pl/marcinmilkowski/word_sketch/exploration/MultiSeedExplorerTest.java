@@ -6,6 +6,7 @@ import pl.marcinmilkowski.word_sketch.config.RelationConfig;
 import pl.marcinmilkowski.word_sketch.model.exploration.ExplorationResult;
 import pl.marcinmilkowski.word_sketch.model.QueryResults;
 import pl.marcinmilkowski.word_sketch.query.QueryExecutor;
+import pl.marcinmilkowski.word_sketch.model.exploration.ExplorationOptions;
 import pl.marcinmilkowski.word_sketch.query.StubQueryExecutor;
 
 import java.io.IOException;
@@ -50,7 +51,7 @@ class MultiSeedExplorerTest {
 
         MultiSeedExplorer explorer = new MultiSeedExplorer(stubExecutor(data));
         ExplorationResult result = explorer.findCollocateIntersection(
-                Set.of("theory", "model"), anyRelation(), 0.0, 50, 2);
+                Set.of("theory", "model"), anyRelation(), new ExplorationOptions(50, 0.0, 2));
 
         assertTrue(result.coreCollocates().stream()
                 .anyMatch(c -> "important".equals(c.collocate())),
@@ -68,7 +69,7 @@ class MultiSeedExplorerTest {
 
         MultiSeedExplorer explorer = new MultiSeedExplorer(stubExecutor(data));
         ExplorationResult result = explorer.findCollocateIntersection(
-                Set.of("theory", "model"), anyRelation(), 0.0, 50, 2);
+                Set.of("theory", "model"), anyRelation(), new ExplorationOptions(50, 0.0, 2));
 
         List<String> nounNames = result.discoveredNouns().stream()
                 .map(pl.marcinmilkowski.word_sketch.model.exploration.DiscoveredNoun::noun).toList();
@@ -84,7 +85,7 @@ class MultiSeedExplorerTest {
 
         MultiSeedExplorer explorer = new MultiSeedExplorer(stubExecutor(data));
         ExplorationResult result = explorer.findCollocateIntersection(
-                Set.of("theory", "model"), anyRelation(), 0.0, 50, 2);
+                Set.of("theory", "model"), anyRelation(), new ExplorationOptions(50, 0.0, 2));
 
         assertTrue(result.coreCollocates().isEmpty(),
                 "No shared collocates → core collocates must be empty");
@@ -94,7 +95,7 @@ class MultiSeedExplorerTest {
     void explore_emptyExecutor_returnsEmptyResult() throws IOException {
         MultiSeedExplorer explorer = new MultiSeedExplorer(stubExecutor(Map.of()));
         ExplorationResult result = explorer.findCollocateIntersection(
-                Set.of("theory", "model"), anyRelation(), 0.0, 50, 1);
+                Set.of("theory", "model"), anyRelation(), new ExplorationOptions(50, 0.0, 1));
 
         assertTrue(result.coreCollocates().isEmpty());
         assertTrue(result.seedCollocates().isEmpty());
@@ -108,7 +109,7 @@ class MultiSeedExplorerTest {
 
         MultiSeedExplorer explorer = new MultiSeedExplorer(stubExecutor(data));
         ExplorationResult result = explorer.findCollocateIntersection(
-                Set.of("theory", "model"), anyRelation(), 0.0, 50, 1);
+                Set.of("theory", "model"), anyRelation(), new ExplorationOptions(50, 0.0, 1));
 
         // With minShared=1 every collocate qualifies regardless of overlap
         assertFalse(result.coreCollocates().isEmpty(),
@@ -123,7 +124,7 @@ class MultiSeedExplorerTest {
 
         MultiSeedExplorer explorer = new MultiSeedExplorer(stubExecutor(data));
         ExplorationResult result = explorer.findCollocateIntersection(
-                Set.of("theory", "model"), anyRelation(), 0.0, 50, 1);
+                Set.of("theory", "model"), anyRelation(), new ExplorationOptions(50, 0.0, 1));
 
         assertTrue(result.seedCollocates().containsKey("important"),
                 "Aggregate collocate map should contain \"important\"");

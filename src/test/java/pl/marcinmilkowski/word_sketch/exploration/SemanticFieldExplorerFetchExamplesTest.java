@@ -4,7 +4,6 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import pl.marcinmilkowski.word_sketch.config.GrammarConfigHelper;
 import pl.marcinmilkowski.word_sketch.config.RelationConfig;
-import pl.marcinmilkowski.word_sketch.model.exploration.FetchExamplesOptions;
 import pl.marcinmilkowski.word_sketch.model.exploration.FetchExamplesResult;
 import pl.marcinmilkowski.word_sketch.model.PosGroup;
 import pl.marcinmilkowski.word_sketch.model.QueryResults;
@@ -33,7 +32,7 @@ class SemanticFieldExplorerFetchExamplesTest {
                         "test", "test", "test",
                         "1:[lemma=\"{head}\"] [lemma=\"be\"] 2:[xpos=\"JJ.*\"]",
                         1, 2, false, 0,
-                        java.util.Optional.of(RelationType.SURFACE),
+                        RelationType.SURFACE,
                         true, PosGroup.ADJ));
     }
 
@@ -57,7 +56,7 @@ class SemanticFieldExplorerFetchExamplesTest {
 
         SemanticFieldExplorer explorer = new SemanticFieldExplorer(executor, null);
         FetchExamplesResult fetched = explorer.fetchExamples(
-                "theory", "important", testRelationConfig(), new FetchExamplesOptions(10));
+                "theory", "important", testRelationConfig(), 10);
 
         assertEquals(3, fetched.examples().size(), "Should return all 3 sentences");
         assertTrue(fetched.examples().stream().anyMatch(r -> "a".equals(r.sentence())));
@@ -81,7 +80,7 @@ class SemanticFieldExplorerFetchExamplesTest {
 
         SemanticFieldExplorer explorer = new SemanticFieldExplorer(executor, null);
         FetchExamplesResult fetched = explorer.fetchExamples(
-                "theory", "important", testRelationConfig(), new FetchExamplesOptions(10));
+                "theory", "important", testRelationConfig(), 10);
 
         assertEquals(2, fetched.examples().size(), "Should deduplicate: expect [a, b]");
         assertTrue(fetched.examples().stream().anyMatch(r -> "a".equals(r.sentence())));
@@ -106,7 +105,7 @@ class SemanticFieldExplorerFetchExamplesTest {
 
         SemanticFieldExplorer explorer = new SemanticFieldExplorer(executor, null);
         FetchExamplesResult fetched = explorer.fetchExamples(
-                "theory", "important", testRelationConfig(), new FetchExamplesOptions(3));
+                "theory", "important", testRelationConfig(), 3);
 
         assertEquals(3, fetched.examples().size(), "Should not exceed maxExamples=3");
     }

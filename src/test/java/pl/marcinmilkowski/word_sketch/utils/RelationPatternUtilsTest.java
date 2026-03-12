@@ -25,7 +25,7 @@ class RelationPatternUtilsTest {
                 "test_relation", "Test Relation", null,
                 pattern, headPos, collocatePos,
                 false, 0,
-                java.util.Optional.of(RelationType.SURFACE),
+                RelationType.SURFACE,
                 true, posGroup);
     }
 
@@ -35,7 +35,7 @@ class RelationPatternUtilsTest {
                 "rev_rel", null, null,
                 "[xpos=\"NN.*\"] [xpos=\"JJ.*\"]", 1, 2,
                 false, 0,
-                java.util.Optional.ofNullable(relationType),
+                relationType,
                 true, posGroup);
     }
 

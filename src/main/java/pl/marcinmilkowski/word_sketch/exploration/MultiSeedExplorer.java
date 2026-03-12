@@ -15,6 +15,7 @@ import pl.marcinmilkowski.word_sketch.config.RelationConfig;
 import pl.marcinmilkowski.word_sketch.config.RelationPatternUtils;
 import pl.marcinmilkowski.word_sketch.model.exploration.CoreCollocate;
 import pl.marcinmilkowski.word_sketch.model.exploration.DiscoveredNoun;
+import pl.marcinmilkowski.word_sketch.model.exploration.ExplorationOptions;
 import pl.marcinmilkowski.word_sketch.model.exploration.ExplorationResult;
 import pl.marcinmilkowski.word_sketch.model.QueryResults;
 import pl.marcinmilkowski.word_sketch.query.QueryExecutor;
@@ -46,9 +47,11 @@ class MultiSeedExplorer {
     @NonNull ExplorationResult findCollocateIntersection(
             @NonNull Set<String> seeds,
             @NonNull RelationConfig relationConfig,
-            double minLogDice,
-            int topCollocates,
-            int minShared) throws IOException {
+            @NonNull ExplorationOptions opts) throws IOException {
+
+        double minLogDice = opts.minLogDice();
+        int topCollocates = opts.topCollocates();
+        int minShared = opts.minShared();
 
         SeedCollocateData data = fetchCollocatesPerSeed(seeds, relationConfig, minLogDice, topCollocates);
         Set<String> commonCollocates = identifyCommonCollocates(data.collocateSharedCount(), minShared, seeds.size());

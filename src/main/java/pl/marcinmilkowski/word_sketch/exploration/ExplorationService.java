@@ -6,13 +6,11 @@ import java.util.Set;
 
 import org.jspecify.annotations.NonNull;
 import pl.marcinmilkowski.word_sketch.config.RelationConfig;
-import pl.marcinmilkowski.word_sketch.model.exploration.FetchExamplesOptions;
 import pl.marcinmilkowski.word_sketch.model.exploration.FetchExamplesResult;
 import pl.marcinmilkowski.word_sketch.model.QueryResults;
 import pl.marcinmilkowski.word_sketch.model.exploration.ComparisonResult;
 import pl.marcinmilkowski.word_sketch.model.exploration.ExplorationOptions;
 import pl.marcinmilkowski.word_sketch.model.exploration.ExplorationResult;
-import pl.marcinmilkowski.word_sketch.model.exploration.SingleSeedExplorationOptions;
 
 /**
  * Public API for semantic field exploration operations.
@@ -36,7 +34,8 @@ public interface ExplorationService {
     @NonNull ExplorationResult exploreByPattern(
             @NonNull String seed,
             @NonNull RelationConfig relationConfig,
-            @NonNull SingleSeedExplorationOptions opts) throws IOException;
+            @NonNull ExplorationOptions opts,
+            int reverseExpansionLimit) throws IOException;
 
     /**
      * Multi-seed semantic field exploration: finds collocates shared across multiple seeds.
@@ -60,5 +59,5 @@ public interface ExplorationService {
             @NonNull String seed,
             @NonNull String collocate,
             @NonNull RelationConfig relationConfig,
-            @NonNull FetchExamplesOptions opts) throws IOException;
+            int maxExamples) throws IOException;
 }

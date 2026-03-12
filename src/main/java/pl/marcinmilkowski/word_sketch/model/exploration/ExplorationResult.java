@@ -4,7 +4,6 @@ package pl.marcinmilkowski.word_sketch.model.exploration;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.stream.Collectors;
 import org.jspecify.annotations.NonNull;
 
 /**
@@ -99,28 +98,6 @@ public class ExplorationResult {
     /** @return {@code true} when no nouns were discovered; i.e. the result is empty */
     public boolean isEmpty() {
         return discoveredNouns.isEmpty();
-    }
-
-    /**
-     * Returns the top {@code n} discovered nouns by relevance score.
-     *
-     * @param n maximum number of nouns to return; non-positive returns an empty list
-     * @return sublist of discovered nouns, never null
-     */
-    public List<DiscoveredNoun> topNouns(int n) {
-        return discoveredNouns.stream().limit(n).collect(Collectors.toList());
-    }
-
-    /**
-     * Returns discovered nouns that share at least {@code minShared} collocates with the seed.
-     *
-     * @param minShared minimum shared-collocate count (inclusive); use 0 to return all
-     * @return filtered list, never null
-     */
-    public List<DiscoveredNoun> nounsWithMinShared(int minShared) {
-        return discoveredNouns.stream()
-            .filter(n -> n.sharedCount() >= minShared)
-            .collect(Collectors.toList());
     }
 
     @Override

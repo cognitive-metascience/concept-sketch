@@ -9,11 +9,9 @@ import pl.marcinmilkowski.word_sketch.config.RelationConfig;
 import pl.marcinmilkowski.word_sketch.config.RelationUtils;
 import pl.marcinmilkowski.word_sketch.model.exploration.ComparisonResult;
 import pl.marcinmilkowski.word_sketch.model.exploration.ExplorationResult;
-import pl.marcinmilkowski.word_sketch.model.exploration.FetchExamplesOptions;
 import pl.marcinmilkowski.word_sketch.model.exploration.FetchExamplesResult;
 import pl.marcinmilkowski.word_sketch.model.QueryResults;
 import pl.marcinmilkowski.word_sketch.model.exploration.ExplorationOptions;
-import pl.marcinmilkowski.word_sketch.model.exploration.SingleSeedExplorationOptions;
 import pl.marcinmilkowski.word_sketch.exploration.ExplorationService;
 
 import java.util.Objects;
@@ -63,16 +61,15 @@ class ExplorationHandlers {
         CommonExploreParams commonParams = parseCommonExploreParams(params);
         int nounsPerSeed = HttpApiUtils.parseIntParam(params, "nouns_per", 30);
 
-        SingleSeedExplorationOptions opts = new SingleSeedExplorationOptions(
-            new ExplorationOptions(commonParams.topCollocates(), commonParams.minLogDice(), commonParams.minShared()),
-            nounsPerSeed);
+        ExplorationOptions opts = new ExplorationOptions(
+            commonParams.topCollocates(), commonParams.minLogDice(), commonParams.minShared());
 
-        ExplorationResult result = semanticFieldExplorer.exploreByPattern(seed, resolvedConfig, opts);
+        ExplorationResult result = semanticFieldExplorer.exploreByPattern(seed, resolvedConfig, opts, nounsPerSeed);
 
         Map<String, Object> response = buildExploreResponseEnvelope(
             resolvedConfig.id(), commonParams,
-            new ExploreRequestParams(Map.of("nouns_per", nounsPerSeed)),
-            new ExploreResponseShape(Map.of("seed", result.seed())));
+            Map.of("nouns_per", nounsPerSeed),
+            Map.of("seed", result.seed()));
         ExploreResponseAssembler.populateExploreResponse(response, result);
 
         HttpApiUtils.sendJsonResponse(exchange, response);
@@ -114,8 +111,8 @@ class ExplorationHandlers {
 
         Map<String, Object> response = buildExploreResponseEnvelope(
             resolvedConfig.id(), commonParams,
-            ExploreRequestParams.none(),
-            new ExploreResponseShape(Map.of("seeds", new ArrayList<>(seeds), "seed_count", seeds.size())));
+            Map.of(),
+            Map.of("seeds", new ArrayList<>(seeds), "seed_count", seeds.size()));
 
         ExploreResponseAssembler.populateExploreResponse(response, result);
 
@@ -162,8 +159,8 @@ class ExplorationHandlers {
 
         Map<String, Object> response = buildExploreResponseEnvelope(
             CROSS_RELATIONAL, commonParams,
-            ExploreRequestParams.none(),
-            new ExploreResponseShape(Map.of("seeds", new ArrayList<>(result.nouns()), "seed_count", result.nouns().size())));
+            Map.of(),
+            Map.of("seeds", new ArrayList<>(result.nouns()), "seed_count", result.nouns().size()));
         ExploreResponseAssembler.populateComparisonResponse(response, result);
 
         HttpApiUtils.sendJsonResponse(exchange, response);
@@ -190,7 +187,7 @@ class ExplorationHandlers {
 
         RelationConfig resolvedConfig = resolveRelationConfig(params);
 
-        FetchExamplesResult fetched = semanticFieldExplorer.fetchExamples(seed, collocate, resolvedConfig, new FetchExamplesOptions(maxExamples));
+        FetchExamplesResult fetched = semanticFieldExplorer.fetchExamples(seed, collocate, resolvedConfig, maxExamples);
 
         List<Map<String, Object>> exampleMaps = fetched.examples().stream()
             .map(ExploreResponseAssembler::collocateResultToExampleMap)
@@ -211,17 +208,16 @@ class ExplorationHandlers {
 
     /**
      * Builds the response envelope: {@code status}, a {@code parameters}
-     * sub-map containing the four common explore parameters plus any {@link ExploreRequestParams}
+     * sub-map containing the four common explore parameters plus any extra param fields
      * (e.g., {@code nouns_per} for single-seed exploration), and the top-level
-     * {@link ExploreResponseShape} fields (e.g., {@code seed}, {@code seeds}, {@code seed_count}).
+     * variant fields (e.g., {@code seed}, {@code seeds}, {@code seed_count}).
      *
-     * <p>Named typed parameters make the key-destination mapping explicit at each call site:
-     * {@link ExploreRequestParams} entries land inside the {@code parameters} sub-map;
-     * {@link ExploreResponseShape} entries land at the top level of the response envelope.</p>
+     * <p>{@code paramExtras} entries land inside the {@code parameters} sub-map;
+     * {@code variantFields} entries land at the top level of the response envelope.</p>
      */
     private Map<String, Object> buildExploreResponseEnvelope(
             String relationType, CommonExploreParams params,
-            ExploreRequestParams paramExtras, ExploreResponseShape variantFields) {
+            Map<String, Object> paramExtras, Map<String, Object> variantFields) {
         Map<String, Object> response = new HashMap<>();
         response.put("status", "ok");
 
@@ -230,29 +226,12 @@ class ExplorationHandlers {
         paramsUsed.put("top", params.topCollocates());
         paramsUsed.put("min_shared", params.minShared());
         paramsUsed.put("min_logdice", params.minLogDice());
-        paramsUsed.putAll(paramExtras.fields());
+        paramsUsed.putAll(paramExtras);
         response.put("parameters", paramsUsed);
 
-        response.putAll(variantFields.fields());
+        response.putAll(variantFields);
         return response;
     }
-
-    /**
-     * Extra fields added to the {@code parameters} sub-map beyond the four common explore params.
-     * Named so callers see clearly that these entries end up in {@code parameters}, not at the
-     * top-level response envelope.
-     */
-    private record ExploreRequestParams(Map<String, Object> fields) {
-        static ExploreRequestParams none() {
-            return new ExploreRequestParams(Map.of());
-        }
-    }
-
-    /**
-     * Top-level response fields that vary by exploration variant:
-     * {@code seed} for single-seed, {@code seeds}/{@code seed_count} for multi-seed and comparison.
-     */
-    private record ExploreResponseShape(Map<String, Object> fields) {}
 
     /** Parses a comma-separated seeds parameter into a cleaned, lowercased ordered set. */
     private static Set<String> parseSeedSet(@NonNull String seedsParam) {

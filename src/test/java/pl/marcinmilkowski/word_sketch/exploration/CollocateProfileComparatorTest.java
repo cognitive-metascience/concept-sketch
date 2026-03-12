@@ -5,6 +5,7 @@ import pl.marcinmilkowski.word_sketch.model.exploration.CollocateProfile;
 import pl.marcinmilkowski.word_sketch.model.exploration.ComparisonResult;
 import pl.marcinmilkowski.word_sketch.model.QueryResults;
 import pl.marcinmilkowski.word_sketch.query.QueryExecutor;
+import pl.marcinmilkowski.word_sketch.model.exploration.ExplorationOptions;
 import pl.marcinmilkowski.word_sketch.query.StubQueryExecutor;
 
 import java.io.IOException;
@@ -35,7 +36,7 @@ class CollocateProfileComparatorTest {
     void compareCollocateProfiles_emptySeeds_throwsIllegalArgument() {
         CollocateProfileComparator comparator = new CollocateProfileComparator(stubExecutor(Collections.emptyMap()), null);
         assertThrows(IllegalArgumentException.class,
-            () -> comparator.compareCollocateProfiles(Collections.emptySet(), 0.0, 10));
+            () -> comparator.compareCollocateProfiles(Collections.emptySet(), new ExplorationOptions(10, 0.0, 2)));
     }
 
     @Test
@@ -43,7 +44,7 @@ class CollocateProfileComparatorTest {
         CollocateProfileComparator comparator = new CollocateProfileComparator(stubExecutor(Collections.emptyMap()), null);
         //noinspection ConstantConditions — intentionally testing @NonNull violation
         assertThrows(NullPointerException.class,
-            () -> comparator.compareCollocateProfiles(null, 0.0, 10));
+            () -> comparator.compareCollocateProfiles(null, new ExplorationOptions(10, 0.0, 2)));
     }
 
     @Test
@@ -57,7 +58,7 @@ class CollocateProfileComparatorTest {
         data.put("model",  List.of(wsr("important", 7.0)));
 
         CollocateProfileComparator comparator = new CollocateProfileComparator(stubExecutor(data), null);
-        ComparisonResult result = comparator.compareCollocateProfiles(Set.of("theory", "model"), 0.0, 10);
+        ComparisonResult result = comparator.compareCollocateProfiles(Set.of("theory", "model"), new ExplorationOptions(10, 0.0, 2));
 
         List<CollocateProfile> adjectives = result.collocates();
         assertFalse(adjectives.isEmpty());
@@ -81,7 +82,7 @@ class CollocateProfileComparatorTest {
 
         CollocateProfileComparator comparator = new CollocateProfileComparator(stubExecutor(data), null);
         ComparisonResult result = comparator.compareCollocateProfiles(
-                Set.of("theory", "model", "hypothesis"), 0.0, 10);
+                Set.of("theory", "model", "hypothesis"), new ExplorationOptions(10, 0.0, 2));
 
         // "important" must be identified as fully shared (present in 3/3 nouns)
         List<CollocateProfile> fullyShared = result.fullyShared();

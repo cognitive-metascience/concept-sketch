@@ -14,6 +14,7 @@ import pl.marcinmilkowski.word_sketch.config.RelationConfig;
 import pl.marcinmilkowski.word_sketch.config.RelationUtils;
 import pl.marcinmilkowski.word_sketch.model.exploration.CollocateProfile;
 import pl.marcinmilkowski.word_sketch.model.exploration.ComparisonResult;
+import pl.marcinmilkowski.word_sketch.model.exploration.ExplorationOptions;
 import pl.marcinmilkowski.word_sketch.model.PosGroup;
 import pl.marcinmilkowski.word_sketch.model.QueryResults;
 import pl.marcinmilkowski.word_sketch.query.QueryExecutor;
@@ -47,20 +48,20 @@ class CollocateProfileComparator {
      * adjectives are shared across seeds (commonality) and which are distinctive to individual seeds.
      *
      * @param seedNouns   Nouns to compare (e.g., "theory", "model", "hypothesis")
-     * @param minLogDice  Minimum logDice score for adjective-noun pairs
-     * @param maxPerNoun  Maximum adjectives to retrieve per noun
+     * @param opts        exploration options; {@code topCollocates} and {@code minLogDice} are used
      * @return ComparisonResult with graded adjective profiles
      */
     public ComparisonResult compareCollocateProfiles(
             @NonNull Set<String> seedNouns,
-            double minLogDice,
-            int maxPerNoun) throws IOException {
+            @NonNull ExplorationOptions opts) throws IOException {
 
         if (seedNouns.size() < 2) {
             throw new IllegalArgumentException(
                 "compareCollocateProfiles requires at least 2 seed nouns; got: " + seedNouns.size());
         }
 
+        double minLogDice = opts.minLogDice();
+        int maxPerNoun = opts.topCollocates();
         List<String> nounList = new ArrayList<>(seedNouns);
 
         logger.debug("Nouns: {}", seedNouns);

@@ -22,11 +22,9 @@ import pl.marcinmilkowski.word_sketch.model.exploration.CoreCollocate;
 import pl.marcinmilkowski.word_sketch.model.exploration.DiscoveredNoun;
 import pl.marcinmilkowski.word_sketch.model.exploration.ExplorationOptions;
 import pl.marcinmilkowski.word_sketch.model.exploration.ExplorationResult;
-import pl.marcinmilkowski.word_sketch.model.exploration.FetchExamplesOptions;
 import pl.marcinmilkowski.word_sketch.model.exploration.FetchExamplesResult;
 import pl.marcinmilkowski.word_sketch.model.PosGroup;
 import pl.marcinmilkowski.word_sketch.model.QueryResults;
-import pl.marcinmilkowski.word_sketch.model.exploration.SingleSeedExplorationOptions;
 import pl.marcinmilkowski.word_sketch.query.QueryExecutor;
 
 /**
@@ -119,7 +117,8 @@ public class SemanticFieldExplorer implements ExplorationService {
     public @NonNull ExplorationResult exploreByPattern(
             @NonNull String seed,
             @NonNull RelationConfig relationConfig,
-            @NonNull SingleSeedExplorationOptions opts) throws IOException {
+            @NonNull ExplorationOptions opts,
+            int reverseExpansionLimit) throws IOException {
         if (relationConfig.relationType().isEmpty()) {
             throw new IllegalArgumentException(
                 "Relation '" + relationConfig.id() + "' has no relation_type — cannot perform exploration");
@@ -134,23 +133,25 @@ public class SemanticFieldExplorer implements ExplorationService {
             relationConfig.name(),
             RelationPatternUtils.buildFullPattern(relationConfig, seed),
             RelationPatternUtils.buildCollocateReversePattern(relationConfig),
-            opts);
+            opts,
+            reverseExpansionLimit);
     }
 
     /**
      * Explore semantic field using pre-resolved BCQL pattern strings.
      *
      * <p><strong>Package-private testing seam.</strong> Production code should always call
-     * {@link #exploreByPattern(String, RelationConfig, SingleSeedExplorationOptions)}, which
+     * {@link #exploreByPattern(String, RelationConfig, ExplorationOptions, int)}, which
      * extracts the pattern strings from a {@link RelationConfig} and preserves the config
      * abstraction. This overload exists solely to enable unit tests that exercise exploration
      * logic with programmatically constructed patterns without requiring a full grammar config.
      *
-     * @param seed          the seed noun to explore from
-     * @param relationName  human-readable relation name for logging
-     * @param bcqlPattern   BCQL pattern with headword already substituted
-     * @param simplePattern simple reverse-lookup pattern (e.g., {@code [xpos="JJ.*"]})
-     * @param opts          tuning parameters (topCollocates, reverseExpansionLimit, minLogDice, minShared)
+     * @param seed                   the seed noun to explore from
+     * @param relationName           human-readable relation name for logging
+     * @param bcqlPattern            BCQL pattern with headword already substituted
+     * @param simplePattern          simple reverse-lookup pattern (e.g., {@code [xpos="JJ.*"]})
+     * @param opts                   tuning parameters (topCollocates, minLogDice, minShared)
+     * @param reverseExpansionLimit  maximum candidates to expand per collocate in reverse lookup
      * @return ExplorationResult with discovered semantic class
      */
     ExplorationResult exploreByPattern(
@@ -158,16 +159,17 @@ public class SemanticFieldExplorer implements ExplorationService {
             String relationName,
             String bcqlPattern,
             String simplePattern,
-            SingleSeedExplorationOptions opts) throws IOException {
+            ExplorationOptions opts,
+            int reverseExpansionLimit) throws IOException {
 
         if (seed == null || seed.isEmpty()) {
             throw new IllegalArgumentException("seed must not be blank");
         }
 
-        int topPredicates = opts.base().topCollocates();
-        int nounsPerPredicate = opts.reverseExpansionLimit();
-        double minLogDice = opts.base().minLogDice();
-        int minShared = opts.base().minShared();
+        int topPredicates = opts.topCollocates();
+        int nounsPerPredicate = reverseExpansionLimit;
+        double minLogDice = opts.minLogDice();
+        int minShared = opts.minShared();
 
         String normalizedSeed = seed.toLowerCase().trim();
 
@@ -319,7 +321,7 @@ public class SemanticFieldExplorer implements ExplorationService {
      */
     public @NonNull ComparisonResult compareCollocateProfiles(
             @NonNull Set<String> seedNouns, @NonNull ExplorationOptions opts) throws IOException {
-        return comparator.compareCollocateProfiles(seedNouns, opts.minLogDice(), opts.topCollocates());
+        return comparator.compareCollocateProfiles(seedNouns, opts);
     }
 
     /**
@@ -332,11 +334,11 @@ public class SemanticFieldExplorer implements ExplorationService {
      * @return List of example sentences showing the collocate-seed combination
      */
     public @NonNull FetchExamplesResult fetchExamples(@NonNull String seed, @NonNull String collocate,
-            @NonNull RelationConfig relationConfig, @NonNull FetchExamplesOptions opts)
+            @NonNull RelationConfig relationConfig, int maxExamples)
             throws IOException {
         String bcqlQuery = RelationPatternUtils.buildFullPattern(relationConfig, seed.toLowerCase(), collocate.toLowerCase());
 
-        List<QueryResults.CollocateResult> results = executor.executeBcqlQuery(bcqlQuery, opts.maxExamples());
+        List<QueryResults.CollocateResult> results = executor.executeBcqlQuery(bcqlQuery, maxExamples);
 
         Set<String> seen = new HashSet<>();
         List<QueryResults.CollocateResult> deduped = new ArrayList<>();
@@ -345,7 +347,7 @@ public class SemanticFieldExplorer implements ExplorationService {
             if (s == null || s.isEmpty()) continue;
             if (seen.add(s)) {
                 deduped.add(r);
-                if (deduped.size() == opts.maxExamples()) break;
+                if (deduped.size() == maxExamples) break;
             }
         }
         return new FetchExamplesResult(deduped, bcqlQuery);
@@ -364,7 +366,7 @@ public class SemanticFieldExplorer implements ExplorationService {
             @NonNull Set<String> seeds,
             @NonNull RelationConfig relationConfig,
             @NonNull ExplorationOptions opts) throws IOException {
-        return multiSeedExplorer.findCollocateIntersection(seeds, relationConfig, opts.minLogDice(), opts.topCollocates(), opts.minShared());
+        return multiSeedExplorer.findCollocateIntersection(seeds, relationConfig, opts);
     }
 
 }
