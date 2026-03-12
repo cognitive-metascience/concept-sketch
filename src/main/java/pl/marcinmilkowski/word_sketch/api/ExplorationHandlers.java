@@ -58,9 +58,6 @@ class ExplorationHandlers {
         RelationConfig relationConfig = resolveRelationConfig(params);
         ExplorationParams exploreParams = parseExplorationParams(params);
 
-        // Safe: resolveRelationConfig guarantees relationType is present
-        String relationType = relationConfig.relationType().orElseThrow().name();
-
         SingleSeedExplorationOptions opts = new SingleSeedExplorationOptions(
             new ExplorationOptions(exploreParams.topCollocates(), exploreParams.minLogDice(), exploreParams.minShared()),
             exploreParams.collocatesPerSeed());
@@ -70,7 +67,7 @@ class ExplorationHandlers {
         Map<String, Object> extraParams = new HashMap<>();
         extraParams.put("nouns_per", exploreParams.collocatesPerSeed());
         Map<String, Object> response = buildCoreExploreResponse(
-            relationType, exploreParams.topCollocates(), exploreParams.minShared(),
+            relationConfig.id(), exploreParams.topCollocates(), exploreParams.minShared(),
             exploreParams.minLogDice(), extraParams);
         response.put("seed", result.seed());
         ExploreResponseAssembler.populateExploreResponse(response, result);
@@ -109,16 +106,13 @@ class ExplorationHandlers {
                 "Multi-seed exploration requires at least 2 seeds; received " + seeds.size());
         }
 
-        // Safe: resolveRelationConfig guarantees relationType is present
-        String relationType = resolvedConfig.relationType().orElseThrow().name();
-
         ExplorationOptions opts = new ExplorationOptions(
             exploreParams.topCollocates(), exploreParams.minLogDice(),
             exploreParams.minShared());
         ExplorationResult result = semanticFieldExplorer.exploreMultiSeed(seeds, resolvedConfig, opts);
 
         Map<String, Object> response = buildCoreExploreResponse(
-            relationType, exploreParams.topCollocates(), exploreParams.minShared(),
+            resolvedConfig.id(), exploreParams.topCollocates(), exploreParams.minShared(),
             exploreParams.minLogDice(), Map.of());
         response.put("seeds", new ArrayList<>(seeds));
         response.put("seed_count", seeds.size());
@@ -169,8 +163,16 @@ class ExplorationHandlers {
         ComparisonResult result = semanticFieldExplorer.compareCollocateProfiles(seeds, opts);
 
         Map<String, Object> response = new HashMap<>();
-        ExploreResponseAssembler.populateComparisonResponse(response, result,
-            exploreParams.topCollocates(), exploreParams.minLogDice(), exploreParams.minShared(), "all");
+        response.put("status", "ok");
+        response.put("seeds", new ArrayList<>(result.nouns()));
+        response.put("seed_count", result.nouns().size());
+        Map<String, Object> paramsUsed = new HashMap<>();
+        paramsUsed.put("relation", "all");
+        paramsUsed.put("top", opts.topCollocates());
+        paramsUsed.put("min_logdice", opts.minLogDice());
+        paramsUsed.put("min_shared", opts.minShared());
+        response.put("parameters", paramsUsed);
+        ExploreResponseAssembler.populateComparisonResponse(response, result);
 
         HttpApiUtils.sendJsonResponse(exchange, response);
     }

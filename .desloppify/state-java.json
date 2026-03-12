@@ -11,22 +11,22 @@
     "total": 1469,
     "auto_resolved": 272,
     "false_positive": 0,
-    "fixed": 963,
-    "open": 37,
+    "fixed": 967,
+    "open": 33,
     "wontfix": 197,
     "by_tier": {
       "1": {
         "auto_resolved": 135,
         "false_positive": 0,
-        "fixed": 660,
-        "open": 25,
+        "fixed": 662,
+        "open": 23,
         "wontfix": 106
       },
       "2": {
         "auto_resolved": 96,
         "false_positive": 0,
-        "fixed": 285,
-        "open": 5,
+        "fixed": 287,
+        "open": 3,
         "wontfix": 80
       },
       "3": {
@@ -58726,16 +58726,22 @@
         "suggestion": "Replace the three primitive parameters in populateComparisonResponse with an ExplorationOptions parameter; pass opts directly from the handler. This aligns the comparison path with the explore path structurally and reduces the surface area of the assembler boundary.",
         "reasoning": ""
       },
-      "status": "open",
-      "note": null,
+      "status": "fixed",
+      "note": "Standardized relation field to use config ID string (e.g. adj_predicate) instead of enum name (SURFACE) in explore endpoint parameters. Added id and total_matches fields to full-sketch per-relation response for consistency with single-relation shape. Moved envelope assembly (status, seeds, parameters) from ExploreResponseAssembler.populateComparisonResponse to handler; assembler now only sets data fields symmetric with populateExploreResponse. Used ExplorationOptions record fields directly in handler envelope instead of redundant primitive args.",
       "first_seen": "2026-03-12T03:17:37+00:00",
       "last_seen": "2026-03-12T03:17:37+00:00",
-      "resolved_at": null,
+      "resolved_at": "2026-03-12T04:16:54+00:00",
       "reopen_count": 0,
       "lang": "java",
       "suppressed": false,
       "suppressed_at": null,
-      "suppression_pattern": null
+      "suppression_pattern": null,
+      "resolution_attestation": {
+        "kind": "manual",
+        "text": "I have actually Standardized relation field to use config ID string (e.g. adj_predicate) instead of enum name (SURFACE) in explore endpoint parameters. Added id and total_matches fields to full-sketch per-relation response for consistency with single-relation shape. Moved envelope assembly (status, seeds, parameters) from ExploreResponseAssembler.populateComparisonResponse to handler; assembler now only sets data fields symmetric with populateExploreResponse. Used ExplorationOptions record fields directly in handler envelope instead of redundant primitive args. and I am not gaming the score.",
+        "attested_at": "2026-03-12T04:16:54+00:00",
+        "scan_verified": false
+      }
     },
     "review::.::holistic::ai_generated_debt::passthrough_wrapper_cluster::e2cc58b1": {
       "id": "review::.::holistic::ai_generated_debt::passthrough_wrapper_cluster::e2cc58b1",
@@ -59312,16 +59318,22 @@
         "suggestion": "Move envelope construction out of populateComparisonResponse: have handleSemanticFieldComparison call buildCoreExploreResponse (passing 'all' as the relationType directly) to create the base response, then let populateComparisonResponse only append adjectives, counts, and edges \u2014 matching how populateExploreResponse works. Remove the redundant `relation`, `topCollocates`, `minLogDice`, and `minShared` scalar parameters from populateComparisonResponse; the method should accept only `(Map<String, Object> response, ComparisonResult result)`.",
         "reasoning": ""
       },
-      "status": "open",
-      "note": null,
+      "status": "fixed",
+      "note": "Standardized relation field to use config ID string (e.g. adj_predicate) instead of enum name (SURFACE) in explore endpoint parameters. Added id and total_matches fields to full-sketch per-relation response for consistency with single-relation shape. Moved envelope assembly (status, seeds, parameters) from ExploreResponseAssembler.populateComparisonResponse to handler; assembler now only sets data fields symmetric with populateExploreResponse. Used ExplorationOptions record fields directly in handler envelope instead of redundant primitive args.",
       "first_seen": "2026-03-12T03:17:37+00:00",
       "last_seen": "2026-03-12T03:17:37+00:00",
-      "resolved_at": null,
+      "resolved_at": "2026-03-12T04:16:52+00:00",
       "reopen_count": 0,
       "lang": "java",
       "suppressed": false,
       "suppressed_at": null,
-      "suppression_pattern": null
+      "suppression_pattern": null,
+      "resolution_attestation": {
+        "kind": "manual",
+        "text": "I have actually Standardized relation field to use config ID string (e.g. adj_predicate) instead of enum name (SURFACE) in explore endpoint parameters. Added id and total_matches fields to full-sketch per-relation response for consistency with single-relation shape. Moved envelope assembly (status, seeds, parameters) from ExploreResponseAssembler.populateComparisonResponse to handler; assembler now only sets data fields symmetric with populateExploreResponse. Used ExplorationOptions record fields directly in handler envelope instead of redundant primitive args. and I am not gaming the score.",
+        "attested_at": "2026-03-12T04:16:52+00:00",
+        "scan_verified": false
+      }
     },
     "review::.::holistic::cross_module_architecture::serializer_wrong_layer::b29ede93": {
       "id": "review::.::holistic::cross_module_architecture::serializer_wrong_layer::b29ede93",
@@ -59598,16 +59610,22 @@
         "suggestion": "Define a canonical per-relation response shape (e.g. {id, name, description, cql, collocate_pos_group, total_matches, collocations}) and use it in all three code paths; omit type-specific fields (deprel) via null/absent rather than forking the shape. Extract a static helper buildSurfaceRelationMap(RelationConfig, List, List) so all three callers assemble identical base fields.",
         "reasoning": ""
       },
-      "status": "open",
-      "note": null,
+      "status": "fixed",
+      "note": "Standardized relation field to use config ID string (e.g. adj_predicate) instead of enum name (SURFACE) in explore endpoint parameters. Added id and total_matches fields to full-sketch per-relation response for consistency with single-relation shape. Moved envelope assembly (status, seeds, parameters) from ExploreResponseAssembler.populateComparisonResponse to handler; assembler now only sets data fields symmetric with populateExploreResponse. Used ExplorationOptions record fields directly in handler envelope instead of redundant primitive args.",
       "first_seen": "2026-03-12T03:17:37+00:00",
       "last_seen": "2026-03-12T03:17:37+00:00",
-      "resolved_at": null,
+      "resolved_at": "2026-03-12T04:16:50+00:00",
       "reopen_count": 0,
       "lang": "java",
       "suppressed": false,
       "suppressed_at": null,
-      "suppression_pattern": null
+      "suppression_pattern": null,
+      "resolution_attestation": {
+        "kind": "manual",
+        "text": "I have actually Standardized relation field to use config ID string (e.g. adj_predicate) instead of enum name (SURFACE) in explore endpoint parameters. Added id and total_matches fields to full-sketch per-relation response for consistency with single-relation shape. Moved envelope assembly (status, seeds, parameters) from ExploreResponseAssembler.populateComparisonResponse to handler; assembler now only sets data fields symmetric with populateExploreResponse. Used ExplorationOptions record fields directly in handler envelope instead of redundant primitive args. and I am not gaming the score.",
+        "attested_at": "2026-03-12T04:16:50+00:00",
+        "scan_verified": false
+      }
     },
     "review::.::holistic::api_surface_coherence::relation_echo_type_vs_id::19c84238": {
       "id": "review::.::holistic::api_surface_coherence::relation_echo_type_vs_id::19c84238",
@@ -59631,16 +59649,22 @@
         "suggestion": "Echo the relation ID (e.g. \"noun_adj_predicates\") consistently in all response bodies. If the relation type (SURFACE/DEP) is also needed, add a separate 'relation_type' field rather than overloading 'relation'. Align nesting: either always embed it under 'parameters' or always at the top level.",
         "reasoning": ""
       },
-      "status": "open",
-      "note": null,
+      "status": "fixed",
+      "note": "Standardized relation field to use config ID string (e.g. adj_predicate) instead of enum name (SURFACE) in explore endpoint parameters. Added id and total_matches fields to full-sketch per-relation response for consistency with single-relation shape. Moved envelope assembly (status, seeds, parameters) from ExploreResponseAssembler.populateComparisonResponse to handler; assembler now only sets data fields symmetric with populateExploreResponse. Used ExplorationOptions record fields directly in handler envelope instead of redundant primitive args.",
       "first_seen": "2026-03-12T03:17:37+00:00",
       "last_seen": "2026-03-12T03:17:37+00:00",
-      "resolved_at": null,
+      "resolved_at": "2026-03-12T04:16:49+00:00",
       "reopen_count": 0,
       "lang": "java",
       "suppressed": false,
       "suppressed_at": null,
-      "suppression_pattern": null
+      "suppression_pattern": null,
+      "resolution_attestation": {
+        "kind": "manual",
+        "text": "I have actually Standardized relation field to use config ID string (e.g. adj_predicate) instead of enum name (SURFACE) in explore endpoint parameters. Added id and total_matches fields to full-sketch per-relation response for consistency with single-relation shape. Moved envelope assembly (status, seeds, parameters) from ExploreResponseAssembler.populateComparisonResponse to handler; assembler now only sets data fields symmetric with populateExploreResponse. Used ExplorationOptions record fields directly in handler envelope instead of redundant primitive args. and I am not gaming the score.",
+        "attested_at": "2026-03-12T04:16:49+00:00",
+        "scan_verified": false
+      }
     },
     "review::.::holistic::authorization_consistency::cors_wildcard_no_hard_guard::546108dd": {
       "id": "review::.::holistic::authorization_consistency::cors_wildcard_no_hard_guard::546108dd",
@@ -59797,7 +59821,10 @@
     "design_coherence": {
       "score": 76.3,
       "source": "holistic",
-      "assessed_at": "2026-03-12T03:17:37+00:00"
+      "assessed_at": "2026-03-12T03:17:37+00:00",
+      "needs_review_refresh": true,
+      "refresh_reason": "review_issue_fixed",
+      "stale_since": "2026-03-12T04:16:52+00:00"
     },
     "contract_coherence": {
       "score": 68.7,
@@ -59823,7 +59850,10 @@
     "api_surface_coherence": {
       "score": 63.3,
       "source": "holistic",
-      "assessed_at": "2026-03-12T03:17:37+00:00"
+      "assessed_at": "2026-03-12T03:17:37+00:00",
+      "needs_review_refresh": true,
+      "refresh_reason": "review_issue_fixed",
+      "stale_since": "2026-03-12T04:16:50+00:00"
     },
     "authorization_consistency": {
       "score": 81.6,
@@ -59901,7 +59931,10 @@
     "mid_level_elegance": {
       "score": 59.1,
       "source": "holistic",
-      "assessed_at": "2026-03-12T03:17:37+00:00"
+      "assessed_at": "2026-03-12T03:17:37+00:00",
+      "needs_review_refresh": true,
+      "refresh_reason": "review_issue_fixed",
+      "stale_since": "2026-03-12T04:16:54+00:00"
     },
     "definition_directness": {
       "score": 56.7,
@@ -62976,13 +63009,13 @@
       "strict": 59.1,
       "verified_strict_score": 59.1,
       "checks": 10,
-      "failing": 3,
+      "failing": 2,
       "tier": 4,
       "detectors": {
         "subjective_assessment": {
           "potential": 10,
           "pass_rate": 0.591,
-          "failing": 3,
+          "failing": 2,
           "weighted_failures": 4.09,
           "assessment_score": 59.1,
           "placeholder": false,
@@ -63123,13 +63156,13 @@
       "strict": 63.3,
       "verified_strict_score": 63.3,
       "checks": 10,
-      "failing": 2,
+      "failing": 0,
       "tier": 4,
       "detectors": {
         "subjective_assessment": {
           "potential": 10,
           "pass_rate": 0.633,
-          "failing": 2,
+          "failing": 0,
           "weighted_failures": 3.67,
           "assessment_score": 63.3,
           "placeholder": false,
@@ -63207,13 +63240,13 @@
       "strict": 76.3,
       "verified_strict_score": 76.3,
       "checks": 10,
-      "failing": 1,
+      "failing": 0,
       "tier": 4,
       "detectors": {
         "subjective_assessment": {
           "potential": 10,
           "pass_rate": 0.763,
-          "failing": 1,
+          "failing": 0,
           "weighted_failures": 2.37,
           "assessment_score": 76.3,
           "placeholder": false,

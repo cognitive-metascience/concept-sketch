@@ -109,9 +109,11 @@ class SketchHandlers {
 
         executeRelationQueries(relationType, rel -> true, lemma, byRelation, relationErrors, (rel, sketch) -> {
             Map<String, Object> relData = new HashMap<>();
+            relData.put("id", rel.id());
             relData.put("name", rel.name());
             relData.put("cql", rel.pattern());
             relData.put("collocate_pos_group", rel.collocatePosGroup().label());
+            relData.put("total_matches", sketch.results().stream().mapToLong(QueryResults.WordSketchResult::frequency).sum());
             relData.put("collocations", sketch.collocations());
             return relData;
         });

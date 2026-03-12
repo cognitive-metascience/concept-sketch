@@ -156,28 +156,15 @@ final class ExploreResponseAssembler {
     }
 
     /**
-     * Populates {@code response} with all comparison result fields:
-     * {@code seeds}, {@code seed_count}, {@code parameters}, {@code adjectives},
-     * {@code adjectives_count}, {@code fully_shared_count}, {@code partially_shared_count},
-     * {@code specific_count}, {@code edges}, and {@code edges_count}.
+     * Populates {@code response} with comparison data fields:
+     * {@code adjectives}, {@code adjectives_count}, {@code fully_shared_count},
+     * {@code partially_shared_count}, {@code specific_count}, {@code edges}, and {@code edges_count}.
      *
-     * <p>The {@code parameters} map includes a {@code relation} key (value {@code "all"} because
-     * comparison aggregates across all loaded relations) for consistency with the sibling
-     * explore/explore-multi endpoints that use {@code buildCoreExploreResponse}.</p>
+     * <p>Envelope fields ({@code status}, {@code seeds}, {@code seed_count}, {@code parameters})
+     * are the caller's responsibility, keeping this method symmetric with
+     * {@link #populateExploreResponse}.</p>
      */
-    public static void populateComparisonResponse(@NonNull Map<String, Object> response, @NonNull ComparisonResult result,
-            int topCollocates, double minLogDice, int minShared, @NonNull String relation) {
-        response.put("status", "ok");
-        response.put("seeds", new java.util.ArrayList<>(result.nouns()));
-        response.put("seed_count", result.nouns().size());
-
-        Map<String, Object> paramsUsed = new HashMap<>();
-        paramsUsed.put("relation", relation);
-        paramsUsed.put("top", topCollocates);
-        paramsUsed.put("min_logdice", minLogDice);
-        paramsUsed.put("min_shared", minShared);
-        response.put("parameters", paramsUsed);
-
+    public static void populateComparisonResponse(@NonNull Map<String, Object> response, @NonNull ComparisonResult result) {
         java.util.List<Map<String, Object>> adjectives = new java.util.ArrayList<>();
         for (AdjectiveProfile adj : result.allAdjectives()) {
             adjectives.add(formatAdjectiveProfile(adj));
