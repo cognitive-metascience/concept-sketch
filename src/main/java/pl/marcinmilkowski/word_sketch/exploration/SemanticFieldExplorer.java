@@ -184,24 +184,24 @@ public class SemanticFieldExplorer {
 
 
         // Build map: collocate -> logDice with seed
-        Map<String, Double> seedCollocScores = new LinkedHashMap<>();
-        Map<String, Long> seedCollocFrequencies = new LinkedHashMap<>();
+        Map<String, Double> seedCollocateScores = new LinkedHashMap<>();
+        Map<String, Long> seedCollocateFrequencies = new LinkedHashMap<>();
         for (QueryResults.WordSketchResult r : seedRelations) {
-            seedCollocScores.put(r.lemma().toLowerCase(), r.logDice());
-            seedCollocFrequencies.put(r.lemma().toLowerCase(), r.frequency());
+            seedCollocateScores.put(r.lemma().toLowerCase(), r.logDice());
+            seedCollocateFrequencies.put(r.lemma().toLowerCase(), r.frequency());
         }
 
-        Map<String, Map<String, Double>> nounProfiles = buildCollocateToNounsMap(
-            seedCollocScores, normalizedSeed, minLogDice, nounsPerPredicate, nounCqlConstraint);
+        Map<String, Map<String, Double>> nounProfiles = buildNounToCollocatesMap(
+            seedCollocateScores, normalizedSeed, minLogDice, nounsPerPredicate, nounCqlConstraint);
 
         List<DiscoveredNoun> discoveredNouns = filterByMinShared(nounProfiles, minShared);
         discoveredNouns.sort((a, b) -> Double.compare(b.combinedRelevanceScore(), a.combinedRelevanceScore()));
 
-        List<CoreCollocate> coreCollocates = identifyCoreCollocates(seedCollocScores, discoveredNouns);
+        List<CoreCollocate> coreCollocates = identifyCoreCollocates(seedCollocateScores, discoveredNouns);
 
         logger.debug("Exploration complete for '{}': {} nouns discovered, {} core collocates", normalizedSeed, discoveredNouns.size(), coreCollocates.size());
 
-        return new ExplorationResult(List.of(normalizedSeed), seedCollocScores, seedCollocFrequencies, discoveredNouns, coreCollocates);
+        return new ExplorationResult(List.of(normalizedSeed), seedCollocateScores, seedCollocateFrequencies, discoveredNouns, coreCollocates);
     }
 
     // ==================== EXPLORATION PHASE HELPERS ====================
@@ -225,11 +225,11 @@ public class SemanticFieldExplorer {
      * Phase 2: For each collocate, find nouns it collocates with (reverse lookup).
      * Returns a map of noun → {collocate → logDice}.
      */
-    private Map<String, Map<String, Double>> buildCollocateToNounsMap(
-            Map<String, Double> seedCollocScores, String seed,
+    private Map<String, Map<String, Double>> buildNounToCollocatesMap(
+            Map<String, Double> seedCollocateScores, String seed,
             double minLogDice, int nounsPerPredicate, String nounConstraint) throws IOException {
         Map<String, Map<String, Double>> nounProfiles = new LinkedHashMap<>();
-        for (String collocate : seedCollocScores.keySet()) {
+        for (String collocate : seedCollocateScores.keySet()) {
             List<QueryResults.WordSketchResult> nouns = executor.executeCollocations(
                 collocate, nounConstraint, minLogDice, nounsPerPredicate);
             for (QueryResults.WordSketchResult r : nouns) {
@@ -251,13 +251,13 @@ public class SemanticFieldExplorer {
         List<DiscoveredNoun> discoveredNouns = new ArrayList<>();
         for (Map.Entry<String, Map<String, Double>> entry : nounProfiles.entrySet()) {
             String noun = entry.getKey();
-            Map<String, Double> collocScores = entry.getValue();
-            int sharedCount = collocScores.size();
+            Map<String, Double> collocateScores = entry.getValue();
+            int sharedCount = collocateScores.size();
             if (sharedCount < minShared) continue;
-            double combinedRelevanceScore = collocScores.values().stream().mapToDouble(Double::doubleValue).sum();
+            double combinedRelevanceScore = collocateScores.values().stream().mapToDouble(Double::doubleValue).sum();
             double avgLogDice = combinedRelevanceScore / sharedCount;
             discoveredNouns.add(new DiscoveredNoun(
-                noun, collocScores, sharedCount, combinedRelevanceScore, avgLogDice));
+                noun, collocateScores, sharedCount, combinedRelevanceScore, avgLogDice));
         }
         return discoveredNouns;
     }
@@ -266,22 +266,22 @@ public class SemanticFieldExplorer {
      * Phase 4: Identify core collocates — those shared by enough discovered nouns.
      */
     private List<CoreCollocate> identifyCoreCollocates(
-            Map<String, Double> seedCollocScores, List<DiscoveredNoun> discoveredNouns) {
-        Map<String, Integer> collocFrequency = new LinkedHashMap<>();
-        Map<String, Double> collocTotalScore = new LinkedHashMap<>();
+            Map<String, Double> seedCollocateScores, List<DiscoveredNoun> discoveredNouns) {
+        Map<String, Integer> collocateFrequency = new LinkedHashMap<>();
+        Map<String, Double> collocateTotalScore = new LinkedHashMap<>();
         for (DiscoveredNoun dn : discoveredNouns) {
             for (Map.Entry<String, Double> collocate : dn.sharedCollocates().entrySet()) {
-                collocFrequency.merge(collocate.getKey(), 1, Integer::sum);
-                collocTotalScore.merge(collocate.getKey(), collocate.getValue(), Double::sum);
+                collocateFrequency.merge(collocate.getKey(), 1, Integer::sum);
+                collocateTotalScore.merge(collocate.getKey(), collocate.getValue(), Double::sum);
             }
         }
         int minNounsForCore = Math.max(2, discoveredNouns.size() / 3);
         List<CoreCollocate> coreCollocates = new ArrayList<>();
-        for (String collocate : seedCollocScores.keySet()) {
-            int freq = collocFrequency.getOrDefault(collocate, 0);
+        for (String collocate : seedCollocateScores.keySet()) {
+            int freq = collocateFrequency.getOrDefault(collocate, 0);
             if (freq >= minNounsForCore) {
-                double totalScore = collocTotalScore.getOrDefault(collocate, 0.0);
-                double seedScore = seedCollocScores.get(collocate);
+                double totalScore = collocateTotalScore.getOrDefault(collocate, 0.0);
+                double seedScore = seedCollocateScores.get(collocate);
                 coreCollocates.add(new CoreCollocate(
                     collocate, freq, discoveredNouns.size(), seedScore, totalScore / freq));
             }

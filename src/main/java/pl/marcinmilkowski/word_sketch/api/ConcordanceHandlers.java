@@ -56,13 +56,13 @@ class ConcordanceHandlers {
         var rel = grammarConfig.relation(req.relation());
         String resolvedQuery = rel.isPresent()
             ? CqlUtils.substituteAtPosition(
-                RelationPatternBuilder.buildFullPattern(rel.get(), req.noun()),
-                req.adjective(), rel.get().collocatePosition())
+                RelationPatternBuilder.buildFullPattern(rel.get(), req.seed()),
+                req.collocate(), rel.get().collocatePosition())
             : null;
 
         boolean fallback = resolvedQuery == null || resolvedQuery.isEmpty();
         String bcqlQuery = fallback
-            ? String.format("\"%s\" []{0,5} \"%s\"", req.noun().toLowerCase(), req.adjective().toLowerCase())
+            ? String.format("\"%s\" []{0,5} \"%s\"", req.seed().toLowerCase(), req.collocate().toLowerCase())
             : resolvedQuery;
         if (fallback) {
             logger.warn("Relation '{}' not resolved to a BCQL pattern; using proximity fallback: {}", req.relation(), bcqlQuery);
@@ -72,8 +72,8 @@ class ConcordanceHandlers {
 
         Map<String, Object> response = new HashMap<>();
         response.put("status", "ok");
-        response.put("seed", req.noun());
-        response.put("collocate", req.adjective());
+        response.put("seed", req.seed());
+        response.put("collocate", req.collocate());
         response.put("relation", req.relation());
         response.put("bcql", bcqlQuery);
         response.put("fallback", fallback);
@@ -94,19 +94,15 @@ class ConcordanceHandlers {
 
     /**
      * Parsed and validated request parameters for {@link #handleConcordanceExamples}.
-     *
-     * <p>Field names use domain vocabulary ({@code noun}, {@code adjective}) rather than
-     * the HTTP parameter names ({@code seed}, {@code collocate}): the renaming is performed
-     * in {@link #parseConcordanceExamplesRequest} where {@code seed} → {@code noun} and
-     * {@code collocate} → {@code adjective}.</p>
+     * Field names use the system-wide vocabulary ({@code seed}, {@code collocate}).
      */
-    private record ConcordanceExamplesRequest(String noun, String adjective, String relation, int top) {}
+    private record ConcordanceExamplesRequest(String seed, String collocate, String relation, int top) {}
 
     private ConcordanceExamplesRequest parseConcordanceExamplesRequest(Map<String, String> params) {
-        String noun = HttpApiUtils.requireParam(params, "seed");
-        String adjective = HttpApiUtils.requireParam(params, "collocate");
+        String seed = HttpApiUtils.requireParam(params, "seed");
+        String collocate = HttpApiUtils.requireParam(params, "collocate");
         String relation = params.getOrDefault("relation", "noun_adj_predicates");
         int top = HttpApiUtils.parseIntParam(params, "top", 10);
-        return new ConcordanceExamplesRequest(noun, adjective, relation, top);
+        return new ConcordanceExamplesRequest(seed, collocate, relation, top);
     }
 }

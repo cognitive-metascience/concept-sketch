@@ -11,22 +11,22 @@
     "total": 1469,
     "auto_resolved": 272,
     "false_positive": 0,
-    "fixed": 957,
-    "open": 43,
+    "fixed": 960,
+    "open": 40,
     "wontfix": 197,
     "by_tier": {
       "1": {
         "auto_resolved": 135,
         "false_positive": 0,
-        "fixed": 655,
-        "open": 30,
+        "fixed": 657,
+        "open": 28,
         "wontfix": 106
       },
       "2": {
         "auto_resolved": 96,
         "false_positive": 0,
-        "fixed": 284,
-        "open": 6,
+        "fixed": 285,
+        "open": 5,
         "wontfix": 80
       },
       "3": {
@@ -58305,16 +58305,22 @@
         "suggestion": "Rename colloc\u2192collocate prefix in the affected local variables: collocFrequency\u2192collocateFrequency, collocTotalScore\u2192collocateTotalScore, collocScores\u2192collocateScores; rename the ExploreResponseAssembler loop variable 'colloc' to 'collocateEntry' or 'collocate'.",
         "reasoning": ""
       },
-      "status": "open",
-      "note": null,
+      "status": "fixed",
+      "note": "Renamed ConcordanceExamplesRequest fields noun\u2192seed and adjective\u2192collocate; renamed colloc* abbreviated local variables to collocate* in SemanticFieldExplorer; renamed buildCollocateToNounsMap \u2192 buildNounToCollocatesMap to reflect the actual map direction (noun\u2192collocates).",
       "first_seen": "2026-03-12T03:17:37+00:00",
       "last_seen": "2026-03-12T03:17:37+00:00",
-      "resolved_at": null,
+      "resolved_at": "2026-03-12T04:07:23+00:00",
       "reopen_count": 0,
       "lang": "java",
       "suppressed": false,
       "suppressed_at": null,
-      "suppression_pattern": null
+      "suppression_pattern": null,
+      "resolution_attestation": {
+        "kind": "manual",
+        "text": "I have actually Renamed ConcordanceExamplesRequest fields noun\u2192seed and adjective\u2192collocate; renamed colloc* abbreviated local variables to collocate* in SemanticFieldExplorer; renamed buildCollocateToNounsMap \u2192 buildNounToCollocatesMap to reflect the actual map direction (noun\u2192collocates). and I am not gaming the score.",
+        "attested_at": "2026-03-12T04:07:23+00:00",
+        "scan_verified": false
+      }
     },
     "review::.::holistic::naming_quality::concordance_request_field_rename::04db82e7": {
       "id": "review::.::holistic::naming_quality::concordance_request_field_rename::04db82e7",
@@ -58338,16 +58344,22 @@
         "suggestion": "Rename the record fields to match codebase vocabulary: String seed, String collocate. The renaming in parseConcordanceExamplesRequest can simply be dropped: 'String seed = HttpApiUtils.requireParam(params, \"seed\"); String collocate = HttpApiUtils.requireParam(params, \"collocate\");'",
         "reasoning": ""
       },
-      "status": "open",
-      "note": null,
+      "status": "fixed",
+      "note": "Renamed ConcordanceExamplesRequest fields noun\u2192seed and adjective\u2192collocate; renamed colloc* abbreviated local variables to collocate* in SemanticFieldExplorer; renamed buildCollocateToNounsMap \u2192 buildNounToCollocatesMap to reflect the actual map direction (noun\u2192collocates).",
       "first_seen": "2026-03-12T03:17:37+00:00",
       "last_seen": "2026-03-12T03:17:37+00:00",
-      "resolved_at": null,
+      "resolved_at": "2026-03-12T04:07:21+00:00",
       "reopen_count": 0,
       "lang": "java",
       "suppressed": false,
       "suppressed_at": null,
-      "suppression_pattern": null
+      "suppression_pattern": null,
+      "resolution_attestation": {
+        "kind": "manual",
+        "text": "I have actually Renamed ConcordanceExamplesRequest fields noun\u2192seed and adjective\u2192collocate; renamed colloc* abbreviated local variables to collocate* in SemanticFieldExplorer; renamed buildCollocateToNounsMap \u2192 buildNounToCollocatesMap to reflect the actual map direction (noun\u2192collocates). and I am not gaming the score.",
+        "attested_at": "2026-03-12T04:07:21+00:00",
+        "scan_verified": false
+      }
     },
     "review::.::holistic::naming_quality::thin_wrapper_name_mismatch::854884f4": {
       "id": "review::.::holistic::naming_quality::thin_wrapper_name_mismatch::854884f4",
@@ -58403,16 +58415,22 @@
         "suggestion": "Align the method name with the actual structure: rename buildCollocateToNounsMap to buildNounCollocateProfiles (or buildNounToCollocatesMap), and keep the variable named nounProfiles. Alternatively, keep the method name and rename the return variable to collocateToNounsMap.",
         "reasoning": ""
       },
-      "status": "open",
-      "note": null,
+      "status": "fixed",
+      "note": "Renamed ConcordanceExamplesRequest fields noun\u2192seed and adjective\u2192collocate; renamed colloc* abbreviated local variables to collocate* in SemanticFieldExplorer; renamed buildCollocateToNounsMap \u2192 buildNounToCollocatesMap to reflect the actual map direction (noun\u2192collocates).",
       "first_seen": "2026-03-12T03:17:37+00:00",
       "last_seen": "2026-03-12T03:17:37+00:00",
-      "resolved_at": null,
+      "resolved_at": "2026-03-12T04:07:25+00:00",
       "reopen_count": 0,
       "lang": "java",
       "suppressed": false,
       "suppressed_at": null,
-      "suppression_pattern": null
+      "suppression_pattern": null,
+      "resolution_attestation": {
+        "kind": "manual",
+        "text": "I have actually Renamed ConcordanceExamplesRequest fields noun\u2192seed and adjective\u2192collocate; renamed colloc* abbreviated local variables to collocate* in SemanticFieldExplorer; renamed buildCollocateToNounsMap \u2192 buildNounToCollocatesMap to reflect the actual map direction (noun\u2192collocates). and I am not gaming the score.",
+        "attested_at": "2026-03-12T04:07:25+00:00",
+        "scan_verified": false
+      }
     },
     "review::.::holistic::abstraction_fitness::semantic_field_explorer_thin_facade::f9b42e57": {
       "id": "review::.::holistic::abstraction_fitness::semantic_field_explorer_thin_facade::f9b42e57",
@@ -59820,7 +59838,10 @@
     "naming_quality": {
       "score": 63.7,
       "source": "holistic",
-      "assessed_at": "2026-03-12T03:17:37+00:00"
+      "assessed_at": "2026-03-12T03:17:37+00:00",
+      "needs_review_refresh": true,
+      "refresh_reason": "review_issue_fixed",
+      "stale_since": "2026-03-12T04:07:25+00:00"
     },
     "abstraction_fitness": {
       "score": 66.1,
@@ -62751,13 +62772,13 @@
       "strict": 63.7,
       "verified_strict_score": 63.7,
       "checks": 10,
-      "failing": 4,
+      "failing": 1,
       "tier": 4,
       "detectors": {
         "subjective_assessment": {
           "potential": 10,
           "pass_rate": 0.637,
-          "failing": 4,
+          "failing": 1,
           "weighted_failures": 3.63,
           "assessment_score": 63.7,
           "placeholder": false,
