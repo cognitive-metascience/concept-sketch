@@ -14,6 +14,7 @@ import pl.marcinmilkowski.word_sketch.model.QueryResults;
 import pl.marcinmilkowski.word_sketch.model.exploration.ExplorationOptions;
 import pl.marcinmilkowski.word_sketch.model.exploration.SingleSeedExplorationOptions;
 import pl.marcinmilkowski.word_sketch.exploration.ExplorationService;
+import pl.marcinmilkowski.word_sketch.exploration.Seeds;
 
 import java.util.Objects;
 
@@ -114,10 +115,7 @@ class ExplorationHandlers {
 
         Set<String> seeds = parseSeedSet(seedsParam);
 
-        if (seeds.size() < 2) {
-            throw new IllegalArgumentException(
-                "Multi-seed exploration requires at least 2 seeds; received " + seeds.size());
-        }
+        Seeds.requireAtLeastTwo(seeds, "Multi-seed exploration");
 
         ExplorationOptions opts = new ExplorationOptions(
             commonParams.topCollocates(), commonParams.minLogDice(), commonParams.minShared());
@@ -159,10 +157,7 @@ class ExplorationHandlers {
 
         String seedsParam = HttpApiUtils.requireParam(params, "seeds");
         Set<String> seeds = parseSeedSet(seedsParam);
-        if (seeds.size() < 2) {
-            throw new IllegalArgumentException(
-                "Comparison requires at least 2 seed nouns; received " + seeds.size());
-        }
+        Seeds.requireAtLeastTwo(seeds, "Comparison");
 
         SharedExploreParams commonParams = parseSharedExploreParams(params);
 
