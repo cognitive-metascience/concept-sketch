@@ -7,11 +7,11 @@ import org.slf4j.LoggerFactory;
 import pl.marcinmilkowski.word_sketch.config.GrammarConfig;
 import pl.marcinmilkowski.word_sketch.config.RelationConfig;
 import pl.marcinmilkowski.word_sketch.config.RelationUtils;
-import pl.marcinmilkowski.word_sketch.model.ComparisonResult;
-import pl.marcinmilkowski.word_sketch.model.ExplorationResult;
+import pl.marcinmilkowski.word_sketch.model.exploration.ComparisonResult;
+import pl.marcinmilkowski.word_sketch.model.exploration.ExplorationResult;
 import pl.marcinmilkowski.word_sketch.model.FetchExamplesOptions;
-import pl.marcinmilkowski.word_sketch.model.ExplorationOptions;
-import pl.marcinmilkowski.word_sketch.model.SingleSeedExplorationOptions;
+import pl.marcinmilkowski.word_sketch.model.exploration.ExplorationOptions;
+import pl.marcinmilkowski.word_sketch.model.exploration.SingleSeedExplorationOptions;
 import pl.marcinmilkowski.word_sketch.exploration.SemanticFieldExplorer;
 
 import java.util.Objects;

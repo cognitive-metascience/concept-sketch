@@ -3,9 +3,9 @@ package pl.marcinmilkowski.word_sketch.query;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import pl.marcinmilkowski.word_sketch.exploration.SemanticFieldExplorer;
-import pl.marcinmilkowski.word_sketch.model.AdjectiveProfile;
-import pl.marcinmilkowski.word_sketch.model.ComparisonResult;
-import pl.marcinmilkowski.word_sketch.model.ExplorationResult;
+import pl.marcinmilkowski.word_sketch.model.exploration.AdjectiveProfile;
+import pl.marcinmilkowski.word_sketch.model.exploration.ComparisonResult;
+import pl.marcinmilkowski.word_sketch.model.exploration.ExplorationResult;
 import pl.marcinmilkowski.word_sketch.model.QueryResults;
 
 import java.io.IOException;
@@ -71,7 +71,7 @@ class SemanticFieldExplorerTest {
 
         SemanticFieldExplorer explorer = new SemanticFieldExplorer(executor, null);
         ComparisonResult result =
-            explorer.compareCollocateProfiles(Set.of("theory", "model", "hypothesis"), new pl.marcinmilkowski.word_sketch.model.ExplorationOptions(50, 0.0, 1));
+            explorer.compareCollocateProfiles(Set.of("theory", "model", "hypothesis"), new pl.marcinmilkowski.word_sketch.model.exploration.ExplorationOptions(50, 0.0, 1));
 
         List<AdjectiveProfile> fullyShared = result.fullyShared();
         List<String> sharedNames = fullyShared.stream()
@@ -93,7 +93,7 @@ class SemanticFieldExplorerTest {
 
         SemanticFieldExplorer explorer = new SemanticFieldExplorer(executor, null);
         ComparisonResult result =
-            explorer.compareCollocateProfiles(Set.of("theory", "model"), new pl.marcinmilkowski.word_sketch.model.ExplorationOptions(50, 0.0, 1));
+            explorer.compareCollocateProfiles(Set.of("theory", "model"), new pl.marcinmilkowski.word_sketch.model.exploration.ExplorationOptions(50, 0.0, 1));
 
         List<AdjectiveProfile> specific = result.specific();
         List<String> specificNames = specific.stream().map(p -> p.adjective()).toList();
@@ -111,7 +111,7 @@ class SemanticFieldExplorerTest {
         SemanticFieldExplorer explorer = new SemanticFieldExplorer(executor, null);
 
         assertThrows(IllegalArgumentException.class,
-            () -> explorer.compareCollocateProfiles(Collections.emptySet(), new pl.marcinmilkowski.word_sketch.model.ExplorationOptions(50, 0.0, 1)),
+            () -> explorer.compareCollocateProfiles(Collections.emptySet(), new pl.marcinmilkowski.word_sketch.model.exploration.ExplorationOptions(50, 0.0, 1)),
             "Empty seed set should throw IllegalArgumentException");
     }
 
@@ -124,7 +124,7 @@ class SemanticFieldExplorerTest {
         SemanticFieldExplorer explorer = new SemanticFieldExplorer(executor, null);
 
         assertThrows(IllegalArgumentException.class,
-            () -> explorer.compareCollocateProfiles(Set.of("theory"), new pl.marcinmilkowski.word_sketch.model.ExplorationOptions(50, 0.0, 1)),
+            () -> explorer.compareCollocateProfiles(Set.of("theory"), new pl.marcinmilkowski.word_sketch.model.exploration.ExplorationOptions(50, 0.0, 1)),
             "Single seed should throw IllegalArgumentException");
     }
 
@@ -138,7 +138,7 @@ class SemanticFieldExplorerTest {
 
         SemanticFieldExplorer explorer = new SemanticFieldExplorer(executor, null);
         ComparisonResult result =
-            explorer.compareCollocateProfiles(Set.of("theory", "model"), new pl.marcinmilkowski.word_sketch.model.ExplorationOptions(50, 0.0, 1));
+            explorer.compareCollocateProfiles(Set.of("theory", "model"), new pl.marcinmilkowski.word_sketch.model.exploration.ExplorationOptions(50, 0.0, 1));
 
         // empirical is specific to theory (model has no adjectives)
         List<String> specificNames = result.specific().stream()
@@ -154,7 +154,7 @@ class SemanticFieldExplorerTest {
         SemanticFieldExplorer explorer = new SemanticFieldExplorer(executor, null);
 
         assertThrows(NullPointerException.class,
-            () -> explorer.compareCollocateProfiles(null, new pl.marcinmilkowski.word_sketch.model.ExplorationOptions(50, 0.0, 1)),
+            () -> explorer.compareCollocateProfiles(null, new pl.marcinmilkowski.word_sketch.model.exploration.ExplorationOptions(50, 0.0, 1)),
             "Null seed set (violates @NonNull) should propagate as NullPointerException");
     }
 
@@ -172,7 +172,7 @@ class SemanticFieldExplorerTest {
 
         SemanticFieldExplorer explorer = new SemanticFieldExplorer(executor, null);
         ComparisonResult result =
-            explorer.compareCollocateProfiles(Set.of("theory", "model", "hypothesis"), new pl.marcinmilkowski.word_sketch.model.ExplorationOptions(50, 0.0, 1));
+            explorer.compareCollocateProfiles(Set.of("theory", "model", "hypothesis"), new pl.marcinmilkowski.word_sketch.model.exploration.ExplorationOptions(50, 0.0, 1));
 
         List<String> partialNames = result.partiallyShared().stream()
             .map(p -> p.adjective()).toList();
@@ -202,7 +202,7 @@ class SemanticFieldExplorerTest {
                 1, 2, false, 0,
                 java.util.Optional.of(pl.marcinmilkowski.word_sketch.model.RelationType.SURFACE),
                 true, pl.marcinmilkowski.word_sketch.model.PosGroup.ADJ),
-            new pl.marcinmilkowski.word_sketch.model.ExplorationOptions(10, 0.0, 1));
+            new pl.marcinmilkowski.word_sketch.model.exploration.ExplorationOptions(10, 0.0, 1));
 
         assertNotNull(result, "Result should not be null");
     }
@@ -224,7 +224,7 @@ class SemanticFieldExplorerTest {
                 1, 2, false, 0,
                 java.util.Optional.of(pl.marcinmilkowski.word_sketch.model.RelationType.SURFACE),
                 true, pl.marcinmilkowski.word_sketch.model.PosGroup.ADJ),
-            new pl.marcinmilkowski.word_sketch.model.ExplorationOptions(10, 0.0, 2));
+            new pl.marcinmilkowski.word_sketch.model.exploration.ExplorationOptions(10, 0.0, 2));
 
         assertNotNull(result.seedCollocates(), "Seed collocates should not be null");
         assertTrue(result.seedCollocates().containsKey("empirical"),

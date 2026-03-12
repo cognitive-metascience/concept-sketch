@@ -2,9 +2,9 @@ package pl.marcinmilkowski.word_sketch.exploration;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import pl.marcinmilkowski.word_sketch.model.ExplorationResult;
-import pl.marcinmilkowski.word_sketch.model.ExplorationOptions;
-import pl.marcinmilkowski.word_sketch.model.SingleSeedExplorationOptions;
+import pl.marcinmilkowski.word_sketch.model.exploration.ExplorationResult;
+import pl.marcinmilkowski.word_sketch.model.exploration.ExplorationOptions;
+import pl.marcinmilkowski.word_sketch.model.exploration.SingleSeedExplorationOptions;
 import pl.marcinmilkowski.word_sketch.model.QueryResults;
 import pl.marcinmilkowski.word_sketch.query.QueryExecutor;
 import pl.marcinmilkowski.word_sketch.query.StubQueryExecutor;

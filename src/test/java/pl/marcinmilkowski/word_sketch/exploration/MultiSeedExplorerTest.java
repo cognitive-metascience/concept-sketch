@@ -3,7 +3,7 @@ package pl.marcinmilkowski.word_sketch.exploration;
 import org.junit.jupiter.api.Test;
 import pl.marcinmilkowski.word_sketch.config.GrammarConfigHelper;
 import pl.marcinmilkowski.word_sketch.config.RelationConfig;
-import pl.marcinmilkowski.word_sketch.model.ExplorationResult;
+import pl.marcinmilkowski.word_sketch.model.exploration.ExplorationResult;
 import pl.marcinmilkowski.word_sketch.model.QueryResults;
 import pl.marcinmilkowski.word_sketch.query.QueryExecutor;
 import pl.marcinmilkowski.word_sketch.query.StubQueryExecutor;
@@ -71,7 +71,7 @@ class MultiSeedExplorerTest {
                 Set.of("theory", "model"), anyRelation(), 0.0, 50, 2);
 
         List<String> nounNames = result.discoveredNouns().stream()
-                .map(pl.marcinmilkowski.word_sketch.model.DiscoveredNoun::noun).toList();
+                .map(pl.marcinmilkowski.word_sketch.model.exploration.DiscoveredNoun::noun).toList();
         assertTrue(nounNames.contains("theory"), "\"theory\" should be a discovered noun");
         assertTrue(nounNames.contains("model"),  "\"model\" should be a discovered noun");
     }

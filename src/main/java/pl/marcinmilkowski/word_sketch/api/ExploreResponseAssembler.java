@@ -7,13 +7,13 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import pl.marcinmilkowski.word_sketch.model.AdjectiveProfile;
+import pl.marcinmilkowski.word_sketch.model.exploration.AdjectiveProfile;
 import pl.marcinmilkowski.word_sketch.utils.MathUtils;
-import pl.marcinmilkowski.word_sketch.model.ComparisonResult;
-import pl.marcinmilkowski.word_sketch.model.CoreCollocate;
-import pl.marcinmilkowski.word_sketch.model.DiscoveredNoun;
-import pl.marcinmilkowski.word_sketch.model.Edge;
-import pl.marcinmilkowski.word_sketch.model.ExplorationResult;
+import pl.marcinmilkowski.word_sketch.model.exploration.ComparisonResult;
+import pl.marcinmilkowski.word_sketch.model.exploration.CoreCollocate;
+import pl.marcinmilkowski.word_sketch.model.exploration.DiscoveredNoun;
+import pl.marcinmilkowski.word_sketch.model.exploration.Edge;
+import pl.marcinmilkowski.word_sketch.model.exploration.ExplorationResult;
 import pl.marcinmilkowski.word_sketch.model.RelationEdgeType;
 
 /**

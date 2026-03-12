@@ -1,8 +1,8 @@
 package pl.marcinmilkowski.word_sketch.exploration;
 
 import org.junit.jupiter.api.Test;
-import pl.marcinmilkowski.word_sketch.model.AdjectiveProfile;
-import pl.marcinmilkowski.word_sketch.model.ComparisonResult;
+import pl.marcinmilkowski.word_sketch.model.exploration.AdjectiveProfile;
+import pl.marcinmilkowski.word_sketch.model.exploration.ComparisonResult;
 import pl.marcinmilkowski.word_sketch.model.QueryResults;
 import pl.marcinmilkowski.word_sketch.query.QueryExecutor;
 import pl.marcinmilkowski.word_sketch.query.StubQueryExecutor;

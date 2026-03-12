@@ -7,14 +7,14 @@
  * </p>
  * <ul>
  *   <li><strong>Pure DTOs</strong> — records with no logic beyond field access:
- *       {@link pl.marcinmilkowski.word_sketch.model.AdjectiveProfile},
- *       {@link pl.marcinmilkowski.word_sketch.model.CoreCollocate},
- *       {@link pl.marcinmilkowski.word_sketch.model.DiscoveredNoun},
- *       {@link pl.marcinmilkowski.word_sketch.model.Edge}, etc.</li>
+ *       {@link pl.marcinmilkowski.word_sketch.model.exploration.AdjectiveProfile},
+ *       {@link pl.marcinmilkowski.word_sketch.model.exploration.CoreCollocate},
+ *       {@link pl.marcinmilkowski.word_sketch.model.exploration.DiscoveredNoun},
+ *       {@link pl.marcinmilkowski.word_sketch.model.exploration.Edge}, etc.</li>
  *   <li><strong>Model objects with derived accessors</strong> — immutable classes that expose
  *       computed views and factory methods alongside their fields:
- *       {@link pl.marcinmilkowski.word_sketch.model.ExplorationResult},
- *       {@link pl.marcinmilkowski.word_sketch.model.ComparisonResult}.
+ *       {@link pl.marcinmilkowski.word_sketch.model.exploration.ExplorationResult},
+ *       {@link pl.marcinmilkowski.word_sketch.model.exploration.ComparisonResult}.
  *       These remain classes (not records) because they encapsulate construction logic or
  *       expose derived views that would otherwise leak into callers.</li>
  * </ul>
