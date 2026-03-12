@@ -2,6 +2,7 @@ package pl.marcinmilkowski.word_sketch.api;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import pl.marcinmilkowski.word_sketch.exploration.ExplorationException;
 import pl.marcinmilkowski.word_sketch.utils.JsonUtils;
 import com.sun.net.httpserver.HttpExchange;
 import org.jspecify.annotations.NonNull;
@@ -37,6 +38,7 @@ final class HttpApiUtils {
      *   <li>{@link RequestEntityTooLargeException} → 413</li>
      *   <li>{@link IllegalArgumentException} → 400 (validation / missing param)</li>
      *   <li>{@link com.fasterxml.jackson.core.JsonProcessingException} → 400 (malformed JSON input from client)</li>
+     *   <li>{@link ExplorationException} → 503 (exploration infrastructure failure)</li>
      *   <li>{@link java.io.IOException} → 500 (index / I/O failure)</li>
      *   <li>Any other {@link Exception} → 500 (unexpected server error)</li>
      * </ul>
@@ -57,6 +59,9 @@ final class HttpApiUtils {
                 // handler so that malformed client JSON is reported as 400, not 500.
                 logger.warn("{} client sent invalid JSON", description, e);
                 sendError(exchange, 400, "Bad request: invalid JSON — " + e.getOriginalMessage());
+            } catch (ExplorationException e) {
+                logger.error("{} exploration error", description, e);
+                sendError(exchange, 503, "Service unavailable: " + e.getMessage());
             } catch (java.io.IOException e) {
                 logger.error("{} error", description, e);
                 sendError(exchange, 500, description + " failed: " + e.getMessage());
@@ -72,12 +77,32 @@ final class HttpApiUtils {
 
     private HttpApiUtils() {}
 
-    /** Warns at startup when {@code cors.allow.origin} is set to {@code *}. */
+    /** Warns at startup when {@code cors.allow.origin} is set to {@code *}.
+     *
+     * <p>Wildcard CORS must be an explicit opt-in: set the system property
+     * {@code allow.wildcard.cors=true} to suppress the error and allow all origins.
+     * Without that property, a wildcard origin fails fast to prevent accidental
+     * exposure in production.</p>
+     *
+     * @throws IllegalStateException if CORS origin is {@code *} and
+     *         {@code allow.wildcard.cors=true} is not set
+     */
     static void warnIfWildcardCors() {
         String origin = System.getProperty("cors.allow.origin", DEFAULT_CORS_ALLOW_ORIGIN);
         if ("*".equals(origin)) {
-            logger.warn("CORS allow-origin is set to '*' — all origins permitted. "
-                    + "Set -Dcors.allow.origin=https://your-app.example.com in production.");
+            if ("true".equalsIgnoreCase(System.getProperty("allow.wildcard.cors"))) {
+                logger.warn("CORS allow-origin is set to '*' — all origins permitted. "
+                        + "This is an explicit opt-in via -Dallow.wildcard.cors=true. "
+                        + "Do not use in production without understanding the security implications.");
+            } else {
+                logger.error("CORS allow-origin is set to '*' but -Dallow.wildcard.cors=true is not set. "
+                        + "Refusing to start with wildcard CORS. "
+                        + "Set -Dcors.allow.origin=https://your-app.example.com, "
+                        + "or explicitly acknowledge the risk with -Dallow.wildcard.cors=true.");
+                throw new IllegalStateException(
+                        "Wildcard CORS (*) requires explicit opt-in via -Dallow.wildcard.cors=true. "
+                        + "Set -Dcors.allow.origin=https://your-app.example.com for production use.");
+            }
         }
     }
 

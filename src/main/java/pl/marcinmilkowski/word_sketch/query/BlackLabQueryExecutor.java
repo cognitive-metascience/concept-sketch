@@ -33,6 +33,7 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.function.Function;
 
 import org.jspecify.annotations.Nullable;
@@ -178,8 +179,9 @@ public class BlackLabQueryExecutor implements QueryExecutor {
             int maxResults,
             @Nullable String headPosConstraint) throws IOException {
 
-        if (lemma == null || lemma.isEmpty() || deprel == null) {
-            logger.debug("executeDependencyPattern: skipping query — lemma or deprel is null/empty");
+        Objects.requireNonNull(deprel, "deprel must not be null");
+        if (lemma == null || lemma.isEmpty()) {
+            logger.debug("executeDependencyPattern: skipping query — lemma is null/empty");
             return Collections.emptyList();
         }
 
