@@ -146,6 +146,15 @@
       Activate only when ./install-blacklab.sh cannot be run:
         mvn -P blacklab-github-fallback clean package
       DO NOT enable this profile in standard CI.
+
+      WARNING: This profile depends on a GitHub raw-content URL
+      (https://raw.githubusercontent.com/...) which has NO SLA.
+      The URL can become unavailable at any time due to rate-limiting,
+      branch deletion, or repository rename.  Prefer the local-install
+      alternative instead:
+        ./install-blacklab.sh   (installs the JAR into your local Maven cache)
+      For long-term resilience, mirror the artifact to a private registry
+      such as Nexus, Artifactory, or GitHub Packages.
     -->
     <profiles>
         <profile>

@@ -39,6 +39,7 @@ class CorpusQueryHandlers {
     void handleCorpusQuery(HttpExchange exchange) throws IOException {
         BcqlRequest req = parseBcqlRequest(exchange);
 
+        logger.info("BCQL audit – executing query: {}", req.query());
         logger.debug("BCQL query: {}", req.query());
 
         List<QueryResults.CollocateResult> results = executor.executeBcqlQuery(req.query(), req.top());
