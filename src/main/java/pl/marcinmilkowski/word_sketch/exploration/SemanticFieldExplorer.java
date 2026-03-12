@@ -20,7 +20,7 @@ import pl.marcinmilkowski.word_sketch.model.exploration.ExplorationResult;
 import pl.marcinmilkowski.word_sketch.model.exploration.FetchExamplesOptions;
 import pl.marcinmilkowski.word_sketch.model.exploration.FetchExamplesResult;
 import pl.marcinmilkowski.word_sketch.model.PosGroup;
-import pl.marcinmilkowski.word_sketch.model.QueryResults;
+import pl.marcinmilkowski.word_sketch.model.sketch.*;
 import pl.marcinmilkowski.word_sketch.query.QueryExecutor;
 
 /**
@@ -162,7 +162,7 @@ public class SemanticFieldExplorer implements ExplorationService {
         int maxExamples = opts.maxExamples();
         String bcqlQuery = RelationPatternUtils.buildFullPattern(relationConfig, seed.toLowerCase(), collocate.toLowerCase());
 
-        List<QueryResults.CollocateResult> results;
+        List<CollocateResult> results;
         try {
             results = executor.executeBcqlQuery(bcqlQuery, maxExamples);
         } catch (java.io.IOException e) {
@@ -171,8 +171,8 @@ public class SemanticFieldExplorer implements ExplorationService {
         }
 
         Set<String> seen = new HashSet<>();
-        List<QueryResults.CollocateResult> deduped = new ArrayList<>();
-        for (QueryResults.CollocateResult r : results) {
+        List<CollocateResult> deduped = new ArrayList<>();
+        for (CollocateResult r : results) {
             String s = r.sentence();
             if (s == null || s.isEmpty()) continue;
             if (seen.add(s)) {

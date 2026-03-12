@@ -1,15 +1,12 @@
 package pl.marcinmilkowski.word_sketch.exploration;
 
-import java.io.IOException;
-import java.util.List;
 import java.util.Set;
 
 import org.jspecify.annotations.NonNull;
 import pl.marcinmilkowski.word_sketch.config.RelationConfig;
+import pl.marcinmilkowski.word_sketch.model.exploration.ComparisonResult;
 import pl.marcinmilkowski.word_sketch.model.exploration.FetchExamplesOptions;
 import pl.marcinmilkowski.word_sketch.model.exploration.FetchExamplesResult;
-import pl.marcinmilkowski.word_sketch.model.QueryResults;
-import pl.marcinmilkowski.word_sketch.model.exploration.ComparisonResult;
 import pl.marcinmilkowski.word_sketch.model.exploration.ExplorationOptions;
 import pl.marcinmilkowski.word_sketch.model.exploration.SingleSeedExplorationOptions;
 import pl.marcinmilkowski.word_sketch.model.exploration.ExplorationResult;
@@ -36,7 +33,7 @@ public interface ExplorationService {
     @NonNull ExplorationResult exploreByRelation(
             @NonNull String seed,
             @NonNull RelationConfig relationConfig,
-            @NonNull SingleSeedExplorationOptions opts) throws IOException;
+            @NonNull SingleSeedExplorationOptions opts);
 
     /**
      * Multi-seed semantic field exploration: finds collocates shared across multiple seeds.
@@ -44,14 +41,14 @@ public interface ExplorationService {
     @NonNull ExplorationResult exploreMultiSeed(
             @NonNull Set<String> seeds,
             @NonNull RelationConfig relationConfig,
-            @NonNull ExplorationOptions opts) throws IOException;
+            @NonNull ExplorationOptions opts);
 
     /**
      * Compares collocate profiles across a set of seed nouns, revealing shared and distinctive collocates.
      */
     @NonNull ComparisonResult compareCollocateProfiles(
             @NonNull Set<String> seeds,
-            @NonNull ExplorationOptions opts) throws IOException;
+            @NonNull ExplorationOptions opts);
 
     /**
      * Fetch example concordance results for a seed-collocate pair using the provided relation pattern.
@@ -60,5 +57,5 @@ public interface ExplorationService {
             @NonNull String seed,
             @NonNull String collocate,
             @NonNull RelationConfig relationConfig,
-            @NonNull FetchExamplesOptions opts) throws IOException;
+            @NonNull FetchExamplesOptions opts);
 }

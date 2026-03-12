@@ -1,0 +1,115 @@
+{
+  "batch": "low_level_elegance",
+  "batch_index": 7,
+  "assessments": {
+    "low_level_elegance": 79.0
+  },
+  "dimension_notes": {
+    "low_level_elegance": {
+      "evidence": [
+        "CollocateQueryHelper decomposes executeBcqlQuery cleanly into three named phases (collectHits, buildCollocateFrequencyMap, scoreHits) with well-named private records (HitRecord, CollocateSearch) — each phase has a single responsibility and bounded state.",
+        "SingleSeedExplorer.explore delegates to four clearly-named phase methods, each owning exactly one step of the four-phase algorithm described in the class Javadoc.",
+        "MultiSeedExplorer.CollocateAccumulator is a tight mutable inner class used only to avoid four parallel maps in aggregateCollocateStats; state mutation is fully local and bounded to that method.",
+        "RelationPatternUtils.resolvePosGroupFromPrefix returns null at its fall-through instead of PosGroup.OTHER, pushing the null-to-sentinel conversion to the caller: `result != null ? result : PosGroup.OTHER`. The method is already annotated @Nullable, but the enum provides a better non-null default; the null propagates an implicit encoding decision through the interface.",
+        "SingleSeedExplorer.identifyCoreCollocates embeds `Math.max(2, discoveredNouns.size() / 3)` without a named constant or explanation for the 1/3 threshold, obscuring why that ratio was chosen.",
+        "ExploreResponseAssembler.populateComparisonResponse uses fully-qualified `java.util.List<Map<String, Object>> collocates = new java.util.ArrayList<>()` despite both List and ArrayList being imported at the top of the file — inconsistent with every other method in the same class.",
+        "SemanticFieldExplorer.exploreMultiSeed duplicates the `seeds.size() < 2` guard that ExplorationHandlers already performs via Seeds.requireAtLeastTwo before calling this method — the lower-level check is defensively correct but creates silent double-enforcement.",
+        "CollocateQueryHelper carries a @Nullable BlackLabIndex field alongside a requireIndex() assertion accessor. This is a test-seam compromise, but it leaks nullable state through all I/O methods (getTotalFrequency, performCollocateSearch, executeBcqlQuery) which each call requireIndex() rather than accepting the index as a parameter.",
+        "MultiSeedExplorer.findCollocateIntersection builds perSeedCollocates with a separate double-loop over data.seedCollocateMap() after all aggregation is done, converting WordSketchResult -> Map<String, Double> inline in the top-level method rather than in a named helper, making the flow slightly harder to scan."
+      ],
+      "impact_scope": "module",
+      "fix_scope": "multi_file_refactor",
+      "confidence": "high"
+    }
+  },
+  "dimension_judgment": {
+    "low_level_elegance": {
+      "strengths": [
+        "Phase-based decomposition is applied consistently across algorithm classes: SingleSeedExplorer, MultiSeedExplorer, and CollocateProfileComparator all break complex algorithms into clearly-named private methods with bounded responsibilities.",
+        "Private records (HitRecord, CollocateSearch, GroupStats, SharedExploreParams, SeedCollocateData, AggregatedCollocateStats, RadialRequest) are used systematically to group related data without creating heavyweight types, keeping method signatures concise.",
+        "State mutation is tightly local throughout: mutable accumulators (CollocateAccumulator, frequency maps) are created, mutated, and consumed within a single method and never escape their scope.",
+        "BlackLabSnippetParser's regex patterns are pre-compiled as static final constants and method boundaries are precise — each method does exactly one extraction task with no cross-cutting concerns.",
+        "HttpApiUtils.wrapWithErrorHandling maps three distinct exception types to distinct HTTP status codes with no ambiguity; the branches are necessary and non-overlapping."
+      ],
+      "issue_character": "Issues are scattered minor inconsistencies rather than systematic problems: a null sentinel where an enum value is available, an unexplained magic formula, one FQN inconsistency, a duplicated guard, and a test-seam nullable field that requires internal assertion wrappers instead of parameter injection.",
+      "score_rationale": "The codebase sits solidly above the 'significant drag' threshold (60) and approaches 'solid but uneven' (80). The algorithm decomposition and bounded-state practices are exemplary for this domain. What pulls the score below 80 is a cluster of small but real friction points: the CollocateQueryHelper nullable-index test seam forces every I/O method to call requireIndex() as a defensive assertion rather than receiving a guaranteed non-null argument; the resolvePosGroupFromPrefix null return propagates an unnecessary nullable contract to its caller; and the magic 1/3 core-collocate threshold leaves an important tuning decision undocumented. None of these are deep structural problems, but together they represent a modest but real gap from exemplary low-level clarity."
+    }
+  },
+  "issues": [
+    {
+      "dimension": "low_level_elegance",
+      "identifier": "nullable_index_test_seam",
+      "summary": "CollocateQueryHelper stores a @Nullable index field requiring requireIndex() assertion in every I/O method instead of accepting a guaranteed non-null parameter",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/query/CollocateQueryHelper.java"
+      ],
+      "evidence": [
+        "Field declared as `private final @Nullable BlackLabIndex index;` (line 57)",
+        "All three I/O methods (getTotalFrequency, performCollocateSearch, executeBcqlQuery) start with `BlackLabIndex idx = requireIndex();` — a runtime assertion for a condition that is a construction-time invariant in production",
+        "requireIndex() throws IllegalStateException with a message directing users to the production constructor — this is a runtime guard for a compile-time-detectable misconfiguration"
+      ],
+      "suggestion": "Remove the no-arg test-seam constructor and the @Nullable field. Instead, make the index a @NonNull parameter in all I/O methods, or extract an interface (CollocateQueryPort) that test subclasses implement without needing a BlackLabIndex at all. If the test seam must remain, move it to a dedicated test subclass that overrides only the I/O methods, keeping the production class free of nullable state.",
+      "confidence": "high",
+      "impact_scope": "module",
+      "fix_scope": "multi_file_refactor"
+    },
+    {
+      "dimension": "low_level_elegance",
+      "identifier": "resolve_pos_group_null_return",
+      "summary": "resolvePosGroupFromPrefix returns null as fall-through instead of PosGroup.OTHER, requiring a caller-side null-to-enum conversion",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/config/RelationPatternUtils.java"
+      ],
+      "evidence": [
+        "Method signature is `private static @Nullable PosGroup resolvePosGroupFromPrefix(String s, String attr)` with a bare `return null;` at line 122",
+        "Caller at line 96: `return result != null ? result : PosGroup.OTHER;` — converts null to the enum default that the method itself could have returned"
+      ],
+      "suggestion": "Change the final `return null;` to `return PosGroup.OTHER;` and update the method return type to `@NonNull PosGroup`. This eliminates the nullable return and the conditional in the caller, making the intent of 'unknown POS maps to OTHER' explicit at the site where it is decided.",
+      "confidence": "high",
+      "impact_scope": "local",
+      "fix_scope": "single_edit"
+    },
+    {
+      "dimension": "low_level_elegance",
+      "identifier": "magic_core_collocate_threshold",
+      "summary": "identifyCoreCollocates embeds an unexplained 1/3 threshold formula for minNounsForCore",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/exploration/SingleSeedExplorer.java"
+      ],
+      "evidence": [
+        "Line 216: `int minNounsForCore = Math.max(2, discoveredNouns.size() / 3);` — the 1/3 ratio appears without a named constant or explanation",
+        "The absolute minimum of 2 is also unexplained — not obvious why 33% of discovered nouns is the right threshold for 'core'"
+      ],
+      "suggestion": "Extract the ratio to a named constant (e.g., `private static final double CORE_COLLOCATE_NOUN_COVERAGE_RATIO = 1.0 / 3.0;`) with a comment explaining the heuristic rationale. Use `(int) Math.max(2, discoveredNouns.size() * CORE_COLLOCATE_NOUN_COVERAGE_RATIO)` to make the intent self-documenting.",
+      "confidence": "medium",
+      "impact_scope": "local",
+      "fix_scope": "single_edit"
+    },
+    {
+      "dimension": "low_level_elegance",
+      "identifier": "fqn_inconsistency_assembler",
+      "summary": "ExploreResponseAssembler.populateComparisonResponse uses fully-qualified java.util.List/ArrayList despite having those types imported",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/api/ExploreResponseAssembler.java"
+      ],
+      "evidence": [
+        "Line 171: `java.util.List<Map<String, Object>> collocates = new java.util.ArrayList<>();`",
+        "Lines 6–9 already import java.util.ArrayList and java.util.List — every other method in the file uses the short imported names"
+      ],
+      "suggestion": "Replace `java.util.List<Map<String, Object>> collocates = new java.util.ArrayList<>();` with `List<Map<String, Object>> collocates = new ArrayList<>();` to match the style of all other methods in the class.",
+      "confidence": "high",
+      "impact_scope": "local",
+      "fix_scope": "single_edit"
+    }
+  ],
+  "retrospective": {
+    "root_causes": [
+      "The nullable-index test-seam pattern in CollocateQueryHelper appears to be a pragmatic workaround for testing without a full BlackLab index — a structural gap between test infrastructure and production design.",
+      "The scattered minor inconsistencies (null return, FQN, magic formula) likely reflect incremental growth without a final cleanup pass on each file."
+    ],
+    "likely_symptoms": [
+      "fqn_inconsistency_assembler — cosmetic symptom of a one-time editing artifact"
+    ],
+    "possible_false_positives": []
+  }
+}

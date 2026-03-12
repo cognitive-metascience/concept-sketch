@@ -8,7 +8,7 @@ import pl.marcinmilkowski.word_sketch.config.RelationConfig;
 import pl.marcinmilkowski.word_sketch.model.exploration.FetchExamplesOptions;
 import pl.marcinmilkowski.word_sketch.model.exploration.FetchExamplesResult;
 import pl.marcinmilkowski.word_sketch.model.PosGroup;
-import pl.marcinmilkowski.word_sketch.model.QueryResults;
+import pl.marcinmilkowski.word_sketch.model.sketch.*;
 import pl.marcinmilkowski.word_sketch.config.RelationType;
 import pl.marcinmilkowski.word_sketch.query.QueryExecutor;
 import pl.marcinmilkowski.word_sketch.query.StubQueryExecutor;
@@ -38,8 +38,8 @@ class SemanticFieldExplorerFetchExamplesTest {
                         PosGroup.ADJ));
     }
 
-    private static QueryResults.CollocateResult collocateResult(String sentence) {
-        return new QueryResults.CollocateResult(sentence, null, 0, 5, "d1", "important", 1, 7.0);
+    private static CollocateResult collocateResult(String sentence) {
+        return new CollocateResult(sentence, null, 0, 5, "d1", "important", 1, 7.0);
     }
 
     @Test
@@ -47,7 +47,7 @@ class SemanticFieldExplorerFetchExamplesTest {
     void fetchExamples_returnsSentencesFromResults() throws IOException {
         QueryExecutor executor = new StubQueryExecutor() {
             @Override
-            public List<QueryResults.CollocateResult> executeBcqlQuery(String bcqlPattern, int maxResults) {
+            public List<CollocateResult> executeBcqlQuery(String bcqlPattern, int maxResults) {
                 return List.of(
                         collocateResult("a"),
                         collocateResult("b"),
@@ -71,7 +71,7 @@ class SemanticFieldExplorerFetchExamplesTest {
     void fetchExamples_deduplicatesSentences() throws IOException {
         QueryExecutor executor = new StubQueryExecutor() {
             @Override
-            public List<QueryResults.CollocateResult> executeBcqlQuery(String bcqlPattern, int maxResults) {
+            public List<CollocateResult> executeBcqlQuery(String bcqlPattern, int maxResults) {
                 return List.of(
                         collocateResult("a"),
                         collocateResult("a"),
@@ -94,7 +94,7 @@ class SemanticFieldExplorerFetchExamplesTest {
     void fetchExamples_respectsMaxLimit() throws IOException {
         QueryExecutor executor = new StubQueryExecutor() {
             @Override
-            public List<QueryResults.CollocateResult> executeBcqlQuery(String bcqlPattern, int maxResults) {
+            public List<CollocateResult> executeBcqlQuery(String bcqlPattern, int maxResults) {
                 return List.of(
                         collocateResult("a"),
                         collocateResult("b"),
@@ -117,7 +117,7 @@ class SemanticFieldExplorerFetchExamplesTest {
     void fetchExamples_propagatesIOExceptionFromExecutor() {
         QueryExecutor executor = new StubQueryExecutor() {
             @Override
-            public List<QueryResults.CollocateResult> executeBcqlQuery(
+            public List<CollocateResult> executeBcqlQuery(
                     String bcqlPattern, int maxResults) throws IOException {
                 throw new IOException("simulated executor failure");
             }

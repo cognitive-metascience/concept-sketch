@@ -14,7 +14,7 @@ import pl.marcinmilkowski.word_sketch.model.exploration.FetchExamplesResult;
 import pl.marcinmilkowski.word_sketch.model.exploration.ExplorationOptions;
 import pl.marcinmilkowski.word_sketch.model.exploration.SingleSeedExplorationOptions;
 import pl.marcinmilkowski.word_sketch.exploration.ExplorationService;
-import pl.marcinmilkowski.word_sketch.exploration.Seeds;
+import pl.marcinmilkowski.word_sketch.model.exploration.Seeds;
 
 import java.util.Objects;
 

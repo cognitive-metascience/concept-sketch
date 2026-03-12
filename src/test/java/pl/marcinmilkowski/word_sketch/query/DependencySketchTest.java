@@ -5,7 +5,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Assumptions;
 import java.io.File;
 import java.util.List;
-import pl.marcinmilkowski.word_sketch.model.QueryResults;
+import pl.marcinmilkowski.word_sketch.model.sketch.*;
 import static org.junit.jupiter.api.Assertions.*;
 
 /**
@@ -30,13 +30,13 @@ public class DependencySketchTest {
         Assumptions.assumeTrue(indexDir != null && indexDir.exists(), "Skipping: index not found at " + INDEX_PATH);
 
         try (BlackLabQueryExecutor executor = new BlackLabQueryExecutor(INDEX_PATH)) {
-            List<QueryResults.WordSketchResult> results = executor.executeDependencyPattern(
+            List<WordSketchResult> results = executor.executeDependencyPattern(
                 "theory", "nsubj", 0.0, 20, null
             );
 
             assertNotNull(results, "Results list must not be null");
             assertFalse(results.isEmpty(), "Expected at least one nsubj collocate for high-frequency lemma 'theory'");
-            for (QueryResults.WordSketchResult r : results) {
+            for (WordSketchResult r : results) {
                 assertNotNull(r.lemma(), "Each result must have a non-null lemma");
                 assertTrue(r.frequency() > 0, "Each result must have frequency > 0, got: " + r.frequency());
             }
@@ -49,13 +49,13 @@ public class DependencySketchTest {
         Assumptions.assumeTrue(indexDir != null && indexDir.exists(), "Skipping: index not found at " + INDEX_PATH);
 
         try (BlackLabQueryExecutor executor = new BlackLabQueryExecutor(INDEX_PATH)) {
-            List<QueryResults.WordSketchResult> results = executor.executeDependencyPattern(
+            List<WordSketchResult> results = executor.executeDependencyPattern(
                 "theory", "amod", 0.0, 20, null
             );
 
             assertNotNull(results, "Results list must not be null");
             assertFalse(results.isEmpty(), "Expected at least one amod collocate for high-frequency lemma 'theory'");
-            for (QueryResults.WordSketchResult r : results) {
+            for (WordSketchResult r : results) {
                 assertNotNull(r.lemma(), "Each result must have a non-null lemma");
                 assertTrue(r.frequency() > 0, "Each result must have frequency > 0, got: " + r.frequency());
             }
@@ -68,13 +68,13 @@ public class DependencySketchTest {
         Assumptions.assumeTrue(indexDir != null && indexDir.exists(), "Skipping: index not found at " + INDEX_PATH);
 
         try (BlackLabQueryExecutor executor = new BlackLabQueryExecutor(INDEX_PATH)) {
-            List<QueryResults.WordSketchResult> results = executor.executeDependencyPattern(
+            List<WordSketchResult> results = executor.executeDependencyPattern(
                 "explain", "obj", 0.0, 20, null
             );
 
             assertNotNull(results, "Results list must not be null");
             assertFalse(results.isEmpty(), "Expected at least one obj collocate for high-frequency lemma 'explain'");
-            for (QueryResults.WordSketchResult r : results) {
+            for (WordSketchResult r : results) {
                 assertNotNull(r.lemma(), "Each result must have a non-null lemma");
                 assertTrue(r.frequency() > 0, "Each result must have frequency > 0, got: " + r.frequency());
             }
@@ -87,13 +87,13 @@ public class DependencySketchTest {
         Assumptions.assumeTrue(indexDir != null && indexDir.exists(), "Skipping: index not found at " + INDEX_PATH);
 
         try (BlackLabQueryExecutor executor = new BlackLabQueryExecutor(INDEX_PATH)) {
-            List<QueryResults.WordSketchResult> results = executor.executeDependencyPattern(
+            List<WordSketchResult> results = executor.executeDependencyPattern(
                 "theory", "nsubj", 0.0, 20, "NN.*"
             );
 
             assertNotNull(results, "Results list must not be null");
             assertFalse(results.isEmpty(), "Expected at least one nsubj+NN.* collocate for 'theory'");
-            for (QueryResults.WordSketchResult r : results) {
+            for (WordSketchResult r : results) {
                 assertNotNull(r.lemma(), "Each result must have a non-null lemma");
                 assertTrue(r.frequency() > 0, "Each result must have frequency > 0, got: " + r.frequency());
             }
@@ -106,7 +106,7 @@ public class DependencySketchTest {
         Assumptions.assumeTrue(indexDir != null && indexDir.exists(), "Skipping: index not found at " + INDEX_PATH);
 
         try (BlackLabQueryExecutor executor = new BlackLabQueryExecutor(INDEX_PATH)) {
-            List<QueryResults.WordSketchResult> results = executor.executeDependencyPattern(
+            List<WordSketchResult> results = executor.executeDependencyPattern(
                 "", "nsubj", 0.0, 20, null
             );
 
@@ -120,7 +120,7 @@ public class DependencySketchTest {
         Assumptions.assumeTrue(indexDir != null && indexDir.exists(), "Skipping: index not found at " + INDEX_PATH);
 
         try (BlackLabQueryExecutor executor = new BlackLabQueryExecutor(INDEX_PATH)) {
-            List<QueryResults.WordSketchResult> results = executor.executeDependencyPattern(
+            List<WordSketchResult> results = executor.executeDependencyPattern(
                 "theory", null, 0.0, 20, null
             );
 

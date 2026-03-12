@@ -1,0 +1,92 @@
+{
+  "batch": "naming_quality",
+  "batch_index": 4,
+  "assessments": {
+    "naming_quality": 83.0
+  },
+  "dimension_notes": {
+    "naming_quality": {
+      "evidence": [
+        "Domain vocabulary (seed, collocate, lemma, logDice, relation, BCQL/CQL) is used uniformly across all layers — query, exploration, model, and API.",
+        "`buildBcqlWithLemmaSubstitution` (BlackLabQueryExecutor.java) says 'substitution' but the implementation simply prepends a quoted lemma token before the collocate constraint: `String.format(\"\\\"%s\\\" %s\", ...)`. The Javadoc itself uses the word 'prepend', not 'substitute'.",
+        "`executeCollocateSearchWithContent` vs `executeCollocateSearch` (CollocateQueryHelper.java): the 'WithContent' suffix is vague — 'content' resolves only in the Javadoc to mean 'stored XML fields'. The underlying boolean flag is `withStoredHits`, which is more self-documenting.",
+        "`radius` field on the private `Collocate` inner class in RadialPlot.java is the orbital distance from the canvas center, but `circleRadius` on the same class is the drawn circle size. The shared root 'radius' conflates two distinct geometric concepts with no disambiguating prefix.",
+        "HTTP handler methods (`handleConcordanceExamples`, `handleSemanticFieldExplore`, etc.) uniformly use the `handle` prefix — standard Java HTTP handler convention, no concern."
+      ],
+      "impact_scope": "module",
+      "fix_scope": "multi_file_refactor",
+      "confidence": "medium"
+    }
+  },
+  "dimension_judgment": {
+    "naming_quality": {
+      "strengths": [
+        "Domain vocabulary is consistent and precise codebase-wide: seed, collocate, lemma, logDice, BCQL/CQL, relation — a developer can read names in one layer and immediately recognise them in another.",
+        "Service and executor names communicate contracts precisely: `SemanticFieldExplorer`, `CollocateProfileComparator`, `BlackLabQueryExecutor`, `CollocateQueryHelper` — no generic Manager/Processor/Util clusters.",
+        "Model types are domain-appropriate and specific: `DiscoveredNoun`, `CoreCollocate`, `CollocateProfile`, `ExplorationResult` describe their roles without ambiguity.",
+        "HTTP handler method names follow `handleXxx` consistently across all handler classes, and the grouped-handler decomposition (ConcordanceHandlers, ExplorationHandlers, SketchHandlers) accurately names what each group owns.",
+        "Enum and constant names communicate intent: `RelationEdgeType.SEED_ADJ`, `DISCOVERED_ADJ`, `MODIFIER`; `CROSS_RELATIONAL` sentinel is clearly documented."
+      ],
+      "issue_character": "Issues are isolated naming imprecisions — a method name that implies substitution where there is none, a vague suffix that requires Javadoc to interpret, and a field-name collision in one internal class — rather than a systemic vocabulary problem or codebase-wide generic-verb drift.",
+      "score_rationale": "The codebase sits comfortably above the 80-anchor (recurring friction) because the vast majority of names precisely communicate intent and the domain vocabulary is coherent throughout. It falls below the 90-anchor (trust what you see, minor friction only) because two method names (`buildBcqlWithLemmaSubstitution`, `executeCollocateSearchWithContent`) require callers to consult Javadoc to understand the actual behaviour, and the `radius`/`circleRadius` pair in RadialPlot creates momentary geometric confusion. These are isolated issues, not a pattern, which places the score at approximately 83."
+    }
+  },
+  "issues": [
+    {
+      "dimension": "naming_quality",
+      "identifier": "bcql_lemma_prepend_not_substitution",
+      "summary": "buildBcqlWithLemmaSubstitution implies a placeholder replacement but the method only prepends a quoted lemma token",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/query/BlackLabQueryExecutor.java"
+      ],
+      "evidence": [
+        "Method named `buildBcqlWithLemmaSubstitution` but implementation is `String.format(\"\\\"%s\\\" %s\", CqlUtils.escapeForRegex(lemma), cqlPattern)` — a prepend, not a substitution.",
+        "The method's own Javadoc uses the word 'prepended' (e.g. 'the lemma is prepended as a quoted token') directly contradicting the method name."
+      ],
+      "suggestion": "Rename to `buildBcqlWithPrependedLemma` or `prependLemmaToken` to match what the implementation and Javadoc already describe; update the single call site in `executeCollocations`.",
+      "confidence": "medium",
+      "impact_scope": "local",
+      "fix_scope": "single_edit"
+    },
+    {
+      "dimension": "naming_quality",
+      "identifier": "collocate_search_with_content_vague",
+      "summary": "`executeCollocateSearchWithContent` suffix 'WithContent' is ambiguous — the private flag and Javadoc reveal this means 'with stored XML fields'",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/query/CollocateQueryHelper.java"
+      ],
+      "evidence": [
+        "Public-facing pair: `executeCollocateSearchWithContent` and `executeCollocateSearch` differ only in passing `true`/`false` to `performCollocateSearch(lemma, bcqlPattern, withStoredHits)`.",
+        "The private boolean parameter is `withStoredHits`, which is precise; the public method name loses that precision — 'Content' does not communicate 'stored XML fields'."
+      ],
+      "suggestion": "Rename to `executeCollocateSearchWithStoredHits` (paired with `executeCollocateSearch`) so the name reflects the actual distinction; the single call site in `BlackLabQueryExecutor` would need updating.",
+      "confidence": "medium",
+      "impact_scope": "module",
+      "fix_scope": "single_edit"
+    },
+    {
+      "dimension": "naming_quality",
+      "identifier": "radialplot_radius_vs_circleradius_ambiguity",
+      "summary": "RadialPlot.Collocate has both `radius` (orbital distance) and `circleRadius` (drawn circle size) — the shared root obscures the geometric distinction",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/api/viz/RadialPlot.java"
+      ],
+      "evidence": [
+        "`c.radius` is set to `startRadius + (i * radiusStep)` — the distance from the canvas centre to the collocate position.",
+        "`c.circleRadius` is set to `Math.abs(c.score) * scale` — the rendered circle's drawn radius.",
+        "Both fields use 'radius' as root but measure completely different geometric quantities; a reader scanning field access must check which is which."
+      ],
+      "suggestion": "Rename `radius` to `orbitRadius` (or `layoutRadius`) on the private `Collocate` inner class to distinguish it from `circleRadius`; update the ~6 references within the same class.",
+      "confidence": "medium",
+      "impact_scope": "local",
+      "fix_scope": "single_edit"
+    }
+  ],
+  "retrospective": {
+    "root_causes": [
+      "The two method-name imprecisions (substitution vs prepend, content vs stored-hits) appear to be independent naming choices made during extraction/refactoring rather than a systemic vocabulary policy gap."
+    ],
+    "likely_symptoms": [],
+    "possible_false_positives": []
+  }
+}

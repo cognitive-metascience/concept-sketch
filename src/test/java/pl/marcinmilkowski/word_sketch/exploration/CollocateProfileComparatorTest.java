@@ -3,7 +3,7 @@ package pl.marcinmilkowski.word_sketch.exploration;
 import org.junit.jupiter.api.Test;
 import pl.marcinmilkowski.word_sketch.model.exploration.CollocateProfile;
 import pl.marcinmilkowski.word_sketch.model.exploration.ComparisonResult;
-import pl.marcinmilkowski.word_sketch.model.QueryResults;
+import pl.marcinmilkowski.word_sketch.model.sketch.*;
 import pl.marcinmilkowski.word_sketch.query.QueryExecutor;
 import pl.marcinmilkowski.word_sketch.model.exploration.ExplorationOptions;
 import pl.marcinmilkowski.word_sketch.query.StubQueryExecutor;
@@ -18,18 +18,18 @@ import static org.junit.jupiter.api.Assertions.*;
 class CollocateProfileComparatorTest {
 
     /** Stub QueryExecutor that returns predefined collocate lists per lemma. */
-    private static QueryExecutor stubExecutor(java.util.Map<String, List<QueryResults.WordSketchResult>> data) {
+    private static QueryExecutor stubExecutor(java.util.Map<String, List<WordSketchResult>> data) {
         return new StubQueryExecutor() {
             @Override
-            public List<QueryResults.WordSketchResult> executeCollocations(
+            public List<WordSketchResult> executeCollocations(
                     String lemma, String cqlPattern, double minLogDice, int maxResults) {
                 return data.getOrDefault(lemma, List.of());
             }
         };
     }
 
-    private static QueryResults.WordSketchResult wsr(String lemma, double logDice) {
-        return new QueryResults.WordSketchResult(lemma, "JJ", 10L, logDice, 0.0, List.of());
+    private static WordSketchResult wsr(String lemma, double logDice) {
+        return new WordSketchResult(lemma, "JJ", 10L, logDice, 0.0, List.of());
     }
 
     @Test
@@ -53,7 +53,7 @@ class CollocateProfileComparatorTest {
         // "model"  has "important" (logDice=7)
         // "important" appears in both seeds → higher commonality
         // "novel" appears only in "theory" → lower commonality
-        var data = new java.util.LinkedHashMap<String, List<QueryResults.WordSketchResult>>();
+        var data = new java.util.LinkedHashMap<String, List<WordSketchResult>>();
         data.put("theory", List.of(wsr("important", 8.0), wsr("novel", 5.0)));
         data.put("model",  List.of(wsr("important", 7.0)));
 
@@ -75,7 +75,7 @@ class CollocateProfileComparatorTest {
     @Test
     void compareCollocateProfiles_identifiesAdjectivesSharedAcrossSeeds() throws IOException {
         // "important" is shared by all three seeds; "recent" is shared by two; "large" only by one
-        var data = new java.util.LinkedHashMap<String, List<QueryResults.WordSketchResult>>();
+        var data = new java.util.LinkedHashMap<String, List<WordSketchResult>>();
         data.put("theory",     List.of(wsr("important", 9.0), wsr("recent", 6.0)));
         data.put("model",      List.of(wsr("important", 8.0), wsr("recent", 5.0)));
         data.put("hypothesis", List.of(wsr("important", 7.0), wsr("large",  4.0)));

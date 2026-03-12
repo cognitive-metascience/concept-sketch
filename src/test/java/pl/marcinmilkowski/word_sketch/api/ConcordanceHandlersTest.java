@@ -3,7 +3,7 @@ package pl.marcinmilkowski.word_sketch.api;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.junit.jupiter.api.Test;
 import pl.marcinmilkowski.word_sketch.config.GrammarConfigHelper;
-import pl.marcinmilkowski.word_sketch.model.QueryResults;
+import pl.marcinmilkowski.word_sketch.model.sketch.*;
 import pl.marcinmilkowski.word_sketch.query.QueryExecutor;
 import pl.marcinmilkowski.word_sketch.query.StubQueryExecutor;
 
@@ -20,8 +20,8 @@ class ConcordanceHandlersTest {
     private static QueryExecutor stubExecutor() {
         return new StubQueryExecutor() {
             @Override
-            public List<QueryResults.CollocateResult> executeBcqlQuery(String bcqlPattern, int maxResults) {
-                return List.of(new QueryResults.CollocateResult("The big house", null, 4, 7, "d1", "big", 1, 7.5));
+            public List<CollocateResult> executeBcqlQuery(String bcqlPattern, int maxResults) {
+                return List.of(new CollocateResult("The big house", null, 4, 7, "d1", "big", 1, 7.5));
             }
         };
     }
@@ -38,7 +38,7 @@ class ConcordanceHandlersTest {
         String[] capturedPattern = new String[1];
         QueryExecutor countingExecutor = new StubQueryExecutor() {
             @Override
-            public List<QueryResults.CollocateResult> executeBcqlQuery(String bcqlPattern, int maxResults) {
+            public List<CollocateResult> executeBcqlQuery(String bcqlPattern, int maxResults) {
                 callCount.incrementAndGet();
                 capturedPattern[0] = bcqlPattern;
                 return List.of();

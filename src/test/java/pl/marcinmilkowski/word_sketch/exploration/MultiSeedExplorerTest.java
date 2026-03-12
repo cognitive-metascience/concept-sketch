@@ -4,7 +4,7 @@ import org.junit.jupiter.api.Test;
 import pl.marcinmilkowski.word_sketch.config.GrammarConfigHelper;
 import pl.marcinmilkowski.word_sketch.config.RelationConfig;
 import pl.marcinmilkowski.word_sketch.model.exploration.ExplorationResult;
-import pl.marcinmilkowski.word_sketch.model.QueryResults;
+import pl.marcinmilkowski.word_sketch.model.sketch.*;
 import pl.marcinmilkowski.word_sketch.query.QueryExecutor;
 import pl.marcinmilkowski.word_sketch.model.exploration.ExplorationOptions;
 import pl.marcinmilkowski.word_sketch.query.StubQueryExecutor;
@@ -20,10 +20,10 @@ import static org.junit.jupiter.api.Assertions.*;
 class MultiSeedExplorerTest {
 
     /** Stub executor returning canned results per lemma via executeSurfacePattern. */
-    private static QueryExecutor stubExecutor(Map<String, List<QueryResults.WordSketchResult>> data) {
+    private static QueryExecutor stubExecutor(Map<String, List<WordSketchResult>> data) {
         return new StubQueryExecutor() {
             @Override
-            public List<QueryResults.WordSketchResult> executeSurfacePattern(
+            public List<WordSketchResult> executeSurfacePattern(
                     String pattern, double minLogDice, int max) {
                 String lemma = StubQueryExecutor.extractLemmaFromPattern(pattern);
                 return data.getOrDefault(lemma, List.of());
@@ -31,8 +31,8 @@ class MultiSeedExplorerTest {
         };
     }
 
-    private static QueryResults.WordSketchResult wsr(String lemma, double logDice, long freq) {
-        return new QueryResults.WordSketchResult(lemma, "JJ", freq, logDice, 0.0, List.of());
+    private static WordSketchResult wsr(String lemma, double logDice, long freq) {
+        return new WordSketchResult(lemma, "JJ", freq, logDice, 0.0, List.of());
     }
 
     private static RelationConfig anyRelation() {
@@ -43,7 +43,7 @@ class MultiSeedExplorerTest {
 
     @Test
     void explore_sharedCollocateAppearsInCoreCollocates() throws IOException {
-        Map<String, List<QueryResults.WordSketchResult>> data = new LinkedHashMap<>();
+        Map<String, List<WordSketchResult>> data = new LinkedHashMap<>();
         data.put("theory",  List.of(wsr("important", 8.0, 50), wsr("novel", 5.0, 20)));
         data.put("model",   List.of(wsr("important", 7.0, 40), wsr("large",  4.0, 10)));
 
@@ -61,7 +61,7 @@ class MultiSeedExplorerTest {
 
     @Test
     void explore_seedsBecomeDiscoveredNouns() throws IOException {
-        Map<String, List<QueryResults.WordSketchResult>> data = Map.of(
+        Map<String, List<WordSketchResult>> data = Map.of(
                 "theory", List.of(wsr("abstract", 7.0, 30)),
                 "model",  List.of(wsr("abstract", 6.0, 20)));
 
@@ -77,7 +77,7 @@ class MultiSeedExplorerTest {
 
     @Test
     void explore_noSharedCollocates_coreCollocatesEmpty() throws IOException {
-        Map<String, List<QueryResults.WordSketchResult>> data = Map.of(
+        Map<String, List<WordSketchResult>> data = Map.of(
                 "theory", List.of(wsr("abstract", 7.0, 30)),
                 "model",  List.of(wsr("large",    6.0, 20)));
 
@@ -101,7 +101,7 @@ class MultiSeedExplorerTest {
 
     @Test
     void explore_minSharedOne_includesCollocatesAppearsInAnySeed() throws IOException {
-        Map<String, List<QueryResults.WordSketchResult>> data = Map.of(
+        Map<String, List<WordSketchResult>> data = Map.of(
                 "theory", List.of(wsr("unique", 9.0, 5)),
                 "model",  List.of(wsr("common", 7.0, 5)));
 
@@ -116,7 +116,7 @@ class MultiSeedExplorerTest {
 
     @Test
     void explore_aggregateSeedCollocatesContainsAllCollocates() throws IOException {
-        Map<String, List<QueryResults.WordSketchResult>> data = new LinkedHashMap<>();
+        Map<String, List<WordSketchResult>> data = new LinkedHashMap<>();
         data.put("theory", List.of(wsr("important", 8.0, 50)));
         data.put("model",  List.of(wsr("recent",    6.0, 30)));
 

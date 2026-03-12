@@ -1,0 +1,87 @@
+{
+  "batch": "cross_module_architecture",
+  "batch_index": 16,
+  "assessments": {"cross_module_architecture": 80.0},
+  "dimension_notes": {
+    "cross_module_architecture": {
+      "evidence": [
+        "Dependency direction is clean and acyclic: api → exploration(interface)/query(interface) → config/model/utils; no lower layer imports from a higher one",
+        "No cycle detected across all packages: model and utils are pure leaf packages with no internal imports; config imports only from model and utils; query imports only from model and utils; exploration imports from config, model, and query; api imports from exploration (interface only for most cases), config, model, and query",
+        "Interface segregation applied: CollocateQueryPort (narrow) used by ConcordanceHandlers/CorpusQueryHandlers, QueryExecutor (full) used by SketchHandlers; ExplorationService interface depended on by api layer",
+        "ExplorationService interface lives in exploration package alongside its concrete implementations (SemanticFieldExplorer, MultiSeedExplorer, SingleSeedExplorer) — api.ExplorationHandlers must import from the exploration package, which also exposes concrete classes; no Java module-info.java enforces the api-sees-only-interface contract",
+        "api.ExplorationHandlers imports exploration.Seeds directly — Seeds is a small validation utility (requireAtLeastTwo) that logically belongs in utils but is placed in the exploration package, creating a dependency from api to exploration concrete infrastructure beyond just the service interface",
+        "model package (18 files across model, model.exploration, model.sketch) is the largest single sub-tree but this reflects appropriate DTO growth — no god class or hub module; model.QueryResults as a namespace container is a minor anti-pattern but pre-dated refactoring (model/sketch package exists for new types)",
+        "No shared mutable state across modules; all inter-module dependencies are through interfaces or immutable DTOs",
+        "Main.java (322 lines) is the only place SemanticFieldExplorer (concrete) is referenced outside exploration — appropriate composition root pattern",
+        "Package-info files document boundaries and contracts for model, api, config, query, exploration packages"
+      ],
+      "impact_scope": "module",
+      "fix_scope": "multi_file_refactor",
+      "confidence": "high"
+    }
+  },
+  "dimension_judgment": {
+    "cross_module_architecture": {
+      "strengths": [
+        "Acyclic dependency graph with clear layer order: utils/model → config → query/exploration → api, enforced consistently across all packages",
+        "Interface segregation applied at two points: CollocateQueryPort (narrow slice for BCQL-only callers) and ExplorationService (full service for api), with QueryExecutor extending CollocateQueryPort",
+        "model and utils are clean leaf packages with zero internal imports, making them freely reusable without any blast-radius risk",
+        "Main.java is the only composition root that wires concrete types; all other modules depend on interfaces or DTOs",
+        "Package-info Javadoc documents boundary contracts and explains design decisions (why QueryResults stays in model root, why exploration subtypes live in model/exploration)"
+      ],
+      "issue_character": "The issues are isolated and shallow: the interface/implementation boundary within the exploration package is blurred by colocation (no module-info.java), and one small utility class (Seeds) leaked into the exploration package rather than utils, creating a minor but unnecessary dependency from api to exploration concrete infrastructure.",
+      "score_rationale": "The codebase demonstrates strong architectural discipline — clean layer ordering, no cycles, good interface segregation, and a proper composition root. These are non-trivial to achieve and are consistently applied. The gap from exemplary (90+) is the absence of enforced module boundaries (no module-info.java), the cohabitation of ExplorationService interface and its implementations in a single package (api cannot be prevented from seeing concrete exploration classes), and the Seeds utility misplaced in exploration rather than utils. These are real but minor friction points that a developer would notice only when considering testability or enforcing strict boundaries — they do not impede daily work. Score: 80 (solid but with a clear path to tighter encapsulation)."
+    }
+  },
+  "issues": [
+    {
+      "dimension": "cross_module_architecture",
+      "identifier": "exploration_interface_impl_colocation",
+      "summary": "ExplorationService interface cohabits with concrete implementations in the exploration package, blurring the api→service boundary",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/exploration/ExplorationService.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/exploration/SemanticFieldExplorer.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/exploration/MultiSeedExplorer.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/exploration/SingleSeedExplorer.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/api/ExplorationHandlers.java"
+      ],
+      "evidence": [
+        "ExplorationService (public interface), SemanticFieldExplorer (public impl), MultiSeedExplorer (package-private impl), SingleSeedExplorer (package-private impl) all reside in pl.marcinmilkowski.word_sketch.exploration",
+        "api.ExplorationHandlers imports exploration.ExplorationService (interface) and exploration.Seeds (concrete utility) — both from the same package that contains concrete implementations",
+        "Without module-info.java, nothing prevents api code from referencing SemanticFieldExplorer directly; the boundary contract is documentation-only"
+      ],
+      "suggestion": "Move ExplorationService to a dedicated exploration.spi subpackage (or to the model package as a query port) so the api layer imports only from that public-API subpackage. Add a module-info.java that exports exploration.spi but not exploration, enforcing the boundary at compile time. Alternatively, if module-info.java is out of scope, extract ExplorationService to api or a shared service-interfaces package so the intended boundary is visible from the import structure alone.",
+      "confidence": "medium",
+      "impact_scope": "module",
+      "fix_scope": "multi_file_refactor"
+    },
+    {
+      "dimension": "cross_module_architecture",
+      "identifier": "seeds_utility_in_exploration",
+      "summary": "Seeds validation utility placed in exploration package forces api to import from exploration concrete infrastructure",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/exploration/Seeds.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/api/ExplorationHandlers.java"
+      ],
+      "evidence": [
+        "Seeds is a pure validation helper (requireAtLeastTwo) with no dependency on any exploration logic — its only content is a collection-size guard",
+        "api.ExplorationHandlers imports pl.marcinmilkowski.word_sketch.exploration.Seeds specifically for input validation in handleSemanticFieldExploreMulti and handleSemanticFieldComparison",
+        "utils package is the established home for domain-agnostic helpers (MathUtils, CqlUtils, JsonUtils) but Seeds is not there"
+      ],
+      "suggestion": "Move Seeds to the utils package (or inline the two-line check into ExplorationHandlers) so that api's only import from the exploration package is the ExplorationService interface. This makes the dependency surface of ExplorationHandlers precise.",
+      "confidence": "high",
+      "impact_scope": "module",
+      "fix_scope": "single_edit"
+    }
+  ],
+  "retrospective": {
+    "root_causes": [
+      "Organic growth of the exploration subsystem without a formal interface/implementation split at the package level; interface and implementations added incrementally to the same package",
+      "No Java module system (module-info.java) to enforce visibility rules — architecture is convention-based only"
+    ],
+    "likely_symptoms": [
+      "seeds_utility_in_exploration is clearly a placement issue rather than a deep architectural problem"
+    ],
+    "possible_false_positives": []
+  }
+}

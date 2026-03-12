@@ -2,7 +2,7 @@ package pl.marcinmilkowski.word_sketch.query;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import pl.marcinmilkowski.word_sketch.model.QueryResults;
+import pl.marcinmilkowski.word_sketch.model.sketch.*;
 
 import java.io.IOException;
 import java.util.HashMap;
@@ -94,7 +94,7 @@ class BlackLabIntegrationTest {
                 "model",     200L);
 
         StubCollocateHelper helper = new StubCollocateHelper(corpusFreqs);
-        List<QueryResults.WordSketchResult> ranked = helper.buildAndRankCollocates(
+        List<WordSketchResult> ranked = helper.buildAndRankCollocates(
                 jointFreqMap, headwordFreq, 0.0, 10, Map.of());
 
         assertFalse(ranked.isEmpty(), "Should produce ranking results");
@@ -117,9 +117,9 @@ class BlackLabIntegrationTest {
                 "common", 5_000L);     // tightly associated → high logDice
 
         StubCollocateHelper helper = new StubCollocateHelper(corpusFreqs);
-        List<QueryResults.WordSketchResult> all = helper.buildAndRankCollocates(
+        List<WordSketchResult> all = helper.buildAndRankCollocates(
                 jointFreqMap, headwordFreq, 0.0, 10, Map.of());
-        List<QueryResults.WordSketchResult> filtered = helper.buildAndRankCollocates(
+        List<WordSketchResult> filtered = helper.buildAndRankCollocates(
                 jointFreqMap, headwordFreq, 5.0, 10, Map.of());
 
         assertTrue(all.size() >= filtered.size(),
@@ -137,7 +137,7 @@ class BlackLabIntegrationTest {
         Map<String, String> posMap = Map.of("empirical", "JJ");
 
         StubCollocateHelper helper = new StubCollocateHelper(corpusFreqs);
-        List<QueryResults.WordSketchResult> results = helper.buildAndRankCollocates(
+        List<WordSketchResult> results = helper.buildAndRankCollocates(
                 jointFreqMap, headwordFreq, 0.0, 10, posMap);
 
         assertFalse(results.isEmpty(), "Should return at least one result");
@@ -157,7 +157,7 @@ class BlackLabIntegrationTest {
         }
 
         StubCollocateHelper helper = new StubCollocateHelper(corpusFreqs);
-        List<QueryResults.WordSketchResult> results = helper.buildAndRankCollocates(
+        List<WordSketchResult> results = helper.buildAndRankCollocates(
                 jointFreqMap, 500L, 0.0, 5, Map.of());
 
         assertEquals(5, results.size(),

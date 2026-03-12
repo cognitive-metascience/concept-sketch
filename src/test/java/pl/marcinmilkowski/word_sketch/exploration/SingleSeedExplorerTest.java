@@ -1,7 +1,7 @@
 package pl.marcinmilkowski.word_sketch.exploration;
 
 import org.junit.jupiter.api.Test;
-import pl.marcinmilkowski.word_sketch.model.QueryResults;
+import pl.marcinmilkowski.word_sketch.model.sketch.*;
 import pl.marcinmilkowski.word_sketch.model.exploration.ExplorationOptions;
 import pl.marcinmilkowski.word_sketch.model.exploration.ExplorationResult;
 import pl.marcinmilkowski.word_sketch.model.exploration.SingleSeedExplorationOptions;
@@ -24,8 +24,8 @@ class SingleSeedExplorerTest {
     private static final String BCQL     = "[lemma=\"theory\"] [xpos=\"JJ.*\"]";
     private static final String SIMPLE   = "[xpos=\"JJ.*\"]";
 
-    private static QueryResults.WordSketchResult wsr(String lemma, double logDice) {
-        return new QueryResults.WordSketchResult(lemma, "JJ", 10, logDice, 0.0, List.of());
+    private static WordSketchResult wsr(String lemma, double logDice) {
+        return new WordSketchResult(lemma, "JJ", 10, logDice, 0.0, List.of());
     }
 
     private static SingleSeedExplorationOptions opts(int top, double minLogDice, int minShared) {
@@ -45,13 +45,13 @@ class SingleSeedExplorerTest {
         // phase-2: reverse lookup — "important" → [model, hypothesis], "novel" → [model]
         QueryExecutor executor = new StubQueryExecutor() {
             @Override
-            public List<QueryResults.WordSketchResult> executeSurfacePattern(
+            public List<WordSketchResult> executeSurfacePattern(
                     String pattern, double minLogDice, int max) {
                 return List.of(wsr("important", 9.0), wsr("novel", 7.0));
             }
 
             @Override
-            public List<QueryResults.WordSketchResult> executeCollocations(
+            public List<WordSketchResult> executeCollocations(
                     String lemma, String cqlPattern, double minLogDice, int max) {
                 return switch (lemma) {
                     case "important" -> List.of(wsr("model", 8.5), wsr("hypothesis", 6.0));
@@ -112,7 +112,7 @@ class SingleSeedExplorerTest {
     void explore_minLogDiceFiltering_excludesBelowThreshold() throws IOException {
         QueryExecutor executor = new StubQueryExecutor() {
             @Override
-            public List<QueryResults.WordSketchResult> executeSurfacePattern(
+            public List<WordSketchResult> executeSurfacePattern(
                     String pattern, double minLogDice, int max) {
                 // Simulate executor honouring minLogDice: only return items >= threshold
                 return List.of(wsr("important", 8.0), wsr("obscure", 2.0)).stream()
@@ -121,7 +121,7 @@ class SingleSeedExplorerTest {
             }
 
             @Override
-            public List<QueryResults.WordSketchResult> executeCollocations(
+            public List<WordSketchResult> executeCollocations(
                     String lemma, String cqlPattern, double minLogDice, int max) {
                 if ("important".equals(lemma)) {
                     return List.of(wsr("model", 7.0));

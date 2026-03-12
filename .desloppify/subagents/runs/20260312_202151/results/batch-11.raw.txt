@@ -1,0 +1,91 @@
+{
+  "batch": "package_organization",
+  "batch_index": 11,
+  "assessments": {
+    "package_organization": 72.0
+  },
+  "dimension_notes": {
+    "package_organization": {
+      "evidence": [
+        "Top-level packages cleanly map to distinct responsibilities: api (HTTP), config (grammar config), exploration (service logic), indexer (BlackLab indexing), model (DTOs), query (query execution), utils (shared utilities), viz (visualization).",
+        "model/sketch/ contains CollocateResult, ConcordanceResult, SnippetResult, WordSketchResult — structurally identical to the nested types in model/QueryResults.java — but nothing in the codebase imports from model.sketch.*; all 15 import sites use model.QueryResults nested types.",
+        "api/viz/RadialPlot.java (package pl.marcinmilkowski.word_sketch.api.viz) is a near-identical duplicate of viz/RadialPlot.java; no production or test file imports from api.viz — VisualizationHandlers.java imports pl.marcinmilkowski.word_sketch.viz.RadialPlot.",
+        "model/package-info.java explicitly acknowledges model/sketch/ is 'reserved but not yet used', confirming the dead package is a planned-but-incomplete migration.",
+        "api/ has 12 files (handlers, assemblers, server, exception, utilities) all clearly HTTP-scoped; no flat-directory overload concern since all files share one concern.",
+        "model/exploration/ has 13 files (at the threshold) but all are small DTOs/options/result records; cohesion is high and the sub-package split from exploration/ logic is correct.",
+        "ExamplesResponse.java lives in api/ with package-private visibility (no public modifier); it is used only within the api package by ConcordanceHandlers, ExplorationHandlers, ExploreResponseAssembler — placement is correct.",
+        "All packages have package-info.java documenting their scope, which strongly supports navigability."
+      ],
+      "impact_scope": "module",
+      "fix_scope": "multi_file_refactor",
+      "confidence": "high"
+    }
+  },
+  "dimension_judgment": {
+    "package_organization": {
+      "strengths": [
+        "Package names are unambiguous and match responsibilities: api, config, exploration, indexer, model, query, utils, viz each contain only files consistent with the package's declared purpose.",
+        "The model/exploration vs exploration split correctly separates pure DTOs from service logic, a textbook example of the kind of boundary that prevents coupling drift.",
+        "Every package has a package-info.java with a one-sentence scope statement, which aids navigation significantly.",
+        "The api/ package correctly uses package-private visibility for response DTOs (ExamplesResponse) rather than leaking them into model, keeping the HTTP contract scoped to the handler layer."
+      ],
+      "issue_character": "Two dead-code structural artifacts — an unreferenced model/sketch/ sub-package and a duplicate api/viz/RadialPlot.java — create false navigability targets that do not participate in any active import graph, representing stalled migration fragments rather than systemic placement errors.",
+      "score_rationale": "The codebase demonstrates deliberate, well-documented package design: clear single-responsibility packages, correct DTO/service separation, package-info coverage, and consistent naming. What pulls the score below 80 is the presence of two dead structural artifacts (model/sketch/ with four unreferenced duplicate types, and api/viz/RadialPlot.java with zero importers) that a developer discovering the codebase for the first time would reasonably treat as live API surface. These are localized placement problems, not systemic boundary failures, so the score stays well above 60."
+    }
+  },
+  "issues": [
+    {
+      "dimension": "package_organization",
+      "identifier": "model_sketch_dead_package",
+      "summary": "model/sketch/ contains four types that duplicate model/QueryResults nested records but are imported by nothing",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/model/sketch/CollocateResult.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/model/sketch/ConcordanceResult.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/model/sketch/SnippetResult.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/model/sketch/WordSketchResult.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/model/QueryResults.java"
+      ],
+      "evidence": [
+        "grep of all Java sources finds zero import statements for pl.marcinmilkowski.word_sketch.model.sketch.*; 15 import sites use pl.marcinmilkowski.word_sketch.model.QueryResults instead.",
+        "model/sketch/CollocateResult.java and model/QueryResults.CollocateResult have identical fields and javadoc; model/sketch/WordSketchResult.java and QueryResults.WordSketchResult are field-for-field identical.",
+        "model/package-info.java says: 'Word-sketch result types remain as nested types in this root package rather than being split into the reserved model/sketch/ sub-package' — confirming the sub-package is a stalled migration remnant.",
+        "model/sketch/package-info.java describes the package as if it were the canonical location, contradicting the parent package-info and confusing any developer browsing the model tree."
+      ],
+      "suggestion": "Either complete the migration or remove the dead package. Recommended staged plan: (1) Delete model/sketch/ entirely (4 files + package-info.java) since nothing imports from it and model/QueryResults.java is the live canonical source. (2) If the intent is to complete the migration to standalone top-level records, first update all import sites with a global rename (find src -name '*.java' | xargs sed -i 's/import pl.marcinmilkowski.word_sketch.model.QueryResults;/import pl.marcinmilkowski.word_sketch.model.sketch.*;/g' followed by replacing each QueryResults.X reference with X), then delete QueryResults.java. Validate with: mvn test. The delete-dead-package option (step 1 only) is lower risk and unblocks the structural confusion immediately.",
+      "confidence": "high",
+      "impact_scope": "module",
+      "fix_scope": "multi_file_refactor"
+    },
+    {
+      "dimension": "package_organization",
+      "identifier": "api_viz_dead_duplicate",
+      "summary": "api/viz/RadialPlot.java is a near-identical copy of viz/RadialPlot.java with zero importers",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/api/viz/RadialPlot.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/viz/RadialPlot.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/api/VisualizationHandlers.java"
+      ],
+      "evidence": [
+        "grep across all Java sources finds no import of pl.marcinmilkowski.word_sketch.api.viz.*.",
+        "VisualizationHandlers.java imports pl.marcinmilkowski.word_sketch.viz.RadialPlot, not api.viz.RadialPlot.",
+        "diff of the two files shows only the package declaration and one whitespace-only formatting difference (a split line); the implementations are functionally identical.",
+        "The test RadialPlotTest.java also imports from viz.RadialPlot (not api.viz.RadialPlot), confirming api/viz/ is unreachable."
+      ],
+      "suggestion": "Remove api/viz/RadialPlot.java and its containing directory api/viz/. Staged plan: (1) Confirm no imports: grep -r 'api\\.viz' src --include='*.java' (should return empty). (2) Delete src/main/java/pl/marcinmilkowski/word_sketch/api/viz/RadialPlot.java. (3) Remove the now-empty api/viz/ directory. (4) Run mvn test to confirm nothing breaks. No import updates are needed since the dead file had no callers.",
+      "confidence": "high",
+      "impact_scope": "local",
+      "fix_scope": "multi_file_refactor"
+    }
+  ],
+  "retrospective": {
+    "root_causes": [
+      "Incomplete migration: model/sketch/ and api/viz/RadialPlot.java both appear to be artifacts of refactoring sessions that were started but not finished — the files were created at destination but sources were never updated or dead copies never cleaned up.",
+      "The model/package-info.java acknowledges the reserved-but-unused state of model/sketch/, suggesting the author was aware of the split intent but deferred the migration without cleaning the placeholder."
+    ],
+    "likely_symptoms": [
+      "model_sketch_dead_package",
+      "api_viz_dead_duplicate"
+    ],
+    "possible_false_positives": []
+  }
+}

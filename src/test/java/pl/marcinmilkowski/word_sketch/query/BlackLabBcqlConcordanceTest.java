@@ -4,7 +4,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Assumptions;
 import java.io.File;
 import java.util.List;
-import pl.marcinmilkowski.word_sketch.model.QueryResults;
+import pl.marcinmilkowski.word_sketch.model.sketch.*;
 import static org.junit.jupiter.api.Assertions.*;
 
 /**
@@ -19,7 +19,7 @@ import static org.junit.jupiter.api.Assertions.*;
  *   <li>The BCQL endpoint uses {@code CorpusQueryLanguageParser} (not
  *       {@code ContextualQueryLanguageParser}) so that labeled capture groups
  *       ({@code 1:}, {@code 2:}) are supported.</li>
- *   <li>Full sentences are returned in {@link QueryResults.CollocateResult#sentence()}
+ *   <li>Full sentences are returned in {@link CollocateResult#sentence()}
  *       rather than the truncated 5-word KWIC window.</li>
  *   <li>Plain text and raw XML are both available via the result object.</li>
  * </ol>
@@ -52,9 +52,9 @@ public class BlackLabBcqlConcordanceTest {
         try (BlackLabQueryExecutor executor = new BlackLabQueryExecutor(INDEX_PATH)) {
             String bcqlPattern = "1:[lemma=\"theory\"] [lemma=\"be\"] 2:[xpos=\"JJ.*\"]";
 
-            List<QueryResults.CollocateResult> results = executor.executeBcqlQuery(bcqlPattern, 5);
+            List<CollocateResult> results = executor.executeBcqlQuery(bcqlPattern, 5);
 
-            for (QueryResults.CollocateResult r : results) {
+            for (CollocateResult r : results) {
                 assertNotNull(r.sentence(), "Sentence should not be null");
                 assertFalse(r.sentence().isEmpty(), "Sentence should not be empty");
 
@@ -76,11 +76,11 @@ public class BlackLabBcqlConcordanceTest {
         try (BlackLabQueryExecutor executor = new BlackLabQueryExecutor(INDEX_PATH)) {
             String bcqlPattern = "1:[lemma=\"concept\"] [lemma=\"be\"] 2:[xpos=\"JJ.*\"]";
 
-            List<QueryResults.CollocateResult> results = executor.executeBcqlQuery(bcqlPattern, 5);
+            List<CollocateResult> results = executor.executeBcqlQuery(bcqlPattern, 5);
 
             assertTrue(results.size() > 0, "Should find results for 'concept is <adj>'");
 
-            for (QueryResults.CollocateResult r : results) {
+            for (CollocateResult r : results) {
                 String sentence = r.sentence();
                 assertTrue(sentence.toLowerCase().contains("concept"),
                     "Sentence should contain 'concept', got: " + sentence);

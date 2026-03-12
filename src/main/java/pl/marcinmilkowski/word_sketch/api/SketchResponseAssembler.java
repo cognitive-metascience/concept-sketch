@@ -3,7 +3,7 @@ package pl.marcinmilkowski.word_sketch.api;
 import org.jspecify.annotations.NonNull;
 import pl.marcinmilkowski.word_sketch.config.RelationConfig;
 import pl.marcinmilkowski.word_sketch.config.RelationType;
-import pl.marcinmilkowski.word_sketch.model.QueryResults;
+import pl.marcinmilkowski.word_sketch.model.sketch.*;
 
 import java.util.HashMap;
 import java.util.List;
@@ -45,7 +45,7 @@ final class SketchResponseAssembler {
      */
     static @NonNull Map<String, Object> buildDepRelationEntry(
             @NonNull RelationConfig rel,
-            @NonNull List<QueryResults.WordSketchResult> results,
+            @NonNull List<WordSketchResult> results,
             @NonNull List<Map<String, Object>> collocations) {
         Map<String, Object> relData = new HashMap<>();
         relData.put("id", rel.id());
@@ -55,13 +55,13 @@ final class SketchResponseAssembler {
         relData.put("deprel", rel.deriveDeprel());
         relData.put("pattern", rel.pattern());
         relData.put("collocate_pos_group", rel.collocatePosGroup().label());
-        relData.put("total_matches", results.stream().mapToLong(QueryResults.WordSketchResult::frequency).sum());
+        relData.put("total_matches", results.stream().mapToLong(WordSketchResult::frequency).sum());
         relData.put("collocations", collocations);
         return relData;
     }
 
-    /** Formats a single {@link QueryResults.WordSketchResult} for inclusion in the collocations list. */
-    static @NonNull Map<String, Object> formatWordSketchResult(QueryResults.WordSketchResult result) {
+    /** Formats a single {@link WordSketchResult} for inclusion in the collocations list. */
+    static @NonNull Map<String, Object> formatWordSketchResult(WordSketchResult result) {
         Map<String, Object> word = new HashMap<>();
         word.put("lemma", result.lemma());
         word.put("frequency", result.frequency());

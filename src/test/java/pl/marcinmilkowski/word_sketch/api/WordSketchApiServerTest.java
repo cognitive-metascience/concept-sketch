@@ -12,7 +12,7 @@ import pl.marcinmilkowski.word_sketch.exploration.ExplorationService;
 import pl.marcinmilkowski.word_sketch.exploration.SemanticFieldExplorer;
 import pl.marcinmilkowski.word_sketch.query.QueryExecutor;
 import pl.marcinmilkowski.word_sketch.query.StubQueryExecutor;
-import pl.marcinmilkowski.word_sketch.model.QueryResults;
+import pl.marcinmilkowski.word_sketch.model.sketch.*;
 
 import java.io.IOException;
 import java.net.URI;
@@ -100,21 +100,21 @@ class WordSketchApiServerTest {
     @Test
     @DisplayName("GET /api/sketch/{lemma} — response contains expected lemma, relations map, and collocates")
     void sketchEndpoint_withCannedData_returnsExpectedJson() throws Exception {
-        QueryResults.WordSketchResult empirical = new QueryResults.WordSketchResult(
+        WordSketchResult empirical = new WordSketchResult(
                 "empirical", "JJ", 500L, 8.3, 0.005, List.of("empirical theory"));
-        QueryResults.WordSketchResult scientific = new QueryResults.WordSketchResult(
+        WordSketchResult scientific = new WordSketchResult(
                 "scientific", "JJ", 420L, 7.9, 0.004, List.of("scientific theory"));
 
         QueryExecutor richStub = new StubQueryExecutor() {
             @Override
-            public List<QueryResults.WordSketchResult> executeCollocations(
+            public List<WordSketchResult> executeCollocations(
                     String lemma, String cqlPattern, double minLogDice, int maxResults) {
                 return "theory".equalsIgnoreCase(lemma) ? List.of(empirical, scientific) : List.of();
             }
             @Override
             public long getTotalFrequency(String lemma) { return 50_000L; }
             @Override
-            public List<QueryResults.WordSketchResult> executeSurfacePattern(
+            public List<WordSketchResult> executeSurfacePattern(
                     String pattern, double minLogDice, int maxResults) {
                 return List.of(empirical, scientific);
             }
@@ -154,12 +154,12 @@ class WordSketchApiServerTest {
     @Test
     @DisplayName("GET /api/semantic-field/explore — response contains seed, edges, and collocate from canned data")
     void exploreEndpoint_withCannedData_returnsEdgesAndCollocates() throws Exception {
-        QueryResults.WordSketchResult theoretical = new QueryResults.WordSketchResult(
+        WordSketchResult theoretical = new WordSketchResult(
                 "theoretical", "JJ", 300L, 7.1, 0.003, List.of("theoretical theory"));
 
         QueryExecutor richStub = new StubQueryExecutor() {
             @Override
-            public List<QueryResults.WordSketchResult> executeCollocations(
+            public List<WordSketchResult> executeCollocations(
                     String lemma, String cqlPattern, double minLogDice, int maxResults) {
                 return List.of(theoretical);
             }

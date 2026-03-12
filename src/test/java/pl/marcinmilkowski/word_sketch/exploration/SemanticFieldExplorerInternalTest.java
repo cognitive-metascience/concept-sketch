@@ -5,7 +5,7 @@ import org.junit.jupiter.api.Test;
 import pl.marcinmilkowski.word_sketch.model.exploration.ExplorationResult;
 import pl.marcinmilkowski.word_sketch.model.exploration.ExplorationOptions;
 import pl.marcinmilkowski.word_sketch.model.exploration.SingleSeedExplorationOptions;
-import pl.marcinmilkowski.word_sketch.model.QueryResults;
+import pl.marcinmilkowski.word_sketch.model.sketch.*;
 import pl.marcinmilkowski.word_sketch.query.QueryExecutor;
 import pl.marcinmilkowski.word_sketch.query.StubQueryExecutor;
 
@@ -40,20 +40,20 @@ class SemanticFieldExplorerInternalTest {
 
     private static class StubExecutor extends StubQueryExecutor {
 
-        private final Map<String, List<QueryResults.WordSketchResult>> collocations;
+        private final Map<String, List<WordSketchResult>> collocations;
 
-        StubExecutor(Map<String, List<QueryResults.WordSketchResult>> collocations) {
+        StubExecutor(Map<String, List<WordSketchResult>> collocations) {
             this.collocations = collocations;
         }
 
         @Override
-        public List<QueryResults.WordSketchResult> executeCollocations(
+        public List<WordSketchResult> executeCollocations(
                 String lemma, String cqlPattern, double minLogDice, int maxResults) {
             return collocations.getOrDefault(lemma.toLowerCase(), Collections.emptyList());
         }
 
         @Override
-        public List<QueryResults.WordSketchResult> executeSurfacePattern(
+        public List<WordSketchResult> executeSurfacePattern(
                 String bcqlPattern,
                 double minLogDice, int maxResults) {
             String lemma = StubQueryExecutor.extractLemmaFromPattern(bcqlPattern);
@@ -65,20 +65,20 @@ class SemanticFieldExplorerInternalTest {
 
         final List<String> capturedCqlPatterns = new ArrayList<>();
 
-        RecordingExecutor(Map<String, List<QueryResults.WordSketchResult>> collocations) {
+        RecordingExecutor(Map<String, List<WordSketchResult>> collocations) {
             super(collocations);
         }
 
         @Override
-        public List<QueryResults.WordSketchResult> executeCollocations(
+        public List<WordSketchResult> executeCollocations(
                 String lemma, String cqlPattern, double minLogDice, int maxResults) {
             capturedCqlPatterns.add(cqlPattern);
             return super.executeCollocations(lemma, cqlPattern, minLogDice, maxResults);
         }
     }
 
-    private static QueryResults.WordSketchResult wsr(String lemma, double logDice) {
-        return new QueryResults.WordSketchResult(lemma, "JJ", 10, logDice, 0.0, Collections.emptyList());
+    private static WordSketchResult wsr(String lemma, double logDice) {
+        return new WordSketchResult(lemma, "JJ", 10, logDice, 0.0, Collections.emptyList());
     }
 
     @Test

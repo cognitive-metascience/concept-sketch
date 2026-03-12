@@ -1,0 +1,87 @@
+{
+  "batch": "convention_outlier",
+  "batch_index": 2,
+  "assessments": {"convention_outlier": 70.0},
+  "dimension_notes": {
+    "convention_outlier": {
+      "evidence": [
+        "pl.marcinmilkowski.word_sketch.api.viz.RadialPlot (243 lines) is a near-identical copy of pl.marcinmilkowski.word_sketch.viz.RadialPlot (242 lines); they differ only in a single line-break. VisualizationHandlers imports only viz.RadialPlot; api.viz.RadialPlot is not imported anywhere in production code.",
+        "viz/package-info.java explicitly scopes the viz package for rendering helpers and states 'No HTTP, persistence, or query-execution concerns belong in this package', yet api/viz/ nests a RadialPlot copy inside the api package, contradicting the package's own stated boundary.",
+        "model/sketch/ contains four top-level record types (WordSketchResult, CollocateResult, ConcordanceResult, SnippetResult) that are structurally identical to the nested types in QueryResults. No production class imports from model.sketch; all actual usage goes through QueryResults.WordSketchResult, QueryResults.CollocateResult, etc.",
+        "model/sketch/package-info.java declares these as 'mirror[ing] the structure of model/exploration/', suggesting an in-progress migration that was not completed: model/exploration/ types are used throughout the exploration layer, but model/sketch/ types are dead.",
+        "Handler classes in api/ consistently follow *Handlers naming (ConcordanceHandlers, ExplorationHandlers, SketchHandlers, CorpusQueryHandlers, VisualizationHandlers) — no naming drift.",
+        "Java PascalCase class names and UPPER_SNAKE_CASE constants are used without exception throughout the codebase.",
+        "The query/ package distinguishes interfaces (QueryExecutor, CollocateQueryPort) from the single implementation (BlackLabQueryExecutor) following a consistent port/adapter convention."
+      ],
+      "impact_scope": "module",
+      "fix_scope": "multi_file_refactor",
+      "confidence": "high"
+    }
+  },
+  "dimension_judgment": {
+    "convention_outlier": {
+      "strengths": [
+        "Handler classes in api/ follow a strict *Handlers suffix convention without exception across all five handler classes.",
+        "Java naming conventions (PascalCase types, camelCase methods, UPPER_SNAKE_CASE constants) are applied uniformly throughout.",
+        "Interface/implementation split in query/ (QueryExecutor, CollocateQueryPort vs BlackLabQueryExecutor) is consistent and clearly named.",
+        "Package-info.java files document package boundaries and what belongs where, giving clear navigational intent."
+      ],
+      "issue_character": "The issues are isolated structural outliers — a dead duplicate class and a shadow package — rather than pervasive naming drift; the main body of the codebase is coherent, but the two outliers create genuine navigational confusion about which copy is canonical.",
+      "score_rationale": "The codebase earns a solid baseline: naming is uniform, package responsibilities are documented, and the handler/assembler/model layers are clearly delineated. Two convention outliers pull the score down: api/viz/RadialPlot.java is a near-identical dead copy that contradicts the viz package's own boundary documentation, and model/sketch/ is a shadow package of QueryResults nested types that was never activated, leaving four unreferenced record types that imply an abandoned migration. These are real developer confusion points — a contributor encountering two RadialPlot classes in different packages, or four model/sketch types that appear to be the 'flat' canonical forms but are never used, must investigate before trusting the code. At a global 80=solid-but-uneven anchor, these two localized structural inconsistencies bring the score to approximately 70."
+    }
+  },
+  "issues": [
+    {
+      "dimension": "convention_outlier",
+      "identifier": "dead_api_viz_radialplot",
+      "summary": "api/viz/RadialPlot is a near-identical dead copy of viz/RadialPlot, contradicting the viz package boundary",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/api/viz/RadialPlot.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/viz/RadialPlot.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/api/VisualizationHandlers.java"
+      ],
+      "evidence": [
+        "diff between the two files shows only a single line-break difference (line 222); all logic, constants, and method signatures are otherwise identical.",
+        "VisualizationHandlers imports pl.marcinmilkowski.word_sketch.viz.RadialPlot — the api/viz copy is not imported by any production class.",
+        "viz/package-info.java explicitly declares: 'No HTTP, persistence, or query-execution concerns belong in this package' and situates RadialPlot there intentionally; the api/viz sub-package violates this stated boundary."
+      ],
+      "suggestion": "Delete src/main/java/pl/marcinmilkowski/word_sketch/api/viz/RadialPlot.java and the api/viz/ directory. The canonical class is pl.marcinmilkowski.word_sketch.viz.RadialPlot, already used by VisualizationHandlers.",
+      "confidence": "high",
+      "impact_scope": "module",
+      "fix_scope": "single_edit"
+    },
+    {
+      "dimension": "convention_outlier",
+      "identifier": "shadow_model_sketch_package",
+      "summary": "model/sketch/ contains four top-level records identical to QueryResults nested types but never imported — an incomplete migration",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/model/sketch/WordSketchResult.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/model/sketch/CollocateResult.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/model/sketch/ConcordanceResult.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/model/sketch/SnippetResult.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/model/QueryResults.java"
+      ],
+      "evidence": [
+        "model/sketch/WordSketchResult, CollocateResult, ConcordanceResult, and SnippetResult are structurally identical to the corresponding nested types in QueryResults (same fields, same sealed interface members).",
+        "No production class contains 'import pl.marcinmilkowski.word_sketch.model.sketch' — the entire model/sketch package is unreferenced dead code.",
+        "model/sketch/package-info.java says it 'mirrors the structure of model/exploration/' suggesting an intentional migration toward flat types, but the migration was never completed: all call sites still use QueryResults.WordSketchResult etc.",
+        "The coexistence of both creates genuine ambiguity: a developer reading model/sketch/ would reasonably assume those are the canonical types and that QueryResults is legacy."
+      ],
+      "suggestion": "Either complete the migration — update all call sites to use the model/sketch top-level types and delete the nested types in QueryResults — or delete model/sketch/ if the migration was abandoned. The current state (both exist, only one is used) is the problem; either direction resolves it.",
+      "confidence": "high",
+      "impact_scope": "module",
+      "fix_scope": "multi_file_refactor"
+    }
+  ],
+  "retrospective": {
+    "root_causes": [
+      "Incremental refactoring left dead artifacts: the api/viz/ directory and model/sketch/ package both appear to be migration remnants where the 'new' location was created but the old one never removed or the migration never fully applied.",
+      "The viz package boundary is documented in package-info.java but was not enforced when the api/viz/ copy was created, suggesting the boundary documentation postdates the copy."
+    ],
+    "likely_symptoms": [
+      "dead_api_viz_radialplot — the dead copy is a symptom of an incomplete move, not a design problem",
+      "shadow_model_sketch_package — the unused package is a symptom of an incomplete type-extraction refactor"
+    ],
+    "possible_false_positives": []
+  }
+}

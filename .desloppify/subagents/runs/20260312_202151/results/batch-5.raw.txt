@@ -1,0 +1,79 @@
+{
+  "batch": "abstraction_fitness",
+  "batch_index": 5,
+  "assessments": {
+    "abstraction_fitness": 80.0
+  },
+  "dimension_notes": {
+    "abstraction_fitness": {
+      "evidence": [
+        "ExplorationService interface (single implementation SemanticFieldExplorer) is documented with explicit rationale: bundles three exploration modes sharing corpus-query infrastructure, enabling testability without scattering unrelated interfaces.",
+        "QueryExecutor interface (single implementation BlackLabQueryExecutor) correctly segmented from CollocateQueryPort; CorpusQueryHandlers and ConcordanceHandlers declare the narrower CollocateQueryPort, demonstrating appropriate interface segregation in practice.",
+        "model/sketch/ package defines WordSketchResult, CollocateResult, ConcordanceResult, SnippetResult as standalone top-level types that are structurally identical to the nested types in QueryResults \u2014 zero imports of model.sketch.* exist anywhere in production or test code.",
+        "model/package-info.java itself acknowledges the tension: \"Word-sketch result types (QueryResults) remain as nested types in this root package rather than being split into the reserved model/sketch/ sub-package\" \u2014 confirming an incomplete migration left dead duplicate types.",
+        "HttpApiUtils is a cohesive HTTP utility \u2014 all members (parseQueryParams, requireParam, sendJsonResponse, sendError, wrapWithErrorHandling, readJsonBody) serve HTTP I/O concerns. Not a dumping ground.",
+        "ExploreResponseAssembler is a justified presentation-translation layer: converts domain model objects (ExplorationResult, ComparisonResult, Edge) to Map<String,Object> for JSON serialisation, keeping domain types free of HTTP concerns.",
+        "RelationPatternUtils is a well-justified static utility extracted from RelationConfig so the config record stays a pure data carrier; all methods are stateless functions of their arguments.",
+        "SemanticFieldExplorer.compareCollocateProfiles is a documented pass-through to CollocateProfileComparator, but the comment explicitly explains why the pass-through exists and it adds IOException->ExplorationException wrapping."
+      ],
+      "impact_scope": "module",
+      "fix_scope": "multi_file_refactor",
+      "confidence": "high",
+      "sub_axes": {
+        "abstraction_leverage": 85.0,
+        "indirection_cost": 80.0,
+        "interface_honesty": 75.0,
+        "delegation_density": 95.0,
+        "definition_directness": 72.0,
+        "type_discipline": 78.0
+      }
+    }
+  },
+  "dimension_judgment": {
+    "abstraction_fitness": {
+      "strengths": [
+        "ExplorationService and QueryExecutor single-implementation interfaces are documented with explicit design rationale \u2014 the Javadoc on ExplorationService explains exactly why the interface exists despite having one implementation (testability, unified feature surface).",
+        "Interface segregation is applied in practice: CorpusQueryHandlers and ConcordanceHandlers take the narrower CollocateQueryPort rather than the full QueryExecutor, demonstrating the interfaces are actually leveraged.",
+        "HttpApiUtils achieves genuine cohesion \u2014 every method serves HTTP I/O concerns (param parsing, response writing, error mapping, CORS) with no cross-domain leakage.",
+        "ExploreResponseAssembler earns its layer by owning the entire model-to-presentation translation, keeping ExplorationResult and ComparisonResult free of JSON concerns.",
+        "RelationPatternUtils is a justified extraction from RelationConfig, keeping the config record as a plain data carrier while centralising stateless pattern-building logic."
+      ],
+      "issue_character": "Issues are localized to one incomplete migration: the model.sketch.* package was created to promote QueryResults nested types to standalone top-level records but was never completed, leaving identical duplicate types that are dead code.",
+      "score_rationale": "The abstractions in this codebase mostly pay for themselves: interfaces are documented with clear rationale, utility classes are cohesive, and the exploration layer decomposes cleanly into focused components. The one concrete structural problem \u2014 an abortive migration leaving four unused duplicate model types in model.sketch.* \u2014 prevents a higher score by introducing a confusing shadow type hierarchy. This single-source issue is localized to the model package, does not affect runtime behavior, and is straightforward to resolve, placing the codebase solidly at the 80 anchor (solid but with a recurring friction point a developer would notice when navigating model types)."
+    }
+  },
+  "issues": [
+    {
+      "dimension": "abstraction_fitness",
+      "identifier": "sketch_model_orphaned_duplicates",
+      "summary": "model.sketch.* defines four types identical to QueryResults nested types but is never imported",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/model/sketch/WordSketchResult.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/model/sketch/CollocateResult.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/model/sketch/ConcordanceResult.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/model/sketch/SnippetResult.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/model/QueryResults.java"
+      ],
+      "evidence": [
+        "model/sketch/WordSketchResult.java, CollocateResult.java, ConcordanceResult.java, and SnippetResult.java are structurally identical to the nested types in QueryResults (same fields, same sealed hierarchy, same annotations).",
+        "Zero imports of model.sketch.* appear in any production or test Java file \u2014 all callers use QueryResults.WordSketchResult, QueryResults.CollocateResult, etc.",
+        "model/package-info.java explicitly acknowledges the abandoned migration: \"Word-sketch result types (QueryResults) remain as nested types in this root package rather than being split into the reserved model/sketch/ sub-package \u2014 see model/sketch/package-info.java for rationale.\" Yet the model/sketch/ types exist anyway.",
+        "model/sketch/package-info.java documents these as the canonical types, but no code references them, creating a misleading navigation target for new developers."
+      ],
+      "suggestion": "Complete the migration in one direction: either (a) delete model/sketch/*.java (4 files) and keep QueryResults as the namespace, updating model/package-info.java to drop the planned-but-unrealised migration note; or (b) complete the migration by replacing QueryResults nested types with the model.sketch.* standalone types \u2014 update all ~25 call sites using QueryResults.WordSketchResult and QueryResults.CollocateResult (found in SketchHandlers, ExploreResponseAssembler, SketchResponseAssembler, MultiSeedExplorer, CollocateProfileComparator, etc.) to use the standalone types, then delete QueryResults.java.",
+      "confidence": "high",
+      "impact_scope": "module",
+      "fix_scope": "multi_file_refactor",
+      "root_cause_cluster": "incomplete_model_migration"
+    }
+  ],
+  "retrospective": {
+    "root_causes": [
+      "One abortive model refactoring: the QueryResults namespace-class pattern was intended to be replaced by top-level records in model/sketch/, but the migration was started (types created) and then abandoned, leaving duplicate dead types."
+    ],
+    "likely_symptoms": [],
+    "possible_false_positives": [
+      "indirection_hotspots signals in the blind packet \u2014 the chain counts appear to reflect Java fluent API calls (stream/builder chains) rather than artificial architectural indirection layers; no pass-through wrapper chains were found in the code."
+    ]
+  }
+}

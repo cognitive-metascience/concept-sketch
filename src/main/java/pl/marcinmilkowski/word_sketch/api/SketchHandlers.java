@@ -8,7 +8,7 @@ import pl.marcinmilkowski.word_sketch.config.GrammarConfig;
 import pl.marcinmilkowski.word_sketch.config.RelationPatternUtils;
 import pl.marcinmilkowski.word_sketch.config.RelationType;
 import pl.marcinmilkowski.word_sketch.query.QueryExecutor;
-import pl.marcinmilkowski.word_sketch.model.QueryResults;
+import pl.marcinmilkowski.word_sketch.model.sketch.*;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -99,7 +99,7 @@ class SketchHandlers {
 
         executeRelationQueries(relationType, rel -> true, lemma, byRelation, relationErrors, (rel, sketch) ->
             SketchResponseAssembler.buildSurfaceRelationEntry(rel, sketch.collocations(),
-                sketch.results().stream().mapToLong(QueryResults.WordSketchResult::frequency).sum()));
+                sketch.results().stream().mapToLong(WordSketchResult::frequency).sum()));
 
         Map<String, Object> response = new HashMap<>();
         response.put("lemma", lemma);
@@ -170,15 +170,6 @@ class SketchHandlers {
         }
     }
 
-    /**
-     * Handle specific dependency relation query.
-     * Returns collocates for a single dependency relation.
-     * DEP relations use surface patterns with [deprel="..."] constraints.
-     */
-    private void handleDependencyRelationQuery(HttpExchange exchange, String lemma, String relationId) throws IOException {
-        handleRelationQueryForPattern(exchange, lemma, relationId, RelationType.DEP);
-    }
-
     private void handleRelationQueryForPattern(HttpExchange exchange, String lemma, String relationId, RelationType relationType) throws IOException {
         var rel = grammarConfig.relation(relationId).orElse(null);
         if (rel == null) {
@@ -190,15 +181,15 @@ class SketchHandlers {
                 "Relation '" + relationId + "' has type " + actualType + "; expected " + relationType.name());
         }
 
-        List<QueryResults.WordSketchResult> results = executor.executeSurfacePattern(
+        List<WordSketchResult> results = executor.executeSurfacePattern(
             RelationPatternUtils.buildFullPattern(rel, lemma), 0.0, SINGLE_RELATION_RESULTS);
 
         List<Map<String, Object>> collocations = new ArrayList<>();
-        for (QueryResults.WordSketchResult result : results) {
+        for (WordSketchResult result : results) {
             collocations.add(SketchResponseAssembler.formatWordSketchResult(result));
         }
 
-        long totalMatches = results.stream().mapToLong(QueryResults.WordSketchResult::frequency).sum();
+        long totalMatches = results.stream().mapToLong(WordSketchResult::frequency).sum();
         Map<String, Object> relData = SketchResponseAssembler.buildSurfaceRelationEntry(rel, collocations, totalMatches);
 
         Map<String, Object> relationsMap = new HashMap<>();
@@ -218,17 +209,17 @@ class SketchHandlers {
      */
     private Optional<ExecutedSketch> buildSketch(String lemma,
             pl.marcinmilkowski.word_sketch.config.RelationConfig rel) throws IOException {
-        List<QueryResults.WordSketchResult> results = executor.executeSurfacePattern(
+        List<WordSketchResult> results = executor.executeSurfacePattern(
             RelationPatternUtils.buildFullPattern(rel, lemma), 0.0, DEFAULT_SKETCH_RESULTS);
         if (results.isEmpty()) return Optional.empty();
         List<Map<String, Object>> collocations = new ArrayList<>();
-        for (QueryResults.WordSketchResult result : results) {
+        for (WordSketchResult result : results) {
             collocations.add(SketchResponseAssembler.formatWordSketchResult(result));
         }
         return Optional.of(new ExecutedSketch(results, collocations));
     }
 
     private record ExecutedSketch(
-            List<QueryResults.WordSketchResult> results,
+            List<WordSketchResult> results,
             List<Map<String, Object>> collocations) {}
 }

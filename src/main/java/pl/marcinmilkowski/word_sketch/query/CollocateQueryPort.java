@@ -3,10 +3,10 @@ package pl.marcinmilkowski.word_sketch.query;
 import java.io.IOException;
 import java.util.List;
 
-import pl.marcinmilkowski.word_sketch.model.QueryResults;
+import pl.marcinmilkowski.word_sketch.model.sketch.*;
 
 /**
- * Narrow query port covering corpus-text lookups that return {@link QueryResults.CollocateResult}
+ * Narrow query port covering corpus-text lookups that return {@link CollocateResult}
  * instances — i.e. concordance and BCQL pattern queries.
  *
  * <p>{@link QueryExecutor} extends this interface, so any {@code QueryExecutor} implementation is
@@ -26,5 +26,5 @@ public interface CollocateQueryPort {
      * @return Concordance results, ranked by logDice
      * @throws IOException if index access or parsing fails
      */
-    List<QueryResults.CollocateResult> executeBcqlQuery(String bcqlPattern, int maxResults) throws IOException;
+    List<CollocateResult> executeBcqlQuery(String bcqlPattern, int maxResults) throws IOException;
 }

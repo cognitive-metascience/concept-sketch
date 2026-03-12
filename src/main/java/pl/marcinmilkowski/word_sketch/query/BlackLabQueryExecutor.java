@@ -12,7 +12,7 @@ import nl.inl.blacklab.search.results.Hit;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import pl.marcinmilkowski.word_sketch.model.QueryResults;
+import pl.marcinmilkowski.word_sketch.model.sketch.*;
 import nl.inl.blacklab.search.results.HitGroup;
 import nl.inl.blacklab.search.results.HitGroups;
 import nl.inl.blacklab.search.results.Hits;
@@ -76,7 +76,7 @@ public class BlackLabQueryExecutor implements QueryExecutor {
     }
 
     @Override
-    public List<QueryResults.WordSketchResult> executeCollocations(
+    public List<WordSketchResult> executeCollocations(
             String lemma,
             String cqlPattern,
             double minLogDice,
@@ -103,7 +103,7 @@ public class BlackLabQueryExecutor implements QueryExecutor {
     }
 
     @Override
-    public List<QueryResults.ConcordanceResult> executeCqlQuery(String cqlPattern, int maxResults) throws IOException {
+    public List<ConcordanceResult> executeCqlQuery(String cqlPattern, int maxResults) throws IOException {
         try {
             CompleteQuery cq = ContextualQueryLanguageParser.parse(blackLabIndex, cqlPattern);
             TextPattern tp = cq.pattern();
@@ -113,7 +113,7 @@ public class BlackLabQueryExecutor implements QueryExecutor {
             BLSpanQuery query = tp.toQuery(QueryInfo.create(blackLabIndex));
             Hits hits = blackLabIndex.find(query);
 
-            List<QueryResults.ConcordanceResult> results = new ArrayList<>();
+            List<ConcordanceResult> results = new ArrayList<>();
             Concordances concordances = hits.concordances(ContextSize.get(5, 5, Integer.MAX_VALUE), ConcordanceType.FORWARD_INDEX);
 
             for (int i = 0; i < Math.min(hits.size(), maxResults); i++) {
@@ -125,7 +125,7 @@ public class BlackLabQueryExecutor implements QueryExecutor {
                 }
                 String snippet = parts[0] + parts[1] + parts[2];
 
-                results.add(new QueryResults.SnippetResult(
+                results.add(new SnippetResult(
                     snippet, hit.start(), hit.end(), String.valueOf(hit.doc())));
             }
 
@@ -139,7 +139,7 @@ public class BlackLabQueryExecutor implements QueryExecutor {
     }
 
     @Override
-    public List<QueryResults.CollocateResult> executeBcqlQuery(String bcqlPattern, int maxResults) throws IOException {
+    public List<CollocateResult> executeBcqlQuery(String bcqlPattern, int maxResults) throws IOException {
         return collocateQueryHelper.executeBcqlQuery(bcqlPattern, maxResults);
     }
 
@@ -156,7 +156,7 @@ public class BlackLabQueryExecutor implements QueryExecutor {
      * Otherwise, restricts the head token to the given POS regex.</p>
      */
     @Override
-    public List<QueryResults.WordSketchResult> executeDependencyPattern(
+    public List<WordSketchResult> executeDependencyPattern(
             String lemma,
             String deprel,
             double minLogDice,
@@ -175,7 +175,7 @@ public class BlackLabQueryExecutor implements QueryExecutor {
         return queryAndRankDepCollocates(bcql, lemma, minLogDice, maxResults);
     }
 
-    private List<QueryResults.WordSketchResult> queryAndRankDepCollocates(
+    private List<WordSketchResult> queryAndRankDepCollocates(
             String bcql, String lemma, double minLogDice, int maxResults) throws IOException {
         CollocateQueryHelper.CollocateSearch collocateSearch = collocateQueryHelper.executeCollocateSearchWithContent(lemma, bcql);
         long headwordFreq = collocateSearch.headwordFreq();
@@ -222,7 +222,7 @@ public class BlackLabQueryExecutor implements QueryExecutor {
      * @throws IllegalArgumentException if the headword lemma cannot be extracted from the pattern
      */
     @Override
-    public List<QueryResults.WordSketchResult> executeSurfacePattern(
+    public List<WordSketchResult> executeSurfacePattern(
             String bcqlPattern,
             double minLogDice, int maxResults) throws IOException {
 

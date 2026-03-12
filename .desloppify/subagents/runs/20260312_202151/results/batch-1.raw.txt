@@ -1,0 +1,66 @@
+{
+  "batch": "high_level_elegance",
+  "batch_index": 1,
+  "assessments": {
+    "high_level_elegance": 84.0
+  },
+  "dimension_notes": {
+    "high_level_elegance": {
+      "evidence": [
+        "Package map is domain-aligned: api/, config/, exploration/, model/, query/, indexer/, viz/, utils/ — each has a package-info.java with explicit boundary rules.",
+        "model/package-info.java explicitly prohibits I/O and HTTP concerns; model/exploration/ and model/sketch/ sub-packages are justified and documented.",
+        "viz/package-info.java states that domain data carriers belong in model/exploration/ to avoid api→viz dependencies, yet api/viz/RadialPlot.java (a near-identical copy of viz/RadialPlot.java differing only in package declaration) exists unreferenced by any production or test import.",
+        "VisualizationHandlers.java correctly imports pl.marcinmilkowski.word_sketch.viz.RadialPlot — the api/viz copy is dead code that contradicts the stated ownership model.",
+        "ExplorationService interface cleanly separates the HTTP layer (api/ExplorationHandlers) from exploration business logic (exploration/SemanticFieldExplorer).",
+        "config/ splits data (GrammarConfig, RelationConfig), loading (GrammarConfigLoader), and serialization (GrammarConfigSerializer) as distinct types with clear responsibilities."
+      ],
+      "impact_scope": "module",
+      "fix_scope": "single_edit",
+      "confidence": "high"
+    }
+  },
+  "dimension_judgment": {
+    "high_level_elegance": {
+      "strengths": [
+        "All top-level packages map to a named domain capability with a package-info.java stating their responsibility and boundary constraints — a new engineer can explain every package's purpose.",
+        "The config/ package separates loading (GrammarConfigLoader), data (GrammarConfig/RelationConfig), and serialization (GrammarConfigSerializer) into distinct types, making ownership and change boundaries predictable.",
+        "ExplorationService interface gives the HTTP layer a single injection point for all three exploration modes, with SemanticFieldExplorer as the sole wiring owner — the seam is explicit and documented.",
+        "model/package-info.java explicitly forbids I/O, HTTP, and persistence concerns, and the rationale for the model/exploration/ vs model/sketch/ sub-package split is written down.",
+        "WordSketchApiServer delegates to five focused handler classes (SketchHandlers, ExplorationHandlers, ConcordanceHandlers, CorpusQueryHandlers, VisualizationHandlers) that map directly to API surface areas."
+      ],
+      "issue_character": "A single stale class (api/viz/RadialPlot.java) contradicts the explicitly documented ownership model for visualization code, creating a phantom second home for a capability that already has a canonical location.",
+      "score_rationale": "The codebase sits comfortably at the 90-anchor boundary: ownership is clear, package boundaries are documented and respected by all active code, and the decomposition is coherent enough that a new engineer could explain every package from the package-info alone. The one concrete defect — a dead api/viz/RadialPlot.java copy that directly violates the rule stated in viz/package-info.java — prevents a 90 score but does not rise to the 80-anchor pattern of recurring friction, since no production code actually uses the stale copy. A score of 84 reflects strong structural clarity with one documented-but-violated boundary."
+    }
+  },
+  "issues": [
+    {
+      "dimension": "high_level_elegance",
+      "identifier": "stale_api_viz_radialplot",
+      "summary": "api/viz/RadialPlot.java is a dead duplicate of viz/RadialPlot.java that contradicts the documented visualization ownership model",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/api/viz/RadialPlot.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/viz/RadialPlot.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/viz/package-info.java"
+      ],
+      "evidence": [
+        "viz/package-info.java explicitly states: 'No HTTP, persistence, or query-execution concerns belong in this package' and that data carriers live in model/exploration/ 'so that non-visualization layers can import them without creating an api→viz dependency' — yet api/viz/ is a visualization sub-package inside api/.",
+        "api/viz/RadialPlot.java and viz/RadialPlot.java differ only in package declaration (plus one whitespace variation on line 222); the class body is otherwise identical.",
+        "VisualizationHandlers.java (the only handler that uses RadialPlot) imports pl.marcinmilkowski.word_sketch.viz.RadialPlot — the api/viz copy is not referenced by any production or test code.",
+        "The scan evidence flags api/viz/RadialPlot.java as a boilerplate duplication across a 242-line window, consistent with a near-total copy."
+      ],
+      "suggestion": "Delete src/main/java/pl/marcinmilkowski/word_sketch/api/viz/RadialPlot.java and the api/viz/ sub-package directory entirely. viz.RadialPlot is already the canonical location and the only version in active use. No import changes are needed.",
+      "confidence": "high",
+      "impact_scope": "module",
+      "fix_scope": "single_edit"
+    }
+  ],
+  "retrospective": {
+    "root_causes": [
+      "Visualization class was likely moved from api/viz/ to viz/ during a refactor but the source file was not deleted, leaving a phantom package that contradicts the documented ownership model."
+    ],
+    "likely_symptoms": [
+      "stale_api_viz_radialplot"
+    ],
+    "possible_false_positives": []
+  }
+}

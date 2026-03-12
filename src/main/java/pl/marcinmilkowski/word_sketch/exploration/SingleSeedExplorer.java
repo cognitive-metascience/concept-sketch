@@ -13,7 +13,7 @@ import pl.marcinmilkowski.word_sketch.model.exploration.CoreCollocate;
 import pl.marcinmilkowski.word_sketch.model.exploration.DiscoveredNoun;
 import pl.marcinmilkowski.word_sketch.model.exploration.ExplorationResult;
 import pl.marcinmilkowski.word_sketch.model.exploration.SingleSeedExplorationOptions;
-import pl.marcinmilkowski.word_sketch.model.QueryResults;
+import pl.marcinmilkowski.word_sketch.model.sketch.*;
 import pl.marcinmilkowski.word_sketch.query.QueryExecutor;
 
 /**
@@ -81,7 +81,7 @@ class SingleSeedExplorer {
         logger.debug("Exploring semantic field: seed='{}', relation='{}', top={}, minShared={}, minLogDice={}",
                 normalizedSeed, relationName, topPredicates, minShared, minLogDice);
 
-        List<QueryResults.WordSketchResult> seedRelations = fetchSeedCollocates(
+        List<WordSketchResult> seedRelations = fetchSeedCollocates(
             normalizedSeed, bcqlPattern, simplePattern, minLogDice, topPredicates);
 
         if (seedRelations.isEmpty()) {
@@ -91,7 +91,7 @@ class SingleSeedExplorer {
 
         Map<String, Double> seedCollocateScores = new LinkedHashMap<>();
         Map<String, Long> seedCollocateFrequencies = new LinkedHashMap<>();
-        for (QueryResults.WordSketchResult r : seedRelations) {
+        for (WordSketchResult r : seedRelations) {
             String lowerLemma = r.lemma().toLowerCase();
             seedCollocateScores.put(lowerLemma, r.logDice());
             seedCollocateFrequencies.put(lowerLemma, r.frequency());
@@ -142,10 +142,10 @@ class SingleSeedExplorer {
      * return no BCQL results naturally contribute nothing to the intersection, which is the
      * correct behaviour. See {@link MultiSeedExplorer#fetchCollocatesPerSeed}.</p>
      */
-    private List<QueryResults.WordSketchResult> fetchSeedCollocates(
+    private List<WordSketchResult> fetchSeedCollocates(
             String seed, String bcqlPattern, String simplePattern,
             double minLogDice, int topPredicates) throws IOException {
-        List<QueryResults.WordSketchResult> results = executor.executeSurfacePattern(
+        List<WordSketchResult> results = executor.executeSurfacePattern(
             bcqlPattern, minLogDice, topPredicates);
         if (results.isEmpty()) {
             logger.debug("  No results found for seed word. Trying fallback to simple pattern...");
@@ -167,9 +167,9 @@ class SingleSeedExplorer {
             double minLogDice, int nounsPerPredicate) throws IOException {
         Map<String, Map<String, Double>> nounProfiles = new LinkedHashMap<>();
         for (String collocate : seedCollocateScores.keySet()) {
-            List<QueryResults.WordSketchResult> nouns = executor.executeCollocations(
+            List<WordSketchResult> nouns = executor.executeCollocations(
                 collocate, nounCqlPattern, minLogDice, nounsPerPredicate);
-            for (QueryResults.WordSketchResult r : nouns) {
+            for (WordSketchResult r : nouns) {
                 String noun = r.lemma().toLowerCase();
                 if (noun.equals(seed)) continue;
                 nounProfiles.computeIfAbsent(noun, k -> new LinkedHashMap<>())

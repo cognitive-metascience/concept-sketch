@@ -6,7 +6,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import pl.marcinmilkowski.word_sketch.config.GrammarConfig;
 import pl.marcinmilkowski.word_sketch.config.RelationPatternUtils;
-import pl.marcinmilkowski.word_sketch.model.QueryResults;
+import pl.marcinmilkowski.word_sketch.model.sketch.*;
 import pl.marcinmilkowski.word_sketch.config.RelationUtils;
 import pl.marcinmilkowski.word_sketch.query.CollocateQueryPort;
 
@@ -60,7 +60,7 @@ class ConcordanceHandlers {
             bcqlQuery = String.format("\"%s\" []{0,5} \"%s\"", req.seed().toLowerCase(), req.collocate().toLowerCase());
             logger.warn("Relation '{}' not resolved to a BCQL pattern; using proximity fallback: {}", req.relation(), bcqlQuery);
         }
-        List<QueryResults.CollocateResult> results = executor.executeBcqlQuery(bcqlQuery, req.top());
+        List<CollocateResult> results = executor.executeBcqlQuery(bcqlQuery, req.top());
 
         ExamplesResponse response = ExploreResponseAssembler.buildExamplesResponse(
                 req.seed(), req.collocate(), req.relation(), bcqlQuery,

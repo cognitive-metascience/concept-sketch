@@ -17,7 +17,7 @@ import pl.marcinmilkowski.word_sketch.model.exploration.CoreCollocate;
 import pl.marcinmilkowski.word_sketch.model.exploration.DiscoveredNoun;
 import pl.marcinmilkowski.word_sketch.model.exploration.ExplorationOptions;
 import pl.marcinmilkowski.word_sketch.model.exploration.ExplorationResult;
-import pl.marcinmilkowski.word_sketch.model.QueryResults;
+import pl.marcinmilkowski.word_sketch.model.sketch.*;
 import pl.marcinmilkowski.word_sketch.query.QueryExecutor;
 
 /**
@@ -62,9 +62,9 @@ class MultiSeedExplorer {
                 commonCollocates, data.collocateSharedCount(), stats.maxLogDiceByLemma(), stats.avgLogDiceByLemma(), seeds.size());
 
         Map<String, Map<String, Double>> perSeedCollocates = new LinkedHashMap<>();
-        for (Map.Entry<String, List<QueryResults.WordSketchResult>> entry : data.seedCollocateMap().entrySet()) {
+        for (Map.Entry<String, List<WordSketchResult>> entry : data.seedCollocateMap().entrySet()) {
             Map<String, Double> collocateMap = new LinkedHashMap<>();
-            for (QueryResults.WordSketchResult collocateEntry : entry.getValue()) {
+            for (WordSketchResult collocateEntry : entry.getValue()) {
                 collocateMap.put(collocateEntry.lemma(), collocateEntry.logDice());
             }
             perSeedCollocates.put(entry.getKey(), collocateMap);
@@ -104,14 +104,14 @@ class MultiSeedExplorer {
     private SeedCollocateData fetchCollocatesPerSeed(
             Set<String> seeds, RelationConfig relationConfig,
             double minLogDice, int topCollocates) throws IOException {
-        Map<String, List<QueryResults.WordSketchResult>> seedCollocateMap = new LinkedHashMap<>();
+        Map<String, List<WordSketchResult>> seedCollocateMap = new LinkedHashMap<>();
         Map<String, Integer> collocateSharedCount = new LinkedHashMap<>();
         for (String seed : seeds) {
             String bcqlPattern = RelationPatternUtils.buildFullPattern(relationConfig, seed);
-            List<QueryResults.WordSketchResult> collocates = executor.executeSurfacePattern(
+            List<WordSketchResult> collocates = executor.executeSurfacePattern(
                 bcqlPattern, minLogDice, topCollocates);
             seedCollocateMap.put(seed, collocates);
-            for (QueryResults.WordSketchResult collocateEntry : collocates) {
+            for (WordSketchResult collocateEntry : collocates) {
                 collocateSharedCount.merge(collocateEntry.lemma(), 1, Integer::sum);
             }
         }
@@ -134,13 +134,13 @@ class MultiSeedExplorer {
     /** Builds a {@link DiscoveredNoun} for each seed, capturing its shared-collocate subset. */
     private List<DiscoveredNoun> buildDiscoveredNouns(
             Set<String> seeds,
-            Map<String, List<QueryResults.WordSketchResult>> seedCollocateMap,
+            Map<String, List<WordSketchResult>> seedCollocateMap,
             Set<String> commonCollocates) {
         List<DiscoveredNoun> discoveredNounsList = new ArrayList<>();
         for (String seed : seeds) {
-            List<QueryResults.WordSketchResult> collocates = seedCollocateMap.getOrDefault(seed, List.of());
+            List<WordSketchResult> collocates = seedCollocateMap.getOrDefault(seed, List.of());
             Map<String, Double> sharedCollocates = new LinkedHashMap<>();
-            for (QueryResults.WordSketchResult collocateEntry : collocates) {
+            for (WordSketchResult collocateEntry : collocates) {
                 if (commonCollocates.contains(collocateEntry.lemma())) {
                     sharedCollocates.put(collocateEntry.lemma(), collocateEntry.logDice());
                 }
@@ -181,10 +181,10 @@ class MultiSeedExplorer {
      * four separate parallel maps and a second pass to compute averages.</p>
      */
     private AggregatedCollocateStats aggregateCollocateStats(
-            Map<String, List<QueryResults.WordSketchResult>> seedCollocateMap) {
+            Map<String, List<WordSketchResult>> seedCollocateMap) {
         Map<String, CollocateAccumulator> accumulators = new LinkedHashMap<>();
-        for (List<QueryResults.WordSketchResult> collocates : seedCollocateMap.values()) {
-            for (QueryResults.WordSketchResult collocateEntry : collocates) {
+        for (List<WordSketchResult> collocates : seedCollocateMap.values()) {
+            for (WordSketchResult collocateEntry : collocates) {
                 accumulators.computeIfAbsent(collocateEntry.lemma(), k -> new CollocateAccumulator())
                             .accumulate(collocateEntry.logDice(), collocateEntry.frequency());
             }
@@ -225,6 +225,6 @@ class MultiSeedExplorer {
             Map<String, Double> avgLogDiceByLemma) {}
 
     private record SeedCollocateData(
-            Map<String, List<QueryResults.WordSketchResult>> seedCollocateMap,
+            Map<String, List<WordSketchResult>> seedCollocateMap,
             Map<String, Integer> collocateSharedCount) {}
 }

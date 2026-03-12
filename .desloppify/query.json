@@ -1,32 +1,280 @@
 {
-  "command": "resolve",
-  "patterns": [
-    "api_dual_abstraction_level"
-  ],
-  "status": "fixed",
-  "resolved": [
-    "review::.::holistic::cross_module_architecture::api_dual_abstraction_level"
-  ],
-  "count": 1,
-  "next_command": "desloppify next",
-  "overall_score": 76.3,
-  "objective_score": 97.6,
-  "strict_score": 73.3,
-  "verified_strict_score": 97.6,
-  "prev_overall_score": 76.3,
-  "prev_objective_score": 97.6,
-  "prev_strict_score": 73.3,
-  "prev_verified_strict_score": 97.6,
-  "attestation": "I have actually Added TODO comments in ConcordanceHandlers and CorpusQueryHandlers documenting intent to route through service interfaces; larger refactor deferred and I am not gaming the score.",
+  "command": "show",
+  "query": "review",
+  "status_filter": "open",
+  "total": 10,
+  "summary": {
+    "by_tier": {
+      "T1": 10
+    },
+    "by_detector": {
+      "review": 10
+    },
+    "files": 1
+  },
+  "by_file": {
+    ".": [
+      {
+        "id": "review::.::holistic::abstraction_fitness::sketch_model_orphaned_duplicates",
+        "tier": 1,
+        "confidence": "high",
+        "summary": "model.sketch.* defines four types identical to QueryResults nested types but is never imported",
+        "detail": {
+          "holistic": true,
+          "dimension": "abstraction_fitness",
+          "related_files": [
+            "src/main/java/pl/marcinmilkowski/word_sketch/model/sketch/WordSketchResult.java",
+            "src/main/java/pl/marcinmilkowski/word_sketch/model/sketch/CollocateResult.java",
+            "src/main/java/pl/marcinmilkowski/word_sketch/model/sketch/ConcordanceResult.java",
+            "src/main/java/pl/marcinmilkowski/word_sketch/model/sketch/SnippetResult.java",
+            "src/main/java/pl/marcinmilkowski/word_sketch/model/QueryResults.java"
+          ],
+          "evidence": [
+            "model/sketch/WordSketchResult.java, CollocateResult.java, ConcordanceResult.java, and SnippetResult.java are structurally identical to the nested types in QueryResults (same fields, same sealed hierarchy, same annotations).",
+            "Zero imports of model.sketch.* appear in any production or test Java file \u2014 all callers use QueryResults.WordSketchResult, QueryResults.CollocateResult, etc.",
+            "model/package-info.java explicitly acknowledges the abandoned migration: \"Word-sketch result types (QueryResults) remain as nested types in this root package rather than being split into the reserved model/sketch/ sub-package \u2014 see model/sketch/package-info.java for rationale.\" Yet the model/sketch/ types exist anyway.",
+            "model/sketch/package-info.java documents these as the canonical types, but no code references them, creating a misleading navigation target for new developers."
+          ],
+          "suggestion": "Complete the migration in one direction: either (a) delete model/sketch/*.java (4 files) and keep QueryResults as the namespace, updating model/package-info.java to drop the planned-but-unrealised migration note; or (b) complete the migration by replacing QueryResults nested types with the model.sketch.* standalone types \u2014 update all ~25 call sites using QueryResults.WordSketchResult and QueryResults.CollocateResult (found in SketchHandlers, ExploreResponseAssembler, SketchResponseAssembler, MultiSeedExplorer, CollocateProfileComparator, etc.) to use the standalone types, then delete QueryResults.java.",
+          "reasoning": "",
+          "summary_hash": "e1a4fa80"
+        }
+      },
+      {
+        "id": "review::.::holistic::api_surface_coherence::mixed_response_construction_pattern",
+        "tier": 1,
+        "confidence": "high",
+        "summary": "ExamplesResponse is a typed record; all other response envelopes use raw Map<String,Object> \u2014 inconsistent response-assembly pattern in the api package",
+        "detail": {
+          "holistic": true,
+          "dimension": "api_surface_coherence",
+          "related_files": [
+            "src/main/java/pl/marcinmilkowski/word_sketch/api/ExamplesResponse.java",
+            "src/main/java/pl/marcinmilkowski/word_sketch/api/ExploreResponseAssembler.java",
+            "src/main/java/pl/marcinmilkowski/word_sketch/api/CorpusQueryHandlers.java"
+          ],
+          "evidence": [
+            "ExamplesResponse is a @JsonInclude record with named fields, used by both examples endpoints \u2014 compile-time verified shape",
+            "All explore, sketch, and BCQL response envelopes are built as HashMap<String,Object> with string-keyed puts (e.g. response.put(\"status\", \"ok\"), response.put(\"edges\", ...))",
+            "CorpusQueryHandlers defines a private BcqlQueryResponse record for its own endpoint, so typed records are used ad hoc rather than as a codebase-wide convention"
+          ],
+          "suggestion": "Adopt typed records as the standard response shape for all endpoints. Define a record (or sealed interface) per endpoint response in the api package, annotated with @JsonInclude where needed. This makes the JSON contract explicit, eliminates string-key typos, and gives new contributors a clear pattern to follow. Start with the most frequently accessed endpoints (explore, sketch) and migrate incrementally.",
+          "reasoning": "",
+          "summary_hash": "d7949106"
+        }
+      },
+      {
+        "id": "review::.::holistic::contract_coherence::exploration_service_exception_lie",
+        "tier": 1,
+        "confidence": "high",
+        "summary": "ExplorationService declares throws IOException but implementation throws unchecked ExplorationException",
+        "detail": {
+          "holistic": true,
+          "dimension": "contract_coherence",
+          "related_files": [
+            "src/main/java/pl/marcinmilkowski/word_sketch/exploration/ExplorationService.java",
+            "src/main/java/pl/marcinmilkowski/word_sketch/exploration/SemanticFieldExplorer.java",
+            "src/main/java/pl/marcinmilkowski/word_sketch/exploration/ExplorationException.java"
+          ],
+          "evidence": [
+            "ExplorationService.java declares all four methods with 'throws IOException': exploreByRelation, exploreMultiSeed, compareCollocateProfiles, fetchExamples.",
+            "SemanticFieldExplorer overrides those methods declaring 'throws ExplorationException'. ExplorationException extends RuntimeException, not IOException.",
+            "ExplorationException Javadoc states 'the ExplorationService interface stays free of checked exceptions', directly contradicting the interface's 'throws IOException' declarations.",
+            "ExplorationHandlers catches nothing from the service calls \u2014 it declares 'throws IOException' in each handler and relies on wrapWithErrorHandling's catch(Exception e) to intercept ExplorationExceptions. A caller who properly handles IOException (as the interface contract promises) will not catch ExplorationException.",
+            "The 'throws IOException' on the interface methods is dead \u2014 they can be removed without compile error because ExplorationException is unchecked."
+          ],
+          "suggestion": "Remove 'throws IOException' from all four ExplorationService interface methods to match the actual unchecked-exception contract. ExplorationException is already a RuntimeException and propagates without needing to be declared. Update ExploreHandlers handler method signatures accordingly (they currently declare 'throws IOException' to satisfy the interface). This makes the actual contract visible: callers must catch ExplorationException (or handle it via a general RuntimeException handler) rather than catching IOException.",
+          "reasoning": "",
+          "summary_hash": "5be3ddf4"
+        }
+      },
+      {
+        "id": "review::.::holistic::contract_coherence::model_sketch_dead_type_hierarchy",
+        "tier": 1,
+        "confidence": "high",
+        "summary": "model/sketch/ package presents a parallel unused type hierarchy as canonical while production code uses QueryResults.* nested types exclusively",
+        "detail": {
+          "holistic": true,
+          "dimension": "contract_coherence",
+          "related_files": [
+            "src/main/java/pl/marcinmilkowski/word_sketch/model/sketch/WordSketchResult.java",
+            "src/main/java/pl/marcinmilkowski/word_sketch/model/sketch/CollocateResult.java",
+            "src/main/java/pl/marcinmilkowski/word_sketch/model/sketch/ConcordanceResult.java",
+            "src/main/java/pl/marcinmilkowski/word_sketch/model/sketch/SnippetResult.java",
+            "src/main/java/pl/marcinmilkowski/word_sketch/model/sketch/package-info.java",
+            "src/main/java/pl/marcinmilkowski/word_sketch/model/package-info.java",
+            "src/main/java/pl/marcinmilkowski/word_sketch/model/QueryResults.java"
+          ],
+          "evidence": [
+            "model/sketch/ contains four fully-compiled types (WordSketchResult, CollocateResult, ConcordanceResult, SnippetResult) with no imports anywhere in the production codebase \u2014 confirmed by grep across all .java files in src/main.",
+            "model/sketch/package-info.java states 'Contains the result records returned by word sketch and collocation queries: WordSketchResult, ConcordanceResult, SnippetResult, and CollocateResult' \u2014 presenting them as active production types.",
+            "model/package-info.java says 'Word-sketch result types (QueryResults) remain as nested types in this root package rather than being split into the reserved model/sketch/ sub-package' \u2014 directly contradicting model/sketch/package-info.",
+            "All production callers use QueryResults.WordSketchResult, QueryResults.CollocateResult, etc. (nested inside QueryResults.java) \u2014 the model/sketch standalone types are never referenced."
+          ],
+          "suggestion": "Resolve the contradiction by choosing one canonical location. The cleaner path is to delete the four dead files in model/sketch/ (they are structurally identical to the QueryResults.* nested types), update model/sketch/package-info.java to reflect that this sub-package is reserved/empty, and remove the self-contradicting note from model/package-info.java. Alternatively, if the intent was to migrate to top-level types, update all production imports to use model.sketch.* and delete the QueryResults namespace class. Either way, a developer arriving at this package today cannot determine which type hierarchy is canonical.",
+          "reasoning": "",
+          "summary_hash": "313754fd"
+        }
+      },
+      {
+        "id": "review::.::holistic::convention_outlier::dead_api_viz_radialplot",
+        "tier": 1,
+        "confidence": "high",
+        "summary": "api/viz/RadialPlot is a near-identical dead copy of viz/RadialPlot, contradicting the viz package boundary",
+        "detail": {
+          "holistic": true,
+          "dimension": "convention_outlier",
+          "related_files": [
+            "src/main/java/pl/marcinmilkowski/word_sketch/api/viz/RadialPlot.java",
+            "src/main/java/pl/marcinmilkowski/word_sketch/viz/RadialPlot.java",
+            "src/main/java/pl/marcinmilkowski/word_sketch/api/VisualizationHandlers.java"
+          ],
+          "evidence": [
+            "diff between the two files shows only a single line-break difference (line 222); all logic, constants, and method signatures are otherwise identical.",
+            "VisualizationHandlers imports pl.marcinmilkowski.word_sketch.viz.RadialPlot \u2014 the api/viz copy is not imported by any production class.",
+            "viz/package-info.java explicitly declares: 'No HTTP, persistence, or query-execution concerns belong in this package' and situates RadialPlot there intentionally; the api/viz sub-package violates this stated boundary."
+          ],
+          "suggestion": "Delete src/main/java/pl/marcinmilkowski/word_sketch/api/viz/RadialPlot.java and the api/viz/ directory. The canonical class is pl.marcinmilkowski.word_sketch.viz.RadialPlot, already used by VisualizationHandlers.",
+          "reasoning": "",
+          "summary_hash": "e3b25afc"
+        }
+      },
+      {
+        "id": "review::.::holistic::convention_outlier::shadow_model_sketch_package",
+        "tier": 1,
+        "confidence": "high",
+        "summary": "model/sketch/ contains four top-level records identical to QueryResults nested types but never imported \u2014 an incomplete migration",
+        "detail": {
+          "holistic": true,
+          "dimension": "convention_outlier",
+          "related_files": [
+            "src/main/java/pl/marcinmilkowski/word_sketch/model/sketch/WordSketchResult.java",
+            "src/main/java/pl/marcinmilkowski/word_sketch/model/sketch/CollocateResult.java",
+            "src/main/java/pl/marcinmilkowski/word_sketch/model/sketch/ConcordanceResult.java",
+            "src/main/java/pl/marcinmilkowski/word_sketch/model/sketch/SnippetResult.java",
+            "src/main/java/pl/marcinmilkowski/word_sketch/model/QueryResults.java"
+          ],
+          "evidence": [
+            "model/sketch/WordSketchResult, CollocateResult, ConcordanceResult, and SnippetResult are structurally identical to the corresponding nested types in QueryResults (same fields, same sealed interface members).",
+            "No production class contains 'import pl.marcinmilkowski.word_sketch.model.sketch' \u2014 the entire model/sketch package is unreferenced dead code.",
+            "model/sketch/package-info.java says it 'mirrors the structure of model/exploration/' suggesting an intentional migration toward flat types, but the migration was never completed: all call sites still use QueryResults.WordSketchResult etc.",
+            "The coexistence of both creates genuine ambiguity: a developer reading model/sketch/ would reasonably assume those are the canonical types and that QueryResults is legacy."
+          ],
+          "suggestion": "Either complete the migration \u2014 update all call sites to use the model/sketch top-level types and delete the nested types in QueryResults \u2014 or delete model/sketch/ if the migration was abandoned. The current state (both exist, only one is used) is the problem; either direction resolves it.",
+          "reasoning": "",
+          "summary_hash": "2e0ef61a"
+        }
+      },
+      {
+        "id": "review::.::holistic::cross_module_architecture::seeds_utility_in_exploration",
+        "tier": 1,
+        "confidence": "high",
+        "summary": "Seeds validation utility placed in exploration package forces api to import from exploration concrete infrastructure",
+        "detail": {
+          "holistic": true,
+          "dimension": "cross_module_architecture",
+          "related_files": [
+            "src/main/java/pl/marcinmilkowski/word_sketch/exploration/Seeds.java",
+            "src/main/java/pl/marcinmilkowski/word_sketch/api/ExplorationHandlers.java"
+          ],
+          "evidence": [
+            "Seeds is a pure validation helper (requireAtLeastTwo) with no dependency on any exploration logic \u2014 its only content is a collection-size guard",
+            "api.ExplorationHandlers imports pl.marcinmilkowski.word_sketch.exploration.Seeds specifically for input validation in handleSemanticFieldExploreMulti and handleSemanticFieldComparison",
+            "utils package is the established home for domain-agnostic helpers (MathUtils, CqlUtils, JsonUtils) but Seeds is not there"
+          ],
+          "suggestion": "Move Seeds to the utils package (or inline the two-line check into ExplorationHandlers) so that api's only import from the exploration package is the ExplorationService interface. This makes the dependency surface of ExplorationHandlers precise.",
+          "reasoning": "",
+          "summary_hash": "b7f704a3"
+        }
+      },
+      {
+        "id": "review::.::holistic::dependency_health::ufal_dead_repository",
+        "tier": 1,
+        "confidence": "high",
+        "summary": "UFAL Maven repository declared in pom.xml with no corresponding Maven dependency",
+        "detail": {
+          "holistic": true,
+          "dimension": "dependency_health",
+          "related_files": [
+            "pom.xml"
+          ],
+          "evidence": [
+            "pom.xml lines 122-126 declare the UFAL repository (https://ufal.mff.cuni.cz/maven2) under <repositories>",
+            "No dependency in <dependencies> resolves from the ufal group or any UFAL artifact; UDPipe is described in README as an external CLI tool, not a Java library"
+          ],
+          "suggestion": "Remove the <repository id='ufal'> block from pom.xml. If UDPipe Java bindings are ever needed, re-add the repository at that point with the corresponding dependency declaration.",
+          "reasoning": "",
+          "summary_hash": "a8a75ff3"
+        }
+      },
+      {
+        "id": "review::.::holistic::design_coherence::radialplot_dead_duplicate",
+        "tier": 1,
+        "confidence": "high",
+        "summary": "api/viz/RadialPlot.java is a complete dead duplicate of viz/RadialPlot.java with no usages",
+        "detail": {
+          "holistic": true,
+          "dimension": "design_coherence",
+          "related_files": [
+            "src/main/java/pl/marcinmilkowski/word_sketch/api/viz/RadialPlot.java",
+            "src/main/java/pl/marcinmilkowski/word_sketch/viz/RadialPlot.java"
+          ],
+          "evidence": [
+            "Both files are identical line-by-line except for the package declaration (api.viz vs viz) and one formatting difference on line 222 of the viz version",
+            "No file in the codebase imports pl.marcinmilkowski.word_sketch.api.viz.RadialPlot \u2014 grep across all .java files returns only the class file itself",
+            "VisualizationHandlers.java and all tests import pl.marcinmilkowski.word_sketch.viz.RadialPlot exclusively"
+          ],
+          "suggestion": "Delete src/main/java/pl/marcinmilkowski/word_sketch/api/viz/RadialPlot.java entirely. The viz.RadialPlot is the canonical implementation and is already used everywhere. The api/viz directory can be removed if no other files exist there.",
+          "reasoning": "",
+          "summary_hash": "e2f4f60d"
+        }
+      },
+      {
+        "id": "review::.::holistic::error_consistency::exploration_service_exception_contract_mismatch",
+        "tier": 1,
+        "confidence": "high",
+        "summary": "ExplorationService declares throws IOException but implementation throws unchecked ExplorationException, causing exploration failures to be misclassified in error boundary",
+        "detail": {
+          "holistic": true,
+          "dimension": "error_consistency",
+          "related_files": [
+            "src/main/java/pl/marcinmilkowski/word_sketch/exploration/ExplorationService.java",
+            "src/main/java/pl/marcinmilkowski/word_sketch/exploration/SemanticFieldExplorer.java",
+            "src/main/java/pl/marcinmilkowski/word_sketch/api/ExplorationHandlers.java",
+            "src/main/java/pl/marcinmilkowski/word_sketch/api/HttpApiUtils.java"
+          ],
+          "evidence": [
+            "ExplorationService.java lines 39, 47, 54, 63: all four interface methods declare 'throws IOException'.",
+            "SemanticFieldExplorer.java lines 97, 141, 160, 198: all four implementation methods declare 'throws ExplorationException' (which extends RuntimeException) \u2014 never IOException.",
+            "ExplorationException wraps IOException in its body (lines 111-112, 144-145, 168-169, 206-207) but the unchecked wrapper is never declared on the interface.",
+            "HttpApiUtils.wrapWithErrorHandling catches IOException and Exception separately; ExplorationException falls into 'catch (Exception e)' logged as 'unexpected error', masking expected corpus failures.",
+            "ExplorationHandlers handler methods declare 'throws IOException' due to the interface, but IOException can never propagate \u2014 it is always absorbed into ExplorationException before reaching the handler."
+          ],
+          "suggestion": "Align the interface and implementation exception contract: change ExplorationService to declare 'throws ExplorationException' on all four methods (removing 'throws IOException'), and update ExplorationHandlers method signatures accordingly. Then add 'catch (ExplorationException e)' to wrapWithErrorHandling before the generic Exception catch, mapping it to a 500 with the message 'description + failed: ' + e.getMessage() (matching the IOException path's log level and message format). This gives exploration failures predictable log entries and makes the interface contract accurate.",
+          "reasoning": "",
+          "summary_hash": "747a0003"
+        }
+      }
+    ]
+  },
+  "total_matching": 33,
+  "hidden": {
+    "by_detector": {
+      "review": 23
+    },
+    "total": 23
+  },
+  "noise_budget": 10,
+  "noise_global_budget": 0,
   "narrative": {
-    "phase": "stagnation",
-    "headline": "\u26a0 2 security issues \u2014 review before other cleanup. Score plateaued at 73.3 for 5 scans. Duplication (0.0%) is where the breakthrough is. 212 wontfix items may also be worth revisiting. (3 review issues \u2014 run `desloppify show review --status open`)",
+    "phase": "middle_grind",
+    "headline": "\u26a0 2 security issues \u2014 review before other cleanup. 42 issues open. Duplication (0.0%) needs attention \u2014 run `desloppify next` to start. (33 review issues \u2014 run `desloppify show review --status open`)",
     "dimensions": {
       "lowest_dimensions": [
         {
           "name": "Duplication",
           "strict": 0.0,
-          "failing": 6,
+          "failing": 7,
           "impact": 0.0
         },
         {
@@ -38,9 +286,9 @@
           "impact_description": "re-review to improve"
         },
         {
-          "name": "Type safety",
-          "strict": 53.4,
-          "failing": 1,
+          "name": "Test strategy",
+          "strict": 53.9,
+          "failing": 2,
           "impact": 0.0,
           "subjective": true,
           "impact_description": "re-review to improve"
@@ -49,140 +297,35 @@
       "biggest_gap_dimensions": [
         {
           "name": "Duplication",
-          "lenient": 47.5,
+          "lenient": 51.0,
           "strict": 0.0,
-          "gap": 47.5,
+          "gap": 51.0,
           "wontfix_count": 0
         },
         {
           "name": "Security",
-          "lenient": 98.3,
-          "strict": 80.8,
-          "gap": 17.5,
+          "lenient": 98.5,
+          "strict": 83.1,
+          "gap": 15.4,
           "wontfix_count": 0
         },
         {
           "name": "File health",
           "lenient": 100.0,
-          "strict": 91.7,
-          "gap": 8.3,
+          "strict": 92.7,
+          "gap": 7.3,
           "wontfix_count": 0
         }
       ],
       "stagnant_dimensions": [
         {
           "name": "Code quality",
-          "strict": 92.8,
-          "stuck_scans": 5
-        },
-        {
-          "name": "File health",
-          "strict": 91.7,
+          "strict": 93.2,
           "stuck_scans": 5
         },
         {
           "name": "Duplication",
           "strict": 0.0,
-          "stuck_scans": 5
-        },
-        {
-          "name": "Abstraction fit",
-          "strict": 66.0,
-          "stuck_scans": 5
-        },
-        {
-          "name": "AI generated debt",
-          "strict": 66.5,
-          "stuck_scans": 5
-        },
-        {
-          "name": "API coherence",
-          "strict": 56.3,
-          "stuck_scans": 5
-        },
-        {
-          "name": "Auth consistency",
-          "strict": 82.8,
-          "stuck_scans": 5
-        },
-        {
-          "name": "Contracts",
-          "strict": 74.9,
-          "stuck_scans": 5
-        },
-        {
-          "name": "Convention drift",
-          "strict": 78.6,
-          "stuck_scans": 5
-        },
-        {
-          "name": "Cross-module arch",
-          "strict": 68.5,
-          "stuck_scans": 5
-        },
-        {
-          "name": "Dep health",
-          "strict": 79.7,
-          "stuck_scans": 5
-        },
-        {
-          "name": "Design coherence",
-          "strict": 74.5,
-          "stuck_scans": 5
-        },
-        {
-          "name": "Error consistency",
-          "strict": 62.3,
-          "stuck_scans": 5
-        },
-        {
-          "name": "High elegance",
-          "strict": 79.6,
-          "stuck_scans": 5
-        },
-        {
-          "name": "Stale migration",
-          "strict": 79.4,
-          "stuck_scans": 5
-        },
-        {
-          "name": "Init coupling",
-          "strict": 83.6,
-          "stuck_scans": 5
-        },
-        {
-          "name": "Logic clarity",
-          "strict": 70.1,
-          "stuck_scans": 5
-        },
-        {
-          "name": "Low elegance",
-          "strict": 60.9,
-          "stuck_scans": 5
-        },
-        {
-          "name": "Mid elegance",
-          "strict": 68.3,
-          "stuck_scans": 5
-        },
-        {
-          "name": "Naming quality",
-          "strict": 67.2,
-          "stuck_scans": 5
-        },
-        {
-          "name": "Structure nav",
-          "strict": 69.5,
-          "stuck_scans": 5
-        },
-        {
-          "name": "Test strategy",
-          "strict": 55.6,
-          "stuck_scans": 5
-        },
-        {
-          "name": "Type safety",
-          "strict": 53.4,
           "stuck_scans": 5
         },
         {
@@ -216,8 +359,8 @@
       {
         "type": "refactor",
         "detector": "boilerplate_duplication",
-        "count": 6,
-        "description": "6 boilerplate_duplication issues \u2014 extract shared boilerplate into reusable helpers or base classes",
+        "count": 7,
+        "description": "7 boilerplate_duplication issues \u2014 extract shared boilerplate into reusable helpers or base classes",
         "command": "desloppify show boilerplate_duplication --status open",
         "impact": 0.0,
         "dimension": "Duplication",
@@ -227,8 +370,8 @@
       {
         "type": "refactor",
         "detector": "review",
-        "count": 3,
-        "description": "3 review issues need investigation \u2014 run `desloppify show review --status open` to see them",
+        "count": 33,
+        "description": "33 review issues need investigation \u2014 run `desloppify show review --status open` to see them",
         "command": "desloppify show review --status open",
         "impact": 0.0,
         "dimension": "Unknown",
@@ -259,7 +402,7 @@
     "strategy": {
       "fixer_leverage": {
         "auto_fixable_count": 0,
-        "total_count": 17,
+        "total_count": 108,
         "coverage": 0.0,
         "impact_ratio": 0.0,
         "recommendation": "none"
@@ -269,7 +412,7 @@
           "actions": [
             1
           ],
-          "file_count": 6,
+          "file_count": 7,
           "total_impact": 0.0,
           "automation": "manual",
           "run_first": false
@@ -303,7 +446,7 @@
         }
       },
       "can_parallelize": false,
-      "hint": "Try a different dimension to break the plateau. Review: 3 issue(s) \u2014 `desloppify show review --status open`."
+      "hint": "Work through actions in priority order. Rescan after each fix to track progress. Review: 33 issue(s) \u2014 `desloppify show review --status open`."
     },
     "tools": {
       "fixers": [],
@@ -328,15 +471,15 @@
       "overall_gap": 2.3,
       "wontfix_count": 212,
       "worst_dimension": "Duplication",
-      "worst_gap": 47.5,
+      "worst_gap": 51.0,
       "trend": "stable"
     },
     "milestone": null,
     "primary_action": {
       "command": "desloppify show boilerplate_duplication --status open",
-      "description": "6 boilerplate_duplication issues \u2014 extract shared boilerplate into reusable helpers or base classes"
+      "description": "7 boilerplate_duplication issues \u2014 extract shared boilerplate into reusable helpers or base classes"
     },
-    "why_now": "Try a different dimension to break the plateau. Review: 3 issue(s) \u2014 `desloppify show review --status open`.",
+    "why_now": "Work through actions in priority order. Rescan after each fix to track progress. Review: 33 issue(s) \u2014 `desloppify show review --status open`.",
     "verification_step": {
       "command": "desloppify scan",
       "reason": "revalidate after changes"
@@ -350,37 +493,20 @@
     ],
     "strict_target": {
       "target": 95.0,
-      "current": 73.3,
-      "gap": 21.7,
+      "current": 74.7,
+      "gap": 20.3,
       "state": "below",
       "warning": null
     },
-    "reminders": [
-      {
-        "type": "rereview_needed",
-        "message": "Subjective results may be stale after resolve. Re-run `desloppify review --prepare` to refresh, or reset with `desloppify scan --reset-subjective` before a clean rerun.",
-        "command": "desloppify review --prepare",
-        "priority": 1,
-        "severity": "high"
-      },
-      {
-        "type": "rescan_needed",
-        "message": "Rescan to verify \u2014 cascading effects may create new issues.",
-        "command": "desloppify scan",
-        "priority": 1,
-        "severity": "high"
-      }
-    ],
+    "reminders": [],
     "reminder_history": {
       "zone_classification": 3,
-      "report_scores": 52,
+      "report_scores": 54,
       "review_issues_pending": 3,
       "feedback_nudge": 3,
       "wontfix_growing": 3,
       "stagnant_nudge": 5,
-      "review_not_run": 3,
-      "rereview_needed": 1,
-      "rescan_needed": 1
+      "review_not_run": 3
     }
   },
   "config": {

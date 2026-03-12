@@ -1,0 +1,103 @@
+{
+  "batch": "contract_coherence",
+  "batch_index": 12,
+  "assessments": {
+    "contract_coherence": 72.0
+  },
+  "dimension_notes": {
+    "contract_coherence": {
+      "evidence": [
+        "ExplorationService interface declares all four methods as 'throws IOException', but SemanticFieldExplorer (the sole implementation) declares those same override signatures as 'throws ExplorationException'. ExplorationException extends RuntimeException and does NOT extend IOException, so callers coding against the ExplorationService interface will add try/catch IOException blocks that never fire, while actual ExplorationExceptions propagate unchecked past them.",
+        "ExplorationException Javadoc states 'By wrapping IOException here, the ExplorationService interface stays free of checked exceptions' — directly contradicting the interface declaration which still has 'throws IOException' on all four methods.",
+        "model/sketch/ package (WordSketchResult, CollocateResult, ConcordanceResult, SnippetResult) is fully compiled code with zero imports anywhere in production. model/sketch/package-info.java states 'Contains the result records returned by word sketch and collocation queries' as if they are canonical, but the actual production code exclusively uses the identically-structured QueryResults.* nested types. model/package-info.java says these types 'remain as nested types in this root package rather than being split into the reserved model/sketch/ sub-package' — a direct contradiction.",
+        "GrammarConfigLoader's two-tier exception contract (IOException for I/O, IllegalArgumentException for structure) is rigorously documented and consistently implemented across load(), fromReader(), createDefaultEnglish(), and loadUnchecked().",
+        "HttpApiUtils parameter helpers (requireParam, parseIntParam, parseDoubleParam) have clear, uniform contracts: missing → IllegalArgumentException, over-length → IllegalArgumentException, bad numeric → IllegalArgumentException, all documented.",
+        "QueryExecutor interface precisely distinguishes executeCqlQuery (ContextualQueryLanguageParser, raw KWIC) from executeBcqlQuery (CorpusQueryLanguageParser, logDice-scored) — an API that could easily be muddled is kept clean with thorough Javadoc.",
+        "CollocateQueryHelper.buildAndRankCollocates documents 'posMap: pass empty map when POS info is unavailable' — explicit contract for the optional parameter.",
+        "WordSketchApiServer.start() wraps IOException in IllegalStateException and documents it clearly; the change in exception type is intentional and explained."
+      ],
+      "impact_scope": "subsystem",
+      "fix_scope": "multi_file_refactor",
+      "confidence": "high",
+      "sub_axes": {
+        "abstraction_leverage": 78.0,
+        "indirection_cost": 65.0,
+        "interface_honesty": 58.0,
+        "delegation_density": 80.0,
+        "definition_directness": 72.0,
+        "type_discipline": 62.0
+      }
+    }
+  },
+  "dimension_judgment": {
+    "contract_coherence": {
+      "strengths": [
+        "GrammarConfigLoader's two-tier exception contract (IOException for I/O failures, IllegalArgumentException for structural/validation failures) is the best example in the codebase: it is documented at the class level and consistently honored across all entry points.",
+        "HttpApiUtils parameter helpers form a coherent, uniform contract layer — every helper follows the same pattern of throwing IllegalArgumentException for client errors, making the HTTP tier predictable.",
+        "QueryExecutor precisely separates executeCqlQuery from executeBcqlQuery and executeSurfacePattern with precise Javadoc explaining the different parsers, labeling semantics, and scoring behaviours — these are contracts that could easily be blurred but aren't.",
+        "CollocateQueryPort as a narrower interface for handlers needing only BCQL retrieval is an honest division: handlers that accept CollocateQueryPort get exactly what they use.",
+        "CollocateQueryHelper documents the test-seam constructor explicitly, warning that the no-index constructor is not for production use and that requireIndex() will throw IllegalStateException — an honest contract for a deliberate design seam."
+      ],
+      "issue_character": "The main contract problems are interface/implementation divergence: ExplorationService lies about its checked-exception surface (declares IOException but implementation throws unchecked ExplorationException), and the model/sketch package presents a parallel type hierarchy as canonical when it is entirely dead code, contradicting the model package-info.",
+      "score_rationale": "The codebase demonstrates strong contract discipline in its low-level utility and configuration layers, where exceptions, parameter semantics, and nullability are documented and honored. However, the ExplorationService/ExplorationException mismatch is a subsystem-level interface lie: callers coding against the published throws-IOException contract will write dead error-handling code while real exceptions escape unchecked. The model/sketch parallel-dead-type problem further erodes type-discipline by presenting two contradicting narratives about the canonical location of core result types. These are not trivial: they would mislead the next developer writing a new ExplorationService caller or a new result handler. A codebase with otherwise good contract hygiene held back by two meaningful coherence failures lands in the high-60s to low-70s range."
+    }
+  },
+  "issues": [
+    {
+      "dimension": "contract_coherence",
+      "identifier": "exploration_service_exception_lie",
+      "summary": "ExplorationService declares throws IOException but implementation throws unchecked ExplorationException",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/exploration/ExplorationService.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/exploration/SemanticFieldExplorer.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/exploration/ExplorationException.java"
+      ],
+      "evidence": [
+        "ExplorationService.java declares all four methods with 'throws IOException': exploreByRelation, exploreMultiSeed, compareCollocateProfiles, fetchExamples.",
+        "SemanticFieldExplorer overrides those methods declaring 'throws ExplorationException'. ExplorationException extends RuntimeException, not IOException.",
+        "ExplorationException Javadoc states 'the ExplorationService interface stays free of checked exceptions', directly contradicting the interface's 'throws IOException' declarations.",
+        "ExplorationHandlers catches nothing from the service calls — it declares 'throws IOException' in each handler and relies on wrapWithErrorHandling's catch(Exception e) to intercept ExplorationExceptions. A caller who properly handles IOException (as the interface contract promises) will not catch ExplorationException.",
+        "The 'throws IOException' on the interface methods is dead — they can be removed without compile error because ExplorationException is unchecked."
+      ],
+      "suggestion": "Remove 'throws IOException' from all four ExplorationService interface methods to match the actual unchecked-exception contract. ExplorationException is already a RuntimeException and propagates without needing to be declared. Update ExploreHandlers handler method signatures accordingly (they currently declare 'throws IOException' to satisfy the interface). This makes the actual contract visible: callers must catch ExplorationException (or handle it via a general RuntimeException handler) rather than catching IOException.",
+      "confidence": "high",
+      "impact_scope": "subsystem",
+      "fix_scope": "multi_file_refactor"
+    },
+    {
+      "dimension": "contract_coherence",
+      "identifier": "model_sketch_dead_type_hierarchy",
+      "summary": "model/sketch/ package presents a parallel unused type hierarchy as canonical while production code uses QueryResults.* nested types exclusively",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/model/sketch/WordSketchResult.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/model/sketch/CollocateResult.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/model/sketch/ConcordanceResult.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/model/sketch/SnippetResult.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/model/sketch/package-info.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/model/package-info.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/model/QueryResults.java"
+      ],
+      "evidence": [
+        "model/sketch/ contains four fully-compiled types (WordSketchResult, CollocateResult, ConcordanceResult, SnippetResult) with no imports anywhere in the production codebase — confirmed by grep across all .java files in src/main.",
+        "model/sketch/package-info.java states 'Contains the result records returned by word sketch and collocation queries: WordSketchResult, ConcordanceResult, SnippetResult, and CollocateResult' — presenting them as active production types.",
+        "model/package-info.java says 'Word-sketch result types (QueryResults) remain as nested types in this root package rather than being split into the reserved model/sketch/ sub-package' — directly contradicting model/sketch/package-info.",
+        "All production callers use QueryResults.WordSketchResult, QueryResults.CollocateResult, etc. (nested inside QueryResults.java) — the model/sketch standalone types are never referenced."
+      ],
+      "suggestion": "Resolve the contradiction by choosing one canonical location. The cleaner path is to delete the four dead files in model/sketch/ (they are structurally identical to the QueryResults.* nested types), update model/sketch/package-info.java to reflect that this sub-package is reserved/empty, and remove the self-contradicting note from model/package-info.java. Alternatively, if the intent was to migrate to top-level types, update all production imports to use model.sketch.* and delete the QueryResults namespace class. Either way, a developer arriving at this package today cannot determine which type hierarchy is canonical.",
+      "confidence": "high",
+      "impact_scope": "module",
+      "fix_scope": "multi_file_refactor"
+    }
+  ],
+  "retrospective": {
+    "root_causes": [
+      "The ExplorationService IOException contract appears to be a refactoring residue: ExplorationException was introduced to hide checked exceptions from the HTTP layer, but the interface declarations were not updated to match, creating a documented-but-false contract.",
+      "The model/sketch dead types suggest an in-progress or abandoned migration from nested QueryResults types to top-level types in a sub-package; the migration stalled with both hierarchies present and contradictory documentation."
+    ],
+    "likely_symptoms": [
+      "exploration_service_exception_lie — the throws IOException on the interface is a symptom of incomplete refactoring, not a design decision",
+      "model_sketch_dead_type_hierarchy — the parallel type hierarchy is a migration artifact"
+    ],
+    "possible_false_positives": []
+  }
+}

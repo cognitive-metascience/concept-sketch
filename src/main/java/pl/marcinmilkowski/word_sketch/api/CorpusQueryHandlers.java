@@ -4,7 +4,7 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.sun.net.httpserver.HttpExchange;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import pl.marcinmilkowski.word_sketch.model.QueryResults;
+import pl.marcinmilkowski.word_sketch.model.sketch.*;
 import pl.marcinmilkowski.word_sketch.query.CollocateQueryPort;
 
 import java.io.IOException;
@@ -42,7 +42,7 @@ class CorpusQueryHandlers {
         logger.info("BCQL audit – executing query: {}", req.query());
         logger.debug("BCQL query: {}", req.query());
 
-        List<QueryResults.CollocateResult> results = executor.executeBcqlQuery(req.query(), req.top());
+        List<CollocateResult> results = executor.executeBcqlQuery(req.query(), req.top());
         HttpApiUtils.sendJsonResponse(exchange, buildBcqlResponse(req, results));
     }
 
@@ -87,7 +87,7 @@ class CorpusQueryHandlers {
             List<Map<String, Object>> results) {}
 
     /** Build the typed BCQL query response from the parsed request and results. */
-    private static BcqlQueryResponse buildBcqlResponse(BcqlRequest req, List<QueryResults.CollocateResult> results) {
+    private static BcqlQueryResponse buildBcqlResponse(BcqlRequest req, List<CollocateResult> results) {
         return new BcqlQueryResponse(
             "ok",
             req.query(),

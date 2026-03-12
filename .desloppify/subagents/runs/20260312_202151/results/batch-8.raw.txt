@@ -1,0 +1,104 @@
+{
+  "batch": "mid_level_elegance",
+  "batch_index": 8,
+  "assessments": {
+    "mid_level_elegance": 73.0
+  },
+  "dimension_notes": {
+    "mid_level_elegance": {
+      "evidence": [
+        "ExploreResponseAssembler centralises all model-to-presentation translation; neither ExplorationResult nor ComparisonResult carry any JSON dependency.",
+        "populateExploreResponse(Map<String,Object> response, ExplorationResult result) and populateComparisonResponse mutate a caller-supplied map rather than returning a new one, while buildExamplesResponse returns a typed ExamplesResponse record — two incompatible handoff conventions in the same class.",
+        "buildBaseResponseEnvelope returns a BaseEnvelope record whose paramsUsed field is a live mutable sub-map; callers immediately mutate it post-construction (base.paramsUsed().put('nouns_per', nounsPerSeed)), leaking construction details across the boundary.",
+        "ExplorationHandlers uses raw Map<String,Object> for explore/compare responses but typed ExamplesResponse for examples; CorpusQueryHandlers uses a private record BcqlQueryResponse; SketchHandlers builds raw maps inline. Three different assembly patterns exist in sibling handler classes.",
+        "collocateResultToExampleMap (returns Map) and collocateResultToExampleEntry (returns typed record) both serialise the same CollocateResult fields; both exist because callers use different response conventions.",
+        "ExplorationService interface provides a clean, narrow API→service seam; ExplorationHandlers depends only on the interface, not on SemanticFieldExplorer directly.",
+        "GrammarConfigSerializer is a dedicated serialization class keeping GrammarConfig and RelationConfig free of JSON library dependency — a textbook clean boundary.",
+        "GrammarConfigLoader documents a two-tier exception contract (IOException vs IllegalArgumentException) explicitly in Javadoc, making error propagation across the load boundary predictable."
+      ],
+      "impact_scope": "module",
+      "fix_scope": "multi_file_refactor",
+      "confidence": "high"
+    }
+  },
+  "dimension_judgment": {
+    "mid_level_elegance": {
+      "strengths": [
+        "ExploreResponseAssembler is a dedicated translation layer: all model-to-response conversion for exploration endpoints lives in one place, keeping ExplorationResult/ComparisonResult free of presentation concerns.",
+        "ExplorationService interface provides a clean, minimal API→service seam; ExplorationHandlers only sees the interface, not the concrete implementation.",
+        "GrammarConfigSerializer cleanly separates JSON serialisation from value objects, so GrammarConfig and RelationConfig carry no JSON library dependency.",
+        "GrammarConfigLoader documents its two-tier exception strategy (IOException vs IllegalArgumentException) explicitly, making error propagation across the load boundary unsurprising.",
+        "Handler decomposition (ConcordanceHandlers, CorpusQueryHandlers, ExplorationHandlers, SketchHandlers) distributes HTTP concerns cleanly without cross-handler coupling."
+      ],
+      "issue_character": "Inconsistent assembly conventions within the response-building layer — mix of map-mutation and typed-return patterns — create implicit contracts and duplication that a developer extending the API must navigate without a clear model to follow.",
+      "score_rationale": "The higher-level seams (ExplorationService interface, GrammarConfigSerializer, ExploreResponseAssembler as a single translation home) are genuinely well-designed and score toward the 80-90 range on their own. What pulls the score down is the inconsistency within ExploreResponseAssembler itself: it mixes mutating-map handoffs (populateExploreResponse, populateComparisonResponse) with return-typed-value handoffs (buildExamplesResponse), and the BaseEnvelope pattern exposes a live mutable sub-map for post-construction mutation that leaks construction intent across the boundary. These create recurring 'which pattern applies here?' friction for developers extending or testing the API layer, placing this solidly at 73 — solid but uneven, matching the '80: developer hits recurring friction' anchor pulled slightly lower by the concrete duplication and mutable-ref leak."
+    }
+  },
+  "issues": [
+    {
+      "dimension": "mid_level_elegance",
+      "identifier": "assembler_mixed_handoff_convention",
+      "summary": "ExploreResponseAssembler mixes map-mutation and typed-return handoff styles in the same class",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/api/ExploreResponseAssembler.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/api/ExplorationHandlers.java"
+      ],
+      "evidence": [
+        "populateExploreResponse(Map<String,Object> response, ExplorationResult) and populateComparisonResponse(Map<String,Object> response, ComparisonResult) mutate a caller-supplied map in place.",
+        "buildExamplesResponse returns a typed ExamplesResponse record — the opposite convention, in the same class.",
+        "Callers of populateExploreResponse must pre-create the map, insert envelope fields, pass it in, and trust it has been fully populated — an implicit multi-step contract."
+      ],
+      "suggestion": "Convert populateExploreResponse and populateComparisonResponse to return new typed records (e.g. ExploreResponse, ComparisonResponse) or at least a plain Map<String,Object>, matching the return-value convention of buildExamplesResponse. Callers become responsible only for combining the envelope with the returned map, making the handoff explicit and testable without inspecting a passed-in map.",
+      "confidence": "high",
+      "impact_scope": "module",
+      "fix_scope": "multi_file_refactor",
+      "root_cause_cluster": "inconsistent_assembly_conventions"
+    },
+    {
+      "dimension": "mid_level_elegance",
+      "identifier": "base_envelope_mutable_submap_leak",
+      "summary": "BaseEnvelope exposes a live mutable sub-map for post-construction mutation, leaking construction detail across the boundary",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/api/ExplorationHandlers.java"
+      ],
+      "evidence": [
+        "buildBaseResponseEnvelope returns a BaseEnvelope record whose paramsUsed() accessor returns the live HashMap inserted into the response map.",
+        "buildSingleSeedResponseEnvelope immediately mutates it: base.paramsUsed().put(\"nouns_per\", nounsPerSeed) — a post-construction side-effect on a returned value.",
+        "A caller that forgets the extra put step silently produces an incomplete parameters block; there is no encapsulation preventing the omission."
+      ],
+      "suggestion": "Remove the BaseEnvelope abstraction. Instead, accept the variant fields as parameters directly in buildBaseResponseEnvelope (e.g. an optional Integer nounsPerSeed), or have buildSingleSeedResponseEnvelope and buildMultiSeedResponseEnvelope each build the full response map themselves. This keeps construction of the map self-contained and removes the implicit mutation step.",
+      "confidence": "high",
+      "impact_scope": "local",
+      "fix_scope": "single_edit",
+      "root_cause_cluster": "inconsistent_assembly_conventions"
+    },
+    {
+      "dimension": "mid_level_elegance",
+      "identifier": "duplicate_collocate_result_serializers",
+      "summary": "collocateResultToExampleMap and collocateResultToExampleEntry both serialise the same CollocateResult fields with different return types",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/api/ExploreResponseAssembler.java"
+      ],
+      "evidence": [
+        "collocateResultToExampleMap returns Map<String,Object> with 'sentence' and 'raw' fields.",
+        "collocateResultToExampleEntry returns ExamplesResponse.ExampleEntry with the same sentence/rawXml projection.",
+        "Both exist because ExplorationHandlers and ConcordanceHandlers use different response conventions; neither can call the other."
+      ],
+      "suggestion": "Remove collocateResultToExampleMap (the map-returning variant) since the typed ExamplesResponse.ExampleEntry is the preferred convention. Any remaining callers that still need a Map can call collocateResultToExampleEntry and convert or can be migrated to the typed record path. This eliminates the duplicated projection and reduces the assembler's surface area.",
+      "confidence": "medium",
+      "impact_scope": "local",
+      "fix_scope": "single_edit",
+      "root_cause_cluster": "inconsistent_assembly_conventions"
+    }
+  ],
+  "retrospective": {
+    "root_causes": [
+      "The response-building layer evolved incrementally: early handlers used raw maps, later ones adopted typed records, but the assembler was never unified, leaving mixed conventions coexisting in ExploreResponseAssembler and sibling handler classes."
+    ],
+    "likely_symptoms": [
+      "assembler_mixed_handoff_convention",
+      "duplicate_collocate_result_serializers"
+    ],
+    "possible_false_positives": []
+  }
+}

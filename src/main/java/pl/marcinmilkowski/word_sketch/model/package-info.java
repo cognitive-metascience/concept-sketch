@@ -23,9 +23,9 @@
  * <h2>Sub-package structure</h2>
  * <p>
  * Exploration types live in {@code model/exploration/} because they form a large, independently
- * evolving set. Word-sketch result types ({@link pl.marcinmilkowski.word_sketch.model.QueryResults})
- * remain as nested types in this root package rather than being split into the reserved
- * {@code model/sketch/} sub-package — see {@code model/sketch/package-info.java} for rationale.
+ * evolving set. Word-sketch result types ({@link pl.marcinmilkowski.word_sketch.model.sketch.WordSketchResult},
+ * {@link pl.marcinmilkowski.word_sketch.model.sketch.CollocateResult}, etc.) live in
+ * {@code model/sketch/}.
  * </p>
  *
  * <h2>Naming conventions</h2>

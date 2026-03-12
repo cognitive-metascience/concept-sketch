@@ -2,7 +2,7 @@ package pl.marcinmilkowski.word_sketch.api;
 
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.junit.jupiter.api.Test;
-import pl.marcinmilkowski.word_sketch.model.QueryResults;
+import pl.marcinmilkowski.word_sketch.model.sketch.*;
 import pl.marcinmilkowski.word_sketch.query.QueryExecutor;
 import pl.marcinmilkowski.word_sketch.query.StubQueryExecutor;
 
@@ -28,8 +28,8 @@ class CorpusQueryHandlersTest {
     private static CorpusQueryHandlers handlersWithStub() {
         QueryExecutor stub = new StubQueryExecutor() {
             @Override
-            public List<QueryResults.CollocateResult> executeBcqlQuery(String bcqlPattern, int maxResults) {
-                return List.of(new QueryResults.CollocateResult("a theory emerged", null, 2, 8, "d1", "theory", 1, 7.0));
+            public List<CollocateResult> executeBcqlQuery(String bcqlPattern, int maxResults) {
+                return List.of(new CollocateResult("a theory emerged", null, 2, 8, "d1", "theory", 1, 7.0));
             }
         };
         return new CorpusQueryHandlers(stub);

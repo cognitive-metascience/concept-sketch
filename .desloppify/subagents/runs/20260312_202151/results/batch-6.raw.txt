@@ -1,0 +1,59 @@
+{
+  "batch": "dependency_health",
+  "batch_index": 6,
+  "assessments": {
+    "dependency_health": 88.0
+  },
+  "dimension_notes": {
+    "dependency_health": {
+      "evidence": [
+        "pom.xml declares exactly two BlackLab artifacts (blacklab-engine, blacklab-query-parser), both actively imported: blacklab-engine for indexing (BlackLabConllUIndexer) and querying (BlackLabQueryExecutor), blacklab-query-parser for ContextualQueryLanguageParser and CorpusQueryLanguageParser in BlackLabQueryExecutor and CollocateQueryHelper",
+        "Jackson is the single JSON library: jackson-databind used for ObjectMapper/ObjectNode across api/ and config/ packages; no Gson, Fastjson, or other JSON library present",
+        "Logging uses the canonical SLF4J facade (slf4j-api) throughout source code with logback-classic as the sole runtime implementation; log4j-to-slf4j bridge routes BlackLab's internal Log4J calls through the same SLF4J channel, avoiding competing logging frameworks",
+        "jspecify declared as 'provided' scope — zero runtime footprint, used for @NonNull/@Nullable annotations across api/, config/, and exploration/ packages",
+        "UFAL repository (ufal.mff.cuni.cz/maven2) is declared in pom.xml <repositories> but no Maven dependency from it appears in the <dependencies> section; UDPipe is documented as an external command-line tool, not a Java library, making the repository entry a dead declaration",
+        "jackson-core is explicitly pinned at the same version as jackson-databind despite the jackson-bom import; comment explains this works around a transitive dependency resolving an older jackson-core version, which is a legitimate version-pinning practice"
+      ],
+      "impact_scope": "local",
+      "fix_scope": "single_edit",
+      "confidence": "high",
+      "issues_preventing_higher_score": "The UFAL repository declaration has no corresponding Maven dependency, leaving a dead entry that could confuse developers about whether UDPipe should be added as a Maven artifact. The explicit jackson-core pin alongside jackson-bom is functional but slightly redundant — while documented, it adds noise to the BOM-managed section."
+    }
+  },
+  "dimension_judgment": {
+    "dependency_health": {
+      "strengths": [
+        "Single JSON library: Jackson is used consistently everywhere; no competing JSON libs (no Fastjson, Gson, or org.json present)",
+        "Canonical SLF4J + Logback logging pattern: all source code logs via the SLF4J facade, with a single logback-classic runtime implementation, no duplicate logging frameworks",
+        "Both BlackLab modules are genuinely used: blacklab-engine powers indexing/querying, blacklab-query-parser provides the CQL parsers referenced directly in query execution code",
+        "jspecify correctly scoped as 'provided' — annotation-only library carries zero runtime weight",
+        "log4j-to-slf4j bridge is purposeful: it routes BlackLab's internal Log4J output through SLF4J rather than introducing a second logging sink"
+      ],
+      "issue_character": "Issues are minor and isolated: one dead repository declaration (UFAL) with no corresponding dependency, and a slightly redundant jackson-core explicit pin that is already managed by the imported BOM.",
+      "score_rationale": "The dependency set is lean, purposeful, and free of the classic pathologies — no duplicate libraries for the same purpose, no heavy deps for trivial use, no unused production dependencies. The codebase aligns closely with the 90-anchor ('mostly healthy with minor overlap or weight concerns'). The UFAL dead repository entry and the verbose jackson-core pin are the only rough edges, neither of which causes runtime problems or creates real developer friction, keeping the score just below 90."
+    }
+  },
+  "issues": [
+    {
+      "dimension": "dependency_health",
+      "identifier": "ufal_dead_repository",
+      "summary": "UFAL Maven repository declared in pom.xml with no corresponding Maven dependency",
+      "related_files": ["pom.xml"],
+      "evidence": [
+        "pom.xml lines 122-126 declare the UFAL repository (https://ufal.mff.cuni.cz/maven2) under <repositories>",
+        "No dependency in <dependencies> resolves from the ufal group or any UFAL artifact; UDPipe is described in README as an external CLI tool, not a Java library"
+      ],
+      "suggestion": "Remove the <repository id='ufal'> block from pom.xml. If UDPipe Java bindings are ever needed, re-add the repository at that point with the corresponding dependency declaration.",
+      "confidence": "high",
+      "impact_scope": "local",
+      "fix_scope": "single_edit"
+    }
+  ],
+  "retrospective": {
+    "root_causes": [
+      "The UFAL repository was likely added speculatively during evaluation of UDPipe as a Java library, then abandoned when UDPipe was chosen as an external CLI tool instead"
+    ],
+    "likely_symptoms": [],
+    "possible_false_positives": []
+  }
+}

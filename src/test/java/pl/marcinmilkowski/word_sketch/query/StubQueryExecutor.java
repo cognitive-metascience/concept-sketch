@@ -1,6 +1,6 @@
 package pl.marcinmilkowski.word_sketch.query;
 
-import pl.marcinmilkowski.word_sketch.model.QueryResults;
+import pl.marcinmilkowski.word_sketch.model.sketch.*;
 
 import java.io.IOException;
 import java.util.Collections;
@@ -16,8 +16,8 @@ import java.util.List;
  * <pre>{@code
  * QueryExecutor stub = new StubQueryExecutor() {
  *     @Override
- *     public List<QueryResults.CollocateResult> executeBcqlQuery(String p, int m) {
- *         return List.of(new QueryResults.CollocateResult("a sentence", null, 0, 5, "d1", "word", 1, 7.0));
+ *     public List<CollocateResult> executeBcqlQuery(String p, int m) {
+ *         return List.of(new CollocateResult("a sentence", null, 0, 5, "d1", "word", 1, 7.0));
  *     }
  * };
  * }</pre>
@@ -39,19 +39,19 @@ public class StubQueryExecutor implements QueryExecutor {
     }
 
     @Override
-    public List<QueryResults.WordSketchResult> executeCollocations(
+    public List<WordSketchResult> executeCollocations(
             String lemma, String cqlPattern, double minLogDice, int maxResults) throws IOException {
         return Collections.emptyList();
     }
 
     @Override
-    public List<QueryResults.ConcordanceResult> executeCqlQuery(
+    public List<ConcordanceResult> executeCqlQuery(
             String cqlPattern, int maxResults) throws IOException {
         return Collections.emptyList();
     }
 
     @Override
-    public List<QueryResults.CollocateResult> executeBcqlQuery(
+    public List<CollocateResult> executeBcqlQuery(
             String bcqlPattern, int maxResults) throws IOException {
         return Collections.emptyList();
     }
@@ -62,13 +62,13 @@ public class StubQueryExecutor implements QueryExecutor {
     }
 
     @Override
-    public List<QueryResults.WordSketchResult> executeSurfacePattern(
+    public List<WordSketchResult> executeSurfacePattern(
             String bcqlPattern, double minLogDice, int maxResults) throws IOException {
         return Collections.emptyList();
     }
 
     @Override
-    public List<QueryResults.WordSketchResult> executeDependencyPattern(
+    public List<WordSketchResult> executeDependencyPattern(
             String lemma, String deprel, double minLogDice, int maxResults,
             String headPosConstraint) throws IOException {
         return Collections.emptyList();

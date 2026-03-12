@@ -1,0 +1,58 @@
+{
+  "batch": "authorization_consistency",
+  "batch_index": 20,
+  "assessments": {
+    "authorization_consistency": 76.0
+  },
+  "dimension_notes": {
+    "authorization_consistency": {
+      "evidence": [
+        "WordSketchApiServer.java Javadoc explicitly documents the security model: 'server binds exclusively to the loopback address (127.0.0.1) so it is never exposed on any external network interface. All endpoints are unauthenticated — access control is provided by the host firewall and the loopback-only bind.'",
+        "All 12+ endpoints are registered through the same registerGetHandler/registerPostHandler pipeline with identical wrapWithErrorHandling wrapping — no endpoint receives preferential or differential auth treatment.",
+        "setCorsHeader(exchange) is called inside every response-sending method (sendJsonResponse, sendError, sendBinaryResponse, sendOptionsResponse), so the CORS policy is applied uniformly to all responses including errors.",
+        "The BCQL endpoint (/api/bcql), the most powerful endpoint accepting arbitrary corpus queries, has additional controls not present on read-only GET endpoints: MAX_BCQL_PATTERN_LENGTH (1024 chars), MAX_BCQL_BRACKET_DEPTH (20 tokens), and an explicit audit log line: logger.info(\"BCQL audit – executing query: {}\", req.query()).",
+        "Input validation via HttpApiUtils.requireParam / parseIntParam / parseDoubleParam is called uniformly across all handlers; MAX_PARAM_LENGTH and MAX_REQUEST_BODY_BYTES are centralised constants referenced by every handler rather than scattered magic numbers.",
+        "warnIfWildcardCors() is called at server startup if cors.allow.origin is '*', signalling awareness of over-broad CORS as a risk."
+      ],
+      "impact_scope": "codebase",
+      "fix_scope": "architectural_change",
+      "confidence": "high"
+    }
+  },
+  "dimension_judgment": {
+    "authorization_consistency": {
+      "strengths": [
+        "Security model is explicitly documented in WordSketchApiServer Javadoc and the loopback-only bind is enforced in code (InetAddress.getLoopbackAddress()), not just in documentation.",
+        "Every endpoint is registered through the same handler pipeline with identical error-handling wrappers — there are no siblings where one has a guard and another does not.",
+        "The highest-risk endpoint (/api/bcql, arbitrary corpus queries) has proportionally stronger controls: length limits, complexity limits, and an audit-intent log line, which is appropriate escalation rather than inconsistency.",
+        "CORS policy is applied uniformly because setCorsHeader is embedded in every response helper, making it structurally impossible to omit it on any response path.",
+        "Input validation utilities (requireParam, parseIntParam, parseDoubleParam, readBodyWithSizeLimit) are centralised and reused consistently across all handlers."
+      ],
+      "issue_character": "The codebase has no authorization inconsistency in the conventional sense; the single structural concern is that the entire security model is a single-point-of-failure network assumption — if the bind address changes, there is no backup auth layer, and the BCQL audit log relies on a mutable log level rather than an append-only audit trail.",
+      "score_rationale": "This is a local research tool with a deliberately documented 'loopback-only, no auth' policy applied with full consistency: every endpoint, every response path, every error path is treated identically. By the rubric's criteria — siblings with auth on some and not others, magic permission literals, mixed trust boundaries — there are essentially no defects. The score is modestly below exemplary because the security model has a structural single point of failure (bind address is not enforced beyond start()), the BCQL audit log is a best-effort INFO log rather than a structured audit trail, and there is no defence-in-depth option (API key, basic auth) documented for deployment scenarios where loopback binding is not feasible."
+    }
+  },
+  "issues": [
+    {
+      "dimension": "authorization_consistency",
+      "identifier": "bcql_audit_log_level",
+      "summary": "BCQL audit log uses INFO level, which can be suppressed in production logging configs, silencing the only audit trail for arbitrary corpus queries",
+      "related_files": ["src/main/java/pl/marcinmilkowski/word_sketch/api/CorpusQueryHandlers.java"],
+      "evidence": [
+        "logger.info(\"BCQL audit – executing query: {}\", req.query()) — INFO is the wrong severity for an audit event; if the root logger or this class logger is set to WARN or ERROR, all BCQL queries become invisible.",
+        "No structured audit field (timestamp, source IP, query length) is included alongside the query text, making the log entry hard to correlate or filter."
+      ],
+      "suggestion": "Promote the BCQL audit line to logger.warn (so it survives typical production log levels) or use a dedicated named audit logger (e.g. LoggerFactory.getLogger(\"audit.bcql\")) at INFO, and add source IP (exchange.getRemoteAddress()) and query length to the log record.",
+      "confidence": "medium",
+      "impact_scope": "local",
+      "fix_scope": "single_edit"
+    }
+  ],
+  "retrospective": {
+    "root_causes": [
+      "The codebase is a single-user local research tool; authorization was consciously deferred to the network layer, which is why consistency is high but depth is shallow."
+    ],
+    "likely_symptoms": [],
+    "possible_false_positives": []
+  }
+}

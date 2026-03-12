@@ -9,7 +9,7 @@ import pl.marcinmilkowski.word_sketch.exploration.SemanticFieldExplorer;
 import pl.marcinmilkowski.word_sketch.model.exploration.ComparisonResult;
 import pl.marcinmilkowski.word_sketch.model.exploration.Edge;
 import pl.marcinmilkowski.word_sketch.model.exploration.ExplorationOptions;
-import pl.marcinmilkowski.word_sketch.model.QueryResults;
+import pl.marcinmilkowski.word_sketch.model.sketch.*;
 import pl.marcinmilkowski.word_sketch.query.QueryExecutor;
 import pl.marcinmilkowski.word_sketch.query.StubQueryExecutor;
 
@@ -207,15 +207,15 @@ class ExplorationHandlersTest {
 
     // ── Stub helpers ─────────────────────────────────────────────────────────
 
-    private static QueryExecutor collocatingExecutor(Map<String, List<QueryResults.WordSketchResult>> map) {
+    private static QueryExecutor collocatingExecutor(Map<String, List<WordSketchResult>> map) {
         return new StubQueryExecutor() {
             @Override
-            public List<QueryResults.WordSketchResult> executeCollocations(
+            public List<WordSketchResult> executeCollocations(
                     String lemma, String cqlPattern, double minLogDice, int maxResults) {
                 return map.getOrDefault(lemma.toLowerCase(), List.of());
             }
             @Override
-            public List<QueryResults.WordSketchResult> executeSurfacePattern(
+            public List<WordSketchResult> executeSurfacePattern(
                     String pattern, double minLogDice, int maxResults) {
                 String lemma = StubQueryExecutor.extractLemmaFromPattern(pattern);
                 return map.getOrDefault(lemma.toLowerCase(), List.of());
@@ -223,7 +223,7 @@ class ExplorationHandlersTest {
         };
     }
 
-    private static QueryResults.WordSketchResult wsr(String lemma, double logDice) {
-        return new QueryResults.WordSketchResult(lemma, "JJ", 10, logDice, 0.0, List.of());
+    private static WordSketchResult wsr(String lemma, double logDice) {
+        return new WordSketchResult(lemma, "JJ", 10, logDice, 0.0, List.of());
     }
 }

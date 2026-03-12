@@ -5,7 +5,7 @@ import org.junit.jupiter.api.Test;
 import pl.marcinmilkowski.word_sketch.config.GrammarConfig;
 import pl.marcinmilkowski.word_sketch.config.GrammarConfigHelper;
 import pl.marcinmilkowski.word_sketch.config.RelationType;
-import pl.marcinmilkowski.word_sketch.model.QueryResults;
+import pl.marcinmilkowski.word_sketch.model.sketch.*;
 import pl.marcinmilkowski.word_sketch.query.QueryExecutor;
 import pl.marcinmilkowski.word_sketch.query.StubQueryExecutor;
 
@@ -26,21 +26,21 @@ class SketchHandlersTest {
 
     /** Stub executor returning a fixed collocate result for any query. */
     private static QueryExecutor stubExecutor() {
-        QueryResults.WordSketchResult stub = new QueryResults.WordSketchResult(
+        WordSketchResult stub = new WordSketchResult(
                 "important", "JJ", 100L, 7.5, 0.01, List.of("it is important"));
         return new StubQueryExecutor() {
             @Override
-            public List<QueryResults.WordSketchResult> executeCollocations(
+            public List<WordSketchResult> executeCollocations(
                     String lemma, String cqlPattern, double minLogDice, int maxResults) {
                 return List.of(stub);
             }
             @Override
             public long getTotalFrequency(String lemma) { return 10000L; }
             @Override
-            public List<QueryResults.WordSketchResult> executeSurfacePattern(
+            public List<WordSketchResult> executeSurfacePattern(
                     String pattern, double minLogDice, int maxResults) { return List.of(stub); }
             @Override
-            public List<QueryResults.WordSketchResult> executeDependencyPattern(
+            public List<WordSketchResult> executeDependencyPattern(
                     String lemma, String deprel, double minLogDice, int maxResults,
                     String headPosConstraint) { return List.of(stub); }
         };
@@ -126,15 +126,15 @@ class SketchHandlersTest {
 
     // ── Stub helpers ─────────────────────────────────────────────────────────
 
-    private static QueryExecutor collocatingExecutor(Map<String, List<QueryResults.WordSketchResult>> map) {
+    private static QueryExecutor collocatingExecutor(Map<String, List<WordSketchResult>> map) {
         return new StubQueryExecutor() {
             @Override
-            public List<QueryResults.WordSketchResult> executeCollocations(
+            public List<WordSketchResult> executeCollocations(
                     String lemma, String cqlPattern, double minLogDice, int maxResults) {
                 return map.getOrDefault(lemma.toLowerCase(), List.of());
             }
             @Override
-            public List<QueryResults.WordSketchResult> executeSurfacePattern(
+            public List<WordSketchResult> executeSurfacePattern(
                     String pattern, double minLogDice, int maxResults) {
                 String lemma = StubQueryExecutor.extractLemmaFromPattern(pattern);
                 return map.getOrDefault(lemma.toLowerCase(), List.of());
@@ -142,7 +142,7 @@ class SketchHandlersTest {
         };
     }
 
-    private static QueryResults.WordSketchResult wsr(String lemma, double logDice) {
-        return new QueryResults.WordSketchResult(lemma, "JJ", 10, logDice, 0.0, List.of());
+    private static WordSketchResult wsr(String lemma, double logDice) {
+        return new WordSketchResult(lemma, "JJ", 10, logDice, 0.0, List.of());
     }
 }

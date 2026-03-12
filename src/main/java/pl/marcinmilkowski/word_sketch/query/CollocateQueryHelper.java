@@ -6,7 +6,7 @@ import nl.inl.blacklab.exceptions.InvalidQuery;
 import nl.inl.blacklab.resultproperty.HitProperty;
 import nl.inl.blacklab.resultproperty.HitPropertyHitText;
 
-import pl.marcinmilkowski.word_sketch.model.QueryResults;
+import pl.marcinmilkowski.word_sketch.model.sketch.*;
 import nl.inl.blacklab.search.BlackLabIndex;
 import nl.inl.blacklab.search.ConcordanceType;
 import nl.inl.blacklab.search.lucene.BLSpanQuery;
@@ -193,7 +193,7 @@ class CollocateQueryHelper {
      * @param posMap        collocate-lemma → POS tag map; pass an empty map when POS
      *                      information is unavailable (placed last as it is optional)
      */
-    List<QueryResults.WordSketchResult> buildAndRankCollocates(
+    List<WordSketchResult> buildAndRankCollocates(
             Map<String, Long> freqMap,
             long headwordFreq,
             double minLogDice,
@@ -201,7 +201,7 @@ class CollocateQueryHelper {
             Map<String, String> posMap) throws IOException {
         Map<String, Long> collocateCorpusFreqs = prefetchCorpusFrequencies(freqMap.keySet());
 
-        List<QueryResults.WordSketchResult> results = new ArrayList<>();
+        List<WordSketchResult> results = new ArrayList<>();
         for (Map.Entry<String, Long> entry : freqMap.entrySet()) {
             String collocateLemma = entry.getKey();
             long jointFreq = entry.getValue();
@@ -212,13 +212,13 @@ class CollocateQueryHelper {
 
             if (logDice >= minLogDice) {
                 double relFreq = LogDiceUtils.relativeFrequency(jointFreq, headwordFreq);
-                String pos = posMap.getOrDefault(collocateLemma, QueryResults.WordSketchResult.UNKNOWN_POS);
-                results.add(new QueryResults.WordSketchResult(
+                String pos = posMap.getOrDefault(collocateLemma, WordSketchResult.UNKNOWN_POS);
+                results.add(new WordSketchResult(
                         collocateLemma, pos, jointFreq, logDice, relFreq, Collections.emptyList()));
             }
         }
         return results.stream()
-                .sorted(Comparator.comparingDouble(QueryResults.WordSketchResult::logDice).reversed())
+                .sorted(Comparator.comparingDouble(WordSketchResult::logDice).reversed())
                 .limit(maxResults)
                 .toList();
     }
@@ -234,7 +234,7 @@ class CollocateQueryHelper {
     /**
      * Full two-phase BCQL query execution: parse → collect hits → score → rank.
      */
-    List<QueryResults.CollocateResult> executeBcqlQuery(String bcqlPattern, int maxResults)
+    List<CollocateResult> executeBcqlQuery(String bcqlPattern, int maxResults)
             throws IOException {
         try {
             BlackLabIndex idx = requireIndex();
@@ -251,9 +251,9 @@ class CollocateQueryHelper {
             Map<String, Long> collocateFreqMap = new HashMap<>();
             List<HitRecord> hitRecords = collectHits(hits, sampleSize, collocatePos);
             buildCollocateFrequencyMap(hitRecords, collocateFreqMap);
-            List<QueryResults.CollocateResult> scored = scoreHits(hitRecords, collocateFreqMap, headwordFreq);
+            List<CollocateResult> scored = scoreHits(hitRecords, collocateFreqMap, headwordFreq);
             return scored.stream()
-                    .sorted(Comparator.comparingDouble(QueryResults.CollocateResult::logDice).reversed())
+                    .sorted(Comparator.comparingDouble(CollocateResult::logDice).reversed())
                     .limit(maxResults)
                     .toList();
 
@@ -322,12 +322,12 @@ class CollocateQueryHelper {
      * Scores all hit records and returns the full list (unsorted); the caller is responsible for
      * sorting by logDice and limiting to {@code maxResults}.
      */
-    private List<QueryResults.CollocateResult> scoreHits(List<HitRecord> records,
+    private List<CollocateResult> scoreHits(List<HitRecord> records,
             Map<String, Long> collocateFreqMap, long headwordFreq) throws IOException {
         // Pre-compute corpus frequency for each unique collocate to avoid one call per hit.
         Map<String, Long> collocateCorpusFreqs = prefetchCorpusFrequencies(collocateFreqMap.keySet());
 
-        List<QueryResults.CollocateResult> results = new ArrayList<>();
+        List<CollocateResult> results = new ArrayList<>();
 
         for (HitRecord rec : records) {
             String collocateLemma = rec.collocateLemma();
@@ -351,7 +351,7 @@ class CollocateQueryHelper {
             String plainText = BlackLabSnippetParser.trimToSentence(
                     rec.leftText(), rec.matchText(), rec.rightText());
 
-            results.add(new QueryResults.CollocateResult(
+            results.add(new CollocateResult(
                     plainText, rec.xmlSnippet(),
                     rec.start(), rec.end(), String.valueOf(rec.docId()),
                     collocateLemma, jointFreq, logDice));

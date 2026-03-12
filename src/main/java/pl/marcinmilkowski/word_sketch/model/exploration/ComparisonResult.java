@@ -15,7 +15,7 @@ public class ComparisonResult {
     private final List<String> nouns;
     private final List<CollocateProfile> collocates;
 
-    protected ComparisonResult(List<String> nouns, List<CollocateProfile> collocates) {
+    private ComparisonResult(List<String> nouns, List<CollocateProfile> collocates) {
         this.nouns = nouns;
         this.collocates = collocates;
     }

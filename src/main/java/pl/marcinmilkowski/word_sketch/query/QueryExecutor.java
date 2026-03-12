@@ -5,7 +5,7 @@ import java.io.IOException;
 import java.util.List;
 
 import org.jspecify.annotations.Nullable;
-import pl.marcinmilkowski.word_sketch.model.QueryResults;
+import pl.marcinmilkowski.word_sketch.model.sketch.*;
 
 /**
  * Unified query interface for corpus lookups.
@@ -49,7 +49,7 @@ public interface QueryExecutor extends CollocateQueryPort, Closeable {
      * @throws IOException if index access fails
      * @throws IllegalArgumentException if {@code cqlPattern} is not in a recognized format
      */
-    List<QueryResults.WordSketchResult> executeCollocations(@Nullable String lemma, String cqlPattern,
+    List<WordSketchResult> executeCollocations(@Nullable String lemma, String cqlPattern,
                                              double minLogDice, int maxResults) throws IOException;
 
     /**
@@ -61,7 +61,7 @@ public interface QueryExecutor extends CollocateQueryPort, Closeable {
      * @return Concordance results in hit order
      * @throws IOException if index access fails
      */
-    List<QueryResults.ConcordanceResult> executeCqlQuery(String cqlPattern, int maxResults) throws IOException;
+    List<ConcordanceResult> executeCqlQuery(String cqlPattern, int maxResults) throws IOException;
 
     /**
      * Get the total frequency of a lemma in the corpus.
@@ -90,7 +90,7 @@ public interface QueryExecutor extends CollocateQueryPort, Closeable {
      * @throws IOException if index access or parsing fails
      * @throws IllegalArgumentException if the headword lemma cannot be extracted from {@code bcqlPattern}
      */
-    List<QueryResults.WordSketchResult> executeSurfacePattern(
+    List<WordSketchResult> executeSurfacePattern(
             String bcqlPattern,
             double minLogDice, int maxResults) throws IOException;
 
@@ -106,7 +106,7 @@ public interface QueryExecutor extends CollocateQueryPort, Closeable {
      * @return Collocate results ranked by logDice descending
      * @throws IOException if index access fails
      */
-    List<QueryResults.WordSketchResult> executeDependencyPattern(
+    List<WordSketchResult> executeDependencyPattern(
             String lemma, String deprel,
             double minLogDice, int maxResults,
             @Nullable String headPosConstraint) throws IOException;

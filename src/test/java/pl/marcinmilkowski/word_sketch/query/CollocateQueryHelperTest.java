@@ -2,7 +2,7 @@ package pl.marcinmilkowski.word_sketch.query;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import pl.marcinmilkowski.word_sketch.model.QueryResults;
+import pl.marcinmilkowski.word_sketch.model.sketch.*;
 import pl.marcinmilkowski.word_sketch.utils.LogDiceUtils;
 
 import java.io.IOException;
@@ -105,7 +105,7 @@ class CollocateQueryHelperTest {
         freqMap.put("beautiful", 100L);
         freqMap.put("important", 200L);
 
-        List<QueryResults.WordSketchResult> results =
+        List<WordSketchResult> results =
             helper.buildAndRankCollocates(freqMap, 10000L, 0.0, 10, Map.of());
 
         assertEquals(2, results.size());
@@ -121,7 +121,7 @@ class CollocateQueryHelperTest {
         freqMap.put("beautiful", 100L);
         freqMap.put("important", 200L);
 
-        List<QueryResults.WordSketchResult> results =
+        List<WordSketchResult> results =
             helper.buildAndRankCollocates(freqMap, 10000L, 99.0, 10, Map.of());
 
         assertTrue(results.isEmpty(), "All results should be filtered out by very high minLogDice");
@@ -141,7 +141,7 @@ class CollocateQueryHelperTest {
         freqMap.put("d", 80L);
         freqMap.put("e", 90L);
 
-        List<QueryResults.WordSketchResult> results =
+        List<WordSketchResult> results =
             helper.buildAndRankCollocates(freqMap, 10000L, 0.0, 2, Map.of());
 
         assertEquals(2, results.size(), "Should respect maxResults=2");
@@ -152,7 +152,7 @@ class CollocateQueryHelperTest {
     void buildAndRankCollocates_emptyFreqMap_returnsEmpty() throws IOException {
         CollocateQueryHelper helper = defaultStub();
 
-        List<QueryResults.WordSketchResult> results =
+        List<WordSketchResult> results =
             helper.buildAndRankCollocates(Map.of(), 10000L, 0.0, 10, Map.of());
 
         assertTrue(results.isEmpty(), "Empty frequency map should produce empty results");
@@ -165,7 +165,7 @@ class CollocateQueryHelperTest {
         Map<String, Long> freqMap = Map.of("beautiful", 100L);
         long headwordFreq = 10000L;
 
-        List<QueryResults.WordSketchResult> results =
+        List<WordSketchResult> results =
             helper.buildAndRankCollocates(freqMap, headwordFreq, 0.0, 10, Map.of());
 
         assertEquals(1, results.size());
