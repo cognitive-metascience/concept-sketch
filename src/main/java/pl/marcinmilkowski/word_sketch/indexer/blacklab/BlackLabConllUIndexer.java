@@ -1,6 +1,7 @@
 package pl.marcinmilkowski.word_sketch.indexer.blacklab;
 
 import nl.inl.blacklab.exceptions.DocumentFormatNotFound;
+import nl.inl.blacklab.index.DocumentFormats;
 import nl.inl.blacklab.search.BlackLab;
 import nl.inl.blacklab.search.BlackLabIndexWriter;
 import nl.inl.blacklab.index.Indexer;
@@ -14,12 +15,15 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * Indexer for CoNLL-U files using BlackLab.
- * 
- * Uses BlackLab's Indexer API with the CoNLL-U format configuration.
+ *
+ * <p>Uses BlackLab's Indexer API with the CoNLL-U format configuration. The constructor
+ * registers the document format from {@code formatDir} before opening the index, so callers
+ * do not need to call {@link DocumentFormats#addConfigFormatsInDirectories} themselves.
  */
 public class BlackLabConllUIndexer implements AutoCloseable {
 
@@ -32,9 +36,24 @@ public class BlackLabConllUIndexer implements AutoCloseable {
     private final AtomicLong tokenCount = new AtomicLong(0);
     private final AtomicLong errorCount = new AtomicLong(0);
 
-    public BlackLabConllUIndexer(String indexPath, String formatName) throws IOException {
+    /**
+     * Creates an indexer that writes to {@code indexPath} using the named BlackLab format.
+     *
+     * <p>The format configuration is loaded from {@code formatDir} (typically the working
+     * directory, {@code "."}). Calling
+     * {@link DocumentFormats#addConfigFormatsInDirectories} before constructing this object
+     * is not required — the constructor does it internally.
+     *
+     * @param indexPath  path to the BlackLab index directory (created if absent)
+     * @param formatName name of the BlackLab format to use (e.g. {@code "conllu-sentences"})
+     * @param formatDir  directory containing the {@code .blf.yaml} format definition file
+     * @throws IOException if the index directory cannot be created or the index cannot be opened
+     */
+    public BlackLabConllUIndexer(String indexPath, String formatName, String formatDir) throws IOException {
         this.indexPath = Paths.get(indexPath);
         Files.createDirectories(this.indexPath);
+
+        DocumentFormats.addConfigFormatsInDirectories(List.of(new File(formatDir)));
 
         try {
             this.indexWriter = BlackLab.openForWriting(this.indexPath.toFile(), true, formatName);

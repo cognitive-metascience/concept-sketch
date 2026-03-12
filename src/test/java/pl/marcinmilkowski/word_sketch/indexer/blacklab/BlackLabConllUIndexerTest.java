@@ -89,7 +89,7 @@ class BlackLabConllUIndexerTest {
         ConlluConverter.convertConlluToWplChunks(conlluFile, wplDir, 1000);
 
         Path indexDir = tmp.resolve("index");
-        try (BlackLabConllUIndexer indexer = new BlackLabConllUIndexer(indexDir.toString(), FORMAT_NAME)) {
+        try (BlackLabConllUIndexer indexer = new BlackLabConllUIndexer(indexDir.toString(), FORMAT_NAME, System.getProperty("user.dir"))) {
             indexer.indexFile(wplDir.toString());
 
             assertTrue(indexer.getDocumentCount() >= 1,
@@ -107,7 +107,7 @@ class BlackLabConllUIndexerTest {
         Path newIndex = tmp.resolve("new-index");
         assertFalse(newIndex.toFile().exists(), "precondition: directory must not exist");
 
-        try (BlackLabConllUIndexer indexer = new BlackLabConllUIndexer(newIndex.toString(), FORMAT_NAME)) {
+        try (BlackLabConllUIndexer indexer = new BlackLabConllUIndexer(newIndex.toString(), FORMAT_NAME, System.getProperty("user.dir"))) {
             assertTrue(newIndex.toFile().exists(), "Constructor must create the index directory");
         }
     }
@@ -116,7 +116,7 @@ class BlackLabConllUIndexerTest {
     @DisplayName("throws IOException when input file does not exist")
     void indexFile_missingPath_throwsIOException(@TempDir Path tmp) throws IOException {
         Path indexDir = tmp.resolve("index");
-        try (BlackLabConllUIndexer indexer = new BlackLabConllUIndexer(indexDir.toString(), FORMAT_NAME)) {
+        try (BlackLabConllUIndexer indexer = new BlackLabConllUIndexer(indexDir.toString(), FORMAT_NAME, System.getProperty("user.dir"))) {
             assertThrows(IOException.class,
                     () -> indexer.indexFile(tmp.resolve("nonexistent.conllu").toString()),
                     "indexFile must throw IOException for a missing path");
@@ -127,7 +127,7 @@ class BlackLabConllUIndexerTest {
     @DisplayName("getTokenCount returns 0 before any documents are indexed")
     void tokenCount_initiallyZero(@TempDir Path tmp) throws IOException {
         Path indexDir = tmp.resolve("index");
-        try (BlackLabConllUIndexer indexer = new BlackLabConllUIndexer(indexDir.toString(), FORMAT_NAME)) {
+        try (BlackLabConllUIndexer indexer = new BlackLabConllUIndexer(indexDir.toString(), FORMAT_NAME, System.getProperty("user.dir"))) {
             assertEquals(0, indexer.getTokenCount(), "Token count must start at zero");
         }
     }

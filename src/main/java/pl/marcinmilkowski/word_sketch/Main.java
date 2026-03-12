@@ -10,15 +10,12 @@ import pl.marcinmilkowski.word_sketch.indexer.blacklab.ConlluConverter;
 import pl.marcinmilkowski.word_sketch.query.BlackLabQueryExecutor;
 import pl.marcinmilkowski.word_sketch.query.QueryExecutor;
 
-import nl.inl.blacklab.index.DocumentFormats;
 
-import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.LinkedHashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -129,7 +126,7 @@ public class Main {
         System.out.println();
 
         // Step 1: Convert CoNLL-U → WPL chunk files (BlackLab indexes one file = one document)
-        System.out.println("Step 1/3: Converting CoNLL-U → WPL chunks (10 000 sentences/file)...");
+        System.out.println("Step 1/2: Converting CoNLL-U → WPL chunks (10 000 sentences/file)...");
         Path wplTempDir = Files.createTempDirectory("conllu_wpl_");
         Runtime.getRuntime().addShutdownHook(new Thread(() -> deleteRecursively(wplTempDir)));
         ConlluConverter.ConversionStats stats = ConlluConverter.convertConlluToWplChunks(Paths.get(inputPath), wplTempDir, 10_000);
@@ -139,15 +136,9 @@ public class Main {
         System.out.printf("  → %,d sentences, %,d tokens in %,d chunk files%n%n",
                 sentenceCount, tokenCount, chunkFileCount);
 
-        // Step 2: Register format(s) from the format directory
-        System.out.println("Step 2/3: Registering format 'conllu-sentences' from " + formatDir + "...");
-        DocumentFormats.addConfigFormatsInDirectories(List.of(new File(formatDir)));
-        System.out.println("  → Done");
-        System.out.println();
-
-        // Step 3: Index the chunk directory with BlackLab
-        System.out.println("Step 3/3: Indexing with BlackLab...");
-        try (BlackLabConllUIndexer indexer = new BlackLabConllUIndexer(outputPath, "conllu-sentences")) {
+        // Step 2: Index the chunk directory with BlackLab (registers format from formatDir internally)
+        System.out.println("Step 2/2: Indexing with BlackLab...");
+        try (BlackLabConllUIndexer indexer = new BlackLabConllUIndexer(outputPath, "conllu-sentences", formatDir)) {
             indexer.indexFile(wplTempDir.toString());
         }
     }
@@ -235,24 +226,21 @@ public class Main {
 
         QueryExecutor executor = new BlackLabQueryExecutor(indexPath);
 
-        // Load grammar configuration (required)
-        // Override path via system property: -Dgrammar.config=path/to/relations.json
-        String grammarConfigPath = System.getProperty("grammar.config", "grammars/relations.json");
+        // Load grammar configuration (required).
+        // Override the config path via system property: -Dgrammar.config=path/to/relations.json
         GrammarConfig grammarConfig;
         try {
-            var grammarPath = java.nio.file.Paths.get(grammarConfigPath);
-            grammarConfig = GrammarConfigLoader.load(grammarPath);
+            grammarConfig = GrammarConfigLoader.createDefaultEnglish();
             System.out.println("Loaded grammar config: " + grammarConfig.version());
         } catch (IllegalArgumentException e) {
-            logger.error("Invalid grammar config at '{}': {}", grammarConfigPath, e.getMessage());
-            System.err.println("Error: invalid grammar config at '" + grammarConfigPath + "': " + e.getMessage());
+            logger.error("Invalid grammar config: {}", e.getMessage());
+            System.err.println("Error: invalid grammar config: " + e.getMessage());
             System.err.println("Check the JSON for missing fields, duplicate IDs, or invalid patterns.");
             executor.close();
             return;
-        } catch (IOException e) {
-            logger.error("Failed to load grammar config at '{}': {}", grammarConfigPath, e.getMessage());
-            System.err.println("Error: failed to load grammar config at '" + grammarConfigPath + "': " + e.getMessage());
-            System.err.println("Ensure the file exists and is valid JSON, or set -Dgrammar.config=<path>.");
+        } catch (IllegalStateException e) {
+            logger.error("Failed to load grammar config: {}", e.getMessage());
+            System.err.println("Error: " + e.getMessage());
             executor.close();
             return;
         }
