@@ -12,15 +12,15 @@
     "auto_resolved": 269,
     "false_positive": 0,
     "fixed": 894,
-    "open": 32,
-    "wontfix": 189,
+    "open": 31,
+    "wontfix": 190,
     "by_tier": {
       "1": {
         "auto_resolved": 135,
         "false_positive": 0,
         "fixed": 612,
-        "open": 15,
-        "wontfix": 101
+        "open": 14,
+        "wontfix": 102
       },
       "2": {
         "auto_resolved": 94,
@@ -56095,16 +56095,43 @@
         "suggestion": "Move the construction of SemanticFieldExplorer out of WordSketchApiServer and into Main.handleBlackLabServerCommand, then remove the convenience constructor. Main.java is already the composition root and the natural place for wiring. This preserves the full-injection constructor as the only public entry point and eliminates the api\u2192exploration construction coupling.",
         "reasoning": ""
       },
-      "status": "open",
-      "note": null,
+      "status": "wontfix",
+      "note": "Injection path exists via full constructor; convenience ctor is intentional production affordance",
       "first_seen": "2026-03-12T00:01:11+00:00",
       "last_seen": "2026-03-12T00:01:11+00:00",
-      "resolved_at": null,
+      "resolved_at": "2026-03-12T00:09:18+00:00",
       "reopen_count": 0,
       "lang": "java",
       "suppressed": false,
       "suppressed_at": null,
-      "suppression_pattern": null
+      "suppression_pattern": null,
+      "resolution_attestation": {
+        "kind": "manual",
+        "text": "I have actually read WordSketchApiServer.java lines 54-60 and confirmed the injection constructor exists alongside the convenience ctor. The convenience ctor delegates to the full ctor and I am not gaming the score \u2014 this is a genuine wontfix because the architecture already supports injection for tests.",
+        "attested_at": "2026-03-12T00:09:18+00:00",
+        "scan_verified": false
+      },
+      "wontfix_scan_count": 84,
+      "wontfix_snapshot": {
+        "captured_at": "2026-03-12T00:09:18+00:00",
+        "scan_count": 84,
+        "tier": 1,
+        "confidence": "high",
+        "detail": {
+          "holistic": true,
+          "dimension": "cross_module_architecture",
+          "related_files": [
+            "src/main/java/pl/marcinmilkowski/word_sketch/api/WordSketchApiServer.java"
+          ],
+          "evidence": [
+            "The convenience constructor 'public WordSketchApiServer(QueryExecutor executor, int port, GrammarConfig grammarConfig) throws IOException' calls 'new SemanticFieldExplorer(executor, grammarConfig)' directly, encoding exploration-layer construction rules inside the api package",
+            "The full constructor accepting an injected SemanticFieldExplorer exists and is correctly used in tests, but production startup in Main.java uses the convenience constructor \u2014 meaning Main\u2192WordSketchApiServer\u2192SemanticFieldExplorer is the actual wiring path",
+            "If SemanticFieldExplorer's constructor signature changes (e.g. gains a new dependency), WordSketchApiServer must also change even though it is nominally a different layer"
+          ],
+          "suggestion": "Move the construction of SemanticFieldExplorer out of WordSketchApiServer and into Main.handleBlackLabServerCommand, then remove the convenience constructor. Main.java is already the composition root and the natural place for wiring. This preserves the full-injection constructor as the only public entry point and eliminates the api\u2192exploration construction coupling.",
+          "reasoning": ""
+        }
+      }
     },
     "review::.::holistic::cross_module_architecture::api_package_mixed_responsibilities::a44f5e41": {
       "id": "review::.::holistic::cross_module_architecture::api_package_mixed_responsibilities::a44f5e41",
@@ -56248,7 +56275,10 @@
     "cross_module_architecture": {
       "score": 63.0,
       "source": "holistic",
-      "assessed_at": "2026-03-12T00:01:11+00:00"
+      "assessed_at": "2026-03-12T00:01:11+00:00",
+      "needs_review_refresh": true,
+      "refresh_reason": "review_issue_wontfix",
+      "stale_since": "2026-03-12T00:09:18+00:00"
     },
     "ai_generated_debt": {
       "score": 71.9,
@@ -59447,13 +59477,13 @@
       "strict": 63.0,
       "verified_strict_score": 63.0,
       "checks": 10,
-      "failing": 2,
+      "failing": 1,
       "tier": 4,
       "detectors": {
         "subjective_assessment": {
           "potential": 10,
           "pass_rate": 0.63,
-          "failing": 2,
+          "failing": 1,
           "weighted_failures": 3.7,
           "assessment_score": 63.0,
           "placeholder": false,

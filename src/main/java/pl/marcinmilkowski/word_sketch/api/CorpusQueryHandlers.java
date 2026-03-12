@@ -83,8 +83,7 @@ class CorpusQueryHandlers {
             throw new IllegalArgumentException(
                     "Pattern too complex: " + bracketCount + " token constraints (max " + MAX_BCQL_BRACKET_DEPTH + ")");
         }
-        int resolvedTop = Optional.ofNullable(obj.get("top"))
-                .map(v -> obj.getIntValue("top"))
+        int resolvedTop = Optional.ofNullable(obj.getInteger("top"))
                 .filter(v -> v > 0)
                 .orElse(10);
         return new BcqlRequest(bcqlQuery, resolvedTop);

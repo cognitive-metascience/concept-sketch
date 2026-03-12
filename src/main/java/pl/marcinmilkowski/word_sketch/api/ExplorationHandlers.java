@@ -59,7 +59,7 @@ class ExplorationHandlers {
         ExplorationParams exploreParams = parseExplorationParams(params);
 
         // Safe: resolveRelationConfig guarantees relationType is present
-        String relationType = relationConfig.relationType().get().name();
+        String relationType = relationConfig.relationType().orElseThrow().name();
 
         SingleSeedExplorationOptions opts = new SingleSeedExplorationOptions(
             new ExplorationOptions(exploreParams.topCollocates(), exploreParams.minLogDice(), exploreParams.minShared()),
@@ -110,7 +110,7 @@ class ExplorationHandlers {
         }
 
         // Safe: resolveRelationConfig guarantees relationType is present
-        String relationType = resolvedConfig.relationType().get().name();
+        String relationType = resolvedConfig.relationType().orElseThrow().name();
 
         ExplorationOptions opts = new ExplorationOptions(
             exploreParams.topCollocates(), exploreParams.minLogDice(),
@@ -257,7 +257,7 @@ class ExplorationHandlers {
             throw new IllegalArgumentException(
                 "Invalid relation config: missing or unrecognised relation_type for '" + relationId + "'");
         }
-        return relationConfig.get();
+        return relationConfig.orElseThrow();
     }
 
     private ExplorationParams parseExplorationParams(Map<String, String> params) {
