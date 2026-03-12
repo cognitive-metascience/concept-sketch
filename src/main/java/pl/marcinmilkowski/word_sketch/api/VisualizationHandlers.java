@@ -8,7 +8,6 @@ import com.sun.net.httpserver.HttpExchange;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import pl.marcinmilkowski.word_sketch.viz.RadialPlot;
-import pl.marcinmilkowski.word_sketch.viz.RadialPlot;
 
 
 import java.io.IOException;
@@ -27,14 +26,22 @@ class VisualizationHandlers {
     private static final int MAX_RADIAL_ITEMS = 40;
 
     /** Valid render modes for the radial plot endpoint. */
-    private enum RenderMode {
+    enum RenderMode {
         SIGNED;
 
-        static boolean isValid(String value) {
-            for (RenderMode m : values()) {
-                if (m.name().equalsIgnoreCase(value)) return true;
+        /**
+         * Parses a raw string parameter into a {@code RenderMode}, or returns {@code null}
+         * when the value is null or blank.
+         *
+         * @throws IllegalArgumentException if the value is non-blank but not a recognised mode
+         */
+        static RenderMode parse(String value) {
+            if (value == null || value.isBlank()) return null;
+            try {
+                return valueOf(value.toUpperCase());
+            } catch (IllegalArgumentException e) {
+                throw new IllegalArgumentException("Unknown mode: " + value);
             }
-            return false;
         }
     }
 
@@ -70,12 +77,13 @@ class VisualizationHandlers {
                 items.add(new RadialPlot.Item(label, score));
             }
         }
-        String mode = obj.path("mode").textValue();
-        if (mode != null && !mode.isEmpty() && !RenderMode.isValid(mode)) {
-            throw new IllegalArgumentException("Unknown mode: " + mode);
-        }
+        String modeRaw = obj.path("mode").textValue();
+        RenderMode renderMode = RenderMode.parse(modeRaw);
 
-        String svg = RadialPlot.renderFromItems(center, items, width, height, mode);
+        String svg = switch (renderMode) {
+            case null   -> RadialPlot.renderFromItems(center, items, width, height, null);
+            case SIGNED -> RadialPlot.renderFromItems(center, items, width, height, "signed");
+        };
         byte[] bytes = svg.getBytes(StandardCharsets.UTF_8);
         HttpApiUtils.sendBinaryResponse(exchange, "image/svg+xml; charset=utf-8", bytes);
     }

@@ -121,7 +121,7 @@ class CollocateQueryHelper {
      */
     CollocateSearch executeCollocateSearchWithContent(String lemma, String bcqlPattern)
             throws IOException {
-        return executeCollocateSearchImpl(lemma, bcqlPattern, true);
+        return performCollocateSearch(lemma, bcqlPattern, true);
     }
 
     /**
@@ -133,10 +133,10 @@ class CollocateQueryHelper {
      */
     CollocateSearch executeCollocateSearch(String lemma, String bcqlPattern)
             throws IOException {
-        return executeCollocateSearchImpl(lemma, bcqlPattern, false);
+        return performCollocateSearch(lemma, bcqlPattern, false);
     }
 
-    private CollocateSearch executeCollocateSearchImpl(String lemma, String bcqlPattern, boolean withStoredHits)
+    private CollocateSearch performCollocateSearch(String lemma, String bcqlPattern, boolean withStoredHits)
             throws IOException {
         Objects.requireNonNull(index, "BlackLabIndex must not be null for executeCollocateSearch");
         try {

@@ -92,7 +92,7 @@ class CorpusQueryHandlers {
         response.put("query", req.query());
         response.put("total_results", results.size());
         response.put("top", req.top());
-        response.put("results", results.stream().map(ExploreResponseAssembler::collocateToFullResultMap).toList());
+        response.put("results", results.stream().map(ExploreResponseAssembler::collocateResultToFullMap).toList());
         return response;
     }
 }

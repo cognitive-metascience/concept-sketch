@@ -164,9 +164,9 @@ class ExploreResponseAssemblerTest {
     }
 
     @Test
-    void serializeEdge_includesAllFields() {
+    void edgeToMap_includesAllFields() {
         Edge edge = new Edge("theory", "abstract", 8.567, RelationEdgeType.SEED_COLLOCATE);
-        Map<String, Object> m = ExploreResponseAssembler.serializeEdge(edge);
+        Map<String, Object> m = ExploreResponseAssembler.edgeToMap(edge);
 
         assertEquals("theory", m.get("source"));
         assertEquals("abstract", m.get("target"));

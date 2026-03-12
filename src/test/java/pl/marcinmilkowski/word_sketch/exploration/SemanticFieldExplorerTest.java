@@ -208,6 +208,26 @@ class SemanticFieldExplorerTest {
             new pl.marcinmilkowski.word_sketch.model.exploration.ExplorationOptions(10, 0.0, 1));
 
         assertNotNull(result, "Result should not be null");
+
+        // Both seeds must be tracked in the result
+        assertTrue(result.seeds().contains("theory"), "Result seeds must include \"theory\"");
+        assertTrue(result.seeds().contains("model"),  "Result seeds must include \"model\"");
+
+        // "empirical" is shared by both seeds and must appear in the aggregate collocates map
+        assertTrue(result.seedCollocates().containsKey("empirical"),
+                "\"empirical\" shared by both seeds must appear in seed collocates");
+
+        // With minShared=1 every collocate (empirical, scientific, theoretical) qualifies
+        assertFalse(result.coreCollocates().isEmpty(),
+                "With minShared=1 there must be at least one core collocate");
+        assertTrue(result.coreCollocates().stream().anyMatch(c -> "empirical".equals(c.collocate())),
+                "\"empirical\" shared by both seeds must be a core collocate");
+
+        // Both seeds are represented as discovered nouns
+        List<String> nounNames = result.discoveredNouns().stream()
+                .map(pl.marcinmilkowski.word_sketch.model.exploration.DiscoveredNoun::noun).toList();
+        assertTrue(nounNames.contains("theory"), "\"theory\" must be a discovered noun");
+        assertTrue(nounNames.contains("model"),  "\"model\" must be a discovered noun");
     }
 
     @Test

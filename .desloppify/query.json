@@ -2,192 +2,11 @@
   "command": "show",
   "query": "review",
   "status_filter": "open",
-  "total": 8,
-  "summary": {
-    "by_tier": {
-      "T1": 6,
-      "T2": 2
-    },
-    "by_detector": {
-      "review": 8
-    },
-    "files": 1
-  },
-  "by_file": {
-    ".": [
-      {
-        "id": "review::.::holistic::naming_quality::build_shared_explore_response_domain_collision::97cea999",
-        "tier": 1,
-        "confidence": "high",
-        "summary": "buildSharedExploreResponse uses 'shared' as an implementation concept that clashes with 'shared' as a core domain term",
-        "detail": {
-          "holistic": true,
-          "dimension": "naming_quality",
-          "related_files": [
-            "src/main/java/pl/marcinmilkowski/word_sketch/api/ExplorationHandlers.java"
-          ],
-          "evidence": [
-            "The method name 'buildSharedExploreResponse' (line 419) uses 'shared' to mean 'reused across three handler methods' (handleSemanticFieldExplore, handleSemanticFieldExploreMulti, handleSemanticFieldComparison).",
-            "The same class and its collaborators use 'shared' as a domain term: CollocateProfile.isFullyShared(), ComparisonResult.fullyShared(), ComparisonResult.partiallyShared(), SharingCategory.FULLY_SHARED \u2014 all within the same conceptual layer.",
-            "A developer reading 'buildSharedExploreResponse' in context naturally interprets 'shared' as the domain concept (collocates shared across seeds), not as a method-reuse qualifier."
-          ],
-          "suggestion": "Rename to buildExploreResponseEnvelope or buildCommonExploreResponse (using 'common' rather than 'shared') to avoid collision with the domain vocabulary.",
-          "reasoning": ""
-        }
-      },
-      {
-        "id": "review::.::holistic::naming_quality::execute_collocate_search_impl_suffix::23e1b132",
-        "tier": 1,
-        "confidence": "high",
-        "summary": "executeCollocateSearchImpl uses an 'Impl' suffix to encode a meaningful behavioral distinction that belongs in the method name",
-        "detail": {
-          "holistic": true,
-          "dimension": "naming_quality",
-          "related_files": [
-            "src/main/java/pl/marcinmilkowski/word_sketch/query/CollocateQueryHelper.java"
-          ],
-          "evidence": [
-            "CollocateQueryHelper exposes three methods: executeCollocateSearch, executeCollocateSearchWithContent, and executeCollocateSearchImpl.",
-            "The 'Impl' variant is the private delegate that accepts a boolean 'withStoredHits' flag \u2014 the flag determines whether hits are materialized for content retrieval.",
-            "'Impl' communicates nothing about behavior; the actual distinction (with/without stored hits) is already encoded in the names of the two public callers."
-          ],
-          "suggestion": "Rename executeCollocateSearchImpl to executeCollocateSearchCore or inline it, since the boolean parameter already makes the distinction explicit. If kept separate, name it executeCollocateSearchWithFlag(boolean withStoredHits) or similar.",
-          "reasoning": ""
-        }
-      },
-      {
-        "id": "review::.::holistic::naming_quality::explore_param_records_opaque::910956d1",
-        "tier": 1,
-        "confidence": "high",
-        "summary": "ExploreParameterExtras and ExploreVariantFields have names that do not communicate their structural role in the response envelope",
-        "detail": {
-          "holistic": true,
-          "dimension": "naming_quality",
-          "related_files": [
-            "src/main/java/pl/marcinmilkowski/word_sketch/api/ExplorationHandlers.java"
-          ],
-          "evidence": [
-            "ExploreParameterExtras (line 442) carries fields that land inside the 'parameters' sub-map of the response; ExploreVariantFields (line 452) carries fields that land at the top level of the response envelope.",
-            "The distinction is only discoverable via the Javadoc on buildSharedExploreResponse (lines 411\u2013418); the names themselves give no hint about the structural difference.",
-            "'Extras' implies optional add-ons; 'VariantFields' implies schema variation \u2014 neither name communicates the JSON path where the fields are placed."
-          ],
-          "suggestion": "Rename ExploreParameterExtras to ExtraQueryParameters (or AdditionalQueryParams) and ExploreVariantFields to TopLevelResponseFields (or ResponseEnvelopeFields) so that each name reveals where its contents appear in the serialized JSON response.",
-          "reasoning": ""
-        }
-      },
-      {
-        "id": "review::.::holistic::test_strategy::blacklab_integration_zero_ci_coverage::dcf91441",
-        "tier": 1,
-        "confidence": "high",
-        "summary": "Indexing pipeline and live-query paths are entirely @Disabled \u2014 zero CI coverage for the core BlackLab subsystem",
-        "detail": {
-          "holistic": true,
-          "dimension": "test_strategy",
-          "related_files": [
-            "src/test/java/pl/marcinmilkowski/word_sketch/indexer/blacklab/BlackLabConllUIndexerTest.java",
-            "src/test/java/pl/marcinmilkowski/word_sketch/query/BlackLabQueryExecutorIntegrationTest.java",
-            "src/test/java/pl/marcinmilkowski/word_sketch/query/BlackLabQueryExecutorTest.java"
-          ],
-          "evidence": [
-            "BlackLabConllUIndexerTest is class-level @Disabled; all five end-to-end indexing tests (document count, token count, missing-file IOException, constructor directory creation) never run in CI.",
-            "BlackLabQueryExecutorIntegrationTest is @Disabled; executeCollocations, executeSurfacePattern, getTotalFrequency against a real index are untested automatically.",
-            "BlackLabQueryExecutorTest.LiveIndex nested class is @Disabled; the only CI-runnable tests in that file are static helper tests for buildBcqlWithLemmaSubstitution \u2014 not query execution."
-          ],
-          "suggestion": "Add a CI-runnable integration test tier using a small in-memory or temporary BlackLab index built from the existing src/test/resources/test-corpus.conllu. BlackLab supports in-memory index creation; use it in a @TempDir test to index the test corpus and run a handful of executeCollocations and executeSurfacePattern queries, removing the @Disabled on at least the ConlluConverter\u2192indexer\u2192query round-trip. This validates the entire pipeline without requiring an external index.",
-          "reasoning": ""
-        }
-      },
-      {
-        "id": "review::.::holistic::test_strategy::explore_multi_seed_trivial_assertion::a1482bc8",
-        "tier": 1,
-        "confidence": "high",
-        "summary": "exploreMultiSeed_returnsNonNullResult uses only assertNotNull \u2014 provides no behavioural verification of the multi-seed path",
-        "detail": {
-          "holistic": true,
-          "dimension": "test_strategy",
-          "related_files": [
-            "src/test/java/pl/marcinmilkowski/word_sketch/exploration/SemanticFieldExplorerTest.java"
-          ],
-          "evidence": [
-            "The test body is: `assertNotNull(result, \"Result should not be null\")` \u2014 this passes as long as exploreMultiSeed does not return null or throw, regardless of whether the result is correctly populated.",
-            "The immediately following test (exploreMultiSeed_sharedCollocateInSeedMap) is more meaningful but tests only one property; the dedicated non-null test adds no coverage beyond what the second test already implies."
-          ],
-          "suggestion": "Replace the assertNotNull-only test with assertions on the result's structure: verify that result.seeds() contains the two input seeds, that result.seedCollocates() is non-null and non-empty given the stub data, and that result.coreCollocates() is empty when the stubs share no collocates. This turns the smoke test into a contract test for the multi-seed output shape.",
-          "reasoning": ""
-        }
-      },
-      {
-        "id": "review::.::holistic::type_safety::render_mode_enum_bypass::be683d12",
-        "tier": 1,
-        "confidence": "high",
-        "summary": "RenderMode enum defined but bypassed: validation uses a raw string literal and the type is never used for dispatch",
-        "detail": {
-          "holistic": true,
-          "dimension": "type_safety",
-          "related_files": [
-            "src/main/java/pl/marcinmilkowski/word_sketch/api/VisualizationHandlers.java"
-          ],
-          "evidence": [
-            "VisualizationHandlers defines 'private enum RenderMode { SIGNED; static boolean isValid(String value) { return \"SIGNED\".equalsIgnoreCase(value); } }' \u2014 the enum constant is not used in the isValid body",
-            "Adding a second mode to the enum (e.g. GRADIENT) would require manually updating the hard-coded string in isValid; the enum's compile-time completeness guarantee is never exercised",
-            "The validated mode string is passed as raw String to RadialPlot.renderFromItems(center, items, width, height, mode) rather than converted to RenderMode, so the enum never participates in downstream dispatch"
-          ],
-          "suggestion": "Replace the isValid helper with an Arrays.stream(RenderMode.values()).anyMatch(m -> m.name().equalsIgnoreCase(value)) check, or use a try/catch around RenderMode.valueOf(value.toUpperCase()). Convert the validated string to RenderMode before passing it to RadialPlot so the downstream API accepts RenderMode rather than String.",
-          "reasoning": ""
-        }
-      },
-      {
-        "id": "review::.::holistic::naming_quality::collocates_per_seed_vs_nouns_per_param::ab8f78de",
-        "tier": 2,
-        "confidence": "medium",
-        "summary": "Java variable 'collocatesPerSeed' and HTTP parameter 'nouns_per' name different quantities for the same value",
-        "detail": {
-          "holistic": true,
-          "dimension": "naming_quality",
-          "related_files": [
-            "src/main/java/pl/marcinmilkowski/word_sketch/api/ExplorationHandlers.java"
-          ],
-          "evidence": [
-            "ExplorationHandlers line 262: int collocatesPerSeed = HttpApiUtils.parseIntParam(params, \"nouns_per\", 30);",
-            "'nouns_per' implies count of nouns per adjective (or per relation step); 'collocatesPerSeed' implies count of collocates fetched per seed word \u2014 these are different conceptual quantities.",
-            "The mismatch means an API consumer looking at the parameter name 'nouns_per' and a developer reading the Java variable 'collocatesPerSeed' form different mental models of what the parameter controls."
-          ],
-          "suggestion": "Align the names: either rename the HTTP parameter to 'collocates_per' (or 'top_per_seed') to match the Java variable's meaning, or rename the Java variable to 'nounsPerRelationStep' if the parameter really does control noun retrieval depth. Whichever is semantically correct, the parameter and variable should communicate the same quantity.",
-          "reasoning": ""
-        }
-      },
-      {
-        "id": "review::.::holistic::naming_quality::result_to_map_naming_inconsistency::9c2d8a26",
-        "tier": 2,
-        "confidence": "medium",
-        "summary": "Four methods that convert result objects to JSON-ready maps use four incompatible naming conventions",
-        "detail": {
-          "holistic": true,
-          "dimension": "naming_quality",
-          "related_files": [
-            "src/main/java/pl/marcinmilkowski/word_sketch/api/ConcordanceHandlers.java",
-            "src/main/java/pl/marcinmilkowski/word_sketch/api/SketchHandlers.java",
-            "src/main/java/pl/marcinmilkowski/word_sketch/api/ExploreResponseAssembler.java"
-          ],
-          "evidence": [
-            "ConcordanceHandlers: private static Map<String, Object> toResultMap(CollocateResult r)",
-            "SketchHandlers: private static Map<String, Object> formatWordSketchResult(WordSketchResult result)",
-            "ExploreResponseAssembler: public static Map<String, Object> collocateToFullResultMap(CollocateResult r)",
-            "ExploreResponseAssembler: public static Map<String, Object> collocateToExampleMap(CollocateResult r)",
-            "All four methods convert a domain result object to a Map<String, Object> for JSON serialization, but use to*, format*, and *ToMap* prefixes inconsistently."
-          ],
-          "suggestion": "Adopt a single convention for result-to-map serialization helpers, e.g. always use 'toMap' suffix (collocateResultToMap, wordSketchResultToMap) or always use 'serialize' prefix. The convention used in ExploreResponseAssembler (collocateToFullResultMap, collocateToExampleMap) is the most specific and should be the model.",
-          "reasoning": ""
-        }
-      }
-    ]
-  },
-  "total_matching": 8,
-  "noise_budget": 10,
-  "noise_global_budget": 0,
+  "total": 0,
+  "issues": [],
   "narrative": {
     "phase": "refinement",
-    "headline": " (8 review issues \u2014 run `desloppify show review --status open`)",
+    "headline": "All T1 and T2 items cleared!",
     "dimensions": {
       "lowest_dimensions": [
         {
@@ -201,7 +20,7 @@
         {
           "name": "Naming quality",
           "strict": 57.3,
-          "failing": 5,
+          "failing": 0,
           "impact": 0.0,
           "subjective": true,
           "impact_description": "re-review to improve"
@@ -301,17 +120,6 @@
     },
     "actions": [
       {
-        "type": "refactor",
-        "detector": "review",
-        "count": 8,
-        "description": "8 review issues need investigation \u2014 run `desloppify show review --status open` to see them",
-        "command": "desloppify show review --status open",
-        "impact": 0.0,
-        "dimension": "Unknown",
-        "priority": 1,
-        "lane": "refactor_0"
-      },
-      {
         "type": "manual_fix",
         "detector": "stale_exclude",
         "count": 5,
@@ -319,31 +127,22 @@
         "command": "desloppify show stale_exclude --status open",
         "impact": 0.0,
         "dimension": "Code quality",
-        "priority": 2,
-        "lane": "refactor_1"
+        "priority": 1,
+        "lane": "refactor"
       }
     ],
     "strategy": {
       "fixer_leverage": {
         "auto_fixable_count": 0,
-        "total_count": 29,
+        "total_count": 5,
         "coverage": 0.0,
         "impact_ratio": 0.0,
         "recommendation": "none"
       },
       "lanes": {
-        "refactor_0": {
+        "refactor": {
           "actions": [
             1
-          ],
-          "file_count": 1,
-          "total_impact": 0.0,
-          "automation": "manual",
-          "run_first": false
-        },
-        "refactor_1": {
-          "actions": [
-            2
           ],
           "file_count": 5,
           "total_impact": 0.0,
@@ -352,7 +151,7 @@
         }
       },
       "can_parallelize": false,
-      "hint": "Work through actions in priority order. Rescan after each fix to track progress. Review: 8 issue(s) \u2014 `desloppify show review --status open`."
+      "hint": "Work through actions in priority order. Rescan after each fix to track progress."
     },
     "tools": {
       "fixers": [],
@@ -380,12 +179,12 @@
       "worst_gap": 0.0,
       "trend": "stable"
     },
-    "milestone": null,
+    "milestone": "All T1 and T2 items cleared!",
     "primary_action": {
-      "command": "desloppify show review --status open",
-      "description": "8 review issues need investigation \u2014 run `desloppify show review --status open` to see them"
+      "command": "desloppify show stale_exclude --status open",
+      "description": "5 stale_exclude issues \u2014 remove stale exclusion or verify it's still needed"
     },
-    "why_now": "Work through actions in priority order. Rescan after each fix to track progress. Review: 8 issue(s) \u2014 `desloppify show review --status open`.",
+    "why_now": "Work through actions in priority order. Rescan after each fix to track progress.",
     "verification_step": {
       "command": "desloppify scan",
       "reason": "revalidate after changes"

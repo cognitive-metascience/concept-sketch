@@ -74,7 +74,7 @@ class ConcordanceHandlers {
         response.put("top", req.top());
         response.put("total_results", results.size());
 
-        response.put("examples", results.stream().map(ConcordanceHandlers::toResultMap).toList());
+        response.put("examples", results.stream().map(ExploreResponseAssembler::collocateResultToExampleMap).toList());
 
         HttpApiUtils.sendJsonResponse(exchange, response);
     }
@@ -84,10 +84,6 @@ class ConcordanceHandlers {
      * Field names use the system-wide vocabulary ({@code seed}, {@code collocate}).
      */
     private record ConcordanceExamplesRequest(String seed, String collocate, String relation, int top) {}
-
-    private static Map<String, Object> toResultMap(QueryResults.CollocateResult r) {
-        return ExploreResponseAssembler.collocateToExampleMap(r);
-    }
 
     private ConcordanceExamplesRequest parseConcordanceExamplesRequest(Map<String, String> params) {
         String seed = HttpApiUtils.requireParam(params, "seed");
