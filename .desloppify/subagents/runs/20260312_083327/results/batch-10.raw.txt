@@ -1,0 +1,60 @@
+{
+  "batch": "logic_clarity",
+  "batch_index": 10,
+  "assessments": {
+    "logic_clarity": 87.5
+  },
+  "dimension_notes": {
+    "logic_clarity": {
+      "evidence": [
+        "BlackLabConllUIndexer.close(): `if (indexer != null)` guards a final field — indexer is always non-null when close() is reachable on a successfully constructed object (constructor throws if assignment fails); the check is unreachable-false",
+        "CollocateQueryHelper.extractCollocateLemma: `if (collocatePos > 0)` duplicates the `position < 1` guard already present in extractCollocateFromXmlByPosition — both layers are intentional but the outer guard is the one that matters for call-site clarity",
+        "Control flow throughout BlackLabQueryExecutor, SemanticFieldExplorer, CollocateProfileComparator, and MultiSeedExplorer is direct and phase-structured with clear guard clauses before work",
+        "Condition logic in buildBcqlWithLemmaSubstitution, executeCollocations, executeSurfacePattern is straightforward: early returns on invalid input, no dead code after unconditional returns",
+        "SemanticFieldExplorer.exploreByPattern: null/empty guard on `seed` comes after reading from `opts` fields, but opts is @NonNull so no issue; guard position is readable"
+      ],
+      "impact_scope": "local",
+      "fix_scope": "single_edit",
+      "confidence": "high",
+      "issues_preventing_higher_score": "One redundant null check on a final field in BlackLabConllUIndexer.close() creates a misleading impression that indexer could be null at close-time. While harmless at runtime, it signals uncertainty about the constructor contract where none exists."
+    }
+  },
+  "dimension_judgment": {
+    "logic_clarity": {
+      "strengths": [
+        "Phase-structured algorithms (CollocateQueryHelper.collectHits / scoreHits, SemanticFieldExplorer phase helpers) make control flow easy to follow — each phase does exactly what its name says",
+        "Guard clauses are applied consistently before doing work: null/empty lemma checks in executeCollocations and executeDependencyPattern return early with log lines rather than causing downstream errors",
+        "No identical if/else branches, no always-true conditions, and no dead code after unconditional returns in any of the seed files",
+        "Boolean simplification opportunities are absent: all conditions have distinct outcomes and none reduce to `if x return true else return false`",
+        "The fallback logic in fetchSeedCollocates (try bcql first, fall back to simple pattern) is clearly sequenced and documented in-line with a log message that names what is happening"
+      ],
+      "issue_character": "The single defect is an isolated, harmless redundant null check on a final field; it does not indicate systemic confusion about logic conditions and has no functional consequence.",
+      "score_rationale": "The codebase sits solidly in the 87–90 range. Control flow across all seed files is direct, conditions are meaningful, and there are no dead paths or tautological branches. The one issue — `if (indexer != null)` on a final field in BlackLabConllUIndexer.close() — is a minor clarity signal: it implies uncertainty about the constructor contract where none exists. It is isolated and trivially fixed, which keeps the score comfortably above 85 but below the 90 threshold where even minor friction is rare."
+    }
+  },
+  "issues": [
+    {
+      "dimension": "logic_clarity",
+      "identifier": "redundant_null_check_final_field",
+      "summary": "BlackLabConllUIndexer.close() checks `if (indexer != null)` on a final field that is always non-null when close() is reachable",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/indexer/blacklab/BlackLabConllUIndexer.java"
+      ],
+      "evidence": [
+        "`indexer` is declared `private final Indexer indexer` (line 28); it is assigned inside the constructor's try block and the constructor throws IOException if assignment fails — so any live instance always has a non-null indexer",
+        "close() at line 94 wraps its body in `if (indexer != null)` which can never be false on a successfully-constructed object, giving a false impression that the field might be unset"
+      ],
+      "suggestion": "Remove the `if (indexer != null)` guard in close() and inline its body unconditionally. If future partial-construction scenarios are anticipated, replace with a dedicated boolean flag (e.g., `private boolean initialized`) rather than re-checking a final field.",
+      "confidence": "high",
+      "impact_scope": "local",
+      "fix_scope": "single_edit"
+    }
+  ],
+  "retrospective": {
+    "root_causes": [
+      "The null check was likely copied from a pattern used when the field was not yet final, or as defensive boilerplate during early development before the constructor contract was hardened"
+    ],
+    "likely_symptoms": [],
+    "possible_false_positives": []
+  }
+}

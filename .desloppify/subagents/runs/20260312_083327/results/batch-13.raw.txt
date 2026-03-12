@@ -1,0 +1,62 @@
+{
+  "batch": "error_consistency",
+  "batch_index": 13,
+  "assessments": {
+    "error_consistency": 83.0
+  },
+  "dimension_notes": {
+    "error_consistency": {
+      "evidence": [
+        "HttpApiUtils.wrapWithErrorHandling maps IllegalArgumentException→400, RequestEntityTooLargeException→413, IOException→500, Exception→500 — a single coherent gateway used by every registered route",
+        "All handler classes (ExplorationHandlers, ConcordanceHandlers, CorpusQueryHandlers, SketchHandlers) throw only IllegalArgumentException for validation failures and IOException for corpus errors; the boundary contract is applied uniformly",
+        "All catch-and-rethrow in BlackLabQueryExecutor and CollocateQueryHelper preserve the original cause: 'throw new IOException(\"BCQL parse error: \" + e.getMessage(), e)' is the consistent pattern",
+        "BlackLabConllUIndexer constructor and close() both use 'catch (Exception e)' — broad enough to swallow NullPointerException, ClassCastException, or other programming errors and re-raise them as IOException('Failed to create/finalize index'), masking the real failure type",
+        "SketchHandlers.executeRelationQueries catches IOException per relation, logs a warning, and accumulates errors in a response-level list — intentional partial-result semantics, not silent swallowing",
+        "GrammarConfigLoader.createDefaultEnglish() wraps IOException in IllegalStateException — documented two-tier contract; Javadoc explicitly explains when to use load() vs createDefaultEnglish() and callers in Main use load() with distinct catch blocks for FileNotFoundException vs IOException",
+        "RequestEntityTooLargeException extends RuntimeException and is consistently mapped to 413 by wrapWithErrorHandling — a clean custom exception type for one specific HTTP boundary condition",
+        "GrammarConfigLoader.parseRelationType throws IllegalArgumentException with the full set of valid values in the message ('valid values: ...') when an unrecognised string appears — context is preserved and actionable"
+      ],
+      "impact_scope": "local",
+      "fix_scope": "single_edit",
+      "confidence": "high"
+    }
+  },
+  "dimension_judgment": {
+    "error_consistency": {
+      "strengths": [
+        "Uniform two-tier exception contract across the entire codebase: IllegalArgumentException for validation failures, IOException for I/O and parse failures — applied consistently from QueryExecutor interface through all handler classes",
+        "Single error gateway (HttpApiUtils.wrapWithErrorHandling) handles all HTTP error mapping; every route registration passes through it, so the HTTP status codes are predictable from the exception type alone",
+        "Cause preservation is practiced throughout: every catch-and-rethrow passes the original exception as the cause, keeping stack traces intact for debugging",
+        "Partial-result pattern in SketchHandlers.executeRelationQueries is intentional and well-designed: per-relation IOException is logged and surfaced in the response body rather than silently dropped or propagated to abort the whole request",
+        "Custom RequestEntityTooLargeException extends RuntimeException and maps cleanly to HTTP 413 — a focused, purposeful custom type for one specific boundary condition"
+      ],
+      "issue_character": "The single defect is localized to the indexer subsystem: two broad 'catch (Exception e)' blocks in BlackLabConllUIndexer conflate I/O failures with programming errors by wrapping all exceptions as IOException, making bugs harder to distinguish from environmental failures.",
+      "score_rationale": "The overall error strategy is coherent and well-enforced — a developer reading one handler can correctly predict the error behavior of any other handler, which pushes toward the 90 band. The one meaningful defect is the broad catch in BlackLabConllUIndexer (two methods), which would mask a NullPointerException or similar as 'Failed to create index', hiding the actual bug. This is localized to the indexer and does not affect the API or exploration layers, pulling the score back from 90 into the low-to-mid 80s. Score 83 reflects strong consistency across the dominant code surface with one clearly identified rough edge."
+    }
+  },
+  "issues": [
+    {
+      "dimension": "error_consistency",
+      "identifier": "broad_catch_in_indexer",
+      "summary": "BlackLabConllUIndexer uses 'catch (Exception e)' in constructor and close(), masking programming errors as IOException",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/indexer/blacklab/BlackLabConllUIndexer.java"
+      ],
+      "evidence": [
+        "Constructor: 'catch (Exception e) { throw new IOException(\"Failed to create index: \" + e.getMessage(), e); }' — catches NullPointerException, ClassCastException, AssertionError from BlackLab APIs and presents them as if they were I/O failures",
+        "close(): same pattern: 'catch (Exception e) { throw new IOException(\"Failed to finalize index: \" + e.getMessage(), e); }' — a NullPointerException in indexer.close() would appear as 'Failed to finalize index' rather than a bug report"
+      ],
+      "suggestion": "Narrow the catch to 'catch (IOException e) { throw e; } catch (RuntimeException e) { throw e; } catch (Exception e) { throw new IOException(\"Failed to create index: \" + e.getMessage(), e); }', or — since BlackLab's own checked exceptions are few and known — catch only the specific checked exceptions the library declares and let RuntimeExceptions propagate naturally. This preserves the IOException wrapping contract for genuine I/O failures while letting programming errors surface as the actual exception type.",
+      "confidence": "high",
+      "impact_scope": "local",
+      "fix_scope": "single_edit"
+    }
+  ],
+  "retrospective": {
+    "root_causes": [
+      "The broad catch in BlackLabConllUIndexer was likely written defensively to handle uncertainty about which checked exceptions BlackLab's constructor and close() paths might throw, but it over-reaches by covering RuntimeExceptions too"
+    ],
+    "likely_symptoms": [],
+    "possible_false_positives": []
+  }
+}

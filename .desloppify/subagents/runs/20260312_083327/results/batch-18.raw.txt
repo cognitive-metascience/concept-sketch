@@ -1,0 +1,82 @@
+{
+  "batch": "api_surface_coherence",
+  "batch_index": 18,
+  "assessments": {
+    "api_surface_coherence": 83.0
+  },
+  "dimension_notes": {
+    "api_surface_coherence": {
+      "evidence": [
+        "All exploration endpoints share identical parameter names: seed/seeds, relation, top, min_logdice, min_shared — no drift across ConcordanceHandlers, ExplorationHandlers, or CorpusQueryHandlers",
+        "Error contracts are explicit and uniform: IllegalArgumentException → 400, IOException → 500, RequestEntityTooLargeException → 413, enforced by wrapWithErrorHandling across every handler",
+        "explore, explore-multi, and compare all use buildCoreExploreResponse which nests operational params in a parameters sub-object; /api/semantic-field/examples breaks this pattern with a flat envelope",
+        "ExplorationService.fetchExamples declares its second parameter as 'headword' while the HTTP handler (ExplorationHandlers) and all sibling methods use 'seed' for the same concept",
+        "ConcordanceHandlers.parseConcordanceExamplesRequest extracts seed then collocate; ExplorationHandlers.handleSemanticFieldExamples extracts collocate then seed — and the response field order follows the extraction order, inverting seed/collocate position in two sibling endpoints"
+      ],
+      "impact_scope": "module",
+      "fix_scope": "multi_file_refactor",
+      "confidence": "medium"
+    }
+  },
+  "dimension_judgment": {
+    "api_surface_coherence": {
+      "strengths": [
+        "Shared parameter vocabulary (seed, collocate, relation, top, min_logdice, min_shared) is applied uniformly across all five GET endpoints — a developer learning one endpoint can reuse that knowledge immediately",
+        "Uniform error contract via wrapWithErrorHandling means API consumers can predict 400/413/500 mapping without reading each handler's implementation",
+        "GET vs POST split is semantically justified (GET for read queries; POST for radial/bcql to avoid URL-encoding issues) and clearly documented in WordSketchApiServer Javadoc",
+        "buildCoreExploreResponse creates a shared response envelope for the three explore-family endpoints, making explore, explore-multi, and compare structurally predictable relative to each other"
+      ],
+      "issue_character": "Issues are isolated rather than systemic: one envelope inconsistency within the semantic-field family and one terminology mismatch in a single interface method, rather than widespread structural drift.",
+      "score_rationale": "The API is largely coherent — a developer learning the explore endpoint can predict explore-multi and compare shapes immediately, parameter names are consistent, and error behaviour is uniform. Two specific inconsistencies pull the score below 90: the /api/semantic-field/examples endpoint breaks the parameters-sub-object envelope pattern established by its three siblings, and the ExplorationService interface names the headword argument differently from the HTTP-layer vocabulary. These create isolated 'why is this different?' moments rather than pervasive unpredictability, placing the API at the high end of the 80-range (solid but uneven) on the global anchors."
+    }
+  },
+  "issues": [
+    {
+      "dimension": "api_surface_coherence",
+      "identifier": "semantic_field_examples_envelope_mismatch",
+      "summary": "/api/semantic-field/examples returns a flat envelope while its siblings (explore, explore-multi, compare) nest params inside a 'parameters' sub-object",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/api/ExplorationHandlers.java"
+      ],
+      "evidence": [
+        "handleSemanticFieldExplore, handleSemanticFieldExploreMulti, and handleSemanticFieldComparison all call buildCoreExploreResponse, producing { status, parameters: {relation, top, ...}, seeds/seed, ... }",
+        "handleSemanticFieldExamples (line 204-210) builds its response manually with a flat layout: { status, collocate, seed, relation, top, examples, total_results } — no 'parameters' wrapper",
+        "All four handlers share the /api/semantic-field/ path prefix and the same common parameters (relation, top, min_logdice), so a consumer discovering the endpoint via explore would not predict the flat shape"
+      ],
+      "suggestion": "Route handleSemanticFieldExamples through buildCoreExploreResponse for the shared envelope fields, or add a Javadoc note (mirroring the 'Handler asymmetry note' in handleSemanticFieldComparison) explicitly explaining why examples uses a flat layout — so the deviation is documented as intentional rather than accidental.",
+      "confidence": "medium",
+      "impact_scope": "module",
+      "fix_scope": "single_edit"
+    },
+    {
+      "dimension": "api_surface_coherence",
+      "identifier": "fetchexamples_headword_vs_seed_naming",
+      "summary": "ExplorationService.fetchExamples names its second parameter 'headword' while every caller and all sibling methods use 'seed' for the same concept",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/exploration/ExplorationService.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/exploration/SemanticFieldExplorer.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/api/ExplorationHandlers.java"
+      ],
+      "evidence": [
+        "ExplorationService.fetchExamples signature: fetchExamples(@NonNull String collocate, @NonNull String headword, ...)",
+        "SemanticFieldExplorer.fetchExamples implementation mirrors the same 'headword' name",
+        "ExplorationHandlers.handleSemanticFieldExamples calls: semanticFieldExplorer.fetchExamples(collocate, seed, ...) — passing a variable named 'seed' into 'headword'",
+        "exploreByPattern, exploreMultiSeed, and compareCollocateProfiles all use 'seed'/'seeds' as their primary noun parameter"
+      ],
+      "suggestion": "Rename the second parameter of ExplorationService.fetchExamples and SemanticFieldExplorer.fetchExamples from 'headword' to 'seed' to align with the vocabulary used everywhere else in this interface and its callers.",
+      "confidence": "medium",
+      "impact_scope": "local",
+      "fix_scope": "single_edit"
+    }
+  ],
+  "retrospective": {
+    "root_causes": [
+      "The examples endpoint was added after the explore-family envelope pattern was established, and the buildCoreExploreResponse helper was not retrofitted to it",
+      "The ExplorationService interface likely evolved from internal implementation code where 'headword' was the original domain term, before the HTTP layer standardised on 'seed'"
+    ],
+    "likely_symptoms": [
+      "semantic_field_examples_envelope_mismatch"
+    ],
+    "possible_false_positives": []
+  }
+}

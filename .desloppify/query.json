@@ -1,26 +1,12 @@
 {
-  "command": "resolve",
-  "patterns": [
-    "review::.::holistic::api_surface_coherence::examples_endpoints_type_divergence::b1c140ac"
-  ],
-  "status": "fixed",
-  "resolved": [
-    "review::.::holistic::api_surface_coherence::examples_endpoints_type_divergence::b1c140ac"
-  ],
-  "count": 1,
-  "next_command": "desloppify next",
-  "overall_score": 79.5,
-  "objective_score": 100.0,
-  "strict_score": 79.5,
-  "verified_strict_score": 100.0,
-  "prev_overall_score": 79.5,
-  "prev_objective_score": 100.0,
-  "prev_strict_score": 79.5,
-  "prev_verified_strict_score": 100.0,
-  "attestation": "I have actually Changed handleSemanticFieldExamples to return {sentence,raw} maps matching /api/concordance/examples format; updated ExplorationService interface and SemanticFieldExplorer.fetchExamples return type and I am not gaming the score.",
+  "command": "show",
+  "query": "executeSurfacePattern",
+  "status_filter": "open",
+  "total": 0,
+  "issues": [],
   "narrative": {
     "phase": "stagnation",
-    "headline": "Score plateaued at 79.5 for 5 scans. Stale Migration (49.8%) is where the breakthrough is. 205 wontfix items may also be worth revisiting. (9 review issues \u2014 run `desloppify show review --status open`)",
+    "headline": "Score plateaued at 79.5 for 5 scans. Stale Migration (49.8%) is where the breakthrough is. 201 wontfix items may also be worth revisiting. (9 review issues \u2014 run `desloppify show review --status open`)",
     "dimensions": {
       "lowest_dimensions": [
         {
@@ -193,7 +179,7 @@
     },
     "debt": {
       "overall_gap": 0.0,
-      "wontfix_count": 205,
+      "wontfix_count": 201,
       "worst_dimension": null,
       "worst_gap": 0.0,
       "trend": "stable"
@@ -212,7 +198,7 @@
       {
         "type": "wontfix_gap",
         "severity": "high",
-        "message": "Strict/lenient gap is 0.0 pts with 205 wontfix issues"
+        "message": "Strict/lenient gap is 0.0 pts with 201 wontfix issues"
       }
     ],
     "strict_target": {
@@ -222,22 +208,7 @@
       "state": "below",
       "warning": null
     },
-    "reminders": [
-      {
-        "type": "rereview_needed",
-        "message": "Subjective results may be stale after resolve. Re-run `desloppify review --prepare` to refresh, or reset with `desloppify scan --reset-subjective` before a clean rerun.",
-        "command": "desloppify review --prepare",
-        "priority": 1,
-        "severity": "high"
-      },
-      {
-        "type": "rescan_needed",
-        "message": "Rescan to verify \u2014 cascading effects may create new issues.",
-        "command": "desloppify scan",
-        "priority": 1,
-        "severity": "high"
-      }
-    ],
+    "reminders": [],
     "reminder_history": {
       "zone_classification": 3,
       "report_scores": 42,
@@ -245,9 +216,7 @@
       "feedback_nudge": 3,
       "wontfix_growing": 1,
       "stagnant_nudge": 5,
-      "review_not_run": 3,
-      "rereview_needed": 1,
-      "rescan_needed": 1
+      "review_not_run": 3
     }
   },
   "config": {

@@ -98,24 +98,49 @@
             <name>UFAL Maven Repository</name>
             <url>https://ufal.mff.cuni.cz/maven2</url>
         </repository>
-        <!-- BlackLab is not in Maven Central. If this URL is unavailable in CI,
-             install it locally with:
-               mvn install:install-file -Dfile=blacklab.jar -DgroupId=nl.inl.blacklab \
-                 -DartifactId=blacklab-core -Dversion=<version> -Dpackaging=jar
-             See README.md for details.
-             NOTE: BlackLab 4.x is not published to Maven Central (latest on Central is 3.0.1).
-             This URL has no SLA and can become unavailable (rate-limited, branch deleted, or
-             repo renamed). Mitigation options if CI breaks:
-               1. Install the JAR locally: ./install-blacklab.sh (then remove this entry)
-               2. Mirror to a private registry (Nexus / Artifactory / GitHub Packages)
-             Track Maven Central availability at:
-               https://search.maven.org/search?q=g:nl.inl.blacklab -->
-        <repository>
-            <id>blacklab</id>
-            <name>BlackLab Maven Repository</name>
-            <url>https://raw.githubusercontent.com/instituutnederlandsetaal/BlackLab/mvn-repo/</url>
-        </repository>
+        <!-- BlackLab 4.x is NOT published to Maven Central (latest on Central is 3.0.1).
+             REQUIRED FIRST STEP: run ./install-blacklab.sh (Linux/macOS) or
+             .\install-blacklab.ps1 (Windows) before building. The script installs the JARs
+             into your local ~/.m2 repository so Maven resolves them without any remote call.
+
+             CI ENFORCEMENT: install-blacklab.sh must be a CI pre-step. Any pipeline that
+             skips it will fail at dependency resolution with a clear "artifact not found" error.
+
+             FALLBACK (last resort only): activate the `blacklab-github-fallback` Maven profile
+             defined below. That profile registers the GitHub raw-content URL as a repository.
+             The URL has no SLA and may become unavailable (rate-limited, branch deleted, or
+             repo renamed); do NOT rely on it in production CI.
+
+             Long-term alternatives if the raw URL breaks:
+               - Mirror to a private registry (Nexus / Artifactory / GitHub Packages)
+               - Track Maven Central: https://search.maven.org/search?q=g:nl.inl.blacklab -->
     </repositories>
+
+    <!--
+      Last-resort fallback repository profile for BlackLab.
+      Activate only when ./install-blacklab.sh cannot be run:
+        mvn -P blacklab-github-fallback clean package
+      DO NOT enable this profile in standard CI.
+    -->
+    <profiles>
+        <profile>
+            <id>blacklab-github-fallback</id>
+            <repositories>
+                <repository>
+                    <id>blacklab-github</id>
+                    <name>BlackLab GitHub Raw Repository (fallback, no SLA)</name>
+                    <url>https://raw.githubusercontent.com/instituutnederlandsetaal/BlackLab/mvn-repo/</url>
+                    <releases>
+                        <enabled>true</enabled>
+                        <checksumPolicy>warn</checksumPolicy>
+                    </releases>
+                    <snapshots>
+                        <enabled>false</enabled>
+                    </snapshots>
+                </repository>
+            </repositories>
+        </profile>
+    </profiles>
 
     <build>
         <plugins>
@@ -123,6 +148,13 @@
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
                 <version>3.12.1</version>
+                <!--
+                  This project uses com.sun.net.httpserver, the public API of the named module
+                  jdk.httpserver. The package is exported and fully supported in Java 21 with no
+                  add-exports or add-opens required.
+                  TODO: consider migrating to Undertow or Jetty if a multi-module build,
+                  custom classloader environment, or EE-style deployment is ever needed.
+                -->
             </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>

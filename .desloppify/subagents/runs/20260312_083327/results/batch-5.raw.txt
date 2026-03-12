@@ -1,0 +1,85 @@
+{
+  "batch": "mid_level_elegance",
+  "batch_index": 5,
+  "assessments": {
+    "mid_level_elegance": 76.0
+  },
+  "dimension_notes": {
+    "mid_level_elegance": {
+      "evidence": [
+        "ExploreResponseAssembler centralises all model-to-presentation translation for ExplorationResult, ComparisonResult, CollocateProfile, and Edge in one class, keeping handlers free of serialisation logic.",
+        "ExplorationService interface insulates ExplorationHandlers from SemanticFieldExplorer, MultiSeedExplorer, and CollocateProfileComparator; HTTP handlers depend only on the service contract.",
+        "HttpApiUtils.wrapWithErrorHandling applies a uniform IAE→400, IOException→500 error propagation contract at every endpoint boundary without requiring per-handler try/catch.",
+        "buildCoreExploreResponse + parseCommonExploreParams extract the shared request-parsing and envelope-assembly preamble for the three explore handlers so the orchestration is readable.",
+        "ConcordanceHandlers.parseConcordanceExamplesRequest calls grammarConfig.relation(req.relation()) directly without routing through RelationUtils.resolveRelationAlias, unlike sibling ExplorationHandlers.resolveRelationConfig which does so — short-form aliases such as adj_predicate silently fall back to a proximity pattern on /api/concordance/examples but resolve correctly on /api/semantic-field/examples.",
+        "handleSemanticFieldExamples assembles its response with 7 inline response.put() calls while sibling explore handlers all delegate to buildCoreExploreResponse + ExploreResponseAssembler.populate*Response — two patterns exist for the same boundary.",
+        "populateExploreResponse and populateComparisonResponse are void mutators of a map returned by buildCoreExploreResponse, so the handoff between the two steps is implicit: callers must know that populate* mutates the map from buildCore*."
+      ],
+      "impact_scope": "module",
+      "fix_scope": "multi_file_refactor",
+      "confidence": "high"
+    }
+  },
+  "dimension_judgment": {
+    "mid_level_elegance": {
+      "strengths": [
+        "ExploreResponseAssembler is a properly-placed single-responsibility translation layer: all model→JSON conversions for exploration results are in one class, preventing translation entropy from leaking into handlers.",
+        "ExplorationService interface is a clean testability seam that hides the SemanticFieldExplorer/MultiSeedExplorer/CollocateProfileComparator composition from the HTTP layer.",
+        "HttpApiUtils.wrapWithErrorHandling enforces a uniform error-propagation contract across all endpoint boundaries without tangled per-handler try/catch.",
+        "buildCoreExploreResponse and parseCommonExploreParams correctly extract the shared request-parsing preamble, making each explore handler's orchestration read as composition of collaborators.",
+        "GrammarConfigLoader produces immutable GrammarConfig value objects so callers depend on loaded data, not on file-IO machinery — the config boundary is correctly separated."
+      ],
+      "issue_character": "The issues are localized to the API layer's internal seam design: one sibling handler (ConcordanceHandlers) diverges from the established pattern in a concrete functional way (missing alias resolution), and one handler (handleSemanticFieldExamples) deviates from the shared response-assembly protocol used by all other explore handlers.",
+      "score_rationale": "The codebase demonstrates deliberately architected seams — a clean service interface, a centralised translation layer, and uniform error propagation — that a developer would find mostly reliable and unsurprising. What pulls the score below 80 is a concrete functional inconsistency at the ConcordanceHandlers boundary: alias resolution is missing, causing different behavior for the same request parameter on two overlapping endpoints, which is the kind of implicit contract difference that a developer discovers only through runtime testing. The inline response assembly in handleSemanticFieldExamples is a secondary pattern inconsistency that would create confusion when extending the API. These are module-scoped issues, not pervasive, placing this in the solid-but-uneven 70s range rather than the recurring-friction 60s."
+    }
+  },
+  "issues": [
+    {
+      "dimension": "mid_level_elegance",
+      "identifier": "concordance_missing_alias_resolution",
+      "summary": "ConcordanceHandlers skips RelationUtils.resolveRelationAlias, causing adj_predicate and similar short-form aliases to silently fall back to proximity pattern",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/api/ConcordanceHandlers.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/api/ExplorationHandlers.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/config/RelationUtils.java"
+      ],
+      "evidence": [
+        "ConcordanceHandlers.parseConcordanceExamplesRequest line 94: relation = params.getOrDefault('relation', 'noun_adj_predicates'), then line 53: grammarConfig.relation(req.relation()) — no alias resolution step.",
+        "ExplorationHandlers.resolveRelationConfig (line 267) calls RelationUtils.resolveRelationAlias(params.getOrDefault('relation','noun_adj_predicates')) first, so adj_predicate resolves to noun_adj_predicates.",
+        "Result: GET /api/concordance/examples?relation=adj_predicate falls back to proximity pattern (fallback:true); GET /api/semantic-field/examples?relation=adj_predicate resolves correctly. Two endpoints that serve overlapping use-cases behave differently for the same parameter value."
+      ],
+      "suggestion": "In ConcordanceHandlers.parseConcordanceExamplesRequest, wrap the raw relation parameter with RelationUtils.resolveRelationAlias before storing it in the request record: String relation = RelationUtils.resolveRelationAlias(params.getOrDefault('relation', 'noun_adj_predicates'));. This aligns the alias-resolution seam with the established pattern in ExplorationHandlers.",
+      "confidence": "high",
+      "impact_scope": "module",
+      "fix_scope": "single_edit",
+      "root_cause_cluster": "seam_protocol_divergence"
+    },
+    {
+      "dimension": "mid_level_elegance",
+      "identifier": "examples_handler_inline_assembly",
+      "summary": "handleSemanticFieldExamples assembles its response inline with ad-hoc puts while all sibling explore handlers delegate to buildCoreExploreResponse + ExploreResponseAssembler",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/api/ExplorationHandlers.java"
+      ],
+      "evidence": [
+        "handleSemanticFieldExplore, handleSemanticFieldExploreMulti, and handleSemanticFieldComparison all call buildCoreExploreResponse(...) and then ExploreResponseAssembler.populate*Response(response, result).",
+        "handleSemanticFieldExamples (lines 197-206) instead builds the response with 7 separate response.put() calls — status, collocate, seed, relation, top, examples, total_results — bypassing buildCoreExploreResponse entirely.",
+        "A developer adding a new top-level field to exploration responses (e.g., a request-id or version) has two code paths to update: the shared helper and this inline block."
+      ],
+      "suggestion": "Refactor handleSemanticFieldExamples to use buildCoreExploreResponse for the envelope (status + parameters sub-map) and move the examples + total_results population into ExploreResponseAssembler as a populateExamplesResponse helper, symmetric with populateExploreResponse and populateComparisonResponse.",
+      "confidence": "medium",
+      "impact_scope": "module",
+      "fix_scope": "single_edit",
+      "root_cause_cluster": "seam_protocol_divergence"
+    }
+  ],
+  "retrospective": {
+    "root_causes": [
+      "seam_protocol_divergence: ConcordanceHandlers was either written before the resolveRelationConfig helper existed in ExplorationHandlers, or was independently implemented without being aligned to the established pattern — resulting in two divergent relation-resolution seams in the same package."
+    ],
+    "likely_symptoms": [
+      "concordance_missing_alias_resolution is a root-cause finding; the silent fallback behavior is the symptom."
+    ],
+    "possible_false_positives": []
+  }
+}

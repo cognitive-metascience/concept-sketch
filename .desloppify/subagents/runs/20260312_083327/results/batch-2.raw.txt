@@ -1,0 +1,98 @@
+{
+  "batch": "abstraction_fitness",
+  "batch_index": 2,
+  "assessments": {
+    "abstraction_fitness": 81.0
+  },
+  "dimension_notes": {
+    "abstraction_fitness": {
+      "evidence": [
+        "QueryExecutor interface has one production implementation (BlackLabQueryExecutor) but its Javadoc explicitly names it a testability seam; StubQueryExecutor in tests confirms this purpose — 5+ test classes inject it via the interface",
+        "ExplorationService interface has one production implementation (SemanticFieldExplorer) but WordSketchApiServer exposes a full constructor accepting ExplorationService, and ExplorationHandlersTest injects it directly",
+        "SemanticFieldExplorer owns the single-seed exploreByPattern algorithm (~200 lines of real logic) directly, while delegating exploreMultiSeed to MultiSeedExplorer and compareCollocateProfiles to CollocateProfileComparator in thin one-line forwarding methods",
+        "MultiSeedExplorer and CollocateProfileComparator are package-private classes each with exactly one caller (SemanticFieldExplorer); decomposing algorithms into separate files adds navigation overhead without cross-cutting reuse",
+        "SingleSeedExplorationOptions wraps ExplorationOptions as a field (composition), causing callers to access shared params as opts.base().topCollocates(), opts.base().minLogDice() rather than opts.topCollocates() — the wrapping layer adds one indirection level for a 4-parameter record",
+        "Static utility classes (RelationPatternBuilder, GrammarConfigSerializer, HttpApiUtils, ExploreResponseAssembler) all contain real logic and earn their place — no pass-through or re-export facades found",
+        "HttpApiUtils co-locates response-writing and request-parsing in one package-private class; the Javadoc justifies this and the class adds genuine error-handling, CORS, and validation policy beyond delegation",
+        "GrammarConfigSerializer separates JSON serialization from config data carriers (GrammarConfig, RelationConfig remain plain records) — legitimate isolating abstraction",
+        "CollocateQueryHelper is a package-private helper extracting grouped-collocate search logic shared across multiple BlackLabQueryExecutor methods — reduces duplication across executeCollocations, executeSurfacePattern, executeDependencyPattern"
+      ],
+      "impact_scope": "module",
+      "fix_scope": "multi_file_refactor",
+      "confidence": "medium",
+      "sub_axes": {
+        "abstraction_leverage": 84.0,
+        "indirection_cost": 78.0,
+        "interface_honesty": 85.0,
+        "delegation_density": 88.0,
+        "definition_directness": 83.0,
+        "type_discipline": 90.0
+      }
+    }
+  },
+  "dimension_judgment": {
+    "abstraction_fitness": {
+      "strengths": [
+        "Both single-implementation interfaces (QueryExecutor, ExplorationService) are explicitly documented as testability seams with confirmed test-time injection, placing them firmly in the skip category of the rubric",
+        "Static utility classes (RelationPatternBuilder, GrammarConfigSerializer, HttpApiUtils, ExploreResponseAssembler) each add real logic — policy enforcement, pattern construction, serialization — rather than merely forwarding calls",
+        "CollocateQueryHelper genuinely reduces duplication by extracting grouped-collocate search logic shared across three methods of BlackLabQueryExecutor",
+        "The model package is cleanly decomposed into pure DTOs (records) and objects with derived accessors, with no HTTP or persistence concerns leaking in",
+        "QueryExecutor default convenience methods (executeSurfacePatternForRelation, executeBcqlQueryForRelation) add genuine value by keeping pattern-construction logic out of HTTP handlers"
+      ],
+      "issue_character": "The main abstraction drag comes from an asymmetric decomposition pattern in the exploration layer: SemanticFieldExplorer owns the single-seed algorithm directly (~200 lines) while delegating multi-seed and comparison as thin one-liners to package-private helpers that have no other callers, creating navigation overhead without cross-cutting reuse.",
+      "score_rationale": "The codebase avoids the most costly abstraction anti-patterns: no pass-through wrappers, no util dumping grounds, no facades that define no logic, and the single-implementation interfaces are justified by confirmed test usage. The drag comes from an asymmetric design in the exploration subsystem where SemanticFieldExplorer acts as both algorithm owner and coordination facade simultaneously, and from a minor options-wrapping layer (SingleSeedExplorationOptions wrapping ExplorationOptions) that adds one level of indirection for a 4-parameter API. These issues would occasionally slow a developer navigating the exploration package but do not make the overall abstraction posture unreliable. This puts the codebase solidly in the 80-85 range: mostly strong with a few layers that feel slightly overbuilt."
+    }
+  },
+  "issues": [
+    {
+      "dimension": "abstraction_fitness",
+      "identifier": "explorer_asymmetric_facade",
+      "summary": "SemanticFieldExplorer mixes direct algorithm ownership with delegation, making its responsibility boundary ambiguous",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/exploration/SemanticFieldExplorer.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/exploration/MultiSeedExplorer.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/exploration/CollocateProfileComparator.java"
+      ],
+      "evidence": [
+        "SemanticFieldExplorer.exploreByPattern contains ~200 lines of single-seed algorithm logic directly in the class",
+        "SemanticFieldExplorer.exploreMultiSeed is a one-liner: return multiSeedExplorer.findCollocateIntersection(seeds, relationConfig, opts.minLogDice(), opts.topCollocates(), opts.minShared())",
+        "SemanticFieldExplorer.compareCollocateProfiles is a one-liner: return comparator.compareCollocateProfiles(seedNouns, opts.minLogDice(), opts.topCollocates())",
+        "MultiSeedExplorer and CollocateProfileComparator are package-private with SemanticFieldExplorer as their only caller; no cross-cutting reuse justifies the separate files"
+      ],
+      "suggestion": "Choose a consistent boundary: either (a) inline MultiSeedExplorer and CollocateProfileComparator back into SemanticFieldExplorer as private methods (they have no other callers and are already package-private), or (b) extract the single-seed algorithm into its own package-private SingleSeedExplorer class so all three algorithms live in parallel sibling classes and SemanticFieldExplorer becomes a pure coordination facade. Option (a) is simpler given the current scale.",
+      "confidence": "medium",
+      "impact_scope": "module",
+      "fix_scope": "multi_file_refactor"
+    },
+    {
+      "dimension": "abstraction_fitness",
+      "identifier": "options_nested_wrapping",
+      "summary": "SingleSeedExplorationOptions wraps ExplorationOptions as a field, adding opts.base().X() indirection for a 4-parameter API",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/model/exploration/SingleSeedExplorationOptions.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/model/exploration/ExplorationOptions.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/exploration/SemanticFieldExplorer.java"
+      ],
+      "evidence": [
+        "SemanticFieldExplorer.exploreByPattern accesses opts.base().topCollocates(), opts.base().minLogDice(), opts.base().minShared() — three accesses through the wrapper",
+        "SingleSeedExplorationOptions has exactly two fields: ExplorationOptions base and int reverseExpansionLimit — the wrapping buys nothing over a flat 4-field record",
+        "ExplorationOptions itself has only 3 fields (topCollocates, minLogDice, minShared) — the combined options object would have 4 fields total"
+      ],
+      "suggestion": "Flatten SingleSeedExplorationOptions into a single 4-field record: int topCollocates, double minLogDice, int minShared, int reverseExpansionLimit. ExplorationHandlers already constructs both objects separately at the call site (new SingleSeedExplorationOptions(new ExplorationOptions(...))), so the refactor simplifies both construction and access.",
+      "confidence": "low",
+      "impact_scope": "local",
+      "fix_scope": "multi_file_refactor"
+    }
+  ],
+  "retrospective": {
+    "root_causes": [
+      "The exploration subsystem grew incrementally: single-seed algorithm existed first in SemanticFieldExplorer, then multi-seed and comparison were added as separate classes without extracting the original algorithm to a symmetric position — leaving the coordinator class with mixed direct/delegating responsibilities"
+    ],
+    "likely_symptoms": [
+      "explorer_asymmetric_facade is a structural consequence of incremental growth, not a design error per se — a developer would notice the asymmetry when extending with a fourth exploration mode"
+    ],
+    "possible_false_positives": [
+      "The mechanical indirection_hotspot_count of 53 and max_chain_depth of 5 reflects Java fluent API chaining (e.g., result.discoveredNouns().stream().map(...)) rather than architectural layering — these are not abstraction fitness issues"
+    ]
+  }
+}

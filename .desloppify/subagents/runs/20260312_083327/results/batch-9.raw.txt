@@ -1,0 +1,95 @@
+{
+  "batch": "contract_coherence",
+  "batch_index": 9,
+  "assessments": {
+    "contract_coherence": 82.0
+  },
+  "dimension_notes": {
+    "contract_coherence": {
+      "evidence": [
+        "GrammarConfigLoader.parseRelationType javadoc says 'Logs a warning when the field is present but unrecognised' but the implementation throws IllegalArgumentException — opposite behavior from what is documented",
+        "ConcordanceHandlers.handleConcordanceExamples sets bcqlQuery = rel.get().pattern() (unresolved template) for the non-fallback path, but the executed query is the resolved form (via executeBcqlQueryForRelation); response['bcql'] therefore shows the unexecuted template rather than the actual query",
+        "QueryExecutor.executeSurfacePattern javadoc says 'The headword lemma must be embedded in bcqlPattern' — implying a hard requirement — but the BlackLabQueryExecutor implementation silently returns an empty list when lemma extraction fails, with no exception thrown. Sibling method executeCollocations documents its null-input behavior explicitly; executeSurfacePattern does not",
+        "QueryExecutor interface and its implementations are otherwise well-aligned: @Nullable lemma on executeCollocations matches the documented 'returns empty list silently', error throws match declarations, return types match all paths",
+        "HttpApiUtils.wrapWithErrorHandling, requireParam, parseIntParam, parseDoubleParam all throw IllegalArgumentException as documented and consistently honored across all handler callers",
+        "ExplorationService interface method declarations and SemanticFieldExplorer implementations match: @NonNull annotations, IOException throws, and delegation behavior all consistent"
+      ],
+      "impact_scope": "module",
+      "fix_scope": "single_edit",
+      "confidence": "high"
+    }
+  },
+  "dimension_judgment": {
+    "contract_coherence": {
+      "strengths": [
+        "QueryExecutor interface has thorough, accurate JavaDoc for each method; null-input behavior for executeCollocations is explicitly and correctly documented",
+        "HttpApiUtils consistently documents and honors its error contracts: requireParam, parseIntParam, parseDoubleParam all throw IllegalArgumentException as declared, and wrapWithErrorHandling maps each exception type to the documented HTTP status code",
+        "BlackLabQueryExecutor correctly converts ErrorOpeningIndex to IOException in the constructor, explicitly honoring the documented 'checked exception for missing/corrupt index' contract",
+        "ExplorationService interface and SemanticFieldExplorer implementation are well-aligned: @NonNull annotations, IOException throws, and delegation to sub-explorers are all consistent with what the interface promises"
+      ],
+      "issue_character": "Issues are isolated doc/behavior mismatches rather than a systemic pattern: one method's docstring describes a warning where the code throws, one HTTP response field echoes a template rather than the resolved query, and one method's contract says 'must be embedded' but the failure mode is a silent empty return.",
+      "score_rationale": "The codebase generally honors its stated contracts well — the QueryExecutor interface, HttpApiUtils error handling, and exploration service boundaries are all accurate. Two real divergences prevent a higher score: GrammarConfigLoader.parseRelationType has a clear docstring/behavior lie (warns vs. throws), and ConcordanceHandlers exposes an unresolved BCQL template in the response while silently executing the resolved form. These are concrete surprises for a developer relying on documentation, placing the score solidly in the 80-85 range rather than the 90+ band."
+    }
+  },
+  "issues": [
+    {
+      "dimension": "contract_coherence",
+      "identifier": "parse_relation_type_warn_vs_throw",
+      "summary": "parseRelationType javadoc says 'Logs a warning' for unrecognised values but the code throws IllegalArgumentException",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/config/GrammarConfigLoader.java"
+      ],
+      "evidence": [
+        "Javadoc: 'Logs a warning when the field is present but unrecognised, which typically indicates a typo in the grammar config.'",
+        "Actual code: catch (IllegalArgumentException e) { throw new IllegalArgumentException(\"Unrecognised relation_type '\" + value + \"'...\"); } — throws instead of logging"
+      ],
+      "suggestion": "Update the javadoc to accurately describe the actual behavior: 'Throws IllegalArgumentException when the field is present but unrecognised. Valid values are the names of the RelationType enum.' Remove the 'Logs a warning' sentence.",
+      "confidence": "high",
+      "impact_scope": "local",
+      "fix_scope": "single_edit"
+    },
+    {
+      "dimension": "contract_coherence",
+      "identifier": "concordance_bcql_field_shows_template_not_resolved_query",
+      "summary": "ConcordanceHandlers response['bcql'] shows unresolved template pattern rather than the actual executed BCQL query",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/api/ConcordanceHandlers.java"
+      ],
+      "evidence": [
+        "Non-fallback path: bcqlQuery = rel.get().pattern() — the raw template with 1:[xpos=...] position labels and no seed/collocate substituted",
+        "But execution uses: executor.executeBcqlQueryForRelation(rel.get(), req.seed(), req.collocate(), req.top()) — which resolves the pattern with seed and collocate lemmas substituted",
+        "Fallback path correctly sets bcqlQuery to the actual executed proximity query, so the two paths have inconsistent semantics for the 'bcql' field"
+      ],
+      "suggestion": "Capture the resolved pattern and use it for the response field. Call RelationPatternBuilder.buildFullPattern(rel.get(), req.seed(), req.collocate()) to get the resolved query and assign it to bcqlQuery before executing and before putting it in the response.",
+      "confidence": "medium",
+      "impact_scope": "local",
+      "fix_scope": "single_edit"
+    },
+    {
+      "dimension": "contract_coherence",
+      "identifier": "execute_surface_pattern_silent_on_required_precondition",
+      "summary": "executeSurfacePattern javadoc says headword lemma 'must be embedded' but silently returns empty list when extraction fails instead of throwing",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/query/QueryExecutor.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/query/BlackLabQueryExecutor.java"
+      ],
+      "evidence": [
+        "Interface javadoc: 'The headword lemma must be embedded in bcqlPattern (typically by the caller via RelationPatternBuilder.buildFullPattern).' — 'must be' implies a hard precondition.",
+        "BlackLabQueryExecutor.executeSurfacePattern: if (lemma == null || lemma.isEmpty()) { logger.debug(...); return Collections.emptyList(); } — silently returns empty list on precondition violation",
+        "Sibling executeCollocations explicitly documents the silent-return behavior for null lemma; executeSurfacePattern's interface javadoc does not align with the same pattern"
+      ],
+      "suggestion": "Align the contract with the implementation: either (a) update the javadoc to state 'returns an empty list silently if the headword lemma cannot be extracted from bcqlPattern' to match executeCollocations style, or (b) throw IllegalArgumentException when the lemma is absent to enforce the 'must be embedded' precondition.",
+      "confidence": "medium",
+      "impact_scope": "local",
+      "fix_scope": "single_edit"
+    }
+  ],
+  "retrospective": {
+    "root_causes": [
+      "Docstring drift: parseRelationType and executeSurfacePattern javadocs were written before or independently of their final implementation, leaving the documented behavior out of sync",
+      "Response field reuse: bcqlQuery in ConcordanceHandlers serves double duty as both the execution input (fallback) and the diagnostic display field (non-fallback), but the non-fallback path assigns the template rather than the resolved form"
+    ],
+    "likely_symptoms": [],
+    "possible_false_positives": []
+  }
+}

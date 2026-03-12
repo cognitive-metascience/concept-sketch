@@ -1,0 +1,120 @@
+{
+  "batch": "naming_quality",
+  "batch_index": 12,
+  "assessments": {
+    "naming_quality": 77.0
+  },
+  "dimension_notes": {
+    "naming_quality": {
+      "evidence": [
+        "Domain vocabulary is coherent and consistent: 'seed', 'collocate', 'logDice', 'relation', 'exploration', 'deprel' are used uniformly across all layers (handlers, service, model, query).",
+        "Method names clearly express phase and intent: fetchSeedCollocates, buildNounToCollocatesMap, filterByMinShared, identifyCoreCollocates, buildAndRankCollocates, collectFrequenciesAndPosFromGroups.",
+        "ComparisonResult has a public accessor collocates() but its backing private field is named 'adjectives' — POS-specific name leaking into a type designed for any collocate kind.",
+        "CollocateProfile record declares its primary identifying field as 'adjective' (line: 'String adjective,') while the class Javadoc says 'Profile of one collocate' — field name encodes a POS assumption in a general type.",
+        "RelationEdgeType enum has constants SEED_ADJ and DISCOVERED_ADJ whose 'ADJ' suffix implies adjective-only edges, but these types are used by ExploreResponseAssembler for any exploration relation (noun or verb collocates too).",
+        "MultiSeedExplorer.findCollocateIntersection uses collocLdSum, collocLdCount, avgLdMap and local variable avgLd — 'ld' abbreviation for logDice is used nowhere else in the codebase; every other file writes full 'logDice' (minLogDice, avgLogDice, collocateLogDice).",
+        "ExplorationHandlers uses 'relationConfig' in handleSemanticFieldExplore but 'resolvedConfig' in handleSemanticFieldExploreMulti and handleSemanticFieldExamples for the same variable returned from the same resolveRelationConfig() helper.",
+        "Handler method prefix 'handle' is used uniformly across all handler classes — an intentional and well-applied convention.",
+        "Inner request records (ConcordanceExamplesRequest, BcqlRequest, CommonExploreParams) are precisely named and scoped.",
+        "Class names ExploreResponseAssembler, CollocateProfileComparator, MultiSeedExplorer, SemanticFieldExplorer are descriptive and role-appropriate."
+      ],
+      "impact_scope": "module",
+      "fix_scope": "multi_file_refactor",
+      "confidence": "high",
+      "issues_preventing_higher_score": "The adjective-centric naming leak (CollocateProfile.adjective field, ComparisonResult.adjectives backing field, RelationEdgeType.SEED_ADJ/DISCOVERED_ADJ enum names) is systemic — it originates in the comparison subsystem's initial adjective-only design and has not been fully updated as the abstraction was generalized. While each instance is individually small, together they form a vocabulary schism where 'adjective' and 'collocate' refer to the same concept depending on which layer you are reading. The logDice abbreviation inconsistency in MultiSeedExplorer and the variable-name mismatch in ExplorationHandlers add smaller additional drag."
+    }
+  },
+  "dimension_judgment": {
+    "naming_quality": {
+      "strengths": [
+        "Domain vocabulary is stable and uniformly applied: 'seed', 'collocate', 'logDice', 'relation', 'deprel', 'exploration' appear with consistent meaning across all packages.",
+        "Phase-oriented method naming in SemanticFieldExplorer (fetchSeedCollocates, buildNounToCollocatesMap, filterByMinShared, identifyCoreCollocates) makes the algorithm readable as prose.",
+        "Inner private records for request parsing (ConcordanceExamplesRequest, BcqlRequest, CommonExploreParams) are precisely named and narrowly scoped, avoiding ambiguity.",
+        "Handler classes and their methods follow a consistent 'handle*' verb convention without overloading generic names like 'process' or 'execute'.",
+        "Class-level naming (ExploreResponseAssembler, CollocateProfileComparator, MultiSeedExplorer) clearly communicates responsibility and fits the package decomposition."
+      ],
+      "issue_character": "The naming issues are not random but form a single coherent pattern: the comparison/exploration subsystem was originally designed for adjective collocates only, and that origin is still visible in field names (CollocateProfile.adjective, ComparisonResult.adjectives), enum constants (SEED_ADJ, DISCOVERED_ADJ), and log strings — while the public API surface was later generalized to 'collocate'. Secondary drift appears as a one-off abbreviation inconsistency (collocLdSum/avgLdMap) and a variable-name split (relationConfig vs resolvedConfig) within a single class.",
+      "score_rationale": "The codebase is solidly above the 60-point 'significant drag' threshold: domain vocabulary is coherent, method names are intentional and phase-oriented, and there are no generic 'handle/process/manage' anti-patterns. The gap from 80+ is the adjective-naming residue in the comparison layer: CollocateProfile.adjective() is part of the public record API, SEED_ADJ/DISCOVERED_ADJ are serialized JSON labels, and ComparisonResult.adjectives is the backing field for a public collocates() accessor — together they impose a vocabulary schism a developer must reconcile when reading exploration code. A score of 77 reflects a codebase with clearly good naming discipline that carries one cohesive subsystem-level residue and two minor local inconsistencies."
+    }
+  },
+  "issues": [
+    {
+      "dimension": "naming_quality",
+      "identifier": "adj_naming_leak_in_collocate_profile",
+      "summary": "CollocateProfile.adjective field and ComparisonResult.adjectives backing field use POS-specific names in types designed for any collocate kind",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/model/exploration/CollocateProfile.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/model/exploration/ComparisonResult.java"
+      ],
+      "evidence": [
+        "CollocateProfile record's primary identifier field is 'String adjective' (first component) while its Javadoc says 'Profile of one collocate across all seed nouns' — the POS assumption is baked into the public record accessor CollocateProfile.adjective().",
+        "ComparisonResult has 'private final List<CollocateProfile> adjectives' as the backing field, but its public accessor is 'collocates()'. The toString() method also emits 'adjectives' in the output string. The divergence means the internal model vocabulary (adjectives) does not match the public API vocabulary (collocates).",
+        "ComparisonResult.specificTo(String noun) Javadoc says 'Returns adjectives that occur only in the collocate profile of noun' — the doc uses 'adjectives' while the method signature aligns with the general concept."
+      ],
+      "suggestion": "Rename CollocateProfile's first record component from 'adjective' to 'collocate'. Rename ComparisonResult's private 'adjectives' field to 'collocates'. Update all internal loop variables (e.g. 'for (CollocateProfile a : adjectives)' → 'for (CollocateProfile c : collocates)') and the toString() format string. This aligns internal names with the already-correct public accessor collocates().",
+      "confidence": "high",
+      "impact_scope": "module",
+      "fix_scope": "multi_file_refactor"
+    },
+    {
+      "dimension": "naming_quality",
+      "identifier": "seed_adj_edge_type_names",
+      "summary": "RelationEdgeType.SEED_ADJ and DISCOVERED_ADJ embed an adjective-specific assumption in enum constants used for any exploration relation",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/model/exploration/RelationEdgeType.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/api/ExploreResponseAssembler.java"
+      ],
+      "evidence": [
+        "RelationEdgeType.SEED_ADJ is documented as 'Adjective collocate of a seed noun' and DISCOVERED_ADJ as 'Adjective collocate of a discovered noun (second-order)', but ExploreResponseAssembler.buildExplorationEdges() uses these types for all collocates regardless of POS — including verbs (subject_of, object_of relations) and nouns.",
+        "The stable JSON labels 'seed_adj' and 'discovered_adj' are emitted by the API for verb-collocate exploration, producing semantically misleading labels in the API response (e.g. a SEED_ADJ edge between 'house' and 'develop' when using the object_of relation)."
+      ],
+      "suggestion": "Rename SEED_ADJ to SEED_COLLOCATE and DISCOVERED_ADJ to DISCOVERED_COLLOCATE. Update the corresponding stable JSON labels from 'seed_adj'/'discovered_adj' to 'seed_collocate'/'discovered_collocate'. The MODIFIER constant (from the comparison path) is correctly named and should not change. Note: this is an API-breaking change to JSON label strings — coordinate with any frontend clients that depend on the label values.",
+      "confidence": "high",
+      "impact_scope": "subsystem",
+      "fix_scope": "multi_file_refactor"
+    },
+    {
+      "dimension": "naming_quality",
+      "identifier": "ld_abbreviation_inconsistency",
+      "summary": "collocLdSum, collocLdCount, avgLdMap and avgLd abbreviate logDice as 'ld', inconsistent with full logDice naming convention used everywhere else",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/exploration/MultiSeedExplorer.java"
+      ],
+      "evidence": [
+        "MultiSeedExplorer.findCollocateIntersection declares 'Map<String, Double> collocLdSum', 'Map<String, Integer> collocLdCount', 'Map<String, Double> avgLdMap' — 'ld' is not an established abbreviation in this codebase.",
+        "buildCoreCollocates parameter is 'Map<String, Double> avgLdMap' and local variable 'double avgLd = avgLdMap.getOrDefault(c, 0.0)' — again using 'ld' shorthand.",
+        "Every other use of logDice across the codebase spells it out: minLogDice, avgLogDice, collocateLogDice, logDice, seedLogDice (in CoreCollocate record), totalLogDiceSum (in CollocateProfileComparator)."
+      ],
+      "suggestion": "Rename collocLdSum → collocateLogDiceSum, collocLdCount → collocateLogDiceCount, avgLdMap → avgLogDiceMap, and local variable avgLd → avgLogDice. Update the buildCoreCollocates method signature accordingly.",
+      "confidence": "high",
+      "impact_scope": "local",
+      "fix_scope": "single_edit"
+    },
+    {
+      "dimension": "naming_quality",
+      "identifier": "relationconfig_vs_resolvedconfig_drift",
+      "summary": "ExplorationHandlers uses 'relationConfig' in one handler and 'resolvedConfig' in two others for the same variable returned from resolveRelationConfig()",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/api/ExplorationHandlers.java"
+      ],
+      "evidence": [
+        "handleSemanticFieldExplore (line 61): 'RelationConfig relationConfig = resolveRelationConfig(params);'",
+        "handleSemanticFieldExploreMulti (line 101): 'RelationConfig resolvedConfig = resolveRelationConfig(params);'",
+        "handleSemanticFieldExamples (line 195): 'RelationConfig resolvedConfig = resolveRelationConfig(params);'",
+        "All three variables are produced by the same helper method and serve the same role; the name difference adds unnecessary cognitive overhead when reading across handlers."
+      ],
+      "suggestion": "Pick one name and apply it consistently across all three handlers. 'resolvedRelation' or 'relationConfig' are both acceptable; 'resolvedConfig' is slightly redundant since the variable type already conveys it is a RelationConfig.",
+      "confidence": "high",
+      "impact_scope": "local",
+      "fix_scope": "single_edit"
+    }
+  ],
+  "retrospective": {
+    "root_causes": [
+      "The comparison subsystem was built when only adjective collocates were supported; field names, enum constants, and internal variable names were coined in that context and not fully updated when the abstraction was generalized to any collocate POS group.",
+      "The public API surface (collocates(), ExplorationService interface) was correctly generalized but the internal implementation vocabulary was not synchronized, producing a two-vocabulary system within the same module."
+    ],
+    "likely_symptoms": [],
+    "possible_false_positives": []
+  }
+}

@@ -1,0 +1,82 @@
+{
+  "batch": "convention_outlier",
+  "batch_index": 16,
+  "assessments": {
+    "convention_outlier": 83.0
+  },
+  "dimension_notes": {
+    "convention_outlier": {
+      "evidence": [
+        "All Java naming conventions are applied uniformly: camelCase methods/fields, PascalCase classes, SCREAMING_SNAKE_CASE constants — no drift anywhere in the codebase.",
+        "Handler classes in api/ are all package-private (ConcordanceHandlers, CorpusQueryHandlers, ExplorationHandlers, SketchHandlers, VisualizationHandlers) — consistent encapsulation pattern.",
+        "Mixed record-vs-class strategy in model/ is documented in model/package-info.java with explicit rationale, making it intentional rather than drift.",
+        "GrammarConfigSerializer is public while ExploreResponseAssembler is package-private; both are api-internal assembler utilities. Difference is justified: GrammarConfigSerializer is imported from config test package (GrammarConfigLoaderTest), so public visibility is required.",
+        "FetchExamplesOptions lives in model/ but its docstring calls ExplorationOptions and SingleSeedExplorationOptions its 'sibling types', which are in model.exploration/ — misplaced by one package level.",
+        "viz/ package is the only package without a package-info.java file; all seven other packages (api, config, exploration, indexer.blacklab, model, model.exploration, query, utils) have package-info.java.",
+        "holistic_context.conventions.naming_by_directory and sibling_behavior are both empty — mechanical scanner found no cross-directory naming drift."
+      ],
+      "impact_scope": "local",
+      "fix_scope": "multi_file_refactor",
+      "confidence": "high"
+    }
+  },
+  "dimension_judgment": {
+    "convention_outlier": {
+      "strengths": [
+        "Naming convention is perfectly uniform across all packages: camelCase methods, PascalCase types, SCREAMING_SNAKE_CASE constants — not a single outlier found.",
+        "Handler visibility is consistently package-private across all five api/ handler classes, reflecting deliberate encapsulation rather than accidental exposure.",
+        "Mixed type strategy (record vs class) in model/ is explicitly documented with rationale in model/package-info.java, removing any ambiguity about the pattern.",
+        "package-info.java annotations exist in every package except one (viz/), providing consistent documentation anchors throughout the codebase.",
+        "Exploration package cleanly separates public interface (ExplorationService), public implementation (SemanticFieldExplorer), and package-private helpers (MultiSeedExplorer, CollocateProfileComparator) — consistent visibility protocol."
+      ],
+      "issue_character": "The two deviations found are isolated placement/annotation omissions rather than systemic naming or structural drift: one options class lives one package level too high, and one small package lacks its annotation file.",
+      "score_rationale": "The codebase sits firmly in the 80–85 range. Convention discipline is exemplary — no naming drift, no style islands, no mixed export patterns, and most structural decisions are explicitly documented. The only deductions are FetchExamplesOptions being placed in model/ instead of model.exploration/ (its own docstring names sibling types from that sub-package), and the viz/ package lacking the package-info.java file that every other package carries. Neither issue meaningfully impedes a developer, keeping the score well above 80 but short of the 85+ range where all observable deviations would need to be absent or trivially negligible."
+    }
+  },
+  "issues": [
+    {
+      "dimension": "convention_outlier",
+      "identifier": "fetch_examples_options_misplaced",
+      "summary": "FetchExamplesOptions lives in model/ but belongs in model.exploration/ alongside its documented sibling types",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/model/FetchExamplesOptions.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/model/exploration/ExplorationOptions.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/model/exploration/SingleSeedExplorationOptions.java"
+      ],
+      "evidence": [
+        "FetchExamplesOptions.java package declaration: `package pl.marcinmilkowski.word_sketch.model;`",
+        "FetchExamplesOptions Javadoc states: 'Follows the options-object pattern used by sibling types ({@link ExplorationOptions}, {@link SingleSeedExplorationOptions})' — both of which are in model.exploration/",
+        "ExplorationService.fetchExamples() accepts FetchExamplesOptions alongside RelationConfig, while exploreMultiSeed() and compareCollocateProfiles() accept ExplorationOptions — all three are exploration-domain options types"
+      ],
+      "suggestion": "Move FetchExamplesOptions.java to src/main/java/pl/marcinmilkowski/word_sketch/model/exploration/ and update its package declaration to `package pl.marcinmilkowski.word_sketch.model.exploration;`. Update all import statements referencing it (ExplorationService, SemanticFieldExplorer, ConcordanceHandlers, ExplorationHandlers, and any tests).",
+      "confidence": "high",
+      "impact_scope": "local",
+      "fix_scope": "multi_file_refactor",
+      "root_cause_cluster": "model_subpackage_placement"
+    },
+    {
+      "dimension": "convention_outlier",
+      "identifier": "viz_missing_package_info",
+      "summary": "viz/ package lacks package-info.java while all seven other packages carry one",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/viz/RadialPlot.java"
+      ],
+      "evidence": [
+        "All packages have package-info.java: api/, config/, exploration/, indexer/blacklab/, model/, model/exploration/, query/, utils/ — confirmed by directory listing.",
+        "viz/ contains only RadialPlot.java with no package-info.java companion."
+      ],
+      "suggestion": "Create src/main/java/pl/marcinmilkowski/word_sketch/viz/package-info.java with a one-line summary, e.g.: `/** SVG visualization rendering for radial collocation plots. */ package pl.marcinmilkowski.word_sketch.viz;`",
+      "confidence": "high",
+      "impact_scope": "local",
+      "fix_scope": "single_edit",
+      "root_cause_cluster": "model_subpackage_placement"
+    }
+  ],
+  "retrospective": {
+    "root_causes": [
+      "FetchExamplesOptions was likely added after model.exploration/ was established and placed in model/ for expedience rather than by design."
+    ],
+    "likely_symptoms": [],
+    "possible_false_positives": []
+  }
+}

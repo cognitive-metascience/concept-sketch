@@ -1,0 +1,82 @@
+{
+  "batch": "initialization_coupling",
+  "batch_index": 15,
+  "assessments": {
+    "initialization_coupling": 76.0
+  },
+  "dimension_notes": {
+    "initialization_coupling": {
+      "evidence": [
+        "WordSketchApiServer defers port binding to start() and explicitly documents this separation in Javadoc: 'Port binding is deferred to start() so that construction and network binding are separated.'",
+        "GrammarConfig is loaded explicitly in Main.handleBlackLabServerCommand and injected through constructors; no global singleton holds it.",
+        "cors.allow.origin is read via System.getProperty on every call inside setCorsHeader(), not cached at class load — the Javadoc explains this is intentional so test overrides take effect immediately.",
+        "BlackLabConllUIndexer constructor calls BlackLab.openForWriting(..., formatName), which silently requires DocumentFormats.addConfigFormatsInDirectories to have been called first. That registration is the caller's responsibility (Main.handleBlackLabIndexCommand calls it immediately before constructing the indexer), but BlackLabConllUIndexer does not enforce or document this precondition in its own constructor.",
+        "Main.handleBlackLabServerCommand reads System.getProperty('grammar.config', 'grammars/relations.json') inline, then calls GrammarConfigLoader.load(). GrammarConfigLoader.createDefaultEnglish() is a separate factory that performs the identical property read with the identical default. The two paths are independent: createDefaultEnglish() is only called from tests (RelationsValidationTest, HybridAlgorithmTest), while Main uses load() directly. If the default path or property name ever changes, both sites must be updated.",
+        "GrammarConfigHelper (test helper) uses a non-volatile, unsynchronized static field for lazy init: 'private static GrammarConfig testConfig; if (testConfig == null) { testConfig = ...; }'. Two threads calling getTestConfig() concurrently could both observe null and both load, with the winner's reference potentially not visible to the loser under the JMM without volatile."
+      ],
+      "impact_scope": "module",
+      "fix_scope": "multi_file_refactor",
+      "confidence": "high"
+    }
+  },
+  "dimension_judgment": {
+    "initialization_coupling": {
+      "strengths": [
+        "Dependency injection is used correctly throughout the API layer: WordSketchApiServer accepts QueryExecutor and ExplorationService as constructor parameters, making boot order explicit and testable.",
+        "Port binding is explicitly deferred to start(), separating construction from side effects and giving callers a clean post-construction configuration window.",
+        "No static initializer blocks anywhere in production code; no import-time file I/O, network calls, or DB connections.",
+        "cors.allow.origin is read per-call rather than cached at class load, intentionally preserving test overridability — an unusually careful design choice."
+      ],
+      "issue_character": "Issues are isolated and narrow: one implicit boot-order precondition in the indexer path (DocumentFormats must be registered before BlackLabConllUIndexer is constructed), one duplicated system-property read path that could diverge on maintenance, and one non-thread-safe lazy singleton in test infrastructure — none are systemic across the production codebase.",
+      "score_rationale": "The production API and server initialization is well-structured: explicit DI, deferred binding, no global singletons, no import-time side effects. The one real production coupling is the DocumentFormats boot-order precondition that BlackLabConllUIndexer's constructor relies on silently (a BlackLab design artifact), and the duplicated grammar.config property-read logic split between Main and createDefaultEnglish(). These pull the score below the 80-85 'solid but uneven' band because they represent genuine hidden preconditions that would surprise a developer assembling components in a new test harness, but they are confined to a single command path rather than permeating the codebase."
+    }
+  },
+  "issues": [
+    {
+      "dimension": "initialization_coupling",
+      "identifier": "doc_formats_precondition",
+      "summary": "BlackLabConllUIndexer silently requires DocumentFormats to be pre-registered, creating an undocumented boot-order dependency",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/indexer/blacklab/BlackLabConllUIndexer.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/Main.java"
+      ],
+      "evidence": [
+        "BlackLabConllUIndexer constructor calls BlackLab.openForWriting(indexPath, true, formatName) at line 39, which depends on the named format having been registered in the global DocumentFormats registry.",
+        "Main.handleBlackLabIndexCommand calls DocumentFormats.addConfigFormatsInDirectories(...) at line 144 immediately before constructing BlackLabConllUIndexer — the precondition is met, but only because the caller happens to follow the right sequence.",
+        "BlackLabConllUIndexer's constructor Javadoc says nothing about this precondition; a developer constructing it from a different call site (e.g., a test or a new CLI command) would get a runtime failure with no guidance."
+      ],
+      "suggestion": "Document the precondition explicitly in BlackLabConllUIndexer's constructor Javadoc: '@throws IllegalStateException if the format named by formatName has not been registered via DocumentFormats.addConfigFormatsInDirectories'. Alternatively, accept the format directory as a constructor parameter and call addConfigFormatsInDirectories internally so the precondition is self-satisfying.",
+      "confidence": "high",
+      "impact_scope": "module",
+      "fix_scope": "single_edit"
+    },
+    {
+      "dimension": "initialization_coupling",
+      "identifier": "grammar_config_property_read_duplication",
+      "summary": "System.getProperty('grammar.config') is read in two independent places with identical defaults, risking silent divergence on maintenance",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/Main.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/config/GrammarConfigLoader.java"
+      ],
+      "evidence": [
+        "Main.handleBlackLabServerCommand reads System.getProperty(\"grammar.config\", \"grammars/relations.json\") at line 240 then calls GrammarConfigLoader.load(grammarPath).",
+        "GrammarConfigLoader.createDefaultEnglish() (line 221) performs the identical System.getProperty(\"grammar.config\", \"grammars/relations.json\") read and delegates to load().",
+        "createDefaultEnglish() is documented as a DI-friendly factory, yet Main does not use it; if the default path is ever changed in one location the other silently falls out of sync."
+      ],
+      "suggestion": "Have Main.handleBlackLabServerCommand call GrammarConfigLoader.createDefaultEnglish() (catching the RuntimeException it can throw) rather than duplicating the property read inline. This makes createDefaultEnglish() the single source of truth for the default path and property name.",
+      "confidence": "high",
+      "impact_scope": "module",
+      "fix_scope": "single_edit"
+    }
+  ],
+  "retrospective": {
+    "root_causes": [
+      "BlackLab's DocumentFormats is a global static registry by design; integrating it without wrapping its precondition leaks that coupling into the codebase.",
+      "createDefaultEnglish() was added as a DI convenience but Main was not updated to use it, leaving two parallel property-read paths."
+    ],
+    "likely_symptoms": [
+      "doc_formats_precondition — a developer writing a second indexing command or integration test would encounter a runtime failure with an opaque error from BlackLab."
+    ],
+    "possible_false_positives": []
+  }
+}

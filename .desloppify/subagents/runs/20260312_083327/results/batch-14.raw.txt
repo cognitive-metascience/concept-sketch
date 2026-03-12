@@ -1,0 +1,82 @@
+{
+  "batch": "cross_module_architecture",
+  "batch_index": 14,
+  "assessments": {
+    "cross_module_architecture": 82.0
+  },
+  "dimension_notes": {
+    "cross_module_architecture": {
+      "evidence": [
+        "Dependency hierarchy is acyclic and flows cleanly: utils/model → config → query/exploration → api; no package depends upward on a higher layer",
+        "model package is imported by 6+ packages but has zero outward cross-module dependencies — an appropriate hub role for a DTO layer",
+        "QueryExecutor interface (query package) imports config.RelationConfig and config.RelationPatternBuilder for two default convenience methods (executeSurfacePatternForRelation, executeBcqlQueryForRelation), while BlackLabQueryExecutor (the sole concrete implementation) imports neither config class — the interface is coupled to a layer its implementation is not",
+        "WordSketchApiServer imports both exploration.ExplorationService (interface) and exploration.SemanticFieldExplorer (concrete class) — the concrete import exists solely for a convenience constructor that instantiates SemanticFieldExplorer internally, anchoring the api layer to the concrete implementation",
+        "ExplorationService interface cleanly abstracts the exploration subsystem boundary — all api-layer handler classes depend only on ExplorationService, not on SemanticFieldExplorer, except WordSketchApiServer itself",
+        "No import cycles detected across any package pairing; indexer.blacklab and viz are isolated with no inbound production dependencies from other packages"
+      ],
+      "impact_scope": "module",
+      "fix_scope": "multi_file_refactor",
+      "confidence": "medium"
+    }
+  },
+  "dimension_judgment": {
+    "cross_module_architecture": {
+      "strengths": [
+        "The package hierarchy is acyclic and layered: utils/model at the bottom, config above them, query and exploration in the middle, api at the top — a developer can trace dependency direction without surprises",
+        "model package correctly has zero outbound cross-module dependencies despite being imported by 6+ packages — it is a clean DTO hub, not a god module",
+        "ExplorationService interface properly abstracts the exploration subsystem for all handler classes; injection at WordSketchApiServer's full constructor keeps the api/exploration seam testable",
+        "indexer.blacklab and viz are isolated subsystems with no incoming dependencies from query or api, correctly scoping their concerns",
+        "Package-info documentation exists for all packages and correctly characterizes each module's purpose and boundaries"
+      ],
+      "issue_character": "The two boundary concerns are isolated — one in the query/config seam (a single interface pulling in config for convenience defaults) and one in the api/exploration seam (a convenience constructor referencing the concrete class) — and neither creates cycles or widespread blast radius.",
+      "score_rationale": "The overall dependency direction is coherent and consistent across the codebase, with no cycles and clearly defined layers — a developer navigating this codebase can trust that dependency arrows point downward. The main friction points are two localized seam violations: the QueryExecutor interface importing config.RelationPatternBuilder for default convenience methods (conflating the query abstraction boundary with config concerns) and WordSketchApiServer referencing the concrete SemanticFieldExplorer alongside the ExplorationService interface. Neither issue creates widespread coupling or makes changes ripple unexpectedly, but they represent genuine boundary blur that a developer would notice and question. This places the codebase solidly in the 80–85 range: mostly coherent with recurring but isolated friction at two module boundaries."
+    }
+  },
+  "issues": [
+    {
+      "dimension": "cross_module_architecture",
+      "identifier": "query_interface_imports_config",
+      "summary": "QueryExecutor interface pulls config.RelationPatternBuilder into the query package boundary via default methods",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/query/QueryExecutor.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/config/RelationPatternBuilder.java"
+      ],
+      "evidence": [
+        "QueryExecutor.java imports config.RelationConfig and config.RelationPatternBuilder for two default methods: executeSurfacePatternForRelation and executeBcqlQueryForRelation",
+        "BlackLabQueryExecutor (sole implementation) imports neither config class — confirming the config dependency lives only in the interface, not in query execution logic",
+        "The interface javadoc comment 'Intended to keep HTTP-layer handlers free of pattern-construction logic' describes a caller-ergonomics concern, not a query concern — pattern construction belongs to config or api, not to the query abstraction"
+      ],
+      "suggestion": "Move the two default methods to a static helper in the config package (e.g., QueryPatternHelper.executePatternForRelation) or into an adapter in the api layer, keeping QueryExecutor free of config imports. Alternatively, leave them as static utility methods on RelationPatternBuilder itself so callers in exploration and api can invoke them directly without depending on the query interface for the convenience.",
+      "confidence": "medium",
+      "impact_scope": "module",
+      "fix_scope": "multi_file_refactor",
+      "root_cause_cluster": "cross_layer_convenience_leakage"
+    },
+    {
+      "dimension": "cross_module_architecture",
+      "identifier": "api_server_concrete_exploration_dep",
+      "summary": "WordSketchApiServer imports concrete SemanticFieldExplorer directly, bypassing the ExplorationService abstraction boundary",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/api/WordSketchApiServer.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/exploration/SemanticFieldExplorer.java"
+      ],
+      "evidence": [
+        "WordSketchApiServer imports both exploration.ExplorationService and exploration.SemanticFieldExplorer; the concrete import exists only for the convenience constructor: 'public WordSketchApiServer(QueryExecutor executor, int port, GrammarConfig grammarConfig)' which calls 'new SemanticFieldExplorer(executor, grammarConfig)'",
+        "All other api-layer classes (ExplorationHandlers, SketchHandlers, ConcordanceHandlers) depend solely on the interface; WordSketchApiServer is the only production api class with a concrete exploration dependency",
+        "The ExplorationHandlersTest also imports SemanticFieldExplorer to instantiate it, perpetuating the same pattern in test code"
+      ],
+      "suggestion": "Remove the convenience constructor from WordSketchApiServer so that construction of SemanticFieldExplorer is pushed to Main.java (which already instantiates the BlackLabQueryExecutor and other concrete classes). Main is the appropriate composition root for wiring concrete implementations; api classes should remain bounded to the ExplorationService interface. This eliminates the api→concrete-exploration coupling entirely.",
+      "confidence": "medium",
+      "impact_scope": "module",
+      "fix_scope": "multi_file_refactor",
+      "root_cause_cluster": "cross_layer_convenience_leakage"
+    }
+  ],
+  "retrospective": {
+    "root_causes": [
+      "cross_layer_convenience_leakage: both findings share a root cause — convenience constructors and default methods added to reduce caller boilerplate were placed at the wrong layer, pulling higher-level concerns (config, concrete class instantiation) into lower-level boundaries (query interface, api server)"
+    ],
+    "likely_symptoms": [],
+    "possible_false_positives": []
+  }
+}

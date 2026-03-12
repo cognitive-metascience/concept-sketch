@@ -1,0 +1,91 @@
+{
+  "batch": "low_level_elegance",
+  "batch_index": 4,
+  "assessments": {
+    "low_level_elegance": 81.0
+  },
+  "dimension_notes": {
+    "low_level_elegance": {
+      "evidence": [
+        "SemanticFieldExplorer.fetchExamples uses Collectors.collectingAndThen(Collectors.toMap(...), m -> m.values().stream().limit(...)) to deduplicate by sentence — the intent is not immediately readable; a simple for-loop with a LinkedHashMap would state the purpose directly.",
+        "MultiSeedExplorer.findCollocateIntersection builds four maps (seedCollocScores, seedCollocFreqs, collocLdSum, collocLdCount) in a single explicit for-loop, then uses collocLdSum.forEach((lemma, sum) -> avgLdMap.put(lemma, sum / collocLdCount.get(lemma))) as a separate inline lambda pass — the mixed for/forEach style adds a context switch for a reader tracing the aggregation logic.",
+        "CollocateQueryHelper.collectHits loop body performs sentence trimming, XML extraction, plain-text extraction, and collocate-lemma extraction all inline in a single for-loop — approximately 15 lines of transformations per iteration; a parseHit helper would make the loop declarative.",
+        "Phase structure (collectHits, scoreHits, buildAndRankCollocates) is cleanly separated; all three methods have focused bodies and clear naming.",
+        "BlackLabSnippetParser methods are each <15 lines with a single clearly-stated responsibility; guards are necessary and placed at entry, not scattered.",
+        "SemanticFieldExplorer.exploreByPattern phases are explicitly labeled with section comments and helper method names; control flow is linear and easy to follow."
+      ],
+      "impact_scope": "local",
+      "fix_scope": "single_edit",
+      "confidence": "medium"
+    }
+  },
+  "dimension_judgment": {
+    "low_level_elegance": {
+      "strengths": [
+        "BlackLabSnippetParser methods are consistently short, single-purpose, and have entry guards placed at the top — a developer can read any one of them without context from the others.",
+        "CollocateQueryHelper's three-phase pipeline (collectHits / scoreHits / buildAndRankCollocates) cleanly separates concerns; each phase is a focused named method with a clear contract.",
+        "SemanticFieldExplorer.exploreByPattern uses phase-labeled helper extraction (fetchSeedCollocates, buildNounToCollocatesMap, filterByMinShared, identifyCoreCollocates) that reads as a clear narrative of the algorithm.",
+        "State mutation is consistently local and bounded: maps are initialized at the top of each method, populated in a controlled loop, and returned — no shared mutable fields between methods.",
+        "GrammarConfigLoader uses small, name-communicating private methods (parseAndValidateVersion, validateNoLegacyKeys, parseRelations, parseRelation) rather than one large parse method, keeping each branch at a readable depth."
+      ],
+      "issue_character": "Issues are isolated to two or three specific local patterns: an opaque stream-collector chain used once for deduplication, a mixed for/forEach aggregation in one method, and one loop body that does too many inline text transformations — none are systemic, but each requires a brief decode pause.",
+      "score_rationale": "The codebase is mostly well-crafted at the function level: methods are proportionate, extraction is consistent, and state mutation is bounded throughout. The few rough edges — particularly the opaque Collectors.collectingAndThen deduplication in fetchExamples and the mixed aggregation style in findCollocateIntersection — are real friction points where a developer must pause to decode intent rather than read it directly. These are isolated occurrences rather than recurring patterns, which places quality above the 80 mark (solid but uneven) but below 85 (strong with minor rough edges), landing at 81."
+    }
+  },
+  "issues": [
+    {
+      "dimension": "low_level_elegance",
+      "identifier": "opaque_dedup_collector_in_fetch_examples",
+      "summary": "fetchExamples uses a Collectors.collectingAndThen toMap chain to deduplicate by sentence — intent is hidden in collector machinery",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/exploration/SemanticFieldExplorer.java"
+      ],
+      "evidence": [
+        "The deduplication logic is: results.stream().filter(...).collect(Collectors.collectingAndThen(Collectors.toMap(CollocateResult::sentence, r->r, (a,b)->a, LinkedHashMap::new), m -> m.values().stream().limit(opts.maxExamples()).collect(Collectors.toList()))) — the purpose (deduplicate by sentence then limit) is not visible without decoding the collector chain."
+      ],
+      "suggestion": "Replace the collector chain with an explicit for-loop: build a LinkedHashMap<String, CollocateResult> keyed by sentence, skip duplicates with putIfAbsent, then return new ArrayList<>(map.values()).subList(0, Math.min(opts.maxExamples(), map.size())). The intent becomes immediately readable.",
+      "confidence": "medium",
+      "impact_scope": "local",
+      "fix_scope": "single_edit"
+    },
+    {
+      "dimension": "low_level_elegance",
+      "identifier": "mixed_loop_style_in_find_collocate_intersection",
+      "summary": "findCollocateIntersection mixes explicit for-loops and a forEach lambda for the same aggregation task in the same method body",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/exploration/MultiSeedExplorer.java"
+      ],
+      "evidence": [
+        "Four maps (seedCollocScores, seedCollocFreqs, collocLdSum, collocLdCount) are populated in one explicit for-loop, then collocLdSum.forEach((lemma, sum) -> avgLdMap.put(lemma, sum / collocLdCount.get(lemma))) computes avgLdMap as a separate inline lambda — the style switch interrupts the reading rhythm and the division inside the lambda obscures what it is computing."
+      ],
+      "suggestion": "Fold the average computation into a named private method (e.g. computeAverageLogDice(Map<String,Double> ldSum, Map<String,Integer> ldCount)) called after the loop, or convert to a consistent for-loop. Either choice removes the style switch and makes the division self-documenting.",
+      "confidence": "medium",
+      "impact_scope": "local",
+      "fix_scope": "single_edit"
+    },
+    {
+      "dimension": "low_level_elegance",
+      "identifier": "dense_inline_transformations_in_collect_hits_loop",
+      "summary": "CollocateQueryHelper.collectHits loop body performs five distinct text transformations inline rather than delegating to a parseHit helper",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/query/CollocateQueryHelper.java"
+      ],
+      "evidence": [
+        "The for-loop body in collectHits calls BlackLabSnippetParser.safeParts, trims left XML at sentence, extracts plain text from three XML fragments, trims right XML at sentence, and extracts the collocate lemma — all directly in the loop body (~15 statements). The loop could read as: HitRecord rec = parseHitRecord(hit, conc, collocatePos); records.add(rec);"
+      ],
+      "suggestion": "Extract a private parseHitRecord(Hit hit, Concordance conc, int collocatePos) method that returns a HitRecord. The loop body becomes two lines and the transformation logic is isolated and individually testable.",
+      "confidence": "medium",
+      "impact_scope": "local",
+      "fix_scope": "single_edit"
+    }
+  ],
+  "retrospective": {
+    "root_causes": [
+      "Idiomatic stream use chosen in a few places for brevity at the cost of readability — the opaque collector chain and the forEach lambda represent the same trade-off applied inconsistently."
+    ],
+    "likely_symptoms": [
+      "opaque_dedup_collector_in_fetch_examples"
+    ],
+    "possible_false_positives": []
+  }
+}

@@ -1,0 +1,48 @@
+{
+  "batch": "authorization_consistency",
+  "batch_index": 19,
+  "assessments": {
+    "authorization_consistency": 88.0
+  },
+  "dimension_notes": {
+    "authorization_consistency": {
+      "evidence": [
+        "WordSketchApiServer Javadoc explicitly documents the security model: loopback-only bind, all endpoints unauthenticated, with a clear warning that changing the bind address requires adding auth",
+        "start() calls InetAddress.getLoopbackAddress() — the loopback-only constraint is enforced in code, not just docs",
+        "HttpApiUtils.setCorsHeader() is called from every response-sending method (sendJsonResponse, sendError, sendOptionsResponse, sendBinaryResponse) — CORS origin is applied uniformly with no gaps",
+        "CORS wildcard (*) detection: setCorsHeader() logs a warn when cors.allow.origin is *, showing awareness that this widens the browser trust boundary across all endpoints",
+        "registerHandler() enforces HTTP method (GET vs POST) uniformly for every registered route via shared logic; no endpoint bypasses this",
+        "wrapWithErrorHandling() is applied to every handler registration in registerRoutes() — no unguarded handler",
+        "Input validation is applied consistently via requireParam (throws IAE → 400) across all parameter-accepting endpoints: explore uses it for seed, explore-multi for seeds, concordance for seed+collocate, bcql validates pattern length and bracket depth",
+        "CorpusQueryHandlers.parseBcqlRequest validates both pattern length (MAX_BCQL_PATTERN_LENGTH=1024) and bracket complexity (MAX_BCQL_BRACKET_DEPTH=20) — the highest-risk endpoint (arbitrary query execution) receives the strictest input controls",
+        "No mixed trust boundaries: there are no endpoints with auth decorators/middleware alongside unauthenticated siblings — the model is uniformly 'trust the local caller'"
+      ],
+      "impact_scope": "codebase",
+      "fix_scope": "single_edit",
+      "confidence": "high"
+    }
+  },
+  "dimension_judgment": {
+    "authorization_consistency": {
+      "strengths": [
+        "Security model is explicitly documented in WordSketchApiServer class Javadoc, including the rationale (loopback-only bind) and a forward-looking warning about container deployment",
+        "Loopback-only bind is enforced in code via InetAddress.getLoopbackAddress(), not just described in comments",
+        "CORS origin header is applied via a single centralized setCorsHeader() called from every response-writing method, with no gaps across any endpoint",
+        "Method enforcement (GET vs POST) is applied uniformly through shared registerHandler() logic — no endpoint circumvents it",
+        "The highest-risk endpoint (/api/bcql, arbitrary query execution) receives the strictest input validation (pattern length + bracket depth limits), showing appropriate trust-boundary awareness within the uniform auth model"
+      ],
+      "issue_character": "No meaningful authorization inconsistencies exist; the codebase applies a deliberately uniform unauthenticated model with loopback-only trust enforced both in code and documentation.",
+      "score_rationale": "The codebase scores near exemplary for this dimension: the security model is intentional, clearly documented, and uniformly applied across all 11 endpoints with no siblings that break the pattern. The CORS origin mechanism is centralized and consistently invoked, and the one configurable trust widening (cors.allow.origin=*) is detected and warned on. The gap from 100 is that the cors.allow.origin wildcard path, when used, broadens the browser trust boundary uniformly across all routes including /api/bcql without any per-endpoint restriction, and the documented security model lives only in the server class rather than being surfaced to individual handler authors — minor concerns that reduce polish without constituting actual inconsistencies."
+    }
+  },
+  "issues": [],
+  "retrospective": {
+    "root_causes": [
+      "The deliberate 'no auth' model is appropriate for a local research tool server and is applied consistently throughout"
+    ],
+    "likely_symptoms": [],
+    "possible_false_positives": [
+      "Any scan signal flagging 'missing authentication' on these endpoints would be a false positive — the unauthenticated design is intentional and documented"
+    ]
+  }
+}
