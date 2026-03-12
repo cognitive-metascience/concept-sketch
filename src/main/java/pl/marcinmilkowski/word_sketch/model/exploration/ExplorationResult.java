@@ -34,15 +34,25 @@ public class ExplorationResult {
     private final @NonNull Map<String, Long> seedCollocateFrequencies;  // collocate -> raw frequency
     private final @NonNull List<DiscoveredNoun> discoveredNouns;
     private final @NonNull List<CoreCollocate> coreCollocates;
+    /** seed lemma → (collocate lemma → logDice); empty map means not available (backward compat). */
+    private final @NonNull Map<String, Map<String, Double>> perSeedCollocates;
 
     public ExplorationResult(List<String> seeds, Map<String, Double> seedCollocates,
             Map<String, Long> seedCollocateFrequencies,
             List<DiscoveredNoun> discoveredNouns, List<CoreCollocate> coreCollocates) {
+        this(seeds, seedCollocates, seedCollocateFrequencies, discoveredNouns, coreCollocates, Map.of());
+    }
+
+    public ExplorationResult(List<String> seeds, Map<String, Double> seedCollocates,
+            Map<String, Long> seedCollocateFrequencies,
+            List<DiscoveredNoun> discoveredNouns, List<CoreCollocate> coreCollocates,
+            Map<String, Map<String, Double>> perSeedCollocates) {
         this.seeds = List.copyOf(seeds);
         this.seedCollocates = seedCollocates;
         this.seedCollocateFrequencies = seedCollocateFrequencies;
         this.discoveredNouns = discoveredNouns;
         this.coreCollocates = coreCollocates;
+        this.perSeedCollocates = perSeedCollocates;
     }
 
     /**
@@ -75,6 +85,15 @@ public class ExplorationResult {
     public List<CoreCollocate> coreCollocates() { return coreCollocates; }
 
     /**
+     * Returns per-seed collocate maps for accurate edge attribution.
+     * In single-seed mode contains one entry; in multi-seed mode one entry per seed.
+     * Returns an empty map when not available (legacy backward-compat path).
+     *
+     * @return seed lemma → (collocate lemma → logDice); never null, may be empty
+     */
+    public Map<String, Map<String, Double>> perSeedCollocates() { return perSeedCollocates; }
+
+    /**
      * Returns an empty result representing a seed word for which no exploration data was found.
      *
      * @param seed the seed word; must not be null
@@ -82,7 +101,7 @@ public class ExplorationResult {
      */
     public static ExplorationResult empty(String seed) {
         Objects.requireNonNull(seed, "seed must not be null");
-        return new ExplorationResult(List.of(seed), Map.of(), Map.of(), List.of(), List.of());
+        return new ExplorationResult(List.of(seed), Map.of(), Map.of(), List.of(), List.of(), Map.of());
     }
 
     /** @return {@code true} when no nouns were discovered; i.e. the result is empty */

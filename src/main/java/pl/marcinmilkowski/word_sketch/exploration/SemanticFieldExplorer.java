@@ -199,7 +199,8 @@ public class SemanticFieldExplorer {
 
         logger.debug("Exploration complete for '{}': {} nouns discovered, {} core collocates", normalizedSeed, discoveredNouns.size(), coreCollocates.size());
 
-        return new ExplorationResult(List.of(normalizedSeed), seedCollocateScores, seedCollocateFrequencies, discoveredNouns, coreCollocates);
+        return new ExplorationResult(List.of(normalizedSeed), seedCollocateScores, seedCollocateFrequencies, discoveredNouns, coreCollocates,
+            Map.of(normalizedSeed, seedCollocateScores));
     }
 
     // ==================== EXPLORATION PHASE HELPERS ====================

@@ -65,10 +65,19 @@ class MultiSeedExplorer {
         List<CoreCollocate> coreCollocatesList = buildCoreCollocates(
                 commonCollocates, data.collocateSharedCount(), seedCollocScores, data.seedCollocateMap(), seeds.size());
 
+        Map<String, Map<String, Double>> perSeedCollocates = new LinkedHashMap<>();
+        for (Map.Entry<String, List<QueryResults.WordSketchResult>> entry : data.seedCollocateMap().entrySet()) {
+            Map<String, Double> collocMap = new LinkedHashMap<>();
+            for (QueryResults.WordSketchResult wsr : entry.getValue()) {
+                collocMap.put(wsr.lemma(), wsr.logDice());
+            }
+            perSeedCollocates.put(entry.getKey(), collocMap);
+        }
+
         return new ExplorationResult(
             new java.util.ArrayList<>(seeds),
             seedCollocScores, seedCollocFreqs,
-            discoveredNounsList, coreCollocatesList);
+            discoveredNounsList, coreCollocatesList, perSeedCollocates);
     }
 
     private SeedCollocateData fetchCollocatesPerSeed(
