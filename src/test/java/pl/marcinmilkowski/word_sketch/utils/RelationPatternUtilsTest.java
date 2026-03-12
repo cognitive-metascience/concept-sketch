@@ -3,8 +3,9 @@ package pl.marcinmilkowski.word_sketch.utils;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import pl.marcinmilkowski.word_sketch.config.RelationConfig;
+import pl.marcinmilkowski.word_sketch.config.RelationPatternUtils;
 import pl.marcinmilkowski.word_sketch.model.PosGroup;
-import pl.marcinmilkowski.word_sketch.query.RelationType;
+import pl.marcinmilkowski.word_sketch.config.RelationType;
 
 
 

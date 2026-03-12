@@ -1,6 +1,5 @@
-package pl.marcinmilkowski.word_sketch.utils;
+package pl.marcinmilkowski.word_sketch.config;
 
-import pl.marcinmilkowski.word_sketch.config.RelationConfig;
 import pl.marcinmilkowski.word_sketch.model.PosGroup;
 import pl.marcinmilkowski.word_sketch.utils.CqlUtils;
 

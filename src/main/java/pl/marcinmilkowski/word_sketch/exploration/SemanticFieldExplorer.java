@@ -15,8 +15,8 @@ import org.slf4j.LoggerFactory;
 
 import pl.marcinmilkowski.word_sketch.config.GrammarConfig;
 import pl.marcinmilkowski.word_sketch.config.RelationConfig;
-import pl.marcinmilkowski.word_sketch.utils.RelationPatternUtils;
-import pl.marcinmilkowski.word_sketch.utils.RelationUtils;
+import pl.marcinmilkowski.word_sketch.config.RelationPatternUtils;
+import pl.marcinmilkowski.word_sketch.config.RelationUtils;
 import pl.marcinmilkowski.word_sketch.model.exploration.ComparisonResult;
 import pl.marcinmilkowski.word_sketch.model.exploration.CoreCollocate;
 import pl.marcinmilkowski.word_sketch.model.exploration.DiscoveredNoun;

@@ -1,14 +1,11 @@
-package pl.marcinmilkowski.word_sketch.utils;
+package pl.marcinmilkowski.word_sketch.config;
 
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import org.jspecify.annotations.Nullable;
 
-import pl.marcinmilkowski.word_sketch.config.GrammarConfig;
-import pl.marcinmilkowski.word_sketch.config.RelationConfig;
 import pl.marcinmilkowski.word_sketch.model.PosGroup;
-import pl.marcinmilkowski.word_sketch.query.RelationType;
 
 /**
  * Shared utilities for relation identifier handling.

@@ -8,8 +8,8 @@ import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import pl.marcinmilkowski.word_sketch.utils.CqlUtils;
-import pl.marcinmilkowski.word_sketch.utils.RelationPatternUtils;
-import pl.marcinmilkowski.word_sketch.query.RelationType;
+import pl.marcinmilkowski.word_sketch.config.RelationPatternUtils;
+import pl.marcinmilkowski.word_sketch.config.RelationType;
 
 import java.io.IOException;
 import java.io.Reader;

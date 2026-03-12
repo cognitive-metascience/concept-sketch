@@ -8,7 +8,7 @@ import pl.marcinmilkowski.word_sketch.model.exploration.FetchExamplesOptions;
 import pl.marcinmilkowski.word_sketch.model.exploration.FetchExamplesResult;
 import pl.marcinmilkowski.word_sketch.model.PosGroup;
 import pl.marcinmilkowski.word_sketch.model.QueryResults;
-import pl.marcinmilkowski.word_sketch.query.RelationType;
+import pl.marcinmilkowski.word_sketch.config.RelationType;
 import pl.marcinmilkowski.word_sketch.query.QueryExecutor;
 import pl.marcinmilkowski.word_sketch.query.StubQueryExecutor;
 

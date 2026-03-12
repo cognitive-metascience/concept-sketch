@@ -1,6 +1,7 @@
 package pl.marcinmilkowski.word_sketch.utils;
 
 import org.junit.jupiter.api.Test;
+import pl.marcinmilkowski.word_sketch.config.RelationUtils;
 import static org.junit.jupiter.api.Assertions.*;
 
 /**

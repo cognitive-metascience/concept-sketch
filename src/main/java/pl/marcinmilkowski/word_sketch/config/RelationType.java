@@ -1,4 +1,4 @@
-package pl.marcinmilkowski.word_sketch.query;
+package pl.marcinmilkowski.word_sketch.config;
 
 /**
  * Relation type enum used by {@code SketchHandlers} and {@code RelationConfig#relationType()}
