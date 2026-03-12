@@ -55,7 +55,7 @@ class SketchHandlers {
         if (parts.length > 1 && "dep".equals(parts[1])) {
             String specificDeprel = parts.length > 2 ? parts[2] : null;
             if (specificDeprel != null) {
-                handleDependencyRelationQuery(exchange, lemma, specificDeprel);
+                handleRelationQueryForPattern(exchange, lemma, specificDeprel, RelationType.DEP);
             } else {
                 // Full dependency sketch — all DEP-type relations
                 handleDependencySketch(exchange, lemma);
@@ -104,12 +104,7 @@ class SketchHandlers {
         Map<String, Object> response = new HashMap<>();
         response.put("lemma", lemma);
         response.put("relations", byRelation);
-        if (!relationErrors.isEmpty()) {
-            response.put("status", "partial");
-            response.put("warnings", relationErrors);
-        } else {
-            response.put("status", "ok");
-        }
+        applyStatusFields(response, relationErrors);
         HttpApiUtils.sendJsonResponse(exchange, response);
     }
 
@@ -128,13 +123,18 @@ class SketchHandlers {
         response.put("lemma", lemma);
         response.put("type", "dependency");
         response.put("relations", byRelation);
+        applyStatusFields(response, relationErrors);
+        HttpApiUtils.sendJsonResponse(exchange, response);
+    }
+
+    /** Sets {@code "status": "ok"} or {@code "status": "partial"} (plus {@code "warnings"}) on {@code response}. */
+    private static void applyStatusFields(Map<String, Object> response, List<String> relationErrors) {
         if (!relationErrors.isEmpty()) {
             response.put("status", "partial");
             response.put("warnings", relationErrors);
         } else {
             response.put("status", "ok");
         }
-        HttpApiUtils.sendJsonResponse(exchange, response);
     }
 
     /**

@@ -1,0 +1,97 @@
+{
+  "batch": "abstraction_fitness",
+  "batch_index": 5,
+  "assessments": {"abstraction_fitness": 74.0},
+  "dimension_notes": {
+    "abstraction_fitness": {
+      "evidence": [
+        "QueryExecutor interface has one implementation (BlackLabQueryExecutor) but documents the rationale explicitly: it isolates external BlackLab API volatility and is used for DI/testability in handlers",
+        "ExplorationService interface has one implementation (SemanticFieldExplorer) but enables DI injection in ExplorationHandlers — handlers depend on the interface type, not the concrete class",
+        "SemanticFieldExplorer.exploreMultiSeed() validates seeds.size() < 2 and delegates directly to multiSeedExplorer.findCollocateIntersection() — near-pass-through adding only input validation",
+        "SemanticFieldExplorer.compareCollocateProfiles() validates seeds.size() < 2 and delegates directly to comparator.compareCollocateProfiles() — the same seeds.size() < 2 guard is also present in CollocateProfileComparator.compareCollocateProfiles(), duplicating the check across both layers",
+        "CollocateQueryPort narrow interface genuinely earns its keep: ConcordanceHandlers and CorpusQueryHandlers declare it as their dependency type, keeping their dependency surface to BCQL-only; QueryExecutor extends it cleanly",
+        "ExploreResponseAssembler is a tightly cohesive static utility class; all methods serve one purpose (model-to-presentation translation for exploration endpoints), no util dumping ground pattern",
+        "HttpApiUtils combines HTTP response writing and query-parameter parsing; documented as an intentional same-concern co-location, package-private, no public API surface — bounded scope limits the abstraction cost",
+        "CollocateQueryHelper is a package-private algorithm helper extracted from BlackLabQueryExecutor; well-focused on collocate search/scoring/ranking logic shared across multiple methods of that executor — not a generic util dump",
+        "No delegation-heavy classes detected (scanner confirms delegation_heavy_class_count = 0)",
+        "No facade/re-export modules detected (facade_module_count = 0)",
+        "Wide param bag mentions are false positives: GrammarConfig and RelationConfig are typed records, not raw Map<String,Object> bags",
+        "Package-private testing seam exploreByPattern(String, String, String, String, opts) on SemanticFieldExplorer bypasses the RelationConfig abstraction, exposing resolved BCQL strings directly; this is documented as a test-only path but slightly erodes interface honesty of the facade",
+        "SemanticFieldExplorer class doc explicitly labels itself a 'thin facade' and documents why the two pass-through methods exist — unusual level of self-awareness but does not eliminate the thin-layer cost",
+        "Indirection hotspot chain counts (42-62 in main files) reflect BlackLab fluent API calls (idx.search().find(query).group(...).execute()), not project-introduced indirection chains"
+      ],
+      "impact_scope": "module",
+      "fix_scope": "multi_file_refactor",
+      "confidence": "high",
+      "sub_axes": {
+        "abstraction_leverage": 78.0,
+        "indirection_cost": 76.0,
+        "interface_honesty": 72.0,
+        "delegation_density": 95.0,
+        "definition_directness": 82.0,
+        "type_discipline": 90.0
+      }
+    }
+  },
+  "dimension_judgment": {
+    "abstraction_fitness": {
+      "strengths": [
+        "CollocateQueryPort interface segregation genuinely reduces coupling: concordance-only handlers declare the narrower port type, keeping their dependency surface minimal and honest",
+        "ExploreResponseAssembler is a cohesive static utility with a single clear responsibility (model-to-presentation translation), not a catch-all helper class",
+        "CollocateQueryHelper is a focused package-private extracted helper, not a generic util dumping ground — it groups collocate search, scoring, and ranking logic that is shared across several methods of one class",
+        "All design choices involving one-impl interfaces and the coordination facade are documented with explicit rationale inline, indicating deliberate design rather than accidental layering",
+        "No delegation-heavy classes or facade/re-export modules exist anywhere in the codebase (confirmed by scanner)"
+      ],
+      "issue_character": "The issues are isolated and architectural rather than systemic: two thin delegation methods in SemanticFieldExplorer add only duplicated validation that is also present in the delegated-to classes, and a testing seam leaks the concrete BCQL representation back through the RelationConfig abstraction.",
+      "score_rationale": "The codebase scores well above the 60-point drag threshold: no systemic util dumps, no delegation-heavy classes, no facade modules, and the one-impl interfaces are justified by DI and external API isolation rather than reflexive over-engineering. What pulls the score below 80 is the SemanticFieldExplorer facade, which for two of its four interface methods acts as a thin validation wrapper around a direct delegate call — the same guard check exists in both the facade and the inner algorithm class, and the documented rationale ('one coherent feature surface') is plausible but does not fully justify the duplicated concern. The package-private testing seam that bypasses RelationConfig is a secondary honesty cost. Overall the abstractions earn their keep at a solid-but-uneven level consistent with the 70-75 band."
+    }
+  },
+  "issues": [
+    {
+      "dimension": "abstraction_fitness",
+      "identifier": "thin-facade-validation-duplication",
+      "summary": "SemanticFieldExplorer.exploreMultiSeed and compareCollocateProfiles are near-pass-throughs whose only added value (seeds.size() < 2 guard) is already present in the delegated-to classes",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/exploration/SemanticFieldExplorer.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/exploration/MultiSeedExplorer.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/exploration/CollocateProfileComparator.java"
+      ],
+      "evidence": [
+        "SemanticFieldExplorer.compareCollocateProfiles(): 'if (seeds.size() < 2) throw ...' then returns comparator.compareCollocateProfiles(seeds, opts) — two-line method body",
+        "CollocateProfileComparator.compareCollocateProfiles(): also checks 'if (seedNouns.size() < 2) throw ...' — the guard fires in both places",
+        "SemanticFieldExplorer.exploreMultiSeed(): validates seeds.size() < 2 then returns multiSeedExplorer.findCollocateIntersection(seeds, relationConfig, opts) with no other logic",
+        "SemanticFieldExplorer.exploreByPattern (public, RelationConfig overload) adds substantial value (relationType validation, collocatePosGroup validation, pattern building) — the pattern is not uniform across all four interface methods"
+      ],
+      "suggestion": "Move the seeds.size() < 2 guard exclusively to the inner algorithm classes (they already have it), removing the duplicate check from the facade methods. This makes the facade's pass-through nature explicit rather than masking it behind copied validation. If the facade's sole remaining value is wiring and a unified DI target (ExplorationService), document that the two delegation methods are intentional API surface rather than adding logic that lives elsewhere.",
+      "confidence": "high",
+      "impact_scope": "module",
+      "fix_scope": "single_edit"
+    },
+    {
+      "dimension": "abstraction_fitness",
+      "identifier": "testing-seam-bypasses-relation-config-abstraction",
+      "summary": "Package-private exploreByPattern(String, String, String, String, opts) testing seam exposes pre-resolved BCQL strings through SemanticFieldExplorer, bypassing the RelationConfig abstraction it otherwise enforces",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/exploration/SemanticFieldExplorer.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/exploration/SingleSeedExplorer.java"
+      ],
+      "evidence": [
+        "SemanticFieldExplorer has two overloads of exploreByPattern: the public one accepts RelationConfig (correct), the package-private one accepts raw bcqlPattern/simplePattern strings (bypasses config abstraction)",
+        "The package-private overload delegates directly to singleSeedExplorer.explore() — it is a thin bridge that exists solely to let tests supply patterns without a grammar config",
+        "This means the BCQL string representation that RelationConfig is supposed to encapsulate is now reachable from test code via the package boundary of SemanticFieldExplorer"
+      ],
+      "suggestion": "Move the testing seam to SingleSeedExplorer directly (it is already package-private) and update tests to construct a SingleSeedExplorer with a test QueryExecutor and call explore() directly, eliminating the bypassing overload from SemanticFieldExplorer. This preserves the test seam while keeping the facade's public surface honest about its RelationConfig abstraction.",
+      "confidence": "medium",
+      "impact_scope": "module",
+      "fix_scope": "multi_file_refactor"
+    }
+  ],
+  "retrospective": {
+    "root_causes": [
+      "The SemanticFieldExplorer facade was incrementally built up as exploration modes were added; each new mode added a thin delegation method rather than questioning whether the facade still earned its keep",
+      "Test convenience drove a public-ish (package-private) testing seam onto the facade class rather than targeting the inner algorithm class that already held the seam"
+    ],
+    "likely_symptoms": ["thin-facade-validation-duplication"],
+    "possible_false_positives": []
+  }
+}

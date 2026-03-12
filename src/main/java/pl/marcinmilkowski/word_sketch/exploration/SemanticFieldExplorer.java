@@ -123,9 +123,9 @@ public class SemanticFieldExplorer implements ExplorationService {
         this.executor = executor;
         this.comparator = comparator;
         this.multiSeedExplorer = multiSeedExplorer;
-        String nounCqlConstraint = RelationUtils.findBestCollocatePattern(
+        String nounCqlPattern = RelationUtils.findBestCollocatePattern(
             grammarConfig, PosGroup.NOUN, FALLBACK_NOUN_PATTERN);
-        this.singleSeedExplorer = new SingleSeedExplorer(executor, nounCqlConstraint);
+        this.singleSeedExplorer = new SingleSeedExplorer(executor, nounCqlPattern);
     }
 
     // ==================== EXPLORATION MODE ====================

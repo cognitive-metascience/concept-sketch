@@ -1,0 +1,61 @@
+{
+  "batch": "authorization_consistency",
+  "batch_index": 20,
+  "assessments": {"authorization_consistency": 85.0},
+  "dimension_notes": {
+    "authorization_consistency": {
+      "evidence": [
+        "WordSketchApiServer Javadoc explicitly documents the security model: loopback-only bind (127.0.0.1), all endpoints unauthenticated, with a clear warning that any change to the bind address requires an auth or network-level ACL layer.",
+        "All 12 route registrations go through the same registerGetHandler/registerPostHandler → registerHandler funnel, which uniformly enforces method validation and CORS preflight — no sibling routes skip this.",
+        "HttpApiUtils.setCorsHeader() is called from every response-writing method (sendJsonResponse, sendError, sendOptionsResponse, sendBinaryResponse), making it impossible for an individual handler to accidentally omit the header.",
+        "All handler classes (SketchHandlers, ExplorationHandlers, ConcordanceHandlers, CorpusQueryHandlers, VisualizationHandlers) use HttpApiUtils.requireParam / parseIntParam / parseDoubleParam consistently; wrapWithErrorHandling is applied at the registration site for every route.",
+        "warnIfWildcardCors() is called once at startup before any requests are served, ensuring operators are alerted to the CORS wildcard risk before traffic flows.",
+        "The POST /api/bcql endpoint accepts arbitrary CQL patterns. It has its own input guardrails (MAX_BCQL_PATTERN_LENGTH=1024, MAX_BCQL_BRACKET_DEPTH=20) but no audit logging or elevated-trust acknowledgement beyond what read-only sketch endpoints receive."
+      ],
+      "impact_scope": "subsystem",
+      "fix_scope": "single_edit",
+      "confidence": "high"
+    }
+  },
+  "dimension_judgment": {
+    "authorization_consistency": {
+      "strengths": [
+        "The loopback-only security model is explicitly documented in WordSketchApiServer Javadoc, including guidance for operators who might later change the bind address — a rare and valuable proactive note.",
+        "All route registrations funnel through a single registerHandler method that uniformly enforces method gating and CORS preflight; there is no route that bypasses this path.",
+        "setCorsHeader is embedded in every response-writing helper, making CORS header omission structurally impossible on a per-handler basis.",
+        "Input validation patterns (requireParam, parseIntParam, wrapWithErrorHandling) are applied identically across all five handler classes with no exceptions observed.",
+        "The CORS wildcard warning at startup demonstrates security-awareness: potential misconfigurations are surfaced at boot time rather than silently accepted."
+      ],
+      "issue_character": "The single gap is the /api/bcql endpoint, which offers a materially more powerful capability (arbitrary corpus queries) than read-only sketch endpoints yet receives identical trust treatment and no audit logging — an asymmetry that is benign under the current loopback-only model but would become a real inconsistency if the server were exposed externally.",
+      "score_rationale": "The codebase applies a coherent, explicitly documented security model uniformly across all routes with no observable inconsistency: every route is unauthenticated for the same stated reason (loopback-only bind), every handler validates inputs the same way, and CORS is managed centrally. This places it comfortably above the 'significant drag' threshold. The only gap keeping the score from the 90+ range is the /api/bcql endpoint's elevated power (arbitrary queries) without any form of audit log or differentiated access note, which — while acceptable under the current deployment model — is a latent inconsistency waiting to matter if the bind address ever changes."
+    }
+  },
+  "issues": [
+    {
+      "dimension": "authorization_consistency",
+      "identifier": "bcql_no_audit_log",
+      "summary": "POST /api/bcql accepts arbitrary corpus queries with no audit logging, unlike all read-only sibling endpoints",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/api/CorpusQueryHandlers.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/api/WordSketchApiServer.java"
+      ],
+      "evidence": [
+        "CorpusQueryHandlers.handleCorpusQuery logs only at DEBUG level ('BCQL query: {}') — no INFO/WARN-level audit trail distinguishing it from routine read queries.",
+        "All other endpoints (sketch, explore, concordance) also log at DEBUG; however those endpoints execute bounded, schema-defined queries while /api/bcql executes caller-supplied CQL patterns up to 1024 chars.",
+        "WordSketchApiServer Javadoc notes that external exposure requires 'an authentication or network-level access-control layer' but makes no specific mention of /api/bcql being higher-risk within that future context."
+      ],
+      "suggestion": "Add at least an INFO-level log entry in handleCorpusQuery that records the caller's query string (already sanitized by the length/bracket guards), so that if the server is later re-deployed with a wider bind address, a minimal audit trail exists. Optionally, add a comment in registerRoutes marking /api/bcql as a write-capable or elevated-risk endpoint so a future auth layer knows to treat it differently from read-only routes.",
+      "confidence": "medium",
+      "impact_scope": "local",
+      "fix_scope": "single_edit"
+    }
+  ],
+  "retrospective": {
+    "root_causes": [
+      "The server was designed from the outset as a single-user local research tool; the absence of auth is a deliberate architectural choice rather than an oversight, which explains the near-perfect consistency.",
+      "The /api/bcql endpoint was likely added later than the read-only endpoints (as a power-user escape hatch), which may explain why its slightly elevated risk surface was not called out explicitly relative to siblings."
+    ],
+    "likely_symptoms": [],
+    "possible_false_positives": []
+  }
+}

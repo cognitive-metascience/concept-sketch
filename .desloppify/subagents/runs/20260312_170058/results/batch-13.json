@@ -1,0 +1,80 @@
+{
+  "batch": "logic_clarity",
+  "batch_index": 13,
+  "assessments": {"logic_clarity": 78.0},
+  "dimension_notes": {
+    "logic_clarity": {
+      "evidence": [
+        "Guard clauses used consistently throughout: null/empty checks at method entry in CollocateQueryHelper, BlackLabSnippetParser, SingleSeedExplorer, BlackLabQueryExecutor — all short-circuit with empty-list or null returns before reaching core logic.",
+        "detokenize (BlackLabSnippetParser.java:136-138) is annotated @Nullable (it returns null when text==null), but trimToSentence (line 82-88) and extractPlainTextFromXml (line 123-129) both declare String (non-nullable) return type and pass the result directly without a null guard. The null path is unreachable in practice (callers pass non-null strings), but the contract says null is possible and callers ignore that claim.",
+        "seeds.size() < 2 is validated in five separate places: ExplorationHandlers.handleSemanticFieldExploreMulti (line 104), ExplorationHandlers.handleSemanticFieldComparison (line 149), SemanticFieldExplorer.compareCollocateProfiles (line 199), SemanticFieldExplorer.exploreMultiSeed (line 268), and CollocateProfileComparator.compareCollocateProfiles (line 58). Each layer re-enforces the same contract without a shared helper, making it unclear which layer owns the rule.",
+        "CorpusQueryHandlers.parseBcqlRequest resolvedTop logic (line 74-76): treats top=0 the same as 'top absent', silently defaulting to 10. The condition !topNode.isMissingNode() && !topNode.isNull() && topNode.asInt() > 0 is correctly written but the 0-equals-missing behavior is non-obvious with no inline comment.",
+        "CollocateQueryHelper.extractCollocateLemma (lines 371-376): the two-branch fallback is clearly sequenced with comments explaining each path — collocatePos<=0 goes straight to extractLastLemma, collocatePos>0 tries positional extraction first. Return null is properly threaded through HitRecord and checked by callers."
+      ],
+      "impact_scope": "local",
+      "fix_scope": "single_edit",
+      "confidence": "high"
+    }
+  },
+  "dimension_judgment": {
+    "logic_clarity": {
+      "strengths": [
+        "Guard clauses for null/empty inputs are applied consistently across all query, config, and exploration classes, with unambiguous early-return semantics that do not require callers to reason about partial execution.",
+        "The SingleSeedExplorer and MultiSeedExplorer both include detailed inline comments justifying their fallback (or no-fallback) strategies — developers can verify that the code path they're reading is the one that was intentionally chosen.",
+        "extractCollocateLemma fallback sequencing (positional extraction → lastLemma) is cleanly expressed and each branch is annotated with a one-line rationale, so the logic reads like its intent.",
+        "The summaryCounts single-pass switch in ComparisonResult (lines 66-74) correctly avoids three separate stream iterations and the comment makes this explicit.",
+        "The performCollocateSearch boolean flag (withStoredHits) is the only shared implementation between two public methods, making the branching logic trivially auditable."
+      ],
+      "issue_character": "The issues are contract-level rather than behavioral: they arise from a mismatch between what annotations promise (detokenize's @Nullable) and what callers assume (non-null return), and from the same invariant being re-stated verbatim across multiple layers without a shared enforcement point.",
+      "score_rationale": "The codebase earns a strong baseline from its consistent guard-clause discipline, well-commented strategy decisions, and correct edge-case handling throughout the exploration and query pipelines. The detokenize @Nullable contract mismatch is a real clarity issue — a developer following the annotation would add a null check that is never needed, or miss the case where it actually matters — but it does not affect runtime behavior. The five-fold seeds.size() validation duplication adds noise without hiding bugs. These issues are 'solid but uneven' in the 80-range sense: the main body of logic is clear and provably correct, but two pattern-level inconsistencies prevent a higher score."
+    }
+  },
+  "issues": [
+    {
+      "dimension": "logic_clarity",
+      "identifier": "detokenize_nullable_contract_mismatch",
+      "summary": "detokenize declares @Nullable return but callers return the value as non-null String without a null guard",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/query/BlackLabSnippetParser.java"
+      ],
+      "evidence": [
+        "detokenize (line 136): annotated @Nullable, and returns text (null) when text==null",
+        "trimToSentence (line 87): returns detokenize(assembled) as String; assembled is always non-null (string concatenation), so the null path is unreachable, but the @Nullable claim says otherwise",
+        "extractPlainTextFromXml (line 128): returns detokenize(text) as String; text is non-null after replaceAll, same situation"
+      ],
+      "suggestion": "Either remove @Nullable from detokenize's return annotation (since passing null is not part of its public contract) and add an Objects.requireNonNull guard at entry, or add a null-check after calling detokenize in trimToSentence and extractPlainTextFromXml (returning \"\" on null). The former is cleaner: detokenize(null) is an undocumented misuse, not a supported input.",
+      "confidence": "high",
+      "impact_scope": "local",
+      "fix_scope": "single_edit"
+    },
+    {
+      "dimension": "logic_clarity",
+      "identifier": "seeds_size_check_scattered",
+      "summary": "seeds.size() < 2 invariant duplicated across 5 sites with no shared enforcement point",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/api/ExplorationHandlers.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/exploration/SemanticFieldExplorer.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/exploration/CollocateProfileComparator.java"
+      ],
+      "evidence": [
+        "ExplorationHandlers line 104: if (seeds.size() < 2) throw IAE",
+        "ExplorationHandlers line 149: same check in handleSemanticFieldComparison",
+        "SemanticFieldExplorer line 199: same check in compareCollocateProfiles",
+        "SemanticFieldExplorer line 268: same check in exploreMultiSeed",
+        "CollocateProfileComparator line 58: same check in compareCollocateProfiles"
+      ],
+      "suggestion": "Consolidate into a single private static requireAtLeastTwoSeeds(Set) helper in SemanticFieldExplorer (or a shared Preconditions utility), called once per service-layer method. HTTP handlers may retain a check for early 400 generation, but the algorithm classes should rely on the service layer's single check rather than repeating the same throw independently.",
+      "confidence": "high",
+      "impact_scope": "module",
+      "fix_scope": "multi_file_refactor"
+    }
+  ],
+  "retrospective": {
+    "root_causes": [
+      "The @Nullable mismatch on detokenize appears to originate from a broad defensive annotation pass that correctly described the worst-case input set but was not updated when the call sites were narrowed to non-null inputs.",
+      "The seeds.size() < 2 duplication follows a copy-paste defensive pattern that arose as each layer was added incrementally without extracting a shared guard."
+    ],
+    "likely_symptoms": [],
+    "possible_false_positives": []
+  }
+}

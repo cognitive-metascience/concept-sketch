@@ -1,0 +1,56 @@
+{
+  "batch": "dependency_health",
+  "batch_index": 6,
+  "assessments": {"dependency_health": 85.0},
+  "dimension_notes": {
+    "dependency_health": {
+      "evidence": [
+        "pom.xml declares exactly 4 runtime dependency groups: BlackLab (engine + query-parser), Jackson (databind + core), SLF4J/Logback, log4j-to-slf4j bridge — no duplicates for any purpose",
+        "Jackson BOM imported via dependencyManagement to align all jackson-* transitive versions; jackson-core also explicitly pinned with an inline comment explaining why ('another transitive dep resolves an older version otherwise')",
+        "HTTP layer uses JDK built-in com.sun.net.httpserver instead of Jetty/Undertow/Spring — appropriate for a single-binary research tool, keeps the shaded jar lean",
+        "jspecify declared with scope=provided (annotation-only, zero runtime overhead)",
+        "log4j-to-slf4j 2.24.3 added specifically to bridge BlackLab's transitive log4j usage through SLF4J — a correct and minimal bridge pattern rather than adding a second logging runtime",
+        "All 37 Java source files use only the 4 declared runtime dependency groups; grep over all imports shows no mystery third-party libs",
+        "blacklab-github-fallback Maven profile points to a GitHub raw-content URL explicitly labelled 'no SLA' in the pom comment — a fragile last-resort distribution path, though guarded behind a non-default profile",
+        "Logging stack (slf4j-api 2.0.7, logback-classic 1.5.18, log4j-to-slf4j 2.24.3) is version-compatible but not managed via a BOM — manual verification required on future upgrades"
+      ],
+      "impact_scope": "codebase",
+      "fix_scope": "single_edit",
+      "confidence": "high"
+    }
+  },
+  "dimension_judgment": {
+    "dependency_health": {
+      "strengths": [
+        "No duplicate libraries for any purpose: one JSON library (Jackson), one logging API (SLF4J), one corpus engine (BlackLab), one HTTP layer (JDK built-in)",
+        "Jackson version alignment handled proactively via jackson-bom + explicit jackson-core pin, with inline rationale explaining the transitive conflict being guarded against",
+        "JDK built-in HTTP server chosen over a heavy third-party framework — lean and appropriate for a single-binary research tool",
+        "jspecify correctly scoped as 'provided' so it adds zero runtime or shaded-jar weight",
+        "log4j-to-slf4j bridge correctly used to route BlackLab's transitive logging without introducing a second logging implementation"
+      ],
+      "issue_character": "The single identifiable issue is a supply-chain fragility (GitHub raw-URL fallback profile for BlackLab) rather than any in-code dependency duplication, version conflict, or heavy-for-light-use problem.",
+      "score_rationale": "This codebase demonstrates careful, deliberate dependency management: minimal runtime footprint, no duplicates, documented version-pinning rationale, and a lean HTTP strategy. The one mild concern — the BlackLab distribution model requiring a manual install script and a fragile GitHub raw-URL fallback profile — is a distribution gap rather than a code-quality defect, and it is clearly documented. Against global anchors the codebase sits comfortably at 'solid but uneven' trending toward the upper range; the dependency graph itself is exemplary, held back only slightly by the unmanaged logging BOM gap and the supply-chain fallback."
+    }
+  },
+  "issues": [
+    {
+      "dimension": "dependency_health",
+      "identifier": "blacklab_github_fallback_fragility",
+      "summary": "blacklab-github-fallback Maven profile relies on a GitHub raw-content URL with no SLA",
+      "related_files": ["pom.xml"],
+      "evidence": [
+        "Profile 'blacklab-github-fallback' registers https://raw.githubusercontent.com/instituutnederlandsetaal/BlackLab/mvn-repo/ as a Maven repository",
+        "pom.xml comment explicitly states: 'The URL has no SLA and may become unavailable (rate-limited, branch deleted, or repo renamed); do NOT rely on it in production CI'"
+      ],
+      "suggestion": "Mirror the required BlackLab JARs to a self-hosted or managed registry (Nexus, Artifactory, GitHub Packages) and update the fallback profile to point there; remove the raw GitHub URL entirely once the primary install-blacklab.sh path is documented in CI",
+      "confidence": "high",
+      "impact_scope": "codebase",
+      "fix_scope": "single_edit"
+    }
+  ],
+  "retrospective": {
+    "root_causes": ["BlackLab 4.x is not published to Maven Central, forcing a manual local-install step and creating a fragile fallback distribution path"],
+    "likely_symptoms": ["blacklab_github_fallback_fragility"],
+    "possible_false_positives": []
+  }
+}

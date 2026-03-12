@@ -144,15 +144,13 @@ class BlackLabSnippetParser {
     /**
      * Extract collocate lemma from XML by labeled position.
      * @param xmlSnippet The XML snippet containing the full sentence
-     * @param position The 1-based position of the token to extract (from CqlUtils.findLabelTokenIndex,
-     *                 which returns ≥ 1 on success or -1 if the label is not found)
+     * @param position The 1-based position of the token to extract; callers are responsible
+     *                 for ensuring {@code position >= 1} before calling this method.
      * @return the lemma at the given position, or {@code null} if not found
      */
     @Nullable
     static String extractCollocateFromXmlByPosition(String xmlSnippet, int position) {
-        // The position < 1 guard is defensive: all current callers pass values from
-        // CqlUtils.findLabelTokenIndex() which returns a 1-based index (≥ 1) on success, or -1 if not found.
-        if (xmlSnippet == null || xmlSnippet.isEmpty() || position < 1) {
+        if (xmlSnippet == null || xmlSnippet.isEmpty()) {
             return null;
         }
         java.util.regex.Matcher m = LEMMA_ATTR.matcher(xmlSnippet);

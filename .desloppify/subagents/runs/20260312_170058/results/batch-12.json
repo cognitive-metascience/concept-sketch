@@ -1,0 +1,81 @@
+{
+  "batch": "contract_coherence",
+  "batch_index": 12,
+  "assessments": {"contract_coherence": 82.0},
+  "dimension_notes": {
+    "contract_coherence": {
+      "evidence": [
+        "QueryExecutor interface correctly documents @throws IllegalArgumentException for executeSurfacePattern when lemma cannot be extracted; BlackLabQueryExecutor implementation follows this — but the @Override method's own JavaDoc says 'Returns an empty list if the headword lemma cannot be extracted from the pattern' (line 224), which is directly contradicted by the throw at lines 232-237.",
+        "HttpApiUtils methods (requireParam, parseIntParam, parseDoubleParam, parseQueryParams) all precisely document and honor their error contracts: IAE on missing/invalid params, RETLE on oversized bodies.",
+        "GrammarConfigLoader.load and fromReader correctly declare and propagate IOException / IllegalArgumentException as documented; createDefaultEnglish variants document their unchecked ISE wrapping contract explicitly.",
+        "SemanticFieldExplorer.exploreMultiSeed and compareCollocateProfiles both document and enforce the minimum-2-seeds cardinality requirement; ExplorationHandlers adds a parallel guard at the HTTP layer too.",
+        "RelationConfig.explorationEnabled field is loaded, serialized in the config API response, and bears a self-documenting boolean name — but no handler or service ever reads it to gate exploration. Callers could rely on this field as an enforcement point when it is purely advisory.",
+        "CollocateQueryHelper constructor tension: @NonNull on parameter but @Nullable on field; the test-seam constructor sets the field to null. This is documented in JavaDoc but creates a minor annotation-vs-field-type gap; requireIndex() enforces it at runtime so no silent null escapes.",
+        "@NonNull / @Nullable annotations via jspecify are applied consistently across the API surface (QueryExecutor, ExplorationService, HttpApiUtils, RelationPatternUtils) and generally match actual nullability behavior.",
+        "buildCollocateReversePattern documents throws IllegalStateException when relationType is absent or POS group has no reverse pattern — both branches throw as advertised.",
+        "detokenize in BlackLabSnippetParser is annotated @Nullable return but 'returns text' for both null and empty-string inputs — this honors the @Nullable annotation correctly."
+      ],
+      "impact_scope": "module",
+      "fix_scope": "single_edit",
+      "confidence": "high"
+    }
+  },
+  "dimension_judgment": {
+    "contract_coherence": {
+      "strengths": [
+        "QueryExecutor interface-level contracts are precise and reliable: @param, @return, @throws are all consistent with the production implementation's actual behavior across executeCollocations, executeCqlQuery, getTotalFrequency, and executeDependencyPattern.",
+        "HttpApiUtils utility methods have a uniform and honored error contract — all three parsing helpers document and throw IllegalArgumentException on bad input, and wrapWithErrorHandling correctly maps these to 400/413/500 HTTP responses as documented.",
+        "GrammarConfigLoader's two public factories (load and fromReader) correctly propagate checked IOException and unchecked IAE exactly as their JavaDoc states; the unchecked-ISE wrapping in createDefaultEnglish variants is explicitly and accurately described.",
+        "Minimum-cardinality contracts (at least 2 seeds) are consistently documented and enforced at both the service layer (SemanticFieldExplorer) and the HTTP handler layer (ExplorationHandlers), with matching exception messages.",
+        "@NonNull / @Nullable annotations via jspecify are applied coherently across the main API boundaries and match actual nullability behavior, supporting contract-at-a-glance readability."
+      ],
+      "issue_character": "The one confirmed contract lie is isolated to a single stale @Override docstring in BlackLabQueryExecutor.executeSurfacePattern that says it returns an empty list but the code throws; a secondary softer issue is the explorationEnabled field whose name implies enforcement but which is never read by any gating logic.",
+      "score_rationale": "The codebase is in a strong contractual position overall: interface contracts are reliable, error propagation is well-documented, and cardinality / nullability constraints are consistently enforced. What holds the score back from the 88-95 range is a confirmed docstring lie in the most complex executor method (executeSurfacePattern): the @Override method's own doc says 'returns empty list' but the code throws, a contradiction that could mislead any developer reading the concrete class rather than the interface. The explorationEnabled field is a gentler issue — it exists as a named capability-gating boolean but gates nothing, which could mislead API consumers or future developers. These are two isolated issues in a codebase that otherwise shows deliberate attention to contracts, placing it solidly in the 80-85 range."
+    }
+  },
+  "issues": [
+    {
+      "dimension": "contract_coherence",
+      "identifier": "executeSurfacePattern_docstring_lie",
+      "summary": "BlackLabQueryExecutor.executeSurfacePattern @Override docstring claims empty-list return but code throws IllegalArgumentException",
+      "related_files": ["src/main/java/pl/marcinmilkowski/word_sketch/query/BlackLabQueryExecutor.java"],
+      "evidence": [
+        "Line 224: JavaDoc comment reads 'Returns an empty list if the headword lemma cannot be extracted from the pattern.'",
+        "Lines 232-237: code executes 'throw new IllegalArgumentException(...)' when lemma is null or empty — the opposite of what the doc says.",
+        "QueryExecutor interface (line 91-92) correctly documents '@throws IllegalArgumentException if the headword lemma cannot be extracted from bcqlPattern'; the override doc contradicts the interface contract instead of inheriting or agreeing with it."
+      ],
+      "suggestion": "Replace the override's docstring with: 'Extracts the headword lemma from the {@code lemma=} attribute in {@code bcqlPattern}; delegates collocate grouping and logDice scoring to {@link CollocateQueryHelper}. Throws {@link IllegalArgumentException} if the lemma cannot be extracted — see {@link QueryExecutor#executeSurfacePattern} for the full contract.' This makes the override consistent with the interface contract and eliminates the false 'empty list' claim.",
+      "confidence": "high",
+      "impact_scope": "module",
+      "fix_scope": "single_edit"
+    },
+    {
+      "dimension": "contract_coherence",
+      "identifier": "explorationEnabled_unenforced_field",
+      "summary": "RelationConfig.explorationEnabled is a named capability-gating boolean that is loaded and serialized but never read by exploration handlers or service methods",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/config/RelationConfig.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/api/ExplorationHandlers.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/exploration/SemanticFieldExplorer.java"
+      ],
+      "evidence": [
+        "RelationConfig record declares boolean explorationEnabled; GrammarConfigLoader parses it from JSON; GrammarConfigSerializer includes it in API responses.",
+        "grep for explorationEnabled across all Java sources finds only RelationConfig.java (field), GrammarConfigLoader.java (parse), GrammarConfigSerializer.java (serialize) — no handler or service reads it for gating.",
+        "ExplorationHandlers.resolveRelationConfig checks relationType().isEmpty() but does not check explorationEnabled; SemanticFieldExplorer.exploreByPattern checks relationType and collocatePosGroup but not explorationEnabled.",
+        "A relation with explorationEnabled=false in the grammar config is silently treated as exploration-eligible, contrary to what the field name implies to grammar config authors."
+      ],
+      "suggestion": "Either (a) add a check in ExplorationHandlers.resolveRelationConfig — 'if (!relationConfig.explorationEnabled()) throw new IllegalArgumentException(\"Relation '\" + relationId + \"' is not enabled for exploration\")' — or (b) rename the field to something that reflects its advisory nature (e.g., 'explorationCapable') and document that it is informational only. Option (a) is preferred as it makes the field name match its behavior.",
+      "confidence": "medium",
+      "impact_scope": "module",
+      "fix_scope": "single_edit"
+    }
+  ],
+  "retrospective": {
+    "root_causes": [
+      "The executeSurfacePattern docstring lie is likely a copy-paste of an earlier implementation version that returned empty list on missing lemma; the code was later changed to throw but the docstring was not updated.",
+      "explorationEnabled was probably added to the grammar config schema as a planned gating mechanism but the enforcement code was never written; the field now exists in the data layer without a corresponding policy in the service layer."
+    ],
+    "likely_symptoms": [],
+    "possible_false_positives": []
+  }
+}

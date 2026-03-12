@@ -1,0 +1,69 @@
+{
+  "batch": "cross_module_architecture",
+  "batch_index": 16,
+  "assessments": {
+    "cross_module_architecture": 73.0
+  },
+  "dimension_notes": {
+    "cross_module_architecture": {
+      "evidence": [
+        "Dependency direction is clean and consistent: api → (exploration, query, config, model); exploration → (query, model, config); query → model; config → model. No violations observed.",
+        "ExplorationService interface in exploration package fully decouples api.ExplorationHandlers from SemanticFieldExplorer implementation — api has zero direct dependency on the concrete class.",
+        "CollocateQueryPort narrow port is used by ConcordanceHandlers and CorpusQueryHandlers instead of QueryExecutor — explicit, documented boundary discipline.",
+        "viz/Edge.java and viz/RelationEdgeType.java are byte-for-byte identical copies of model/exploration/Edge.java and model/exploration/RelationEdgeType.java. No code imports viz.Edge or viz.RelationEdgeType — both viz types are dead duplicates.",
+        "viz/package-info.java itself states: 'Domain data carriers (e.g. model/exploration/Edge, model/exploration/RelationEdgeType) live in model/exploration/ so that non-visualization layers (e.g. api/) can import them without creating an api→viz dependency.' The viz package has its own copies anyway, contradicting its own documented boundary contract.",
+        "RadialPlot.java (the only production consumer of viz/) uses only RadialPlot.Item (an inner class) — it never references viz.Edge or viz.RelationEdgeType. The duplicates serve no runtime purpose.",
+        "api/ExploreResponseAssembler.java imports model.exploration.Edge and model.exploration.RelationEdgeType correctly — confirming the canonical types are the model ones."
+      ],
+      "impact_scope": "module",
+      "fix_scope": "multi_file_refactor",
+      "confidence": "high"
+    }
+  },
+  "dimension_judgment": {
+    "cross_module_architecture": {
+      "strengths": [
+        "Dependency direction is uniformly top-down (api → exploration/query → model/config) with no cycles or reverse dependencies observed across the entire codebase.",
+        "ExplorationService interface cleanly separates the api package from the exploration implementation, so the HTTP layer never touches SemanticFieldExplorer directly.",
+        "CollocateQueryPort narrow-port discipline: ConcordanceHandlers and CorpusQueryHandlers declare the narrowest interface they need rather than the full QueryExecutor, making their dependency surface explicit.",
+        "Handler decomposition in api is well-bounded: SketchHandlers, ExplorationHandlers, ConcordanceHandlers, CorpusQueryHandlers, and VisualizationHandlers each own one coherent concern with no visible cross-pollution.",
+        "viz/package-info.java explicitly documents the intended boundary (canonical types live in model/exploration) — the architecture intent is recorded, even if execution is incomplete."
+      ],
+      "issue_character": "A single, self-acknowledged boundary drift: viz.Edge and viz.RelationEdgeType are orphaned identical copies of model.exploration types that the viz package-info explicitly says belong in model/exploration; the drift is contained to one package but contradicts the documented contract.",
+      "score_rationale": "The layering, interface abstractions, and narrow-port discipline are all solid — this codebase is clearly above the 'significant drag' threshold. The orphaned duplicates in viz are the one concrete boundary violation: they are dead code, their own package-info refutes them, and they represent a documented architecture contract that was not fully carried through. This is a single module-scoped issue rather than a systemic pattern, so it pulls the score modestly below 'solid but uneven (80)' — landing around 73 where the architecture is largely trustworthy but has one unresolved residue that a developer maintaining viz would eventually hit."
+    }
+  },
+  "issues": [
+    {
+      "dimension": "cross_module_architecture",
+      "identifier": "viz_orphaned_domain_duplicates",
+      "summary": "viz.Edge and viz.RelationEdgeType are dead identical copies of model.exploration types that viz/package-info.java itself says belong in model/exploration",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/viz/Edge.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/viz/RelationEdgeType.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/model/exploration/Edge.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/model/exploration/RelationEdgeType.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/viz/package-info.java"
+      ],
+      "evidence": [
+        "viz/Edge.java and model/exploration/Edge.java have identical record bodies (source, target, weight, type fields; identical Javadoc).",
+        "viz/RelationEdgeType.java and model/exploration/RelationEdgeType.java have identical enum constants (SEED_COLLOCATE, DISCOVERED_COLLOCATE, MODIFIER) and identical label/toString logic.",
+        "viz/package-info.java states explicitly: 'Domain data carriers (e.g. model/exploration/Edge, model/exploration/RelationEdgeType) live in model/exploration/ so that non-visualization layers (e.g. api/) can import them without creating an api→viz dependency.' The viz copies exist anyway.",
+        "grep across all production and test sources finds zero imports of viz.Edge or viz.RelationEdgeType — both types are unreferenced dead code."
+      ],
+      "suggestion": "Delete viz/Edge.java and viz/RelationEdgeType.java. All consumers (ExploreResponseAssembler, ExplorationHandlersTest, ExploreResponseAssemblerTest) already import from model.exploration — no import changes needed. This completes the refactoring that viz/package-info.java already documents as the intended end-state.",
+      "confidence": "high",
+      "impact_scope": "module",
+      "fix_scope": "multi_file_refactor"
+    }
+  ],
+  "retrospective": {
+    "root_causes": [
+      "Incremental extraction: the viz package predates the model/exploration split, and Edge/RelationEdgeType were moved to model/exploration without deleting the originals in viz. The package-info was updated to document the new intent but the old files were not removed."
+    ],
+    "likely_symptoms": [
+      "A future developer adding a new field to model/exploration/Edge may accidentally miss the identical viz/Edge copy, causing silent divergence."
+    ],
+    "possible_false_positives": []
+  }
+}

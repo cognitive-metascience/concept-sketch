@@ -1,0 +1,65 @@
+{
+  "batch": "package_organization",
+  "batch_index": 11,
+  "assessments": {"package_organization": 74.0},
+  "dimension_notes": {
+    "package_organization": {
+      "evidence": [
+        "viz/ package contains Edge.java and RelationEdgeType.java that are byte-for-byte identical to model/exploration/Edge.java and model/exploration/RelationEdgeType.java — same package-level javadoc, same fields, same enum constants.",
+        "No file anywhere in the codebase imports viz.Edge or viz.RelationEdgeType: grep across all .java files finds only 'import pl.marcinmilkowski.word_sketch.viz.RadialPlot' (in VisualizationHandlers and RadialPlotTest). The viz/ copies are dead orphans.",
+        "RadialPlot.java itself imports only java.util classes and does not use Edge or RelationEdgeType at all, so the types are not needed in viz/ by any current consumer.",
+        "model/exploration/ holds 12 files (out of 59 total production files) — all heavily imported by both exploration/ service classes and api/ handlers. The sub-package cleanly groups exploration domain types away from top-level model (PosGroup, QueryResults).",
+        "api/ has 11 files: four focused handler classes (ConcordanceHandlers, CorpusQueryHandlers, ExplorationHandlers, VisualizationHandlers), two assemblers (ExploreResponseAssembler, SketchResponseAssembler), one server wiring class (WordSketchApiServer), one utility (HttpApiUtils), one exception (RequestEntityTooLargeException), and package-info. The 11-file count is at the threshold but concerns are reasonably separated.",
+        "config/ package is cohesive: GrammarConfig, GrammarConfigLoader, GrammarConfigSerializer, RelationConfig, RelationType, RelationUtils, RelationPatternUtils — all grammar/relation configuration concerns, no strays.",
+        "No coupling-direction failures detected: api/ imports exploration/ and model/exploration/ (correct downstream direction); exploration/ imports model/exploration/ and query/ (correct); no upstream-to-downstream reversals.",
+        "No bidirectional directory edges observed across the package tree."
+      ],
+      "impact_scope": "module",
+      "fix_scope": "multi_file_refactor",
+      "confidence": "high"
+    }
+  },
+  "dimension_judgment": {
+    "package_organization": {
+      "strengths": [
+        "All top-level package names directly reflect domain responsibility: api, config, exploration, indexer, model, query, utils, viz — a new engineer can predict file locations by concern.",
+        "model/exploration/ sub-package correctly isolates the 12 exploration domain types (Edge, ExplorationResult, CollocateProfile, etc.) from the two top-level model types (PosGroup, QueryResults), matching change-boundary ownership.",
+        "config/ is tightly cohesive: all 7 production files relate to grammar/relation configuration, none are strays from other domains.",
+        "Import direction is consistently downstream: api → exploration → model/exploration → query, with no upstream-to-downstream reversals or bidirectional edges detected.",
+        "File counts are reasonable across packages (3–12 files each); no single package is overloaded with mixed-concern files."
+      ],
+      "issue_character": "The single structural defect is localized to the viz/ package: it holds two orphaned duplicate types (Edge, RelationEdgeType) that are exact copies of the canonical definitions in model/exploration/ and are imported by no other file, creating a false dual-home for core domain types.",
+      "score_rationale": "The overall package layout is above average: meaningful names, clean ownership, no coupling-direction failures, and correct sub-package decomposition in model/exploration/. The score is pulled down from the high-80s by one concrete defect: viz/Edge.java and viz/RelationEdgeType.java are dead orphan duplicates of model/exploration/ types, meaning a developer searching for where Edge is 'really' defined encounters two contradictory answers. This is a navigation and ownership failure, not just a style concern. The score sits at 74 rather than 65 because the defect is isolated to one package and requires only a targeted multi-file cleanup rather than structural reorganization."
+    }
+  },
+  "issues": [
+    {
+      "dimension": "package_organization",
+      "identifier": "viz_orphan_duplicates",
+      "summary": "viz/Edge.java and viz/RelationEdgeType.java are exact duplicates of model/exploration/ types and are imported by no consumer",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/viz/Edge.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/viz/RelationEdgeType.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/model/exploration/Edge.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/model/exploration/RelationEdgeType.java"
+      ],
+      "evidence": [
+        "viz/Edge.java and model/exploration/Edge.java have identical bodies: same record fields (source, target, weight, type), same javadoc text.",
+        "viz/RelationEdgeType.java and model/exploration/RelationEdgeType.java have identical bodies: same enum constants SEED_COLLOCATE/DISCOVERED_COLLOCATE/MODIFIER, same label() method, same toString() override.",
+        "Grep across all .java source files finds zero imports of viz.Edge or viz.RelationEdgeType; the only import from viz/ is viz.RadialPlot in VisualizationHandlers.java and RadialPlotTest.java.",
+        "RadialPlot.java itself uses neither Edge nor RelationEdgeType in its implementation."
+      ],
+      "suggestion": "Remove the orphan copies from viz/. Staged plan: (1) Confirm no runtime or reflection-based reference: `grep -r 'viz\\.Edge\\|viz\\.RelationEdgeType' src/` — expected zero results. (2) Delete viz/Edge.java and viz/RelationEdgeType.java. (3) Run `mvn test` to confirm no compile or test breakage. (4) If viz/ now contains only RadialPlot.java and package-info.java, consider whether viz/ remains a meaningful package boundary or whether RadialPlot.java belongs in api/ alongside VisualizationHandlers (its sole caller) — moving it would collapse a thin package. Import-update commands are not needed since the deleted files are unused.",
+      "confidence": "high",
+      "impact_scope": "module",
+      "fix_scope": "multi_file_refactor"
+    }
+  ],
+  "retrospective": {
+    "root_causes": [
+      "The viz/ package appears to be a legacy home for graph domain types that were later re-homed (or re-created) in model/exploration/ during a refactor; the viz/ copies were never cleaned up."
+    ],
+    "likely_symptoms": [],
+    "possible_false_positives": []
+  }
+}

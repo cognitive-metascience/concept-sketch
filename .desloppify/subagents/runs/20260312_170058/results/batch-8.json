@@ -1,0 +1,78 @@
+{
+  "batch": "mid_level_elegance",
+  "batch_index": 8,
+  "assessments": {
+    "mid_level_elegance": 77.0
+  },
+  "dimension_notes": {
+    "mid_level_elegance": {
+      "evidence": [
+        "ExploreResponseAssembler centralises all model-to-JSON translation: collocateProfileToMap, collocateResultToExampleMap, collocateResultToFullMap, edgeToMap, formatSeedCollocates, populateExploreResponse, populateComparisonResponse are all in one class, keeping ExplorationResult and ComparisonResult free of presentation concerns.",
+        "ExplorationService is a clean interface boundary: API handlers depend on the interface, not the implementation (SemanticFieldExplorer). The four method signatures exactly mirror the four endpoint operations.",
+        "CollocateQueryPort is a narrow port interface for handlers that only need BCQL queries (ConcordanceHandlers, CorpusQueryHandlers), making the dependency surface explicit rather than forcing them to take the full QueryExecutor.",
+        "GrammarConfig/GrammarConfigLoader/GrammarConfigSerializer are separated by concern: data carrier, file-IO loader, and JSON serialiser are independent classes with no cross-concern leakage.",
+        "wrapWithErrorHandling in HttpApiUtils provides a single, uniform error-to-HTTP-status mapping (IllegalArgumentException->400, RequestEntityTooLargeException->413, IOException->500, Exception->500) applied consistently across all handlers.",
+        "Private record request types (ConcordanceExamplesRequest, BcqlRequest, SharedExploreParams) cleanly encapsulate parsed parameter bundles at each handler boundary, making request parsing a typed, testable operation.",
+        "buildExploreResponseEnvelope in ExplorationHandlers uses Map<String,Object> for both extraParamFields (goes into the 'parameters' sub-map) and topLevelFields (goes at the root level). The distinction between the two maps cannot be statically verified — a caller could accidentally pass fields in the wrong map.",
+        "handleSemanticFieldExamples builds its response envelope with an inline new HashMap<>() and ad-hoc puts, deviating from the buildExploreResponseEnvelope pattern used by the other three exploration handlers. The 'status', 'seed', 'collocate', 'relation', 'bcql', 'top', 'total_results', 'examples' fields are assembled inconsistently with the sibling handlers."
+      ],
+      "impact_scope": "module",
+      "fix_scope": "multi_file_refactor",
+      "confidence": "high"
+    }
+  },
+  "dimension_judgment": {
+    "mid_level_elegance": {
+      "strengths": [
+        "ExploreResponseAssembler owns all model-to-presentation translation in one place — neither ExplorationResult nor ComparisonResult carry any serialisation logic.",
+        "ExplorationService and CollocateQueryPort as typed, narrow interfaces make the handoffs between the API layer and the domain layer explicit and minimal.",
+        "GrammarConfig/GrammarConfigLoader/GrammarConfigSerializer partition loading, data, and serialisation into independent classes with no cross-concern leakage.",
+        "wrapWithErrorHandling provides a single, uniform error-propagation point across all endpoints — the lifecycle contract at the HTTP boundary is predictable and DRY.",
+        "Private record request types (ConcordanceExamplesRequest, BcqlRequest, SharedExploreParams) cleanly type-check parsed inputs at each handler boundary before passing data downstream."
+      ],
+      "issue_character": "The issues are localised asymmetries in the ExplorationHandlers boundary layer: one handler builds its response envelope inline rather than using the shared factory, and the shared factory itself uses untyped maps for structural distinctions that could be expressed with a typed helper.",
+      "score_rationale": "The codebase scores well above the 60-point 'significant drag' anchor: seams are explicit, translation is centralised, error propagation is uniform, and the port interfaces are well-designed. It falls short of the 85-90 'exemplary' range because the buildExploreResponseEnvelope seam uses untyped Map arguments to convey a structural distinction (top-level vs. parameters sub-map), and handleSemanticFieldExamples diverges from the envelope pattern used by its three siblings — creating a small but real asymmetry that a developer maintaining this handler would have to notice and reconcile. These are contained module-level issues, not subsystem-wide problems, placing the score in the solid-but-uneven 75-80 band."
+    }
+  },
+  "issues": [
+    {
+      "dimension": "mid_level_elegance",
+      "identifier": "explore_envelope_untyped_maps",
+      "summary": "buildExploreResponseEnvelope accepts two untyped Map<String,Object> args to distinguish 'parameters sub-map fields' from 'top-level fields', losing static type safety at the seam",
+      "related_files": ["src/main/java/pl/marcinmilkowski/word_sketch/api/ExplorationHandlers.java"],
+      "evidence": [
+        "private Map<String, Object> buildExploreResponseEnvelope(String relationType, SharedExploreParams params, Map<String, Object> extraParamFields, Map<String, Object> topLevelFields) — the caller must know which map is which; nothing in the type system prevents passing fields in the wrong map.",
+        "Call sites use Map.of('nouns_per', nounsPerSeed) and Map.of('seed', result.seed()), Map.of('seeds', ..., 'seed_count', ...) — the semantically important distinction between sub-map placement and root placement is invisible to the type checker."
+      ],
+      "suggestion": "Introduce a typed EnvelopeSpec value type (or a builder) that accepts the variant fields with explicit named methods: withParameterField(String key, Object value) and withTopLevelField(String key, Object value). This makes the structural distinction explicit and statically verifiable without requiring callers to remember which map goes where.",
+      "confidence": "high",
+      "impact_scope": "module",
+      "fix_scope": "multi_file_refactor",
+      "root_cause_cluster": "seam_typing"
+    },
+    {
+      "dimension": "mid_level_elegance",
+      "identifier": "examples_handler_inline_envelope",
+      "summary": "handleSemanticFieldExamples builds its response envelope inline with ad-hoc puts instead of using buildExploreResponseEnvelope, creating an asymmetry across the four exploration handlers",
+      "related_files": ["src/main/java/pl/marcinmilkowski/word_sketch/api/ExplorationHandlers.java"],
+      "evidence": [
+        "handleSemanticFieldExamples: Map<String, Object> response = new HashMap<>(); response.put(\"status\", \"ok\"); response.put(\"seed\", seed); ... — no call to buildExploreResponseEnvelope.",
+        "The other three handlers (handleSemanticFieldExplore, handleSemanticFieldExploreMulti, handleSemanticFieldComparison) all delegate to buildExploreResponseEnvelope for the envelope and to ExploreResponseAssembler.populate* for the body.",
+        "The examples handler also lacks a 'parameters' sub-map that the sibling handlers include, making the response schema inconsistent across the exploration endpoint family."
+      ],
+      "suggestion": "Route handleSemanticFieldExamples through buildExploreResponseEnvelope for the status/parameters envelope, consistent with the other three handlers. The examples-specific fields (bcql, total_results, examples) can be added after envelope construction the same way populateExploreResponse works for the others.",
+      "confidence": "high",
+      "impact_scope": "module",
+      "fix_scope": "single_edit",
+      "root_cause_cluster": "seam_typing"
+    }
+  ],
+  "retrospective": {
+    "root_causes": [
+      "Shared envelope assembly was extracted after the examples handler was already written, leaving it as an unconverted outlier.",
+      "Using Map<String,Object> as the vehicle for structural placement decisions is a recurring Java seam pattern that emerges when typed response DTOs are avoided in favour of dynamic map assembly."
+    ],
+    "likely_symptoms": ["explore_envelope_untyped_maps", "examples_handler_inline_envelope"],
+    "possible_false_positives": []
+  }
+}

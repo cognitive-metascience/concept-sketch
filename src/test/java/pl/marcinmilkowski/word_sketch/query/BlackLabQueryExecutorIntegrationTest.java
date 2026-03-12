@@ -2,7 +2,6 @@ package pl.marcinmilkowski.word_sketch.query;
 
 import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.Test;
-import java.io.File;
 import java.io.IOException;
 import java.util.List;
 
@@ -11,6 +10,7 @@ import pl.marcinmilkowski.word_sketch.model.QueryResults;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 public class BlackLabQueryExecutorIntegrationTest {
     @Test
@@ -45,8 +45,7 @@ public class BlackLabQueryExecutorIntegrationTest {
                                     "Result frequency must be > 0 for pattern: " + p + ", got: " + r.frequency());
                         }
                     } catch (IOException e) {
-                    Assumptions.assumeTrue(false,
-                            "Test skipped: index does not support pattern '" + p + "': " + e.getMessage());
+                    fail("Unexpected IOException for pattern '" + p + "': " + e.getMessage());
                 }
             }
         }

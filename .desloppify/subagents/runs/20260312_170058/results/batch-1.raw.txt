@@ -1,0 +1,66 @@
+{
+  "batch": "high_level_elegance",
+  "batch_index": 1,
+  "assessments": {
+    "high_level_elegance": 83.0
+  },
+  "dimension_notes": {
+    "high_level_elegance": {
+      "evidence": [
+        "Top-level packages (api, config, exploration, indexer, model, query, utils, viz) each map to a named domain capability; package-info.java files exist in every package explaining ownership boundaries",
+        "viz/Edge.java and viz/RelationEdgeType.java are byte-for-byte duplicates of model/exploration/Edge.java and model/exploration/RelationEdgeType.java; viz/package-info.java explicitly says canonical versions live in model/exploration/, yet the copies remain in viz/ unreferenced by any production code",
+        "ExplorationService interface in exploration/ cleanly separates public API from implementation; CollocateQueryPort narrows the query surface for handlers that only need BCQL retrieval, documented with explicit rationale in QueryExecutor.java",
+        "config/ contains pure loading (GrammarConfigLoader, GrammarConfig) alongside cross-cutting utilities (RelationUtils, RelationPatternUtils, GrammarConfigSerializer) that callers in api/, exploration/, and indexer/ import; this blurs the config boundary from loader to config-utilities hub",
+        "WordSketchApiServer wires five focused handler classes; each handler file has a single stated responsibility with package-private visibility -- new engineer can trace route -> handler file cleanly"
+      ],
+      "impact_scope": "module",
+      "fix_scope": "multi_file_refactor",
+      "confidence": "high"
+    }
+  },
+  "dimension_judgment": {
+    "high_level_elegance": {
+      "strengths": [
+        "Every package has a package-info.java that states the package purpose and explicitly rules out what does NOT belong; ownership is documented, not guessed",
+        "API layer decomposes into five focused handler classes (ConcordanceHandlers, CorpusQueryHandlers, ExplorationHandlers, SketchHandlers, VisualizationHandlers) plus one assembler, each with a single stated responsibility and package-private visibility",
+        "ExplorationService interface provides a clean public contract for the exploration subsystem; CollocateQueryPort narrows query dependency surface with an explicit rationale in source comments",
+        "model/exploration sub-package deliberately separates domain result types from service logic; ExplorationResult's class-vs-record choice is documented in-place"
+      ],
+      "issue_character": "Issues are isolated and artifact-level rather than structural: one concrete ownership confusion (duplicate dead types in viz/) and one mild boundary softness (config/ doubling as a relation-utils hub), neither of which materially disrupts the overall decomposition.",
+      "score_rationale": "The codebase sits solidly in the 80-90 range: a new engineer can read the package layout and correctly predict where to find or put things, supported by thorough package-info documentation and well-separated handler classes. The viz/ duplicate types create a concrete but answerable question about canonical ownership -- the answer is documented in viz/package-info.java, yet the dead files still exist and would momentarily confuse anyone browsing the viz/ directory. The config/ boundary softness (loader + utility hub) is a minor friction point but not misleading. These push the score below 90 but not toward 80."
+    }
+  },
+  "issues": [
+    {
+      "dimension": "high_level_elegance",
+      "identifier": "viz_duplicate_edge_types",
+      "summary": "viz/Edge.java and viz/RelationEdgeType.java are exact dead copies of their model/exploration/ counterparts",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/viz/Edge.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/viz/RelationEdgeType.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/model/exploration/Edge.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/model/exploration/RelationEdgeType.java"
+      ],
+      "evidence": [
+        "viz/Edge.java and model/exploration/Edge.java have identical class bodies (same record fields, same Javadoc)",
+        "viz/RelationEdgeType.java and model/exploration/RelationEdgeType.java have identical enum constants, labels, and Javadoc",
+        "viz/package-info.java explicitly states: \"Domain data carriers (e.g. model.exploration.Edge, model.exploration.RelationEdgeType) live in model/exploration/ so that non-visualization layers can import them without creating an api\u2192viz dependency\"",
+        "No production file imports viz.Edge or viz.RelationEdgeType; all live usages (ExploreResponseAssembler, tests) import model.exploration.Edge and model.exploration.RelationEdgeType",
+        "RadialPlot.java (the only class in viz/ with business logic) does not reference Edge or RelationEdgeType at all"
+      ],
+      "suggestion": "Delete src/main/java/pl/marcinmilkowski/word_sketch/viz/Edge.java and src/main/java/pl/marcinmilkowski/word_sketch/viz/RelationEdgeType.java. The canonical types already live in model/exploration/ and are used consistently by all production and test code. No imports need changing.",
+      "confidence": "high",
+      "impact_scope": "module",
+      "fix_scope": "single_edit"
+    }
+  ],
+  "retrospective": {
+    "root_causes": [
+      "viz/ appears to have been an earlier home for Edge/RelationEdgeType before they were moved to model/exploration/; the move was completed for all callers but the now-dead originals in viz/ were not deleted"
+    ],
+    "likely_symptoms": [
+      "viz_duplicate_edge_types is a symptom of an incomplete migration from viz/ to model/exploration/"
+    ],
+    "possible_false_positives": []
+  }
+}

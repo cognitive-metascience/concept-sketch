@@ -3,7 +3,6 @@ package pl.marcinmilkowski.word_sketch.indexer.blacklab;
 import nl.inl.blacklab.index.DocumentFormats;
 import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -43,12 +42,11 @@ import static org.junit.jupiter.api.Assertions.*;
  * <ol>
  *   <li>Place {@code conllu-sentences.blf.yaml} in the project root (working directory
  *       when running Maven, i.e. the directory containing {@code pom.xml}).</li>
- *   <li>Remove the {@code @Disabled} annotation from this class.</li>
  *   <li>Run: {@code JAVA_HOME=/usr/lib/jvm/java-21-openjdk-amd64 mvn test -Dtest=BlackLabConllUIndexerTest}</li>
  * </ol>
+ * Tests are skipped automatically in CI via {@code @BeforeAll} when the format config is absent.
  * </p>
  */
-@Disabled("Requires conllu-sentences.blf.yaml format config in the project root — not distributed with source; run from a local environment that has the BlackLab format config installed")
 @DisplayName("BlackLabConllUIndexer")
 class BlackLabConllUIndexerTest {
 

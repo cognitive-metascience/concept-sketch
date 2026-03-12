@@ -1,0 +1,65 @@
+{
+  "batch": "initialization_coupling",
+  "batch_index": 17,
+  "assessments": {"initialization_coupling": 87.0},
+  "dimension_notes": {
+    "initialization_coupling": {
+      "evidence": [
+        "JsonUtils.MAPPER is a private static final ObjectMapper computed at class load time (new ObjectMapper()); the Javadoc warns 'Do not mutate the returned instance' but this is a social contract, not a structural guard — any consumer calling JsonUtils.mapper().configure(...) or registering a module would silently corrupt the global state for all other consumers",
+        "HttpApiUtils.MAPPER = JsonUtils.mapper() captures a snapshot reference at HttpApiUtils class load time; if JsonUtils were ever changed to vend different instances (e.g. for different serialisation profiles), the captured reference would be stale",
+        "System.getProperty(\"cors.allow.origin\", ...) is read at call time (inside setCorsHeader() and warnIfWildcardCors()) rather than at class init time — the comment explicitly documents this as intentional for per-test overrideability; this is exemplary practice",
+        "System.getProperty(\"grammar.config\", \"grammars/relations.json\") in GrammarConfigLoader.createDefaultEnglish() is likewise deferred to method-invocation time, not class initialisation time; no fragile boot-time env snapshot",
+        "BlackLabQueryExecutor constructor performs file I/O (opens BlackLab index), but this is called explicitly from Main.handleBlackLabServerCommand — not at class load time; constructor Javadoc explains the deliberate design choice",
+        "No static initializer blocks ({ }) found anywhere in production sources",
+        "All wiring (executor, grammarConfig, SemanticFieldExplorer, WordSketchApiServer) happens explicitly in Main.handleBlackLabServerCommand via constructor injection; no hidden singleton registries or global state machines",
+        "RelationUtils.RELATION_ALIASES = Map.of(...) is a static immutable constant — correct pattern, no mutation risk"
+      ],
+      "impact_scope": "module",
+      "fix_scope": "single_edit",
+      "confidence": "high"
+    }
+  },
+  "dimension_judgment": {
+    "initialization_coupling": {
+      "strengths": [
+        "System property reads for 'cors.allow.origin' and 'grammar.config' are deferred to call time rather than class initialisation, documented with explicit rationale — test-overrideable by design",
+        "All major wiring (QueryExecutor, GrammarConfig, SemanticFieldExplorer, WordSketchApiServer) is explicit constructor injection in a single entry-point method (Main.handleBlackLabServerCommand); no hidden singletons or boot-order dependencies between classes",
+        "No static initializer blocks anywhere in production sources; no import-time I/O, DB connections, or network calls at class scope",
+        "BlackLabQueryExecutor constructor I/O is acknowledged in Javadoc as a deliberate lifecycle choice, not an accidental side effect",
+        "Immutable static constants (Map.of, compiled Patterns, primitive limits) are used correctly throughout"
+      ],
+      "issue_character": "One isolated structural fragility: the shared mutable ObjectMapper singleton in JsonUtils is held by a static final reference also captured in HttpApiUtils, creating a subtle 'snapshot vs. live' asymmetry and an unenforceable mutation contract.",
+      "score_rationale": "The codebase avoids all the major initialization-coupling anti-patterns: no import-time I/O, no circular init chains, no env-var reads at class load, and wiring is explicit. This puts it comfortably above the 80-point 'solid but uneven' anchor. The only weakness is the shared ObjectMapper singleton (JsonUtils.MAPPER), which is mutable by any consumer despite a Javadoc warning, and the HttpApiUtils.MAPPER snapshot which would silently drift if JsonUtils ever changed its return policy. These are confined to two files and carry low practical risk in this single-application codebase, but they represent a real initialization-coupling smell. An 87 reflects strong overall practice with one specific, fixable weakness."
+    }
+  },
+  "issues": [
+    {
+      "dimension": "initialization_coupling",
+      "identifier": "mutable_objectmapper_singleton",
+      "summary": "Shared mutable ObjectMapper singleton exposed via static accessor with only a Javadoc mutation warning as guard",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/utils/JsonUtils.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/api/HttpApiUtils.java"
+      ],
+      "evidence": [
+        "JsonUtils: `private static final ObjectMapper MAPPER = new ObjectMapper();` with `public static ObjectMapper mapper() { return MAPPER; }` — returns the mutable singleton directly",
+        "HttpApiUtils: `static final ObjectMapper MAPPER = JsonUtils.mapper();` — captures a class-init-time snapshot of the singleton reference; if JsonUtils ever vends a new instance, this captured reference is silently stale",
+        "Javadoc in JsonUtils says 'Do not mutate the returned instance' but this is unenforced; any consumer calling mapper().configure(...), mapper().registerModule(...) etc. would silently affect all other consumers at runtime"
+      ],
+      "suggestion": "Return a configured-then-frozen instance: call `mapper.findAndRegisterModules()` once at construction time, then wrap the singleton in a package-private accessor that returns an effectively-immutable copy or documents the intended configuration surface. Alternatively, remove the HttpApiUtils.MAPPER snapshot and always call JsonUtils.mapper() inline — this at least removes the stale-reference risk. For the strongest guarantee, use a builder pattern or configure the mapper once in a dedicated factory and never expose the reference directly.",
+      "confidence": "high",
+      "impact_scope": "module",
+      "fix_scope": "single_edit",
+      "root_cause_cluster": "mutable_globals"
+    }
+  ],
+  "retrospective": {
+    "root_causes": [
+      "The ObjectMapper singleton pattern is idiomatic Java but inherently relies on social contracts (Javadoc warnings) rather than structural immutability; this is a known trade-off in utility-class design"
+    ],
+    "likely_symptoms": [],
+    "possible_false_positives": [
+      "BlackLabQueryExecutor constructor I/O is not an initialization-coupling problem — it is explicit, documented, and structurally expected; should not be flagged"
+    ]
+  }
+}

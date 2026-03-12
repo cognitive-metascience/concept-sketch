@@ -1,0 +1,102 @@
+{
+  "batch": "api_surface_coherence",
+  "batch_index": 19,
+  "assessments": {
+    "api_surface_coherence": 68.0
+  },
+  "dimension_notes": {
+    "api_surface_coherence": {
+      "evidence": [
+        "All handler methods have a single HttpExchange parameter — the HTTP surface is uniformly thin with no multi-parameter overloads.",
+        "SharedExploreParams record centralises the three common exploration parameters (top, min_shared, min_logdice), ensuring all three exploration handlers parse them identically.",
+        "CollocateQueryPort / QueryExecutor interface segregation: ConcordanceHandlers and CorpusQueryHandlers depend on the narrower CollocateQueryPort, while SketchHandlers and ExplorationHandlers use the full QueryExecutor and ExplorationService — appropriate and self-documenting.",
+        "wrapWithErrorHandling is applied uniformly to every registered route, giving all endpoints the same error contract (IAE→400, IOException→500, RequestEntityTooLarge→413), documented in both HttpApiUtils Javadoc and handler Javadoc.",
+        "buildExploreResponseEnvelope is used by handleSemanticFieldExplore, handleSemanticFieldExploreMulti, and handleSemanticFieldComparison for a consistent {status, parameters{relation, top, min_shared, min_logdice, ...}, seed/seeds, ...} envelope — but handleSemanticFieldExamples builds its response map inline, breaking the pattern established by its three sibling handlers.",
+        "handleSemanticFieldExamples (ExplorationHandlers) and handleConcordanceExamples (ConcordanceHandlers) return near-identical response shapes — both emit {status, seed, collocate, relation, bcql, top, total_results, examples} — assembled independently in two different handler classes with no shared response builder.",
+        "The compare endpoint returns 'relation: \"cross_relational\"' using the private constant CROSS_RELATIONAL = \"cross_relational\"; this implementation-internal string leaks as a stable API value with no documentation for clients consuming the field.",
+        "seed vs seeds parameter names are clearly differentiated and documented: /explore takes a single seed, /explore-multi and /compare take comma-separated seeds. Cardinality rules are validated and documented in handler Javadoc.",
+        "seed and collocate parameter names are used consistently across all four endpoints that take individual concordance pairs (/semantic-field/explore, /semantic-field/examples, /concordance/examples, and the internal helpers)."
+      ],
+      "impact_scope": "module",
+      "fix_scope": "multi_file_refactor",
+      "confidence": "high"
+    }
+  },
+  "dimension_judgment": {
+    "api_surface_coherence": {
+      "strengths": [
+        "All HTTP handler methods take only HttpExchange — the API surface is uniformly thin with no multi-argument overloads at the boundary.",
+        "SharedExploreParams record ensures all three exploration handlers parse top/min_shared/min_logdice identically from query params.",
+        "Interface segregation between CollocateQueryPort and QueryExecutor is deliberate and self-documenting: handlers that only need BCQL declare the narrower type.",
+        "Uniform error contract via wrapWithErrorHandling with clear status-code mapping (IAE→400, IOException→500, 413 for oversize) applied consistently to every route.",
+        "Consistent seed/collocate parameter naming across all concordance-returning endpoints with documented cardinality distinctions between /explore and /explore-multi."
+      ],
+      "issue_character": "Issues are localised inconsistencies within a single handler group: one handler breaks the response-envelope pattern used by its three siblings, and two endpoints in different handler classes duplicate near-identical response assembly without a shared builder.",
+      "score_rationale": "The API surface is thoughtfully designed — thin handler signatures, consistent parameter naming, clear error contracts, and good interface segregation push the score well above 60. The main drag is that handleSemanticFieldExamples breaks the response-envelope pattern followed by every other exploration endpoint, and the duplication with handleConcordanceExamples means two endpoints that return the same response shape are assembled independently, creating a maintenance hazard. These are real API coherence gaps for a developer extending or auditing the surface, but they are confined to one handler group rather than systemic across the codebase, landing the score at 68 — solid but unevenly applied."
+    }
+  },
+  "issues": [
+    {
+      "dimension": "api_surface_coherence",
+      "identifier": "examples_envelope_inconsistency",
+      "summary": "handleSemanticFieldExamples builds response inline instead of using buildExploreResponseEnvelope like its three sibling exploration handlers",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/api/ExplorationHandlers.java"
+      ],
+      "evidence": [
+        "handleSemanticFieldExplore, handleSemanticFieldExploreMulti, and handleSemanticFieldComparison all call buildExploreResponseEnvelope to produce {status, parameters{...}, seed/seeds, ...}.",
+        "handleSemanticFieldExamples at line ~195 constructs its own Map<String,Object> with response.put(\"status\",\"ok\"), response.put(\"seed\",...), etc. — bypassing the shared envelope builder and producing a response without a 'parameters' sub-object."
+      ],
+      "suggestion": "Extract a lightweight examples-response builder method (or extend buildExploreResponseEnvelope) and use it in handleSemanticFieldExamples so the examples endpoint's envelope matches the format of the other exploration endpoints.",
+      "confidence": "high",
+      "impact_scope": "module",
+      "fix_scope": "single_edit"
+    },
+    {
+      "dimension": "api_surface_coherence",
+      "identifier": "examples_response_duplication",
+      "summary": "handleSemanticFieldExamples and handleConcordanceExamples produce near-identical response maps with no shared response builder",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/api/ExplorationHandlers.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/api/ConcordanceHandlers.java"
+      ],
+      "evidence": [
+        "ExplorationHandlers.handleSemanticFieldExamples lines ~195-202: response.put(\"status\",\"ok\"), put(\"seed\"), put(\"collocate\"), put(\"relation\"), put(\"bcql\"), put(\"top\"), put(\"total_results\"), put(\"examples\").",
+        "ConcordanceHandlers.handleConcordanceExamples lines ~69-80: identical key set with the same put order, plus a conditional put(\"fallback\",true).",
+        "Both call ExploreResponseAssembler::collocateResultToExampleMap for the examples list."
+      ],
+      "suggestion": "Move the shared response-map construction into ExploreResponseAssembler as a static buildExamplesResponse(seed, collocate, relation, bcql, top, results, fallback) method so both handlers delegate to a single authoritative shape definition.",
+      "confidence": "high",
+      "impact_scope": "module",
+      "fix_scope": "multi_file_refactor"
+    },
+    {
+      "dimension": "api_surface_coherence",
+      "identifier": "cross_relational_undocumented_literal",
+      "summary": "The compare endpoint emits 'relation: \"cross_relational\"' using a private Java constant with no client-facing documentation of this value",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/api/ExplorationHandlers.java"
+      ],
+      "evidence": [
+        "private static final String CROSS_RELATIONAL = \"cross_relational\"; — defined as a package-private string constant.",
+        "buildExploreResponseEnvelope(CROSS_RELATIONAL, ...) puts this string as the \"relation\" field value in the compare endpoint's response body.",
+        "No Javadoc, package-info, or API comment explains to clients that the compare endpoint will always return 'relation: \"cross_relational\"' as a sentinel."
+      ],
+      "suggestion": "Promote CROSS_RELATIONAL to a well-typed enum value or a public constant with a Javadoc note, and add a comment in handleSemanticFieldComparison explaining that cross_relational is the canonical sentinel value clients should expect and handle.",
+      "confidence": "medium",
+      "impact_scope": "local",
+      "fix_scope": "single_edit"
+    }
+  ],
+  "retrospective": {
+    "root_causes": [
+      "The exploration handler grew incrementally — the examples sub-endpoint was added after the envelope pattern was established, and was wired inline rather than refactored to use it.",
+      "ConcordanceHandlers and ExplorationHandlers were split as separate classes (correctly) but no shared response-building contract was extracted at that point, leading to duplication."
+    ],
+    "likely_symptoms": [
+      "examples_envelope_inconsistency",
+      "examples_response_duplication"
+    ],
+    "possible_false_positives": []
+  }
+}

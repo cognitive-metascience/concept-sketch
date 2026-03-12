@@ -36,11 +36,11 @@ class SingleSeedExplorer {
     private static final Logger logger = LoggerFactory.getLogger(SingleSeedExplorer.class);
 
     private final QueryExecutor executor;
-    private final String nounCqlConstraint;
+    private final String nounCqlPattern;
 
-    SingleSeedExplorer(QueryExecutor executor, String nounCqlConstraint) {
+    SingleSeedExplorer(QueryExecutor executor, String nounCqlPattern) {
         this.executor = executor;
-        this.nounCqlConstraint = nounCqlConstraint;
+        this.nounCqlPattern = nounCqlPattern;
     }
 
     /**
@@ -168,7 +168,7 @@ class SingleSeedExplorer {
         Map<String, Map<String, Double>> nounProfiles = new LinkedHashMap<>();
         for (String collocate : seedCollocateScores.keySet()) {
             List<QueryResults.WordSketchResult> nouns = executor.executeCollocations(
-                collocate, nounCqlConstraint, minLogDice, nounsPerPredicate);
+                collocate, nounCqlPattern, minLogDice, nounsPerPredicate);
             for (QueryResults.WordSketchResult r : nouns) {
                 String noun = r.lemma().toLowerCase();
                 if (noun.equals(seed)) continue;

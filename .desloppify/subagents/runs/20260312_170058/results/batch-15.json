@@ -1,0 +1,71 @@
+{
+  "batch": "design_coherence",
+  "batch_index": 15,
+  "assessments": {
+    "design_coherence": 79.0
+  },
+  "dimension_notes": {
+    "design_coherence": {
+      "evidence": [
+        "SemanticFieldExplorer is a thin facade delegating to three algorithm classes (SingleSeedExplorer, MultiSeedExplorer, CollocateProfileComparator) — responsibilities are clearly separated.",
+        "CollocateProfileComparator has a single coherent algorithm split into two named phases (buildRawCollocateProfiles, buildCollocateProfileList) with accurate Javadoc.",
+        "ExplorationService interface groups three related exploration modes with clear rationale documented in the Javadoc — intentional bundling, not a god interface.",
+        "viz/RelationEdgeType.java is a byte-for-byte duplicate of model/exploration/RelationEdgeType.java. The viz/package-info.java explicitly says the canonical home is model/exploration/, but the viz copy was never deleted.",
+        "viz/Edge.java (a record) still imports and uses viz/RelationEdgeType rather than the canonical model/exploration/RelationEdgeType, creating two parallel type hierarchies for the same concept.",
+        "No external callers import viz/Edge or viz/RelationEdgeType (confirmed via grep); the api layer and tests exclusively use model/exploration/Edge and model/exploration/RelationEdgeType — so viz/Edge.java and viz/RelationEdgeType.java are effectively dead code whose presence misleads developers about which type to use.",
+        "No god-function or excessive parameter list issues found in the seed files or their direct collaborators."
+      ],
+      "impact_scope": "module",
+      "fix_scope": "multi_file_refactor",
+      "confidence": "high"
+    }
+  },
+  "dimension_judgment": {
+    "design_coherence": {
+      "strengths": [
+        "Responsibilities decomposed into focused algorithm classes (SingleSeedExplorer, MultiSeedExplorer, CollocateProfileComparator) rather than one monolithic explorer — each class has a single coherent job.",
+        "SemanticFieldExplorer acts as a documented, intentional facade; its Javadoc accurately describes why bundling the three modes under one interface is warranted.",
+        "ExplorationService interface groups methods that share corpus infrastructure without mixing in unrelated concerns.",
+        "CollocateProfileComparator.buildCollocateProfileList performs a well-reasoned two-pass numeric computation with inline rationale for why two passes are unavoidable."
+      ],
+      "issue_character": "The single structural issue is an incomplete migration: a canonical type (RelationEdgeType and its companion Edge) was moved to model/exploration/ but the old viz/ copies were never deleted, leaving two definitions of the same concept in the codebase.",
+      "score_rationale": "The exploration module is well-decomposed — focused classes, earned abstractions, no parameter sprawl. However, the duplicate viz/RelationEdgeType and viz/Edge types create a genuine design coherence problem: a developer adding a new edge type must know which package is canonical (and currently the viz copy points to the wrong one). The package-info even documents the intended canonical location while the old copy persists unused. This sits squarely in the 80-range 'solid but uneven' band where a developer would hit a moment of 'which type do I use?' friction. The otherwise strong decomposition keeps the score from dropping further."
+    }
+  },
+  "issues": [
+    {
+      "dimension": "design_coherence",
+      "identifier": "duplicate_relation_edge_type_in_viz",
+      "summary": "viz/RelationEdgeType and viz/Edge are dead duplicates of their model/exploration/ counterparts, creating two competing type definitions for the same concept.",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/viz/RelationEdgeType.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/viz/Edge.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/model/exploration/RelationEdgeType.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/viz/package-info.java"
+      ],
+      "evidence": [
+        "viz/RelationEdgeType.java is an exact copy of model/exploration/RelationEdgeType.java — same constants, same label() method, same toString() override.",
+        "viz/Edge.java imports viz/RelationEdgeType (the old copy) rather than model/exploration/RelationEdgeType.",
+        "viz/package-info.java explicitly states that Edge and RelationEdgeType 'live in model/exploration/' to avoid an api→viz dependency, but the viz/ copies were never deleted.",
+        "No Java file outside viz/ imports viz/RelationEdgeType or viz/Edge — both are unused by the api layer and all tests, which exclusively use the model/exploration/ versions."
+      ],
+      "suggestion": "Delete viz/RelationEdgeType.java and update viz/Edge.java to import model/exploration/RelationEdgeType instead of the viz-local copy. If viz/Edge.java itself is also unused outside the viz package (no external callers found), delete it too and rely solely on model/exploration/Edge.",
+      "confidence": "high",
+      "impact_scope": "module",
+      "fix_scope": "multi_file_refactor",
+      "root_cause_cluster": "incomplete_type_migration"
+    }
+  ],
+  "retrospective": {
+    "root_causes": [
+      "A type migration moved RelationEdgeType (and Edge) from viz/ to model/exploration/ to break an api→viz import dependency, but the cleanup step (deleting the old viz/ copies and updating viz/Edge.java's import) was not completed."
+    ],
+    "likely_symptoms": [
+      "duplicate_relation_edge_type_in_viz"
+    ],
+    "possible_false_positives": [
+      "The boilerplate_duplication signal on CollocateProfileComparator vs SemanticFieldExplorer imports (lines 7/6) — these are normal Java import blocks, not a design coherence issue worth acting on.",
+      "The boilerplate_duplication signal on ExplorationService vs SemanticFieldExplorer (lines 10/16) — similar observation: shared import groups reflecting shared domain dependencies, not structural duplication."
+    ]
+  }
+}

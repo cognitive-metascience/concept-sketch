@@ -1,0 +1,65 @@
+{
+  "batch": "convention_outlier",
+  "batch_index": 2,
+  "assessments": {
+    "convention_outlier": 82.0
+  },
+  "dimension_notes": {
+    "convention_outlier": {
+      "evidence": [
+        "viz/Edge.java and viz/RelationEdgeType.java are byte-for-byte duplicates of model/exploration/Edge.java and model/exploration/RelationEdgeType.java; the viz/package-info.java explicitly states these types 'live in model/exploration/' but the viz copies remain as dead stale code",
+        "No import of viz.Edge or viz.RelationEdgeType exists outside the viz package itself — only RadialPlot (and viz.Edge references viz.RelationEdgeType) — confirming the viz copies are unused",
+        "model/exploration/ uses Java records for 7 of 9 data-carrier types (CollocateProfile, CoreCollocate, DiscoveredNoun, Edge, ExplorationOptions, FetchExamplesResult, SingleSeedExplorationOptions); ExplorationResult has documented rationale for being a class; ComparisonResult is a class with factory methods but lacks the same explicit rationale in its Javadoc",
+        "Naming conventions are uniform throughout: PascalCase types, camelCase methods/fields, ALL_CAPS constants, *Utils for static utility classes, *Handlers for HTTP handler classes, *Executor/*Port for query interfaces",
+        "Package-private visibility is used consistently for internal helpers (CollocateProfileComparator, MultiSeedExplorer, SingleSeedExplorer, BlackLabSnippetParser, CollocateQueryHelper, all api/*Handlers except WordSketchApiServer); public is reserved for the integration surface"
+      ],
+      "impact_scope": "module",
+      "fix_scope": "single_edit",
+      "confidence": "high"
+    }
+  },
+  "dimension_judgment": {
+    "convention_outlier": {
+      "strengths": [
+        "Naming conventions are uniform across all packages: PascalCase types, camelCase methods, ALL_CAPS constants, *Utils static helpers, *Handlers HTTP layer — no drift observed",
+        "Package-private vs public visibility follows a consistent pattern throughout: internal helpers are package-private, integration surfaces are public",
+        "package-info.java files are present in every package and document the package's intent and boundaries, including calling out the correct canonical home for domain types",
+        "Java records are used systematically for simple data-carrier types; the one exception (ExplorationResult) includes inline Javadoc explaining why a plain class was chosen instead"
+      ],
+      "issue_character": "The single convention violation is isolated and structural: two type definitions (Edge, RelationEdgeType) that conceptually belong to model.exploration were left as dead copies in viz after a refactor moved the canonical definitions, creating a 'two truths' situation that package-info.java acknowledges but does not resolve.",
+      "score_rationale": "The codebase holds its conventions with high discipline across naming, visibility, package structure, and type strategy — a developer can learn the pattern once and trust it everywhere. The one material outlier is the dead-code duplication of Edge and RelationEdgeType in viz, which the package-info.java itself signals are misplaced; this is an isolated leftover from a past refactor rather than systemic drift. The ComparisonResult class-not-record choice is underdocumented compared to ExplorationResult, but follows the same factory pattern and causes minimal confusion. Together these issues produce a small but real 'why is this here?' moment for any developer who opens viz/ expecting visualization-only code and finds domain types — placing this at solid-but-uneven territory (80-83 range) rather than the 90+ strong range."
+    }
+  },
+  "issues": [
+    {
+      "dimension": "convention_outlier",
+      "identifier": "viz-duplicate-domain-types",
+      "summary": "viz.Edge and viz.RelationEdgeType are dead copies of model.exploration equivalents that viz/package-info.java itself says don't belong here",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/viz/Edge.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/viz/RelationEdgeType.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/model/exploration/Edge.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/model/exploration/RelationEdgeType.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/viz/package-info.java"
+      ],
+      "evidence": [
+        "viz/Edge.java (line 10): 'public record Edge(String source, String target, double weight, RelationEdgeType type)' — identical to model/exploration/Edge.java",
+        "viz/RelationEdgeType.java is a byte-for-byte copy of model/exploration/RelationEdgeType.java with same enum constants (SEED_COLLOCATE, DISCOVERED_COLLOCATE, MODIFIER) and same label strings",
+        "viz/package-info.java explicitly states: 'Domain data carriers (e.g. model.exploration.Edge, model.exploration.RelationEdgeType) live in model/exploration/ so that non-visualization layers (e.g. api/) can import them without creating an api→viz dependency'",
+        "grep confirms zero imports of viz.Edge or viz.RelationEdgeType from outside the viz package; only RadialPlot lives in viz and it does not use Edge or RelationEdgeType at all"
+      ],
+      "suggestion": "Delete src/main/java/.../viz/Edge.java and src/main/java/.../viz/RelationEdgeType.java — they are unused dead code. The canonical definitions in model/exploration/ are already in use by api/ and tests. This resolves the 'two truths' situation and makes viz/ a pure rendering-utilities package as its package-info describes.",
+      "confidence": "high",
+      "impact_scope": "module",
+      "fix_scope": "single_edit",
+      "root_cause_cluster": "stale-post-refactor-cleanup"
+    }
+  ],
+  "retrospective": {
+    "root_causes": [
+      "A refactor moved Edge and RelationEdgeType from viz to model.exploration (as evidenced by the package-info.java explaining the canonical home), but the viz copies were not deleted, leaving unused shadow types"
+    ],
+    "likely_symptoms": [],
+    "possible_false_positives": []
+  }
+}

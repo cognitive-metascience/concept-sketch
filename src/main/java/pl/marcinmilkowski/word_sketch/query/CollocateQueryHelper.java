@@ -333,12 +333,8 @@ class CollocateQueryHelper {
         for (HitRecord rec : records) {
             String collocateLemma = rec.collocateLemma();
             if (collocateLemma == null || collocateLemma.isEmpty()) {
-                String plainText = BlackLabSnippetParser.trimToSentence(
-                        rec.leftText(), rec.matchText(), rec.rightText());
-                results.add(new QueryResults.CollocateResult(
-                        plainText, rec.xmlSnippet(),
-                        rec.start(), rec.end(), String.valueOf(rec.docId()),
-                        null, 0L, 0.0));
+                // Null-collocate hits are SENTENCE_BOUND sentinels (no extractable collocate);
+                // they carry no logDice score and must not be mixed into the ranked results.
                 continue;
             }
 
