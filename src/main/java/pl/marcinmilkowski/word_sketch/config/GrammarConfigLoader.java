@@ -78,6 +78,8 @@ public final class GrammarConfigLoader {
      * @param reader  Reader over a valid grammar JSON document
      * @return immutable {@link GrammarConfig} with the parsed relations
      * @throws IOException if the reader fails or the JSON is invalid
+     * @throws IllegalArgumentException if the config is structurally invalid
+     *         (missing required fields, duplicate relation IDs, etc.)
      */
     public static GrammarConfig fromReader(Reader reader) throws IOException {
         var sw = new java.io.StringWriter();
@@ -98,7 +100,7 @@ public final class GrammarConfigLoader {
     private static GrammarConfig parse(String content, Path configPath) throws IOException {
         ObjectNode root;
         try {
-            root = JsonUtils.MAPPER.readValue(content, ObjectNode.class);
+            root = JsonUtils.mapper().readValue(content, ObjectNode.class);
         } catch (JsonProcessingException e) {
             throw new IOException("Failed to parse grammar config" +
                 (configPath != null ? " at " + configPath : "") + ": " + e.getMessage(), e);

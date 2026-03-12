@@ -34,7 +34,7 @@ final class HttpApiUtils {
 
     private static final Logger logger = LoggerFactory.getLogger(HttpApiUtils.class);
 
-    static final ObjectMapper MAPPER = JsonUtils.MAPPER;
+    static final ObjectMapper MAPPER = JsonUtils.mapper();
 
     /**
      * Default allowed CORS origin (used when the {@code cors.allow.origin} system property

@@ -23,12 +23,12 @@ public final class GrammarConfigSerializer {
      * @return an {@link ObjectNode} suitable for embedding in an API response
      */
     public static ObjectNode toJson(GrammarConfig config) {
-        ObjectNode root = JsonUtils.MAPPER.createObjectNode();
+        ObjectNode root = JsonUtils.mapper().createObjectNode();
         root.put("version", config.version());
         if (config.configPath() != null) {
             root.put("config_path", config.configPath().toString());
         }
-        ArrayNode relationsArray = JsonUtils.MAPPER.createArrayNode();
+        ArrayNode relationsArray = JsonUtils.mapper().createArrayNode();
         for (RelationConfig rel : config.relations()) {
             relationsArray.add(toJson(rel));
         }
@@ -43,7 +43,7 @@ public final class GrammarConfigSerializer {
      * @return an {@link ObjectNode} with all non-null fields populated
      */
     public static ObjectNode toJson(RelationConfig rel) {
-        ObjectNode obj = JsonUtils.MAPPER.createObjectNode();
+        ObjectNode obj = JsonUtils.mapper().createObjectNode();
         obj.put("id", rel.id());
         if (rel.name() != null) obj.put("name", rel.name());
         if (rel.description() != null) obj.put("description", rel.description());

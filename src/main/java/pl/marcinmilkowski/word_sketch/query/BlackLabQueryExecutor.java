@@ -136,6 +136,8 @@ public class BlackLabQueryExecutor implements QueryExecutor {
 
         } catch (InvalidQuery e) {
             throw new IllegalArgumentException("CQL parse error: " + e.getMessage(), e);
+        } catch (RuntimeException e) {
+            throw new IOException("Unexpected error executing CQL query: " + e.getMessage(), e);
         }
     }
 

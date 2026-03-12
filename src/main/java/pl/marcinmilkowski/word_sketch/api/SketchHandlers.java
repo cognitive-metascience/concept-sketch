@@ -102,11 +102,13 @@ class SketchHandlers {
                 sketch.results().stream().mapToLong(QueryResults.WordSketchResult::frequency).sum()));
 
         Map<String, Object> response = new HashMap<>();
-        response.put("status", "ok");
         response.put("lemma", lemma);
         response.put("relations", byRelation);
         if (!relationErrors.isEmpty()) {
-            response.put("errors", relationErrors);
+            response.put("status", "partial");
+            response.put("warnings", relationErrors);
+        } else {
+            response.put("status", "ok");
         }
         HttpApiUtils.sendJsonResponse(exchange, response);
     }
@@ -123,12 +125,14 @@ class SketchHandlers {
             (rel, sketch) -> buildRelationResponse(rel, sketch.results(), sketch.collocations()));
 
         Map<String, Object> response = new HashMap<>();
-        response.put("status", "ok");
         response.put("lemma", lemma);
         response.put("type", "dependency");
         response.put("relations", byRelation);
         if (!relationErrors.isEmpty()) {
-            response.put("errors", relationErrors);
+            response.put("status", "partial");
+            response.put("warnings", relationErrors);
+        } else {
+            response.put("status", "ok");
         }
         HttpApiUtils.sendJsonResponse(exchange, response);
     }
