@@ -106,16 +106,9 @@ class SketchHandlers {
         Map<String, Object> byRelation = new HashMap<>();
         List<String> relationErrors = new ArrayList<>();
 
-        executeRelationQueries(relationType, rel -> true, lemma, byRelation, relationErrors, (rel, sketch) -> {
-            Map<String, Object> relData = new HashMap<>();
-            relData.put("id", rel.id());
-            relData.put("name", rel.name());
-            relData.put("cql", rel.pattern());
-            relData.put("collocate_pos_group", rel.collocatePosGroup().label());
-            relData.put("total_matches", sketch.results().stream().mapToLong(QueryResults.WordSketchResult::frequency).sum());
-            relData.put("collocations", sketch.collocations());
-            return relData;
-        });
+        executeRelationQueries(relationType, rel -> true, lemma, byRelation, relationErrors, (rel, sketch) ->
+            buildSurfaceRelationEntry(rel, sketch.collocations(),
+                sketch.results().stream().mapToLong(QueryResults.WordSketchResult::frequency).sum()));
 
         Map<String, Object> response = new HashMap<>();
         response.put("status", "ok");
@@ -210,11 +203,8 @@ class SketchHandlers {
             collocations.add(formatWordSketchResult(result));
         }
 
-        Map<String, Object> relData = new HashMap<>();
-        relData.put("id", rel.id());
-        relData.put("name", rel.name());
-        relData.put("collocations", collocations);
-        relData.put("total_matches", results.stream().mapToLong(QueryResults.WordSketchResult::frequency).sum());
+        long totalMatches = results.stream().mapToLong(QueryResults.WordSketchResult::frequency).sum();
+        Map<String, Object> relData = buildSurfaceRelationEntry(rel, collocations, totalMatches);
 
         Map<String, Object> relationsMap = new HashMap<>();
         relationsMap.put(rel.id(), relData);
@@ -246,6 +236,24 @@ class SketchHandlers {
     private record ExecutedSketch(
             List<QueryResults.WordSketchResult> results,
             List<Map<String, Object>> collocations) {}
+
+    /**
+     * Builds the common surface-relation response map shared by the full-sketch and
+     * single-relation handlers: {@code {id, name, pattern, collocate_pos_group, total_matches, collocations}}.
+     */
+    private static Map<String, Object> buildSurfaceRelationEntry(
+            pl.marcinmilkowski.word_sketch.config.RelationConfig rel,
+            List<Map<String, Object>> collocations,
+            long totalMatches) {
+        Map<String, Object> relData = new HashMap<>();
+        relData.put("id", rel.id());
+        relData.put("name", rel.name());
+        relData.put("pattern", rel.pattern());
+        relData.put("collocate_pos_group", rel.collocatePosGroup().label());
+        relData.put("total_matches", totalMatches);
+        relData.put("collocations", collocations);
+        return relData;
+    }
 
     /**
      * Builds the response map for a single dependency relation entry.

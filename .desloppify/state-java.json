@@ -11,15 +11,15 @@
     "total": 1550,
     "auto_resolved": 295,
     "false_positive": 0,
-    "fixed": 1039,
-    "open": 11,
+    "fixed": 1042,
+    "open": 8,
     "wontfix": 205,
     "by_tier": {
       "1": {
         "auto_resolved": 147,
         "false_positive": 0,
-        "fixed": 719,
-        "open": 5,
+        "fixed": 722,
+        "open": 2,
         "wontfix": 114
       },
       "2": {
@@ -63206,16 +63206,22 @@
         "suggestion": "Replace relData.put(\"cql\", rel.pattern()) with relData.put(\"pattern\", rel.pattern()) on line 113 of SketchHandlers.java to make the field name consistent with the /api/relations endpoint. Update any API client or frontend code that reads the 'cql' key from /api/sketch/{lemma} responses.",
         "reasoning": ""
       },
-      "status": "open",
-      "note": null,
+      "status": "fixed",
+      "note": "Renamed 'cql' key to 'pattern' in SketchHandlers full-sketch response to match relations-list endpoint",
       "first_seen": "2026-03-12T07:13:51+00:00",
       "last_seen": "2026-03-12T07:13:51+00:00",
-      "resolved_at": null,
+      "resolved_at": "2026-03-12T07:35:37+00:00",
       "reopen_count": 0,
       "lang": "java",
       "suppressed": false,
       "suppressed_at": null,
-      "suppression_pattern": null
+      "suppression_pattern": null,
+      "resolution_attestation": {
+        "kind": "manual",
+        "text": "I have actually renamed the key. I am not gaming the score.",
+        "attested_at": "2026-03-12T07:35:37+00:00",
+        "scan_verified": false
+      }
     },
     "review::.::holistic::incomplete_migration::dead_backward_compat_constructor::f739b5ce": {
       "id": "review::.::holistic::incomplete_migration::dead_backward_compat_constructor::f739b5ce",
@@ -63277,16 +63283,22 @@
         "suggestion": "Extract a shared `buildSurfaceRelationEntry(RelationConfig rel, List collocations, long totalMatches)` factory method that always includes `id`, `name`, `cql`, `collocate_pos_group`, `total_matches`, `collocations`. Both full-sketch and single-relation paths should use it. The DEP path can extend it with `description` and `deprel` via a separate DEP-specific builder.",
         "reasoning": ""
       },
-      "status": "open",
-      "note": null,
+      "status": "fixed",
+      "note": "Extracted shared buildSurfaceRelationEntry helper in SketchHandlers used by both full-sketch and single-relation handlers",
       "first_seen": "2026-03-12T07:13:51+00:00",
       "last_seen": "2026-03-12T07:13:51+00:00",
-      "resolved_at": null,
+      "resolved_at": "2026-03-12T07:35:38+00:00",
       "reopen_count": 0,
       "lang": "java",
       "suppressed": false,
       "suppressed_at": null,
-      "suppression_pattern": null
+      "suppression_pattern": null,
+      "resolution_attestation": {
+        "kind": "manual",
+        "text": "I have actually extracted the shared builder. I am not gaming the score.",
+        "attested_at": "2026-03-12T07:35:38+00:00",
+        "scan_verified": false
+      }
     },
     "review::.::holistic::api_surface_coherence::examples_endpoints_response_shape_divergence::ce3d9e3b": {
       "id": "review::.::holistic::api_surface_coherence::examples_endpoints_response_shape_divergence::ce3d9e3b",
@@ -63310,16 +63322,22 @@
         "suggestion": "Add `relation` and `top` to the handleSemanticFieldExamples response to match the concordance examples envelope. The concordance-specific fields (`bcql`, `fallback`) can remain unique to that endpoint. This makes the shared base fields consistent across both examples endpoints.",
         "reasoning": ""
       },
-      "status": "open",
-      "note": null,
+      "status": "fixed",
+      "note": "Added relation and top fields to handleSemanticFieldExamples response to match parallel concordance examples endpoint",
       "first_seen": "2026-03-12T07:13:51+00:00",
       "last_seen": "2026-03-12T07:13:51+00:00",
-      "resolved_at": null,
+      "resolved_at": "2026-03-12T07:35:40+00:00",
       "reopen_count": 0,
       "lang": "java",
       "suppressed": false,
       "suppressed_at": null,
-      "suppression_pattern": null
+      "suppression_pattern": null,
+      "resolution_attestation": {
+        "kind": "manual",
+        "text": "I have actually added the missing fields. I am not gaming the score.",
+        "attested_at": "2026-03-12T07:35:40+00:00",
+        "scan_verified": false
+      }
     }
   },
   "scan_coverage": {
@@ -63404,7 +63422,7 @@
       "assessed_at": "2026-03-12T07:13:51+00:00",
       "needs_review_refresh": true,
       "refresh_reason": "review_issue_fixed",
-      "stale_since": "2026-03-12T07:29:53+00:00"
+      "stale_since": "2026-03-12T07:35:37+00:00"
     },
     "package_organization": {
       "score": 65.0,
@@ -63439,7 +63457,10 @@
     "api_surface_coherence": {
       "score": 65.1,
       "source": "holistic",
-      "assessed_at": "2026-03-12T07:13:51+00:00"
+      "assessed_at": "2026-03-12T07:13:51+00:00",
+      "needs_review_refresh": true,
+      "refresh_reason": "review_issue_fixed",
+      "stale_since": "2026-03-12T07:35:40+00:00"
     },
     "authorization_consistency": {
       "score": 81.6,
@@ -66789,13 +66810,13 @@
       "strict": 65.1,
       "verified_strict_score": 65.1,
       "checks": 10,
-      "failing": 2,
+      "failing": 0,
       "tier": 4,
       "detectors": {
         "subjective_assessment": {
           "potential": 10,
           "pass_rate": 0.651,
-          "failing": 2,
+          "failing": 0,
           "weighted_failures": 3.49,
           "assessment_score": 65.1,
           "placeholder": false,
@@ -66831,13 +66852,13 @@
       "strict": 73.1,
       "verified_strict_score": 73.1,
       "checks": 10,
-      "failing": 1,
+      "failing": 0,
       "tier": 4,
       "detectors": {
         "subjective_assessment": {
           "potential": 10,
           "pass_rate": 0.731,
-          "failing": 1,
+          "failing": 0,
           "weighted_failures": 2.69,
           "assessment_score": 73.1,
           "placeholder": false,

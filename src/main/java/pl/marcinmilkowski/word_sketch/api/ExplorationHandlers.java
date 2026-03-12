@@ -196,6 +196,8 @@ class ExplorationHandlers {
         response.put("status", "ok");
         response.put("collocate", collocate);
         response.put("seed", seed);
+        response.put("relation", resolvedConfig.id());
+        response.put("top", maxExamples);
         response.put("examples", examples);
         response.put("total_results", examples.size());
 
