@@ -22,38 +22,38 @@ class BlackLabQueryExecutorTest {
     // ── Static helper tests (no index required, always run in CI) ────────────
 
     @Test
-    @DisplayName("buildBcqlWithLemmaSubstitution: bracket-starting pattern is prefixed with quoted lemma")
+    @DisplayName("buildBcqlWithLemmaPrepended: bracket-starting pattern is prefixed with quoted lemma")
     void buildBcql_bracketPattern_prependsLemma() {
-        String result = BlackLabQueryExecutor.buildBcqlWithLemmaSubstitution("[xpos=\"JJ.*\"]", "house");
+        String result = BlackLabQueryExecutor.buildBcqlWithLemmaPrepended("[xpos=\"JJ.*\"]", "house");
         assertEquals("\"house\" [xpos=\"JJ.*\"]", result);
     }
 
     @Test
-    @DisplayName("buildBcqlWithLemmaSubstitution: lemma is lowercased")
+    @DisplayName("buildBcqlWithLemmaPrepended: lemma is lowercased")
     void buildBcql_lemmaIsLowercased() {
-        String result = BlackLabQueryExecutor.buildBcqlWithLemmaSubstitution("[xpos=\"NN\"]", "Theory");
+        String result = BlackLabQueryExecutor.buildBcqlWithLemmaPrepended("[xpos=\"NN\"]", "Theory");
         assertTrue(result.startsWith("\"theory\""), "Lemma must be lowercased in BCQL pattern: " + result);
     }
 
     @Test
-    @DisplayName("buildBcqlWithLemmaSubstitution: backslash in lemma is escaped")
+    @DisplayName("buildBcqlWithLemmaPrepended: backslash in lemma is escaped")
     void buildBcql_backslashEscaped() {
-        String result = BlackLabQueryExecutor.buildBcqlWithLemmaSubstitution("[xpos=\"NN\"]", "back\\slash");
+        String result = BlackLabQueryExecutor.buildBcqlWithLemmaPrepended("[xpos=\"NN\"]", "back\\slash");
         assertTrue(result.startsWith("\"back\\\\slash\""), "Backslash must be doubled: " + result);
     }
 
     @Test
-    @DisplayName("buildBcqlWithLemmaSubstitution: non-bracket pattern throws IllegalArgumentException")
+    @DisplayName("buildBcqlWithLemmaPrepended: non-bracket pattern throws IllegalArgumentException")
     void buildBcql_nonBracketPattern_throwsIAE() {
         assertThrows(IllegalArgumentException.class, () ->
-            BlackLabQueryExecutor.buildBcqlWithLemmaSubstitution("INVALID_FORMAT", "house"));
+            BlackLabQueryExecutor.buildBcqlWithLemmaPrepended("INVALID_FORMAT", "house"));
     }
 
     @Test
-    @DisplayName("buildBcqlWithLemmaSubstitution: empty-string pattern throws IllegalArgumentException")
+    @DisplayName("buildBcqlWithLemmaPrepended: empty-string pattern throws IllegalArgumentException")
     void buildBcql_emptyPattern_throwsIAE() {
         assertThrows(IllegalArgumentException.class, () ->
-            BlackLabQueryExecutor.buildBcqlWithLemmaSubstitution("", "house"));
+            BlackLabQueryExecutor.buildBcqlWithLemmaPrepended("", "house"));
     }
 
     // ── Live-index tests (skipped in CI when no index is present) ────────────

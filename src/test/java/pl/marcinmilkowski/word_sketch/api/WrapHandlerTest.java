@@ -28,7 +28,7 @@ class WrapHandlerTest {
 
         assertEquals(400, ((TestExchangeFactory.MockExchange) ex).statusCode,
                 "IAE must map to HTTP 400");
-        ObjectNode body = HttpApiUtils.MAPPER.readValue(((TestExchangeFactory.MockExchange) ex).getResponseBodyAsString(), ObjectNode.class);
+        ObjectNode body = HttpApiUtils.mapper().readValue(((TestExchangeFactory.MockExchange) ex).getResponseBodyAsString(), ObjectNode.class);
         assertTrue(body.path("error").asText().contains("bad param"),
                 "Error message should include original IAE message");
     }
@@ -53,7 +53,7 @@ class WrapHandlerTest {
 
         assertEquals(500, ((TestExchangeFactory.MockExchange) ex).statusCode,
                 "RuntimeException must map to HTTP 500");
-        ObjectNode body = HttpApiUtils.MAPPER.readValue(((TestExchangeFactory.MockExchange) ex).getResponseBodyAsString(), ObjectNode.class);
+        ObjectNode body = HttpApiUtils.mapper().readValue(((TestExchangeFactory.MockExchange) ex).getResponseBodyAsString(), ObjectNode.class);
         assertTrue(body.path("error").asText().contains("unexpected"),
                 "Error message should include original exception message");
     }
@@ -66,7 +66,7 @@ class WrapHandlerTest {
         HttpApiUtils.wrapWithErrorHandling(throwsTooLarge, "test-op").handle(ex);
 
         assertEquals(413, ex.statusCode, "RequestEntityTooLargeException must map to HTTP 413");
-        ObjectNode body = HttpApiUtils.MAPPER.readValue(ex.getResponseBodyAsString(), ObjectNode.class);
+        ObjectNode body = HttpApiUtils.mapper().readValue(ex.getResponseBodyAsString(), ObjectNode.class);
         assertTrue(body.path("error").asText().contains("body too large"),
                 "Error message should include the original message");
     }

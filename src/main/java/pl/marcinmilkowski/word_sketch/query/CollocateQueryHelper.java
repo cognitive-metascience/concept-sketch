@@ -110,13 +110,14 @@ class CollocateQueryHelper {
     record CollocateSearch(long headwordFreq, HitGroups groups) {}
 
     /**
-     * Parses {@code bcqlPattern}, executes the search with stored hits (needed when the
-     * iteration logic reads stored XML fields), and returns headword frequency with grouped hits.
+     * Parses {@code bcqlPattern}, executes the search requesting stored XML hit fields
+     * (needed when the iteration logic reads per-hit XML content), and returns headword
+     * frequency with grouped hits.
      *
      * @param lemma       the headword lemma used to fetch total corpus frequency
      * @param bcqlPattern the BCQL pattern to search
      */
-    CollocateSearch executeCollocateSearchWithContent(String lemma, String bcqlPattern)
+    CollocateSearch executeCollocateSearchWithStoredFields(String lemma, String bcqlPattern)
             throws IOException {
         return performCollocateSearch(lemma, bcqlPattern, true);
     }

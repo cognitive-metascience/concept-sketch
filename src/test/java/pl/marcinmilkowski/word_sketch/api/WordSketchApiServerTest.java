@@ -61,7 +61,7 @@ class WordSketchApiServerTest {
     void health_returns200() throws Exception {
         HttpResponse<String> response = get("/health");
         assertEquals(200, response.statusCode());
-        ObjectNode body = HttpApiUtils.MAPPER.readValue(response.body(), ObjectNode.class);
+        ObjectNode body = HttpApiUtils.mapper().readValue(response.body(), ObjectNode.class);
         assertEquals("ok", body.path("status").asText());
     }
 
@@ -127,7 +127,7 @@ class WordSketchApiServerTest {
         try {
             HttpResponse<String> response = get(richServer.getPort(), "/api/sketch/theory");
             assertEquals(200, response.statusCode());
-            ObjectNode body = HttpApiUtils.MAPPER.readValue(response.body(), ObjectNode.class);
+            ObjectNode body = HttpApiUtils.mapper().readValue(response.body(), ObjectNode.class);
             assertEquals("ok", body.path("status").asText());
             assertEquals("theory", body.path("lemma").asText());
             JsonNode relations = body.path("relations");
@@ -173,7 +173,7 @@ class WordSketchApiServerTest {
             HttpResponse<String> response = get(richServer.getPort(),
                     "/api/semantic-field/explore?seed=theory&relation=adj_predicate&top=5&min_shared=1");
             assertEquals(200, response.statusCode());
-            ObjectNode body = HttpApiUtils.MAPPER.readValue(response.body(), ObjectNode.class);
+            ObjectNode body = HttpApiUtils.mapper().readValue(response.body(), ObjectNode.class);
             assertEquals("ok", body.path("status").asText());
             assertEquals("theory", body.path("seed").asText());
             assertFalse(body.path("edges").isMissingNode(), "Response must contain an 'edges' key");

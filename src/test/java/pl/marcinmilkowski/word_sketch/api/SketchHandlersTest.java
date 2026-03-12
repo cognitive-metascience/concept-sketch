@@ -56,7 +56,7 @@ class SketchHandlersTest {
         TestExchangeFactory.MockExchange ex = new TestExchangeFactory.MockExchange("http://localhost/api/sketch/theory");
         handlers().routeSketchRequest(ex);
         assertEquals(200, ex.statusCode);
-        ObjectNode body = HttpApiUtils.MAPPER.readValue(ex.getResponseBodyAsString(), ObjectNode.class);
+        ObjectNode body = HttpApiUtils.mapper().readValue(ex.getResponseBodyAsString(), ObjectNode.class);
         assertEquals("ok", body.path("status").asText());
         assertEquals("theory", body.path("lemma").asText());
         assertNotNull(body.get("relations"), "Full sketch response should contain a relations map");
@@ -74,7 +74,7 @@ class SketchHandlersTest {
         TestExchangeFactory.MockExchange ex = new TestExchangeFactory.MockExchange("http://localhost/api/sketch/theory/" + firstRelationId);
         new SketchHandlers(stubExecutor(), config).routeSketchRequest(ex);
         assertEquals(200, ex.statusCode);
-        ObjectNode body = HttpApiUtils.MAPPER.readValue(ex.getResponseBodyAsString(), ObjectNode.class);
+        ObjectNode body = HttpApiUtils.mapper().readValue(ex.getResponseBodyAsString(), ObjectNode.class);
         assertEquals("ok", body.path("status").asText());
         assertEquals("theory", body.path("lemma").asText());
         assertNotNull(body.get("relations"), "Single-relation sketch should contain a relations map");
@@ -88,7 +88,7 @@ class SketchHandlersTest {
         TestExchangeFactory.MockExchange ex = new TestExchangeFactory.MockExchange("http://localhost/api/sketch/surface-relations");
         handlers().handleRelationsForType(ex, RelationType.SURFACE);
         assertEquals(200, ex.statusCode);
-        ObjectNode body = HttpApiUtils.MAPPER.readValue(ex.getResponseBodyAsString(), ObjectNode.class);
+        ObjectNode body = HttpApiUtils.mapper().readValue(ex.getResponseBodyAsString(), ObjectNode.class);
         assertEquals("ok", body.path("status").asText());
         assertNotNull(body.get("relations"), "Surface-relations response should contain a relations array");
     }

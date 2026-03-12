@@ -45,7 +45,7 @@ class ExplorationHandlersTest {
                 "http://localhost/api/semantic-field/explore?seed=house&relation=adj_predicate&top=5&min_shared=1");
         handlers().handleSemanticFieldExplore(ex);
         assertEquals(200, ex.statusCode);
-        ObjectNode body = HttpApiUtils.MAPPER.readValue(ex.getResponseBodyAsString(), ObjectNode.class);
+        ObjectNode body = HttpApiUtils.mapper().readValue(ex.getResponseBodyAsString(), ObjectNode.class);
         assertEquals("ok", body.path("status").asText());
         assertEquals("house", body.path("seed").asText());
         assertNotNull(body.get("edges"), "Response should contain an edges key");
@@ -57,7 +57,7 @@ class ExplorationHandlersTest {
                 "http://localhost/api/semantic-field/explore-multi?seeds=theory,model&relation=adj_predicate&top=5&min_shared=1");
         handlers().handleSemanticFieldExploreMulti(ex);
         assertEquals(200, ex.statusCode);
-        ObjectNode body = HttpApiUtils.MAPPER.readValue(ex.getResponseBodyAsString(), ObjectNode.class);
+        ObjectNode body = HttpApiUtils.mapper().readValue(ex.getResponseBodyAsString(), ObjectNode.class);
         assertEquals("ok", body.path("status").asText());
         assertNotNull(body.get("seeds"), "Response should contain a seeds array");
         assertEquals(2, body.path("seed_count").asInt());
@@ -69,7 +69,7 @@ class ExplorationHandlersTest {
                 "http://localhost/api/semantic-field/compare?seeds=theory,model&min_logdice=0.0");
         handlers().handleSemanticFieldComparison(ex);
         assertEquals(200, ex.statusCode);
-        ObjectNode body = HttpApiUtils.MAPPER.readValue(ex.getResponseBodyAsString(), ObjectNode.class);
+        ObjectNode body = HttpApiUtils.mapper().readValue(ex.getResponseBodyAsString(), ObjectNode.class);
         assertNotNull(body, "Response body should be valid JSON");
         assertEquals("ok", body.path("status").asText());
         assertNotNull(body.get("collocates"), "Response should contain a collocates array");
@@ -151,7 +151,7 @@ class ExplorationHandlersTest {
                 "http://localhost/api/semantic-field/examples?collocate=important&seed=theory&relation=noun_adj_predicates");
         handlers.handleSemanticFieldExamples(ex);
         assertEquals(200, ex.statusCode);
-        ObjectNode body = HttpApiUtils.MAPPER.readValue(ex.getResponseBodyAsString(), ObjectNode.class);
+        ObjectNode body = HttpApiUtils.mapper().readValue(ex.getResponseBodyAsString(), ObjectNode.class);
         assertEquals("ok", body.path("status").asText());
         assertTrue(body.has("examples"), "Response must contain 'examples' key");
         assertEquals("important", body.path("collocate").asText());

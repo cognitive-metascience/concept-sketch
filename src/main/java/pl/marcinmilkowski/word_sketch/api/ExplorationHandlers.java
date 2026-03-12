@@ -16,6 +16,7 @@ import pl.marcinmilkowski.word_sketch.model.exploration.SingleSeedExplorationOpt
 import pl.marcinmilkowski.word_sketch.exploration.spi.ExplorationService;
 import pl.marcinmilkowski.word_sketch.model.exploration.Seeds;
 
+import pl.marcinmilkowski.word_sketch.api.model.ComparisonResponse;
 import pl.marcinmilkowski.word_sketch.api.model.ExploreResponse;
 
 import java.util.Objects;
@@ -165,9 +166,10 @@ class ExplorationHandlers {
             commonParams.topCollocates(), commonParams.minLogDice(), commonParams.minShared());
         ComparisonResult result = semanticFieldExplorer.compareCollocateProfiles(seeds, opts);
 
-        Map<String, Object> response = buildMultiSeedResponseEnvelope(
-            CROSS_RELATIONAL, commonParams, new ArrayList<>(result.nouns()));
-        ExploreResponseAssembler.populateComparisonResponse(response, result);
+        ComparisonResponse response = ExploreResponseAssembler.buildComparisonResponse(
+            new ArrayList<>(result.nouns()), CROSS_RELATIONAL,
+            commonParams.topCollocates(), commonParams.minShared(), commonParams.minLogDice(),
+            result);
 
         HttpApiUtils.sendJsonResponse(exchange, response);
     }

@@ -77,7 +77,7 @@ public class BlackLabQueryExecutor implements QueryExecutor {
 
     @Override
     public List<WordSketchResult> executeCollocations(
-            String lemma,
+            @Nullable String lemma,
             String cqlPattern,
             double minLogDice,
             int maxResults) throws IOException {
@@ -87,9 +87,9 @@ public class BlackLabQueryExecutor implements QueryExecutor {
             return Collections.emptyList();
         }
 
-        String bcql = buildBcqlWithLemmaSubstitution(cqlPattern, lemma);
+        String bcql = buildBcqlWithLemmaPrepended(cqlPattern, lemma);
 
-        CollocateQueryHelper.CollocateSearch collocateSearch = collocateQueryHelper.executeCollocateSearchWithContent(lemma, bcql);
+        CollocateQueryHelper.CollocateSearch collocateSearch = collocateQueryHelper.executeCollocateSearchWithStoredFields(lemma, bcql);
         long headwordFreq = collocateSearch.headwordFreq();
         HitGroups groups = collocateSearch.groups();
 
@@ -177,7 +177,7 @@ public class BlackLabQueryExecutor implements QueryExecutor {
 
     private List<WordSketchResult> queryAndRankDepCollocates(
             String bcql, String lemma, double minLogDice, int maxResults) throws IOException {
-        CollocateQueryHelper.CollocateSearch collocateSearch = collocateQueryHelper.executeCollocateSearchWithContent(lemma, bcql);
+        CollocateQueryHelper.CollocateSearch collocateSearch = collocateQueryHelper.executeCollocateSearchWithStoredFields(lemma, bcql);
         long headwordFreq = collocateSearch.headwordFreq();
         HitGroups groups = collocateSearch.groups();
 
@@ -280,7 +280,7 @@ public class BlackLabQueryExecutor implements QueryExecutor {
      * @param lemma       headword to prepend
      * @throws IllegalArgumentException if {@code cqlPattern} does not start with {@code [}
      */
-    static String buildBcqlWithLemmaSubstitution(String cqlPattern, String lemma) {
+    static String buildBcqlWithLemmaPrepended(String cqlPattern, String lemma) {
         if (cqlPattern.startsWith("[")) {
             return String.format("\"%s\" %s", CqlUtils.escapeForRegex(lemma.toLowerCase()), cqlPattern);
         } else {

@@ -73,10 +73,10 @@ public class RadialPlot {
     private static class Collocate {
         String word;
         double score;
-        double radius;  // distance from center in pixels
+        double orbitRadius;  // distance from center in pixels
         double angle;
-        double x, y;   // computed position
-        double circleRadius; // based on score
+        double x, y;         // computed position
+        double glyphRadius;  // drawn circle size based on score
 
         Collocate(String word, double score) {
             this.word = word;
@@ -124,17 +124,17 @@ public class RadialPlot {
                 Collocate c = collocates.get(i);
 
                 // Spiral: radius increases by fixed step per item
-                c.radius = startRadius + (i * radiusStep);
+                c.orbitRadius = startRadius + (i * radiusStep);
 
                 // Evenly distribute around circle, starting from right (angle 0)
                 c.angle = i * (2 * Math.PI / n);
 
                 // Compute position
-                c.x = centerX + c.radius * Math.cos(c.angle);
-                c.y = centerY + c.radius * Math.sin(c.angle);
+                c.x = centerX + c.orbitRadius * Math.cos(c.angle);
+                c.y = centerY + c.orbitRadius * Math.sin(c.angle);
 
                 // Circle radius based on absolute score magnitude, scaled to canvas
-                c.circleRadius = Math.abs(c.score) * scale;
+                c.glyphRadius = Math.abs(c.score) * scale;
             }
         }
     }
@@ -199,7 +199,7 @@ public class RadialPlot {
             }
 
             // Draw collocate circle (scaled radius, min 8*scale)
-            double r = Math.max(MIN_COLLOCATE_RADIUS * scale, c.circleRadius);
+            double r = Math.max(MIN_COLLOCATE_RADIUS * scale, c.glyphRadius);
             svg.append(String.format("    <circle class=\"collocate-circle\" cx=\"%s\" cy=\"%s\" r=\"%s\" fill=\"%s\"/>\n",
                 fmt(c.x), fmt(c.y), fmt(r), fillColor));
 

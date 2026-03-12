@@ -8,6 +8,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import pl.marcinmilkowski.word_sketch.api.model.ComparisonResponse;
 import pl.marcinmilkowski.word_sketch.api.model.ExploreResponse;
 import pl.marcinmilkowski.word_sketch.api.model.SeedCollocateEntry;
 import pl.marcinmilkowski.word_sketch.model.sketch.*;
@@ -294,14 +295,11 @@ final class ExploreResponseAssembler {
     }
 
     /**
-     * Populates {@code response} with comparison data fields:
-     * {@code collocates}, {@code collocates_count}, {@code fully_shared_count},
-     * {@code partially_shared_count}, {@code specific_count}, {@code edges}, and {@code edges_count}.
+     * Populates {@code response} with comparison data fields.
      *
-     * <p>Envelope fields ({@code status}, {@code seeds}, {@code seed_count}, {@code parameters})
-     * are the caller's responsibility, keeping this method symmetric with
-     * {@link #populateExploreResponse}.</p>
+     * @deprecated Use {@link #buildComparisonResponse} instead.
      */
+    @Deprecated
     static void populateComparisonResponse(@NonNull Map<String, Object> response, @NonNull ComparisonResult result) {
         List<Map<String, Object>> collocates = new ArrayList<>();
         for (CollocateProfile collocate : result.collocates()) {
@@ -318,6 +316,57 @@ final class ExploreResponseAssembler {
         List<Edge> edges = buildComparisonEdges(result);
         response.put("edges", edges.stream().map(ExploreResponseAssembler::edgeToMap).toList());
         response.put("edges_count", edges.size());
+    }
+
+    /**
+     * Builds a typed {@link ComparisonResponse} for the collocate-profile comparison endpoint.
+     *
+     * @param seeds         the seed nouns used for comparison
+     * @param relationType  the relation type identifier
+     * @param params        shared exploration parameters
+     * @param result        comparison result from the exploration service
+     * @return fully populated {@link ComparisonResponse}
+     */
+    static @NonNull ComparisonResponse buildComparisonResponse(
+            @NonNull List<String> seeds, @NonNull String relationType,
+            int top, int minShared, double minLogDice,
+            @NonNull ComparisonResult result) {
+        List<ComparisonResponse.CollocateProfileEntry> collocates = result.collocates().stream()
+                .map(ExploreResponseAssembler::collocateProfileToEntry)
+                .toList();
+        ComparisonResult.SummaryCounts counts = result.summaryCounts();
+        List<ComparisonResponse.EdgeEntry> edges = buildComparisonEdges(result).stream()
+                .map(e -> new ComparisonResponse.EdgeEntry(e.source(), e.target(), e.weight(), e.type().label()))
+                .toList();
+        return new ComparisonResponse(
+                "ok", seeds, seeds.size(),
+                new ComparisonResponse.ComparisonParameters(relationType, top, minShared, minLogDice),
+                collocates, collocates.size(),
+                counts.fullyShared(), counts.partiallyShared(), counts.specific(),
+                edges, edges.size());
+    }
+
+    private static ComparisonResponse.CollocateProfileEntry collocateProfileToEntry(
+            CollocateProfile collocate) {
+        Map<String, Double> nounScores = new HashMap<>();
+        for (Map.Entry<String, Double> entry : collocate.nounScores().entrySet()) {
+            nounScores.put(entry.getKey(), MathUtils.round2dp(entry.getValue()));
+        }
+        String specificTo = collocate.isSpecific()
+                ? collocate.strongestNoun().orElse(null)
+                : null;
+        return new ComparisonResponse.CollocateProfileEntry(
+                collocate.collocate(),
+                collocate.presentInCount(),
+                collocate.totalNouns(),
+                MathUtils.round2dp(collocate.avgLogDice()),
+                MathUtils.round2dp(collocate.maxLogDice()),
+                MathUtils.round2dp(collocate.variance()),
+                MathUtils.round2dp(collocate.commonalityScore()),
+                MathUtils.round2dp(collocate.distinctivenessScore()),
+                collocate.sharingCategory().label(),
+                nounScores,
+                specificTo);
     }
 
     /**

@@ -2,6 +2,7 @@ package pl.marcinmilkowski.word_sketch.config;
 
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import org.jspecify.annotations.NonNull;
 import pl.marcinmilkowski.word_sketch.utils.JsonUtils;
 
 /**
@@ -22,7 +23,7 @@ public final class GrammarConfigSerializer {
      * @param config the grammar config to serialize; must not be null
      * @return an {@link ObjectNode} suitable for embedding in an API response
      */
-    public static ObjectNode toJson(GrammarConfig config) {
+    public static ObjectNode toJson(@NonNull GrammarConfig config) {
         ObjectNode root = JsonUtils.mapper().createObjectNode();
         root.put("version", config.version());
         if (config.configPath() != null) {
@@ -42,7 +43,7 @@ public final class GrammarConfigSerializer {
      * @param rel the relation config to serialize; must not be null
      * @return an {@link ObjectNode} with all non-null fields populated
      */
-    public static ObjectNode toJson(RelationConfig rel) {
+    public static ObjectNode toJson(@NonNull RelationConfig rel) {
         ObjectNode obj = JsonUtils.mapper().createObjectNode();
         obj.put("id", rel.id());
         if (rel.name() != null) obj.put("name", rel.name());

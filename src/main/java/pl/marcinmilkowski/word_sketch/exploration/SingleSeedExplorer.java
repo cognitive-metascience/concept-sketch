@@ -203,6 +203,13 @@ class SingleSeedExplorer {
     /**
      * Phase 4: Identify core collocates — those shared by enough discovered nouns.
      */
+    /**
+     * Minimum fraction of discovered nouns a collocate must co-occur with
+     * to qualify as a "core" collocate. A 1/3 threshold ensures a collocate
+     * is broadly shared rather than specific to just one or two nouns.
+     */
+    private static final double CORE_COLLOCATE_MIN_NOUN_FRACTION = 1.0 / 3.0;
+
     private List<CoreCollocate> identifyCoreCollocates(
             Map<String, Double> seedCollocateScores, List<DiscoveredNoun> discoveredNouns) {
         Map<String, Integer> collocateFrequency = new LinkedHashMap<>();
@@ -213,7 +220,8 @@ class SingleSeedExplorer {
                 collocateTotalScore.merge(collocate.getKey(), collocate.getValue(), Double::sum);
             }
         }
-        int minNounsForCore = Math.max(2, discoveredNouns.size() / 3);
+        int minNounsForCore = Math.max(2,
+                (int) Math.ceil(discoveredNouns.size() * CORE_COLLOCATE_MIN_NOUN_FRACTION));
         List<CoreCollocate> coreCollocates = new ArrayList<>();
         for (String collocate : seedCollocateScores.keySet()) {
             int freq = collocateFrequency.getOrDefault(collocate, 0);
