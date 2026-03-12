@@ -7,48 +7,62 @@ import org.jspecify.annotations.Nullable;
 import java.util.List;
 
 /**
- * Typed response record for single-seed and multi-seed semantic field exploration endpoints
+ * Sealed interface for single-seed and multi-seed semantic field exploration responses
  * ({@code GET /api/semantic-field/explore} and {@code GET /api/semantic-field/explore-multi}).
  *
- * <p>Using a record instead of {@code Map<String,Object>} enforces the response shape at
- * compile time and makes the JSON contract explicit.  Jackson 2.12+ serialises records
- * directly via their component accessors.</p>
+ * <p>The two endpoint variants carry mutually exclusive identity fields — a single {@code seed}
+ * string vs. a {@code seeds} list with {@code seed_count} — so they are modelled as distinct
+ * record types that share this interface.  Jackson serialises each concrete record directly
+ * via its component accessors; no polymorphic type discriminator is required because the two
+ * variants are produced by different endpoints and never mixed in the same collection.</p>
  *
- * <p>The {@code seed} field is set for single-seed responses and {@code null} for multi-seed;
- * the {@code seeds} and {@code seedCount} fields are set for multi-seed responses and
- * {@code null} for single-seed.  {@link JsonInclude#NON_NULL} suppresses absent fields so
- * that each response variant remains clean.</p>
+ * <p>Use {@link SingleSeed} for single-seed responses and {@link MultiSeed} for multi-seed
+ * responses.  Both carry the shared payload fields ({@code seed_collocates},
+ * {@code discovered_nouns}, {@code core_collocates}, {@code edges} and their count companions)
+ * declared in this interface.</p>
  */
-@JsonInclude(JsonInclude.Include.NON_NULL)
-public record ExploreResponse(
-        String status,
+public sealed interface ExploreResponse
+        permits ExploreResponse.SingleSeed, ExploreResponse.MultiSeed {
 
-        /** Set for single-seed responses; absent in multi-seed responses. */
-        @Nullable String seed,
+    String status();
+    Parameters parameters();
 
-        /** Set for multi-seed responses; absent in single-seed responses. */
-        @Nullable List<String> seeds,
+    @JsonProperty("seed_collocates")
+    List<SeedCollocateEntry> seedCollocates();
 
-        /** Set for multi-seed responses; absent in single-seed responses. */
-        @JsonProperty("seed_count") @Nullable Integer seedCount,
+    @JsonProperty("seed_collocates_count")
+    int seedCollocatesCount();
 
-        Parameters parameters,
+    @JsonProperty("discovered_nouns")
+    List<DiscoveredNounEntry> discoveredNouns();
 
-        @JsonProperty("seed_collocates") List<SeedCollocateEntry> seedCollocates,
-        @JsonProperty("seed_collocates_count") int seedCollocatesCount,
+    @JsonProperty("discovered_nouns_count")
+    int discoveredNounsCount();
 
-        @JsonProperty("discovered_nouns") List<DiscoveredNounEntry> discoveredNouns,
-        @JsonProperty("discovered_nouns_count") int discoveredNounsCount,
+    @JsonProperty("core_collocates")
+    List<CoreCollocateEntry> coreCollocates();
 
-        @JsonProperty("core_collocates") List<CoreCollocateEntry> coreCollocates,
-        @JsonProperty("core_collocates_count") int coreCollocatesCount,
+    @JsonProperty("core_collocates_count")
+    int coreCollocatesCount();
 
-        List<EdgeEntry> edges,
-        @JsonProperty("edges_count") int edgesCount) {
+    List<EdgeEntry> edges();
 
-    /** Parameters sub-object embedded in every explore response. */
+    @JsonProperty("edges_count")
+    int edgesCount();
+
+    // -------------------------------------------------------------------------
+    // Shared nested types
+    // -------------------------------------------------------------------------
+
+    /**
+     * Parameters sub-object embedded in every explore response.
+     *
+     * <p>The {@code nouns_per} field is only meaningful for single-seed responses; it is
+     * {@code null} (and therefore omitted from JSON via {@link JsonInclude#NON_NULL}) in
+     * multi-seed responses.</p>
+     */
     @JsonInclude(JsonInclude.Include.NON_NULL)
-    public record Parameters(
+    record Parameters(
             String relation,
             int top,
             @JsonProperty("min_shared") int minShared,
@@ -57,7 +71,7 @@ public record ExploreResponse(
             @JsonProperty("nouns_per") @Nullable Integer nounsPer) {}
 
     /** A single discovered-noun entry in the {@code discovered_nouns} array. */
-    public record DiscoveredNounEntry(
+    record DiscoveredNounEntry(
             String word,
             @JsonProperty("shared_count") int sharedCount,
             @JsonProperty("similarity_score") double similarityScore,
@@ -65,7 +79,7 @@ public record ExploreResponse(
             @JsonProperty("shared_collocates") List<String> sharedCollocates) {}
 
     /** A single core-collocate entry in the {@code core_collocates} array. */
-    public record CoreCollocateEntry(
+    record CoreCollocateEntry(
             String word,
             @JsonProperty("shared_by_count") int sharedByCount,
             @JsonProperty("total_nouns") int totalNouns,
@@ -73,9 +87,52 @@ public record ExploreResponse(
             @JsonProperty("seed_logdice") double seedLogDice) {}
 
     /** A single directed graph edge in the {@code edges} array. */
-    public record EdgeEntry(
+    record EdgeEntry(
             String source,
             String target,
             @JsonProperty("log_dice") double logDice,
             String type) {}
+
+    // -------------------------------------------------------------------------
+    // Concrete variants
+    // -------------------------------------------------------------------------
+
+    /**
+     * Single-seed response: carries {@code seed}; never carries {@code seeds} or
+     * {@code seed_count}.
+     */
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    record SingleSeed(
+            String status,
+            String seed,
+            Parameters parameters,
+            @JsonProperty("seed_collocates") List<SeedCollocateEntry> seedCollocates,
+            @JsonProperty("seed_collocates_count") int seedCollocatesCount,
+            @JsonProperty("discovered_nouns") List<DiscoveredNounEntry> discoveredNouns,
+            @JsonProperty("discovered_nouns_count") int discoveredNounsCount,
+            @JsonProperty("core_collocates") List<CoreCollocateEntry> coreCollocates,
+            @JsonProperty("core_collocates_count") int coreCollocatesCount,
+            List<EdgeEntry> edges,
+            @JsonProperty("edges_count") int edgesCount
+    ) implements ExploreResponse {}
+
+    /**
+     * Multi-seed response: carries {@code seeds} and {@code seed_count}; never carries
+     * {@code seed}.
+     */
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    record MultiSeed(
+            String status,
+            List<String> seeds,
+            @JsonProperty("seed_count") int seedCount,
+            Parameters parameters,
+            @JsonProperty("seed_collocates") List<SeedCollocateEntry> seedCollocates,
+            @JsonProperty("seed_collocates_count") int seedCollocatesCount,
+            @JsonProperty("discovered_nouns") List<DiscoveredNounEntry> discoveredNouns,
+            @JsonProperty("discovered_nouns_count") int discoveredNounsCount,
+            @JsonProperty("core_collocates") List<CoreCollocateEntry> coreCollocates,
+            @JsonProperty("core_collocates_count") int coreCollocatesCount,
+            List<EdgeEntry> edges,
+            @JsonProperty("edges_count") int edgesCount
+    ) implements ExploreResponse {}
 }

@@ -70,13 +70,8 @@ final class ExploreResponseAssembler {
     }
 
     /**
-     * Builds a fully-typed {@link ExploreResponse} for the single-seed explore endpoint
-     * ({@code GET /api/semantic-field/explore}).
-     *
-     * <p>The returned record carries the complete response body including the envelope fields
-     * ({@code status}, {@code seed}, {@code parameters}) and the payload fields
-     * ({@code seed_collocates}, {@code discovered_nouns}, {@code core_collocates},
-     * {@code edges} and their count companions).</p>
+     * Builds a fully-typed {@link ExploreResponse.SingleSeed} for the single-seed explore
+     * endpoint ({@code GET /api/semantic-field/explore}).
      *
      * @param result        exploration result from the service layer
      * @param relationType  resolved relation identifier (e.g. {@code "adj_predicate"})
@@ -92,15 +87,23 @@ final class ExploreResponseAssembler {
             int top, int minShared, double minLogDice, int nounsPerSeed) {
         ExploreResponse.Parameters params = new ExploreResponse.Parameters(
                 relationType, top, minShared, minLogDice, nounsPerSeed);
-        return buildExplorePayload(result, result.seed(), null, null, params);
+        List<SeedCollocateEntry> seedCollocs = buildSeedCollocateEntries(result);
+        List<ExploreResponse.DiscoveredNounEntry> nouns = buildDiscoveredNounEntries(result);
+        List<ExploreResponse.CoreCollocateEntry> core = buildCoreCollocateEntries(result);
+        List<ExploreResponse.EdgeEntry> edges = buildEdgeEntries(result);
+        return new ExploreResponse.SingleSeed(
+                "ok", result.seed(), params,
+                seedCollocs, seedCollocs.size(),
+                nouns, nouns.size(),
+                core, core.size(),
+                edges, edges.size());
     }
 
     /**
-     * Builds a fully-typed {@link ExploreResponse} for the multi-seed explore endpoint
-     * ({@code GET /api/semantic-field/explore-multi}).
+     * Builds a fully-typed {@link ExploreResponse.MultiSeed} for the multi-seed explore
+     * endpoint ({@code GET /api/semantic-field/explore-multi}).
      *
-     * <p>The {@code seeds} / {@code seed_count} envelope fields are set and {@code seed} is
-     * absent; the {@code nouns_per} parameter field is absent because multi-seed exploration
+     * <p>The {@code nouns_per} parameter field is absent because multi-seed exploration
      * does not support it.</p>
      *
      * @param result       exploration result from the service layer
@@ -117,24 +120,12 @@ final class ExploreResponseAssembler {
         List<String> seeds = result.seeds();
         ExploreResponse.Parameters params = new ExploreResponse.Parameters(
                 relationType, top, minShared, minLogDice, null);
-        return buildExplorePayload(result, null, seeds, seeds.size(), params);
-    }
-
-    /** Shared payload builder used by both single- and multi-seed factory methods. */
-    private static ExploreResponse buildExplorePayload(
-            @NonNull ExplorationResult result,
-            @Nullable String seed,
-            @Nullable List<String> seeds,
-            @Nullable Integer seedCount,
-            ExploreResponse.Parameters parameters) {
-
         List<SeedCollocateEntry> seedCollocs = buildSeedCollocateEntries(result);
         List<ExploreResponse.DiscoveredNounEntry> nouns = buildDiscoveredNounEntries(result);
         List<ExploreResponse.CoreCollocateEntry> core = buildCoreCollocateEntries(result);
         List<ExploreResponse.EdgeEntry> edges = buildEdgeEntries(result);
-
-        return new ExploreResponse(
-                "ok", seed, seeds, seedCount, parameters,
+        return new ExploreResponse.MultiSeed(
+                "ok", seeds, seeds.size(), params,
                 seedCollocs, seedCollocs.size(),
                 nouns, nouns.size(),
                 core, core.size(),

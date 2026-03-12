@@ -97,9 +97,8 @@ public class BlackLabConllUIndexer implements AutoCloseable {
                 @Override
                 public boolean errorOccurred(Throwable e, String path, File f) {
                     long errors = errorCount.incrementAndGet();
-                    logger.error("Indexing error in {} (error #{}, docs so far: {}, tokens so far: {}): {}",
-                        path, errors, documentCount.get(), tokenCount.get(), e.getMessage());
-                    logger.error("Stack trace:", e);
+                    logger.error("Indexing error in {} (error #{}, docs so far: {}, tokens so far: {})",
+                        path, errors, documentCount.get(), tokenCount.get(), e);
                     logger.warn("Continuing after error — document/token counts may be understated");
                     return true; // continue indexing
                 }
