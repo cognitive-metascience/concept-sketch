@@ -169,7 +169,7 @@ class ExplorationHandlers {
         ComparisonResult result = semanticFieldExplorer.compareCollocateProfiles(seeds, opts);
 
         Map<String, Object> response = new HashMap<>();
-        ExploreResponseAssembler.populateComparisonResponse(response, result, seeds,
+        ExploreResponseAssembler.populateComparisonResponse(response, result,
             exploreParams.topCollocates(), exploreParams.minLogDice());
 
         HttpApiUtils.sendJsonResponse(exchange, response);

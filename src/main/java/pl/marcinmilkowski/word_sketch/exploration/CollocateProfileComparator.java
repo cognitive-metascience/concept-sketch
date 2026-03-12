@@ -90,11 +90,10 @@ class CollocateProfileComparator {
 
         Map<String, Map<String, Double>> adjectiveProfiles = new LinkedHashMap<>();
         for (String noun : nounList) {
-            logger.debug("\nProfiling: {}", noun);
             List<QueryResults.WordSketchResult> adjectives = executor.executeCollocations(
                 noun, adjectivePattern, minLogDice, maxPerNoun);
-            logger.debug("  Found {} adjectives", adjectives.size());
-            logger.debug("  Top 5: {}", adjectives.subList(0, Math.min(5, adjectives.size())));
+            logger.debug("Profiling {}: {} adjectives (top: {})", noun, adjectives.size(),
+                adjectives.subList(0, Math.min(5, adjectives.size())));
             for (QueryResults.WordSketchResult r : adjectives) {
                 adjectiveProfiles
                     .computeIfAbsent(r.lemma().toLowerCase(), k -> new LinkedHashMap<>())

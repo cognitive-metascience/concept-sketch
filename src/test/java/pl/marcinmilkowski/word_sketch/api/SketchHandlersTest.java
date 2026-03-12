@@ -2,23 +2,15 @@ package pl.marcinmilkowski.word_sketch.api;
 
 import com.alibaba.fastjson2.JSON;
 import com.alibaba.fastjson2.JSONObject;
-import com.sun.net.httpserver.Headers;
-import com.sun.net.httpserver.HttpContext;
-import com.sun.net.httpserver.HttpExchange;
-import com.sun.net.httpserver.HttpPrincipal;
 import org.junit.jupiter.api.Test;
 import pl.marcinmilkowski.word_sketch.config.GrammarConfig;
 import pl.marcinmilkowski.word_sketch.config.GrammarConfigHelper;
 import pl.marcinmilkowski.word_sketch.model.QueryResults;
 import pl.marcinmilkowski.word_sketch.query.QueryExecutor;
 
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
-import java.net.InetSocketAddress;
-import java.net.URI;
 import java.util.List;
+import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -30,38 +22,6 @@ import static org.junit.jupiter.api.Assertions.*;
  * verified at the handler level without a live BlackLab index.</p>
  */
 class SketchHandlersTest {
-
-    static class MockExchange extends HttpExchange {
-        private final URI uri;
-        private final ByteArrayOutputStream responseBody = new ByteArrayOutputStream();
-        private final Headers requestHeaders = new Headers();
-        private final Headers responseHeaders = new Headers();
-        int statusCode = -1;
-
-        MockExchange(String uriString) {
-            try { this.uri = new URI(uriString); } catch (Exception e) { throw new RuntimeException(e); }
-        }
-
-        @Override public URI getRequestURI() { return uri; }
-        @Override public Headers getRequestHeaders() { return requestHeaders; }
-        @Override public Headers getResponseHeaders() { return responseHeaders; }
-        @Override public String getRequestMethod() { return "GET"; }
-        @Override public InputStream getRequestBody() { return InputStream.nullInputStream(); }
-        @Override public OutputStream getResponseBody() { return responseBody; }
-        @Override public void sendResponseHeaders(int code, long len) { this.statusCode = code; }
-        @Override public int getResponseCode() { return statusCode; }
-        @Override public InetSocketAddress getRemoteAddress() { return null; }
-        @Override public InetSocketAddress getLocalAddress() { return null; }
-        @Override public String getProtocol() { return "HTTP/1.1"; }
-        @Override public Object getAttribute(String name) { return null; }
-        @Override public void setAttribute(String name, Object value) {}
-        @Override public void setStreams(InputStream i, OutputStream o) {}
-        @Override public HttpContext getHttpContext() { return null; }
-        @Override public void close() {}
-        @Override public HttpPrincipal getPrincipal() { return null; }
-
-        String getResponseBodyAsString() { return responseBody.toString(java.nio.charset.StandardCharsets.UTF_8); }
-    }
 
     /** Stub executor returning a fixed collocate result for any query. */
     private static QueryExecutor stubExecutor() {
@@ -94,7 +54,7 @@ class SketchHandlersTest {
 
     @Test
     void handleSketchRequest_fullSketch_returns200WithRelationsMap() throws Exception {
-        MockExchange ex = new MockExchange("http://localhost/api/sketch/theory");
+        TestExchangeFactory.MockExchange ex = new TestExchangeFactory.MockExchange("http://localhost/api/sketch/theory");
         handlers().handleSketchRequest(ex);
         assertEquals(200, ex.statusCode);
         JSONObject body = JSON.parseObject(ex.getResponseBodyAsString());
@@ -112,7 +72,7 @@ class SketchHandlersTest {
                 .findFirst()
                 .map(pl.marcinmilkowski.word_sketch.config.RelationConfig::id)
                 .orElse("adj_predicate");
-        MockExchange ex = new MockExchange("http://localhost/api/sketch/theory/" + firstRelationId);
+        TestExchangeFactory.MockExchange ex = new TestExchangeFactory.MockExchange("http://localhost/api/sketch/theory/" + firstRelationId);
         new SketchHandlers(stubExecutor(), config).handleSketchRequest(ex);
         assertEquals(200, ex.statusCode);
         JSONObject body = JSON.parseObject(ex.getResponseBodyAsString());
@@ -126,11 +86,70 @@ class SketchHandlersTest {
 
     @Test
     void handleSurfaceRelations_returns200WithRelationsArray() throws Exception {
-        MockExchange ex = new MockExchange("http://localhost/api/sketch/surface-relations");
+        TestExchangeFactory.MockExchange ex = new TestExchangeFactory.MockExchange("http://localhost/api/sketch/surface-relations");
         handlers().handleSurfaceRelations(ex);
         assertEquals(200, ex.statusCode);
         JSONObject body = JSON.parseObject(ex.getResponseBodyAsString());
         assertEquals("ok", body.getString("status"));
         assertNotNull(body.getJSONArray("relations"), "Surface-relations response should contain a relations array");
+    }
+
+    // ── Validation / negative-path tests (migrated from HandlersTest) ────────
+
+    @Test
+    void handleSketchRequest_missingLemma_returns400() throws Exception {
+        SketchHandlers handlers = new SketchHandlers(null, null);
+        TestExchangeFactory.MockExchange ex = new TestExchangeFactory.MockExchange("http://localhost/api/sketch/");
+        HttpApiUtils.wrapWithErrorHandling(handlers::handleSketchRequest, "test").handle(ex);
+        assertEquals(400, ex.statusCode);
+    }
+
+    @Test
+    void handleSketchRequest_unknownRelation_returns400() throws Exception {
+        SketchHandlers handlers = new SketchHandlers(stubExecutor(), GrammarConfigHelper.requireTestConfig());
+        TestExchangeFactory.MockExchange ex = new TestExchangeFactory.MockExchange(
+                "http://localhost/api/sketch/house/no_such_relation");
+        HttpApiUtils.wrapWithErrorHandling(handlers::handleSketchRequest, "test").handle(ex);
+        assertEquals(400, ex.statusCode);
+    }
+
+    @Test
+    void handleSketchRequest_missingRelationType_returns200() throws Exception {
+        QueryExecutor executor = collocatingExecutor(Map.of(
+            "theory", List.of(wsr("abstract", 8.0))
+        ));
+        SketchHandlers handlers = new SketchHandlers(executor, GrammarConfigHelper.requireTestConfig());
+        TestExchangeFactory.MockExchange ex = new TestExchangeFactory.MockExchange(
+                "http://localhost/api/sketch/theory?lemma=theory");
+        handlers.handleSketchRequest(ex);
+        assertEquals(200, ex.statusCode);
+    }
+
+    // ── Stub helpers ─────────────────────────────────────────────────────────
+
+    private static QueryExecutor collocatingExecutor(Map<String, List<QueryResults.WordSketchResult>> map) {
+        return new QueryExecutor() {
+            @Override public List<QueryResults.WordSketchResult> executeCollocations(
+                    String lemma, String cqlPattern, double minLogDice, int maxResults) {
+                return map.getOrDefault(lemma.toLowerCase(), List.of());
+            }
+            @Override public List<QueryResults.ConcordanceResult> executeCqlQuery(String p, int m) { return List.of(); }
+            @Override public List<QueryResults.CollocateResult> executeBcqlQuery(String p, int m) { return List.of(); }
+            @Override public long getTotalFrequency(String lemma) { return 0; }
+            @Override public List<QueryResults.WordSketchResult> executeSurfacePattern(
+                    String lemma, String pattern, double minLogDice, int maxResults) {
+                return map.getOrDefault(lemma.toLowerCase(), List.of());
+            }
+            @Override public List<QueryResults.WordSketchResult> executeDependencyPattern(
+                    String lemma, String deprel, double minLogDice, int maxResults) { return List.of(); }
+            @Override public List<QueryResults.WordSketchResult> executeDependencyPatternWithPos(
+                    String lemma, String deprel, double minLogDice, int maxResults,
+                    String headPosConstraint) { return List.of(); }
+            @Override public void close() {}
+        };
+    }
+
+    private static QueryResults.WordSketchResult wsr(String lemma, double logDice) {
+        return new QueryResults.WordSketchResult(lemma, "JJ", 10, logDice, 0.0, List.of());
     }
 }

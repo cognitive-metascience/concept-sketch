@@ -6,7 +6,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 import pl.marcinmilkowski.word_sketch.model.AdjectiveProfile;
 import pl.marcinmilkowski.word_sketch.utils.MathUtils;
@@ -163,10 +162,10 @@ public final class ExploreResponseAssembler {
      * {@code specific_count}, {@code edges}, and {@code edges_count}.
      */
     public static void populateComparisonResponse(@NonNull Map<String, Object> response, @NonNull ComparisonResult result,
-            @NonNull Set<String> seeds, int topCollocates, double minLogDice) {
+            int topCollocates, double minLogDice) {
         response.put("status", "ok");
         response.put("seeds", new java.util.ArrayList<>(result.nouns()));
-        response.put("seed_count", seeds.size());
+        response.put("seed_count", result.nouns().size());
 
         Map<String, Object> paramsUsed = new HashMap<>();
         paramsUsed.put("top", topCollocates);

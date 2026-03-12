@@ -157,7 +157,7 @@ public class BlackLabQueryExecutor implements QueryExecutor {
         }
 
         String bcql = String.format("\"%s\" -%s-> _", CqlUtils.escapeForRegex(lemma.toLowerCase()), deprel);
-        return collectDependencyFrequencies(bcql, lemma, minLogDice, maxResults);
+        return queryAndRankDepCollocates(bcql, lemma, minLogDice, maxResults);
     }
 
     /**
@@ -180,10 +180,10 @@ public class BlackLabQueryExecutor implements QueryExecutor {
 
         String bcql = String.format("[lemma=\"%s\" & xpos=\"%s\"] -%s-> _",
                                     CqlUtils.escapeForRegex(lemma.toLowerCase()), headPosConstraint, deprel);
-        return collectDependencyFrequencies(bcql, lemma, minLogDice, maxResults);
+        return queryAndRankDepCollocates(bcql, lemma, minLogDice, maxResults);
     }
 
-    private List<QueryResults.WordSketchResult> collectDependencyFrequencies(
+    private List<QueryResults.WordSketchResult> queryAndRankDepCollocates(
             String bcql, String lemma, double minLogDice, int maxResults) throws IOException {
         CollocateQueryHelper.CollocateSearch collocateSearch = collocateQueryHelper.executeCollocateSearchWithStoredHits(lemma, bcql);
         long headwordFreq = collocateSearch.headwordFreq();
