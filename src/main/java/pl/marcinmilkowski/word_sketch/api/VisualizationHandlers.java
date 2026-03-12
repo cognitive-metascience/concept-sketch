@@ -22,7 +22,6 @@ class VisualizationHandlers {
 
     private static final Logger logger = LoggerFactory.getLogger(VisualizationHandlers.class);
 
-    private static final int MAX_REQUEST_BODY_BYTES = 65536;
     private static final int MAX_RADIAL_ITEMS = 40;
 
     /**
@@ -31,7 +30,7 @@ class VisualizationHandlers {
      * Returns: image/svg+xml
      */
     void handleVisualRadial(HttpExchange exchange) throws IOException {
-        String body = HttpApiUtils.readBodyWithSizeLimit(exchange, MAX_REQUEST_BODY_BYTES);
+        String body = HttpApiUtils.readBodyWithSizeLimit(exchange, HttpApiUtils.MAX_REQUEST_BODY_BYTES);
         logger.debug("Radial: body = {}", body);
         JSONObject obj;
         try {

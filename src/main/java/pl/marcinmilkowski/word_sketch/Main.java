@@ -200,7 +200,7 @@ public class Main {
         System.out.println("Limit: " + limit);
         System.out.println();
 
-        try (BlackLabQueryExecutor executor = new BlackLabQueryExecutor(indexPath)) {
+        try (QueryExecutor executor = new BlackLabQueryExecutor(indexPath)) {
             var results = deprel != null
                 ? executor.executeDependencyPattern(lemma, deprel, minLogDice, limit, null)
                 : executor.executeCollocations(lemma, "[]", minLogDice, limit);

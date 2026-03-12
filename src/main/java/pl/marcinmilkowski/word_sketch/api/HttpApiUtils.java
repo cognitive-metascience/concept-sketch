@@ -149,6 +149,9 @@ final class HttpApiUtils {
     /** Maximum allowed length for a single query parameter value (200 characters). */
     public static final int MAX_PARAM_LENGTH = 200;
 
+    /** Maximum request body size in bytes accepted by request body endpoints (64 KB). */
+    public static final int MAX_REQUEST_BODY_BYTES = 65536;
+
     /**
      * Returns the parameter value, or throws {@link IllegalArgumentException} if missing, empty,
      * or exceeds {@link #MAX_PARAM_LENGTH} characters.

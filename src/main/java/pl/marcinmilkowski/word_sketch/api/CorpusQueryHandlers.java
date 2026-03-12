@@ -24,8 +24,6 @@ class CorpusQueryHandlers {
 
     private static final Logger logger = LoggerFactory.getLogger(CorpusQueryHandlers.class);
 
-    private static final int MAX_REQUEST_BODY_BYTES = 65536;
-
     /** Maximum length (chars) accepted for a BCQL pattern. */
     private static final int MAX_BCQL_PATTERN_LENGTH = 1024;
 
@@ -63,7 +61,7 @@ class CorpusQueryHandlers {
      * {@code wrapWithErrorHandling} maps this to HTTP 413.
      */
     private BcqlRequest parseBcqlRequest(HttpExchange exchange) throws IOException {
-        String body = HttpApiUtils.readBodyWithSizeLimit(exchange, MAX_REQUEST_BODY_BYTES);
+        String body = HttpApiUtils.readBodyWithSizeLimit(exchange, HttpApiUtils.MAX_REQUEST_BODY_BYTES);
         JSONObject obj;
         try {
             obj = JSON.parseObject(body);

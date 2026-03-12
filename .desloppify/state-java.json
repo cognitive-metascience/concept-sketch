@@ -11,15 +11,15 @@
     "total": 1469,
     "auto_resolved": 272,
     "false_positive": 0,
-    "fixed": 960,
-    "open": 40,
+    "fixed": 963,
+    "open": 37,
     "wontfix": 197,
     "by_tier": {
       "1": {
         "auto_resolved": 135,
         "false_positive": 0,
-        "fixed": 657,
-        "open": 28,
+        "fixed": 660,
+        "open": 25,
         "wontfix": 106
       },
       "2": {
@@ -59345,16 +59345,22 @@
         "suggestion": "Move GrammarConfigSerializer from api to config (or introduce a config.serialization sub-package). Update the one production caller in SketchHandlers to use the relocated class. This severs the upward test dependency and places serialization responsibility with the layer that owns the data.",
         "reasoning": ""
       },
-      "status": "open",
-      "note": null,
+      "status": "fixed",
+      "note": "Moved GrammarConfigSerializer from api/ to config/ package (only depends on config-layer types); updated test imports. Centralized MAX_REQUEST_BODY_BYTES=65536 in HttpApiUtils, removed duplicate constants from CorpusQueryHandlers and VisualizationHandlers. Fixed Main.java to use QueryExecutor interface in try-with-resources (was using concrete BlackLabQueryExecutor).",
       "first_seen": "2026-03-12T03:17:37+00:00",
       "last_seen": "2026-03-12T03:17:37+00:00",
-      "resolved_at": null,
+      "resolved_at": "2026-03-12T04:12:51+00:00",
       "reopen_count": 0,
       "lang": "java",
       "suppressed": false,
       "suppressed_at": null,
-      "suppression_pattern": null
+      "suppression_pattern": null,
+      "resolution_attestation": {
+        "kind": "manual",
+        "text": "I have actually Moved GrammarConfigSerializer from api/ to config/ package (only depends on config-layer types); updated test imports. Centralized MAX_REQUEST_BODY_BYTES=65536 in HttpApiUtils, removed duplicate constants from CorpusQueryHandlers and VisualizationHandlers. Fixed Main.java to use QueryExecutor interface in try-with-resources (was using concrete BlackLabQueryExecutor). and I am not gaming the score.",
+        "attested_at": "2026-03-12T04:12:51+00:00",
+        "scan_verified": false
+      }
     },
     "review::.::holistic::cross_module_architecture::duplicated_body_size_constant::f8c49d09": {
       "id": "review::.::holistic::cross_module_architecture::duplicated_body_size_constant::f8c49d09",
@@ -59379,16 +59385,22 @@
         "suggestion": "Add static final int DEFAULT_MAX_REQUEST_BODY_BYTES = 65536 to HttpApiUtils and reference it from both handlers, or make readBodyWithSizeLimit() use this default when no override is needed. This eliminates the risk of the two values drifting and makes the shared boundary clear.",
         "reasoning": ""
       },
-      "status": "open",
-      "note": null,
+      "status": "fixed",
+      "note": "Moved GrammarConfigSerializer from api/ to config/ package (only depends on config-layer types); updated test imports. Centralized MAX_REQUEST_BODY_BYTES=65536 in HttpApiUtils, removed duplicate constants from CorpusQueryHandlers and VisualizationHandlers. Fixed Main.java to use QueryExecutor interface in try-with-resources (was using concrete BlackLabQueryExecutor).",
       "first_seen": "2026-03-12T03:17:37+00:00",
       "last_seen": "2026-03-12T03:17:37+00:00",
-      "resolved_at": null,
+      "resolved_at": "2026-03-12T04:12:53+00:00",
       "reopen_count": 0,
       "lang": "java",
       "suppressed": false,
       "suppressed_at": null,
-      "suppression_pattern": null
+      "suppression_pattern": null,
+      "resolution_attestation": {
+        "kind": "manual",
+        "text": "I have actually Moved GrammarConfigSerializer from api/ to config/ package (only depends on config-layer types); updated test imports. Centralized MAX_REQUEST_BODY_BYTES=65536 in HttpApiUtils, removed duplicate constants from CorpusQueryHandlers and VisualizationHandlers. Fixed Main.java to use QueryExecutor interface in try-with-resources (was using concrete BlackLabQueryExecutor). and I am not gaming the score.",
+        "attested_at": "2026-03-12T04:12:53+00:00",
+        "scan_verified": false
+      }
     },
     "review::.::holistic::cross_module_architecture::main_concrete_type_inconsistency::64a3bddd": {
       "id": "review::.::holistic::cross_module_architecture::main_concrete_type_inconsistency::64a3bddd",
@@ -59411,16 +59423,22 @@
         "suggestion": "Change the declaration in handleBlackLabQueryCommand to QueryExecutor executor = new BlackLabQueryExecutor(indexPath) to match the server path and consistently use the interface seam throughout Main.",
         "reasoning": ""
       },
-      "status": "open",
-      "note": null,
+      "status": "fixed",
+      "note": "Moved GrammarConfigSerializer from api/ to config/ package (only depends on config-layer types); updated test imports. Centralized MAX_REQUEST_BODY_BYTES=65536 in HttpApiUtils, removed duplicate constants from CorpusQueryHandlers and VisualizationHandlers. Fixed Main.java to use QueryExecutor interface in try-with-resources (was using concrete BlackLabQueryExecutor).",
       "first_seen": "2026-03-12T03:17:37+00:00",
       "last_seen": "2026-03-12T03:17:37+00:00",
-      "resolved_at": null,
+      "resolved_at": "2026-03-12T04:12:56+00:00",
       "reopen_count": 0,
       "lang": "java",
       "suppressed": false,
       "suppressed_at": null,
-      "suppression_pattern": null
+      "suppression_pattern": null,
+      "resolution_attestation": {
+        "kind": "manual",
+        "text": "I have actually Moved GrammarConfigSerializer from api/ to config/ package (only depends on config-layer types); updated test imports. Centralized MAX_REQUEST_BODY_BYTES=65536 in HttpApiUtils, removed duplicate constants from CorpusQueryHandlers and VisualizationHandlers. Fixed Main.java to use QueryExecutor interface in try-with-resources (was using concrete BlackLabQueryExecutor). and I am not gaming the score.",
+        "attested_at": "2026-03-12T04:12:56+00:00",
+        "scan_verified": false
+      }
     },
     "review::.::holistic::initialization_coupling::create_default_english_cwd_coupling::54b83574": {
       "id": "review::.::holistic::initialization_coupling::create_default_english_cwd_coupling::54b83574",
@@ -59751,7 +59769,10 @@
     "cross_module_architecture": {
       "score": 60.7,
       "source": "holistic",
-      "assessed_at": "2026-03-12T03:17:37+00:00"
+      "assessed_at": "2026-03-12T03:17:37+00:00",
+      "needs_review_refresh": true,
+      "refresh_reason": "review_issue_fixed",
+      "stale_since": "2026-03-12T04:12:56+00:00"
     },
     "ai_generated_debt": {
       "score": 79.4,
@@ -62997,13 +63018,13 @@
       "strict": 60.7,
       "verified_strict_score": 60.7,
       "checks": 10,
-      "failing": 3,
+      "failing": 0,
       "tier": 4,
       "detectors": {
         "subjective_assessment": {
           "potential": 10,
           "pass_rate": 0.607,
-          "failing": 3,
+          "failing": 0,
           "weighted_failures": 3.93,
           "assessment_score": 60.7,
           "placeholder": false,
