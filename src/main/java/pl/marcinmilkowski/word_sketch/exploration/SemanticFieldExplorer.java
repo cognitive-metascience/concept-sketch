@@ -155,30 +155,6 @@ public class SemanticFieldExplorer implements ExplorationService {
             opts);
     }
 
-    /**
-     * Explore semantic field using pre-resolved BCQL pattern strings.
-     *
-     * <p><strong>Package-private testing seam.</strong> Production code should always call
-     * {@link #exploreByPattern(String, RelationConfig, SingleSeedExplorationOptions)}, which
-     * extracts the pattern strings from a {@link RelationConfig} and preserves the config
-     * abstraction. This overload exists solely to enable unit tests that exercise exploration
-     * logic with programmatically constructed patterns without requiring a full grammar config.
-     *
-     * @param seed          the seed noun to explore from
-     * @param relationName  human-readable relation name for logging
-     * @param bcqlPattern   BCQL pattern with headword already substituted
-     * @param simplePattern simple reverse-lookup pattern (e.g., {@code [xpos="JJ.*"]})
-     * @param opts          all tuning parameters including {@code reverseExpansionLimit}
-     * @return ExplorationResult with discovered semantic class
-     */
-    ExplorationResult exploreByPattern(
-            String seed,
-            String relationName,
-            String bcqlPattern,
-            String simplePattern,
-            SingleSeedExplorationOptions opts) throws IOException {
-        return singleSeedExplorer.explore(seed, relationName, bcqlPattern, simplePattern, opts);
-    }
 
     // ==================== COMPARISON MODE ====================
 
@@ -187,8 +163,8 @@ public class SemanticFieldExplorer implements ExplorationService {
      * adjectives are shared across seeds (semantic core) and which are distinctive to
      * individual seeds.
      *
-     * <p>Policy: requires at least 2 non-blank seed nouns so the comparison is meaningful.
-     * Delegates computation to {@link CollocateProfileComparator}.</p>
+     * <p>Delegates computation to {@link CollocateProfileComparator}, which validates that
+     * at least 2 seed nouns are provided.</p>
      *
      * @param seeds       Nouns to compare (e.g., "theory", "model", "hypothesis"); must not be null or empty
      * @param opts        exploration options; {@code topCollocates} and {@code minLogDice} are used
@@ -196,10 +172,6 @@ public class SemanticFieldExplorer implements ExplorationService {
      */
     public @NonNull ComparisonResult compareCollocateProfiles(
             @NonNull Set<String> seeds, @NonNull ExplorationOptions opts) throws IOException {
-        if (seeds.size() < 2) {
-            throw new IllegalArgumentException(
-                "Profile comparison requires at least 2 seed nouns; received " + seeds.size());
-        }
         return comparator.compareCollocateProfiles(seeds, opts);
     }
 
