@@ -3,7 +3,6 @@ package pl.marcinmilkowski.word_sketch.api;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.sun.net.httpserver.HttpExchange;
-import nl.inl.blacklab.exceptions.InvalidQuery;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import pl.marcinmilkowski.word_sketch.model.QueryResults;
@@ -44,12 +43,8 @@ class CorpusQueryHandlers {
 
         logger.debug("BCQL query: {}", req.query());
 
-        try {
-            List<QueryResults.CollocateResult> results = executor.executeBcqlQuery(req.query(), req.top());
-            HttpApiUtils.sendJsonResponse(exchange, buildBcqlResponse(req, results));
-        } catch (InvalidQuery | IllegalArgumentException e) {
-            HttpApiUtils.sendError(exchange, 400, "Invalid BCQL pattern: " + e.getMessage());
-        }
+        List<QueryResults.CollocateResult> results = executor.executeBcqlQuery(req.query(), req.top());
+        HttpApiUtils.sendJsonResponse(exchange, buildBcqlResponse(req, results));
     }
 
     private record BcqlRequest(String query, int top) {}

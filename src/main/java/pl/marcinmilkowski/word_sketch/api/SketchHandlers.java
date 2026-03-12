@@ -71,15 +71,7 @@ class SketchHandlers {
         }
     }
 
-    void handleSurfaceRelations(HttpExchange exchange) throws IOException {
-        handleRelationsForType(exchange, RelationType.SURFACE);
-    }
-
-    void handleDependencyRelations(HttpExchange exchange) throws IOException {
-        handleRelationsForType(exchange, RelationType.DEP);
-    }
-
-    private void handleRelationsForType(HttpExchange exchange, RelationType relationType) throws IOException {
+    void handleRelationsForType(HttpExchange exchange, RelationType relationType) throws IOException {
         List<Map<String, Object>> relationsArray = new ArrayList<>();
         for (var rel : grammarConfig.relations()) {
             if (rel.relationType().filter(rt -> rt == relationType).isPresent()) {

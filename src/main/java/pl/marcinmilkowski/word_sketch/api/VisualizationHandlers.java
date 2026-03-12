@@ -52,7 +52,6 @@ class VisualizationHandlers {
      */
     void handleVisualRadial(HttpExchange exchange) throws IOException {
         String body = HttpApiUtils.readBodyWithSizeLimit(exchange, HttpApiUtils.MAX_REQUEST_BODY_BYTES);
-        logger.debug("Radial: body = {}", body);
         ObjectNode obj;
         try {
             obj = HttpApiUtils.MAPPER.readValue(body, ObjectNode.class);

@@ -1,11 +1,11 @@
 {
   "command": "resolve",
   "patterns": [
-    "dacc74d2"
+    "ce72a799"
   ],
   "status": "fixed",
   "resolved": [
-    "review::.::holistic::package_organization::radialplot_in_api_package::dacc74d2"
+    "review::.::holistic::low_level_elegance::main_cli_parser_duplication::ce72a799"
   ],
   "count": 1,
   "next_command": "desloppify next",
@@ -17,10 +17,10 @@
   "prev_objective_score": 100.0,
   "prev_strict_score": 79.7,
   "prev_verified_strict_score": 100.0,
-  "attestation": "I have actually Moved to pl.marcinmilkowski.word_sketch.viz package. Updated all imports. All tests pass. and I am not gaming the score.",
+  "attestation": "I have actually Extracted private generic parseNumericParam helper; parseIntParam and parseDoubleParam now delegate to it. and I am not gaming the score.",
   "narrative": {
     "phase": "middle_grind",
-    "headline": "42 issues open. Stale Migration (49.8%) needs attention \u2014 run `desloppify next` to start. (37 review issues \u2014 run `desloppify show review --status open`)",
+    "headline": "30 issues open. Stale Migration (49.8%) needs attention \u2014 run `desloppify next` to start. (25 review issues \u2014 run `desloppify show review --status open`)",
     "dimensions": {
       "lowest_dimensions": [
         {
@@ -91,8 +91,8 @@
       {
         "type": "refactor",
         "detector": "review",
-        "count": 37,
-        "description": "37 review issues need investigation \u2014 run `desloppify show review --status open` to see them",
+        "count": 25,
+        "description": "25 review issues need investigation \u2014 run `desloppify show review --status open` to see them",
         "command": "desloppify show review --status open",
         "impact": 0.0,
         "dimension": "Unknown",
@@ -114,7 +114,7 @@
     "strategy": {
       "fixer_leverage": {
         "auto_fixable_count": 0,
-        "total_count": 116,
+        "total_count": 80,
         "coverage": 0.0,
         "impact_ratio": 0.0,
         "recommendation": "none"
@@ -140,7 +140,7 @@
         }
       },
       "can_parallelize": false,
-      "hint": "Work through actions in priority order. Rescan after each fix to track progress. Review: 37 issue(s) \u2014 `desloppify show review --status open`."
+      "hint": "Work through actions in priority order. Rescan after each fix to track progress. Review: 25 issue(s) \u2014 `desloppify show review --status open`."
     },
     "tools": {
       "fixers": [],
@@ -171,9 +171,9 @@
     "milestone": null,
     "primary_action": {
       "command": "desloppify show review --status open",
-      "description": "37 review issues need investigation \u2014 run `desloppify show review --status open` to see them"
+      "description": "25 review issues need investigation \u2014 run `desloppify show review --status open` to see them"
     },
-    "why_now": "Work through actions in priority order. Rescan after each fix to track progress. Review: 37 issue(s) \u2014 `desloppify show review --status open`.",
+    "why_now": "Work through actions in priority order. Rescan after each fix to track progress. Review: 25 issue(s) \u2014 `desloppify show review --status open`.",
     "verification_step": {
       "command": "desloppify scan",
       "reason": "revalidate after changes"

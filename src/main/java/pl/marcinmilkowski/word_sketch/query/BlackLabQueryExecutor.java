@@ -135,7 +135,7 @@ public class BlackLabQueryExecutor implements QueryExecutor {
             return results;
 
         } catch (InvalidQuery e) {
-            throw new IOException("CQL parse error: " + e.getMessage(), e);
+            throw new IllegalArgumentException("CQL parse error: " + e.getMessage(), e);
         }
     }
 
@@ -228,8 +228,10 @@ public class BlackLabQueryExecutor implements QueryExecutor {
 
         String lemma = CqlUtils.extractHeadword(bcqlPattern);
         if (lemma == null || lemma.isEmpty()) {
-            logger.debug("executeSurfacePattern: skipping query — could not extract lemma from pattern");
-            return Collections.emptyList();
+            throw new IllegalArgumentException(
+                "executeSurfacePattern: lemma not extractable from pattern — " +
+                "the pattern must contain a labeled head token with a lemma attribute, " +
+                "e.g. 1:[lemma=\"word\"] (got: " + bcqlPattern + ")");
         }
 
         int collocatePos = CqlUtils.findLabelTokenIndex(bcqlPattern, 2);

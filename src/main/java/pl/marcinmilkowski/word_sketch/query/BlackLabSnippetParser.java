@@ -84,8 +84,7 @@ class BlackLabSnippetParser {
         String trimmedRight = trimRightAtSentenceBoundary(right);
         String assembled = (trimmedLeft.isEmpty() ? "" : trimmedLeft + " ") + match
                          + (trimmedRight.isEmpty() ? "" : " " + trimmedRight);
-        String detokenized = detokenize(assembled);
-        return detokenized != null ? detokenized : assembled;
+        return detokenize(assembled);
     }
 
     /** Keep only the portion of left-context text AFTER the last sentence boundary. */
@@ -126,8 +125,7 @@ class BlackLabSnippetParser {
             return "";
         }
         String text = xmlSnippet.replaceAll("<[^>]+>", "").replaceAll("\\s+", " ").trim();
-        String detokenized = detokenize(text);
-        return detokenized != null ? detokenized : text;
+        return detokenize(text);
     }
 
     /**

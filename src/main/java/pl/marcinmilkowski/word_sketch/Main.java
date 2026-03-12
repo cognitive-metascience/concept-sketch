@@ -304,25 +304,22 @@ public class Main {
 
     /** Parses an integer parameter from the map, returning {@code defaultValue} if absent. */
     private static int parseIntParam(Map<String, String> params, String option, int defaultValue) {
-        String val = params.get(option);
-        if (val == null) return defaultValue;
-        try {
-            return Integer.parseInt(val);
-        } catch (NumberFormatException e) {
-            System.err.println("Invalid value for " + option + ": '" + val + "' is not a valid integer.");
-            System.exit(1);
-            throw new AssertionError("unreachable");
-        }
+        return parseNumericParam(params, option, defaultValue, Integer::parseInt, "integer");
     }
 
     /** Parses a double parameter from the map, returning {@code defaultValue} if absent. */
     private static double parseDoubleParam(Map<String, String> params, String option, double defaultValue) {
+        return parseNumericParam(params, option, defaultValue, Double::parseDouble, "number");
+    }
+
+    private static <T> T parseNumericParam(Map<String, String> params, String option, T defaultValue,
+            java.util.function.Function<String, T> parser, String typeName) {
         String val = params.get(option);
         if (val == null) return defaultValue;
         try {
-            return Double.parseDouble(val);
+            return parser.apply(val);
         } catch (NumberFormatException e) {
-            System.err.println("Invalid value for " + option + ": '" + val + "' is not a valid number.");
+            System.err.println("Invalid value for " + option + ": '" + val + "' is not a valid " + typeName + ".");
             System.exit(1);
             throw new AssertionError("unreachable");
         }

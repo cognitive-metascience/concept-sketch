@@ -2,6 +2,7 @@ package pl.marcinmilkowski.word_sketch.api;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import pl.marcinmilkowski.word_sketch.utils.JsonUtils;
 import com.sun.net.httpserver.HttpExchange;
 import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
@@ -33,7 +34,7 @@ final class HttpApiUtils {
 
     private static final Logger logger = LoggerFactory.getLogger(HttpApiUtils.class);
 
-    static final ObjectMapper MAPPER = new ObjectMapper();
+    static final ObjectMapper MAPPER = JsonUtils.MAPPER;
 
     /**
      * Default allowed CORS origin (used when the {@code cors.allow.origin} system property

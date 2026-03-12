@@ -2,8 +2,8 @@ package pl.marcinmilkowski.word_sketch.config;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import pl.marcinmilkowski.word_sketch.utils.JsonUtils;
 import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -49,7 +49,6 @@ import java.util.Map;
  */
 public final class GrammarConfigLoader {
     private static final Logger logger = LoggerFactory.getLogger(GrammarConfigLoader.class);
-    private static final ObjectMapper MAPPER = new ObjectMapper();
 
     private GrammarConfigLoader() {}
 
@@ -99,7 +98,7 @@ public final class GrammarConfigLoader {
     private static GrammarConfig parse(String content, Path configPath) throws IOException {
         ObjectNode root;
         try {
-            root = MAPPER.readValue(content, ObjectNode.class);
+            root = JsonUtils.MAPPER.readValue(content, ObjectNode.class);
         } catch (JsonProcessingException e) {
             throw new IOException("Failed to parse grammar config" +
                 (configPath != null ? " at " + configPath : "") + ": " + e.getMessage(), e);
@@ -162,6 +161,10 @@ public final class GrammarConfigLoader {
         }
 
         // Canonical field name is "pattern"; cql_pattern is no longer supported
+        if (relObj.has("cql_pattern")) {
+            throw new IllegalArgumentException(
+                "Config error: Relation '" + id + "' uses old key 'cql_pattern'; rename it to 'pattern'");
+        }
         String pattern = relObj.path("pattern").textValue();
         if (pattern == null || pattern.isBlank()) {
             throw new IllegalArgumentException("Config error: Relation '" + id + "' has no 'pattern' field - every relation must have a BCQL pattern");
@@ -221,17 +224,7 @@ public final class GrammarConfigLoader {
      * @throws IllegalStateException if the file is not found or cannot be parsed
      */
     public static GrammarConfig createDefaultEnglish(String configPath) {
-        Path path = Path.of(configPath);
-        try {
-            return load(path);
-        } catch (java.io.FileNotFoundException e) {
-            throw new IllegalStateException(
-                "Grammar config file not found: '" + configPath + "'.", e);
-        } catch (IOException e) {
-            throw new IllegalStateException(
-                "Cannot load grammar config from '" + configPath
-                    + "' (malformed JSON or I/O error).", e);
-        }
+        return loadUnchecked(Path.of(configPath), configPath, "");
     }
 
     /**
@@ -251,17 +244,28 @@ public final class GrammarConfigLoader {
      */
     public static GrammarConfig createDefaultEnglish() {
         String path = System.getProperty("grammar.config", "grammars/relations.json");
-        Path configPath = Path.of(path);
+        return loadUnchecked(Path.of(path), path, " Set -Dgrammar.config=<path> to override.");
+    }
+
+    /**
+     * Loads grammar config from {@code configPath}, wrapping any {@link IOException} into
+     * {@link IllegalStateException} for callers that cannot handle checked exceptions.
+     *
+     * @param configPath  path to the grammar config JSON file
+     * @param displayPath path string to embed in error messages
+     * @param hint        optional suffix appended to error messages (e.g. a "Set -D..." tip)
+     * @throws IllegalStateException if the file is not found or cannot be parsed
+     */
+    private static GrammarConfig loadUnchecked(Path configPath, String displayPath, String hint) {
         try {
             return load(configPath);
         } catch (java.io.FileNotFoundException e) {
             throw new IllegalStateException(
-                "Grammar config file not found: '" + path
-                    + "'. Set -Dgrammar.config=<path> to override.", e);
+                "Grammar config file not found: '" + displayPath + "'." + hint, e);
         } catch (IOException e) {
             throw new IllegalStateException(
-                "Cannot load grammar config from '" + path
-                    + "' (malformed JSON or I/O error). Set -Dgrammar.config=<path> to override.", e);
+                "Cannot load grammar config from '" + displayPath
+                    + "' (malformed JSON or I/O error)." + hint, e);
         }
     }
 

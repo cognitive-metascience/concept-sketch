@@ -146,7 +146,7 @@ class CollocateQueryHelper {
                     : searchHits.group(groupBy, Results.NO_LIMIT).execute();
             return new CollocateSearch(headwordFreq, groups);
         } catch (InvalidQuery e) {
-            throw new IOException("BCQL parse error: " + e.getMessage(), e);
+            throw new IllegalArgumentException("BCQL parse error: " + e.getMessage(), e);
         }
     }
 
@@ -241,7 +241,7 @@ class CollocateQueryHelper {
                     .toList();
 
         } catch (InvalidQuery e) {
-            throw new IOException("BCQL parse error: " + e.getMessage(), e);
+            throw new IllegalArgumentException("BCQL parse error: " + e.getMessage(), e);
         }
     }
 

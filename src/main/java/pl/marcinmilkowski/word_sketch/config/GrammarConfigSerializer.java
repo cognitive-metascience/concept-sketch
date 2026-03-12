@@ -1,8 +1,8 @@
 package pl.marcinmilkowski.word_sketch.config;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import pl.marcinmilkowski.word_sketch.utils.JsonUtils;
 
 /**
  * Converts {@link GrammarConfig} and {@link RelationConfig} value objects to
@@ -14,8 +14,6 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
  */
 public final class GrammarConfigSerializer {
 
-    private static final ObjectMapper MAPPER = new ObjectMapper();
-
     private GrammarConfigSerializer() {}
 
     /**
@@ -25,12 +23,12 @@ public final class GrammarConfigSerializer {
      * @return an {@link ObjectNode} suitable for embedding in an API response
      */
     public static ObjectNode toJson(GrammarConfig config) {
-        ObjectNode root = MAPPER.createObjectNode();
+        ObjectNode root = JsonUtils.MAPPER.createObjectNode();
         root.put("version", config.version());
         if (config.configPath() != null) {
             root.put("config_path", config.configPath().toString());
         }
-        ArrayNode relationsArray = MAPPER.createArrayNode();
+        ArrayNode relationsArray = JsonUtils.MAPPER.createArrayNode();
         for (RelationConfig rel : config.relations()) {
             relationsArray.add(toJson(rel));
         }
@@ -45,7 +43,7 @@ public final class GrammarConfigSerializer {
      * @return an {@link ObjectNode} with all non-null fields populated
      */
     public static ObjectNode toJson(RelationConfig rel) {
-        ObjectNode obj = MAPPER.createObjectNode();
+        ObjectNode obj = JsonUtils.MAPPER.createObjectNode();
         obj.put("id", rel.id());
         if (rel.name() != null) obj.put("name", rel.name());
         if (rel.description() != null) obj.put("description", rel.description());

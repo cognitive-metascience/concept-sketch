@@ -3,6 +3,7 @@ package pl.marcinmilkowski.word_sketch.api;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import pl.marcinmilkowski.word_sketch.config.GrammarConfig;
+import pl.marcinmilkowski.word_sketch.config.RelationType;
 import pl.marcinmilkowski.word_sketch.query.QueryExecutor;
 import pl.marcinmilkowski.word_sketch.exploration.ExplorationService;
 
@@ -76,10 +77,12 @@ public class WordSketchApiServer {
             HttpApiUtils.wrapWithErrorHandling(sketchHandlers::routeSketchRequest, "Sketch request"));
 
         registerGetHandler(server, "/api/relations",
-            HttpApiUtils.wrapWithErrorHandling(sketchHandlers::handleSurfaceRelations, "Surface relations"));
+            HttpApiUtils.wrapWithErrorHandling(
+                ex -> sketchHandlers.handleRelationsForType(ex, RelationType.SURFACE), "Surface relations"));
 
         registerGetHandler(server, "/api/relations/dep",
-            HttpApiUtils.wrapWithErrorHandling(sketchHandlers::handleDependencyRelations, "Dependency relations"));
+            HttpApiUtils.wrapWithErrorHandling(
+                ex -> sketchHandlers.handleRelationsForType(ex, RelationType.DEP), "Dependency relations"));
 
         registerGetHandler(server, "/api/semantic-field/explore",
             HttpApiUtils.wrapWithErrorHandling(explorationHandlers::handleSemanticFieldExplore, "Semantic field explore"));

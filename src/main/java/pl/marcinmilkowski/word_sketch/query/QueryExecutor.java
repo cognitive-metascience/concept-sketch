@@ -100,6 +100,7 @@ public interface QueryExecutor extends Closeable {
      * @param maxResults        Maximum number of results to return
      * @return Collocate results ranked by logDice descending
      * @throws IOException if index access or parsing fails
+     * @throws IllegalArgumentException if the headword lemma cannot be extracted from {@code bcqlPattern}
      */
     List<QueryResults.WordSketchResult> executeSurfacePattern(
             String bcqlPattern,
