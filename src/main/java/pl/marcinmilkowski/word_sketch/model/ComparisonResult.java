@@ -40,13 +40,13 @@ public class ComparisonResult {
      * Returns counts for fully-shared, partially-shared, and specific adjectives in a single pass.
      */
     public SummaryCounts summaryCounts() {
-        int total = nouns.size();
         int fullyShared = 0, partiallyShared = 0, specific = 0;
         for (AdjectiveProfile a : adjectives) {
-            int p = a.presentInCount();
-            if (p == total) fullyShared++;
-            else if (p >= 2) partiallyShared++;
-            else specific++;
+            switch (a.sharingCategory()) {
+                case FULLY_SHARED    -> fullyShared++;
+                case PARTIALLY_SHARED -> partiallyShared++;
+                case SPECIFIC        -> specific++;
+            }
         }
         return new SummaryCounts(fullyShared, partiallyShared, specific);
     }
