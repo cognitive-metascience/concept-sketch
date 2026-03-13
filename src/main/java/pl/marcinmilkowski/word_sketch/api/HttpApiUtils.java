@@ -87,10 +87,8 @@ final class HttpApiUtils {
 
     /** Warns at startup when {@code cors.allow.origin} is set to {@code *}.
      *
-     * <p>Wildcard CORS must be an explicit opt-in: set the system property
-     * {@code allow.wildcard.cors=true} to suppress the error and allow all origins.
-     * Without that property, a wildcard origin fails fast to prevent accidental
-     * exposure in production.</p>
+     * <p>Wildcard CORS is an explicit opt-in: set {@code -Dallow.wildcard.cors=true} to permit
+     * all origins. Without it, a wildcard value throws to prevent accidental exposure.</p>
      *
      * @throws IllegalStateException if CORS origin is {@code *} and
      *         {@code allow.wildcard.cors=true} is not set

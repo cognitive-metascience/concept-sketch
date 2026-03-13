@@ -60,10 +60,7 @@ class CollocateQueryHelper {
 
     /**
      * Creates a helper bound to the given BlackLab index.
-     *
-     * <p>Accepts {@code null} only when used by test subclasses that override all I/O
-     * methods ({@link #getTotalFrequency} and {@link #performCollocateSearch}), so the
-     * index field is never dereferenced.  Production callers must pass a non-null index.</p>
+     * Null is accepted only by test subclasses that override all I/O methods.
      *
      * @param index the BlackLab index to query (null permitted for test subclasses only)
      */
