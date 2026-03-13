@@ -46,7 +46,8 @@ final class HttpApiUtils {
      *   <li>{@link IllegalArgumentException} → 400 (validation / missing param)</li>
      *   <li>{@link com.fasterxml.jackson.core.JsonProcessingException} → 400 (malformed JSON input from client)</li>
      *   <li>{@link java.io.IOException} → 500 (index / I/O failure)</li>
-     *   <li>Any other {@link Exception} → 500 (unexpected server error)</li>
+     *   <li>{@link RuntimeException} → 500 (programming bug — logged at ERROR with full stack trace)</li>
+     *   <li>Any other {@link Exception} → 500 (unexpected checked exception)</li>
      * </ul>
      * <p>Exploration-specific failures (503) are handled in
      * {@link ExplorationHandlers} before reaching this wrapper.</p>
@@ -70,8 +71,13 @@ final class HttpApiUtils {
             } catch (java.io.IOException e) {
                 logger.error("{} error", description, e);
                 sendError(exchange, 500, description + " failed: " + e.getMessage());
+            } catch (RuntimeException e) {
+                // Log at ERROR with full stack trace so programming bugs (NPE, CCE, etc.)
+                // are clearly visible in logs rather than silently mapped to a generic 500.
+                logger.error("{} unexpected runtime error (possible bug — check stack trace)", description, e);
+                sendError(exchange, 500, "Unexpected error: " + e.getMessage());
             } catch (Exception e) {
-                logger.error("{} unexpected error", description, e);
+                logger.error("{} unexpected checked exception", description, e);
                 sendError(exchange, 500, "Unexpected error: " + e.getMessage());
             }
         };

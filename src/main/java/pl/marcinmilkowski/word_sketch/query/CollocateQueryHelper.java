@@ -42,7 +42,6 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Set;
 
 /**
@@ -78,6 +77,19 @@ class CollocateQueryHelper {
         this.index = null;
     }
 
+    /**
+     * Guards against calling index-dependent methods on a test-only instance created with
+     * {@link #forTesting()}. Throws a descriptive {@link IllegalStateException} rather than
+     * letting a raw {@link NullPointerException} propagate from deep inside a query method.
+     */
+    private void assertIndexAvailable() {
+        if (this.index == null) {
+            throw new IllegalStateException(
+                "CollocateQueryHelper.forTesting() instances do not have a BlackLab index. "
+                + "Only call purely-computational methods (scoring, filtering) on test instances.");
+        }
+    }
+
     // -------------------------------------------------------------------------
     // Frequency lookup
     // -------------------------------------------------------------------------
@@ -89,8 +101,9 @@ class CollocateQueryHelper {
      * @throws IOException wrapping any RuntimeException thrown by the BlackLab index
      */
     long getTotalFrequency(String lemma) throws IOException {
+        assertIndexAvailable();
         try {
-            BlackLabIndex idx = Objects.requireNonNull(this.index, "index must not be null in production");
+            BlackLabIndex idx = this.index;
             AnnotatedField field = idx.mainAnnotatedField();
             Annotation annotation = field.annotation("lemma");
             if (annotation == null) {
@@ -139,8 +152,9 @@ class CollocateQueryHelper {
 
     private CollocateSearch performCollocateSearch(String lemma, String bcqlPattern, boolean withStoredHits)
             throws IOException {
+        assertIndexAvailable();
         try {
-            BlackLabIndex idx = Objects.requireNonNull(this.index, "index must not be null in production");
+            BlackLabIndex idx = this.index;
             TextPattern pattern = nl.inl.blacklab.queryParser.corpusql.CorpusQueryLanguageParser
                     .parse(bcqlPattern, "lemma");
             BLSpanQuery query = pattern.toQuery(QueryInfo.create(idx));
@@ -243,8 +257,9 @@ class CollocateQueryHelper {
      */
     List<CollocateResult> executeBcqlQuery(String bcqlPattern, int maxResults)
             throws IOException {
+        assertIndexAvailable();
         try {
-            BlackLabIndex idx = Objects.requireNonNull(this.index, "index must not be null in production");
+            BlackLabIndex idx = this.index;
             TextPattern pattern = nl.inl.blacklab.queryParser.corpusql.CorpusQueryLanguageParser
                     .parse(bcqlPattern, "lemma");
             BLSpanQuery query = pattern.toQuery(QueryInfo.create(idx));
