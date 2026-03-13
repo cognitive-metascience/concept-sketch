@@ -19,6 +19,24 @@
       "head_position": 1,
       "collocate_position": 3,
       "relation_type": "SURFACE"
+    },
+    {
+      "id": "noun_verbs",
+      "name": "Subject verbs",
+      "description": "Verbs of which the noun is the subject",
+      "pattern": "[xpos=\"NN.*\"] [xpos=\"VB.*\"]",
+      "head_position": 1,
+      "collocate_position": 2,
+      "relation_type": "SURFACE"
+    },
+    {
+      "id": "verb_nouns",
+      "name": "Object nouns",
+      "description": "Nouns that are objects of verbs",
+      "pattern": "[xpos=\"VB.*\"] [xpos=\"NN.*\"]",
+      "head_position": 2,
+      "collocate_position": 1,
+      "relation_type": "SURFACE"
     }
   ]
 }

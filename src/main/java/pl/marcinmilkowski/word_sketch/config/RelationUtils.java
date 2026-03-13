@@ -6,8 +6,6 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import org.jspecify.annotations.Nullable;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import pl.marcinmilkowski.word_sketch.model.PosGroup;
 import pl.marcinmilkowski.word_sketch.utils.CqlUtils;
@@ -19,8 +17,6 @@ import pl.marcinmilkowski.word_sketch.utils.CqlUtils;
  * and all stateless pattern-building functions operating on {@link RelationConfig}.</p>
  */
 public final class RelationUtils {
-
-    private static final Logger logger = LoggerFactory.getLogger(RelationUtils.class);
 
     private static final String JJ_PREFIX = "JJ";
     private static final String VB_PREFIX = "VB";
@@ -77,16 +73,22 @@ public final class RelationUtils {
      * Validates that every target relation ID in {@link #RELATION_ALIASES} exists in the
      * given grammar config. Logs a warning for any alias that points to an unknown ID.
      * Call this during server startup after the grammar config is loaded.
+     * Validates that every entry in {@link #RELATION_ALIASES} maps to a relation ID that
+     * actually exists in {@code config}. Throws {@link IllegalStateException} on the first
+     * mismatch so that misconfigured deployments fail fast at server startup rather than
+     * silently routing requests to a non-existent relation.
      *
      * @param config the loaded grammar configuration to validate against
+     * @throws IllegalStateException if any alias references an unknown relation ID
      */
     public static void validateAliases(GrammarConfig config) {
         for (Map.Entry<String, String> entry : RELATION_ALIASES.entrySet()) {
             String configId = entry.getValue();
             if (config.relation(configId).isEmpty()) {
-                logger.warn(
-                    "RELATION_ALIASES entry '{}' → '{}' references unknown relation ID '{}' in grammar config",
-                    entry.getKey(), configId, configId);
+                throw new IllegalStateException(
+                    "RELATION_ALIASES entry '" + entry.getKey() + "' → '" + configId
+                    + "' references unknown relation ID '" + configId + "' in grammar config."
+                    + " Fix the alias map or the grammar config before starting the server.");
             }
         }
     }
