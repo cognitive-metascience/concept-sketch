@@ -5,7 +5,7 @@ package pl.marcinmilkowski.word_sketch.model.sketch;
  * Use pattern-matching ({@code instanceof}) or the concrete subtype to access type-specific fields.
  */
 public sealed interface ConcordanceResult
-        permits SnippetResult, CollocateResult {
+        permits ConcordanceHit, CollocateResult {
     String sentence();
     int startOffset();
     int endOffset();

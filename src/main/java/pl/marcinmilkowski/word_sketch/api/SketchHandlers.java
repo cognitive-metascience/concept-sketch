@@ -59,7 +59,7 @@ class SketchHandlers {
         if (parts.length > 1 && RelationType.DEP.label().equals(parts[1])) {
             String specificDeprel = parts.length > 2 ? parts[2] : null;
             if (specificDeprel != null) {
-                handleRelationQueryForPattern(exchange, lemma, specificDeprel, RelationType.DEP);
+                handleRelationQueryById(exchange, lemma, specificDeprel, RelationType.DEP);
             } else {
                 // Full dependency sketch — all DEP-type relations
                 handleDependencySketch(exchange, lemma);
@@ -69,7 +69,7 @@ class SketchHandlers {
 
         String relation = parts.length > 1 ? parts[1] : null;
         if (relation != null && !relation.isEmpty()) {
-            handleRelationQueryForPattern(exchange, lemma, relation, RelationType.SURFACE);
+            handleRelationQueryById(exchange, lemma, relation, RelationType.SURFACE);
         } else {
             handleFullSketchForType(exchange, lemma, RelationType.SURFACE);
         }
@@ -168,7 +168,7 @@ class SketchHandlers {
         RelationEntry build(pl.marcinmilkowski.word_sketch.config.RelationConfig rel, ExecutedSketch sketch);
     }
 
-    private void handleRelationQueryForPattern(HttpExchange exchange, String lemma, String relationId, RelationType relationType) throws IOException {
+    private void handleRelationQueryById(HttpExchange exchange, String lemma, String relationId, RelationType relationType) throws IOException {
         var rel = grammarConfig.relation(relationId).orElse(null);
         if (rel == null) {
             throw new IllegalArgumentException("Unknown relation: " + relationId);

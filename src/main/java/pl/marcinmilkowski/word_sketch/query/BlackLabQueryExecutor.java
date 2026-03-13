@@ -142,7 +142,7 @@ public class BlackLabQueryExecutor implements QueryExecutor {
                 }
                 String snippet = parts[0] + parts[1] + parts[2];
 
-                results.add(new SnippetResult(
+                results.add(new ConcordanceHit(
                     snippet, hit.start(), hit.end(), String.valueOf(hit.doc())));
             }
 
