@@ -79,6 +79,35 @@ class ExplorationHandlersTest {
     }
 
     @Test
+    void handleSemanticFieldComparison_withData_collocatesNonEmpty() throws Exception {
+        QueryExecutor executor = collocatingExecutor(Map.of(
+            "theory",     List.of(wsr("important", 8.5), wsr("new", 7.0)),
+            "hypothesis", List.of(wsr("important", 7.8), wsr("new", 6.5))
+        ));
+        GrammarConfig config = GrammarConfigHelper.requireTestConfig();
+        ExplorationService explorer = new SemanticFieldExplorer(executor, config);
+        ExplorationHandlers handlers = new ExplorationHandlers(explorer, config);
+
+        MockExchangeFactory.MockExchange ex = new MockExchangeFactory.MockExchange(
+                "http://localhost/api/semantic-field/compare?seeds=theory,hypothesis&min_logdice=0.0");
+        handlers.handleSemanticFieldComparison(ex);
+
+        assertEquals(200, ex.statusCode);
+        ObjectNode body = HttpApiUtils.mapper().readValue(ex.getResponseBodyAsString(), ObjectNode.class);
+        assertEquals("ok", body.path("status").asText());
+        assertTrue(body.path("collocates").isArray(), "collocates must be an array");
+        assertFalse(body.path("collocates").isEmpty(), "collocates must not be empty");
+        boolean hasImportant = false;
+        for (var node : body.path("collocates")) {
+            if ("important".equals(node.path("word").asText())) {
+                hasImportant = true;
+                break;
+            }
+        }
+        assertTrue(hasImportant, "collocates should contain 'important'");
+    }
+
+    @Test
     void handleSemanticFieldComparison_missingSeeds_returns400() throws Exception {
         ExplorationHandlers handlers = new ExplorationHandlers(null, GrammarConfigHelper.requireTestConfig());
         MockExchangeFactory.MockExchange ex = new MockExchangeFactory.MockExchange(
@@ -209,7 +238,6 @@ class ExplorationHandlersTest {
                 "first seed_collocate word should be 'big' or 'old', got: " + firstWord);
     }
 
-    @Test
     @Test
     void compare_edgeWeights_abstractHasCorrectWeightToTheory() throws Exception {
         QueryExecutor executor = collocatingExecutor(Map.of(

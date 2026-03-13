@@ -73,7 +73,7 @@ class SingleSeedExplorer {
 
         int topPredicates = opts.topCollocates();
         int nounsPerPredicate = opts.reverseExpansionLimit();
-        double minLogDice = opts.minLogDice();
+        double minLogDice = opts.logDiceThreshold();
         int minShared = opts.minShared();
 
         String normalizedSeed = seed.toLowerCase().trim();
@@ -200,9 +200,6 @@ class SingleSeedExplorer {
         return discoveredNouns;
     }
 
-    /**
-     * Phase 4: Identify core collocates — those shared by enough discovered nouns.
-     */
     /**
      * Minimum fraction of discovered nouns a collocate must co-occur with
      * to qualify as a "core" collocate. A 1/3 threshold ensures a collocate

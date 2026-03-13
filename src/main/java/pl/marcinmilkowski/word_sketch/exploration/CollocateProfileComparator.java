@@ -60,7 +60,7 @@ class CollocateProfileComparator {
                 "compareCollocateProfiles requires at least 2 seed nouns; got: " + seedNouns.size());
         }
 
-        double minLogDice = opts.minLogDice();
+        double minLogDice = opts.logDiceThreshold();
         int maxPerNoun = opts.topCollocates();
         List<String> nounList = new ArrayList<>(seedNouns);
 

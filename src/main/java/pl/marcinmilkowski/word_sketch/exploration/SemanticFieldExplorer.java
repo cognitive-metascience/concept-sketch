@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.Set;
 
 import org.jspecify.annotations.NonNull;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -72,13 +73,16 @@ public class SemanticFieldExplorer implements ExplorationService {
      * @param comparator        collocate profile comparator (multi-seed comparison)
      * @param multiSeedExplorer multi-seed intersection explorer
      * @param grammarConfig     grammar config used to derive the noun CQL constraint;
-     *                          {@code null} falls back to {@link #FALLBACK_NOUN_PATTERN}
+     *                          {@code null} is accepted as a <em>test-only escape hatch</em> —
+     *                          it bypasses grammar-derived pattern resolution and falls back to
+     *                          the hardcoded {@link #FALLBACK_NOUN_PATTERN}.  Production callers
+     *                          must always supply a non-null, fully-loaded grammar config.
      */
     public SemanticFieldExplorer(
             QueryExecutor executor,
             CollocateProfileComparator comparator,
             MultiSeedExplorer multiSeedExplorer,
-            GrammarConfig grammarConfig) {
+            @Nullable GrammarConfig grammarConfig) {
         this.executor = executor;
         this.comparator = comparator;
         this.multiSeedExplorer = multiSeedExplorer;

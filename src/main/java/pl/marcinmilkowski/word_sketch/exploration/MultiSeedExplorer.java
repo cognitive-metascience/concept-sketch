@@ -49,7 +49,7 @@ class MultiSeedExplorer {
             @NonNull RelationConfig relationConfig,
             @NonNull ExplorationOptions opts) throws IOException {
 
-        double minLogDice = opts.minLogDice();
+        double minLogDice = opts.logDiceThreshold();
         int topCollocates = opts.topCollocates();
         int minShared = opts.minShared();
 
@@ -88,7 +88,7 @@ class MultiSeedExplorer {
      * to {@code executeCollocations} (dependency index, less precise), the resulting logDice scores
      * would reflect different retrieval strategies and could not be meaningfully compared.</p>
      *
-     * <p>Contrast with {@link SemanticFieldExplorer#fetchSeedCollocates}, which applies the
+     * <p>Contrast with {@link SingleSeedExplorer#fetchSeedCollocates}, which applies the
      * {@code executeCollocations} fallback for single-seed exploration. In that context only
      * one seed is queried, so mixing strategies has no cross-seed comparability cost; the
      * fallback simply rescues rare seeds from returning empty results. That rescue is not

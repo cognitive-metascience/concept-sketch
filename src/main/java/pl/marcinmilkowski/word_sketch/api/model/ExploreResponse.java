@@ -1,5 +1,6 @@
 package pl.marcinmilkowski.word_sketch.api.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import org.jspecify.annotations.Nullable;
@@ -138,7 +139,7 @@ public sealed interface ExploreResponse
 
         /** Delegates to {@link #sourceSeeds()} to satisfy the shared interface contract. */
         @Override
-        @JsonProperty("source_seeds")
+        @JsonIgnore
         public List<DiscoveredNounEntry> discoveredNouns() { return sourceSeeds(); }
     }
 }
