@@ -67,7 +67,7 @@ public class BlackLabQueryExecutor implements QueryExecutor {
         this.blackLabIndex = index;
         this.collocateQueryHelper = index != null
                 ? new CollocateQueryHelper(index)
-                : new CollocateQueryHelper((BlackLabIndex) null);
+                : CollocateQueryHelper.forTesting();
     }
 
     /**
@@ -234,6 +234,26 @@ public class BlackLabQueryExecutor implements QueryExecutor {
     }
 
     /**
+     * Extracts the collocate lemma from a HitGroup identity string.
+     *
+     * <p>When {@code collocatePos} is negative (label {@code "2:"} absent from the pattern),
+     * falls back to extracting the last lemma in the identity. Otherwise tries XML first
+     * (counting {@code <w lemma="...">} elements by 1-based position), then plain-text
+     * as a fallback — both methods share the same 1-based token-position semantics.</p>
+     */
+    @Nullable
+    private static String extractCollocateFromIdentity(String identity, int collocatePos) {
+        if (collocatePos < 0) {
+            return BlackLabSnippetParser.extractLastLemma(identity);
+        }
+        String collocate = BlackLabSnippetParser.extractCollocateFromXmlByPosition(identity, collocatePos);
+        if (collocate == null || collocate.isEmpty()) {
+            collocate = BlackLabSnippetParser.extractPlainTextTokenAt(identity, collocatePos);
+        }
+        return collocate;
+    }
+
+    /**
      * Execute a surface pattern query for word sketches.
      * Properly handles labeled capture groups (1: for head, 2: for collocate).
      * The headword lemma is extracted from the {@code lemma=} attribute in the pattern.
@@ -259,21 +279,7 @@ public class BlackLabQueryExecutor implements QueryExecutor {
         HitGroups groups = collocateSearch.groups();
 
         GroupStats stats = collectFrequenciesAndPosFromGroups(groups,
-                identity -> {
-                    // sentinel: collocatePos == -1 means label "2:" is absent from the pattern;
-                    // fall back to extractLastLemma. Uses < 0 to handle any negative sentinel value.
-                    if (collocatePos < 0) {
-                        return BlackLabSnippetParser.extractLastLemma(identity);
-                    }
-                    // Primary path: identity is XML — count <w lemma="..."> elements up to collocatePos.
-                    String collocate = BlackLabSnippetParser.extractCollocateFromXmlByPosition(identity, collocatePos);
-                    if (collocate == null || collocate.isEmpty()) {
-                        // Fallback: identity is plain whitespace-separated text.
-                        // Both methods share the same 1-based token-position semantics.
-                        collocate = BlackLabSnippetParser.extractPlainTextTokenAt(identity, collocatePos);
-                    }
-                    return collocate;
-                });
+                identity -> extractCollocateFromIdentity(identity, collocatePos));
 
         return collocateQueryHelper.buildAndRankCollocates(stats.freqMap(), headwordFreq, minLogDice, maxResults, stats.lemmaPosMap());
     }

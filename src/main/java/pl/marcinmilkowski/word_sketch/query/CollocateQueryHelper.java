@@ -31,6 +31,7 @@ import pl.marcinmilkowski.word_sketch.utils.LogDiceUtils;
 import pl.marcinmilkowski.word_sketch.utils.CqlUtils;
 
 
+import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
 
 import java.io.IOException;
@@ -58,14 +59,23 @@ class CollocateQueryHelper {
     @Nullable
     private final BlackLabIndex index;
 
-    /**
-     * Creates a helper bound to the given BlackLab index.
-     * Null is accepted only by test subclasses that override all I/O methods.
-     *
-     * @param index the BlackLab index to query (null permitted for test subclasses only)
-     */
-    CollocateQueryHelper(@Nullable BlackLabIndex index) {
+    /** Creates a helper bound to the given BlackLab index. */
+    CollocateQueryHelper(@NonNull BlackLabIndex index) {
         this.index = index;
+    }
+
+    /**
+     * Creates a no-op helper for unit tests that do not need corpus I/O.
+     * Any method that delegates to the BlackLab index will throw {@link NullPointerException}
+     * if called on this instance — only call methods that are purely computational.
+     */
+    static CollocateQueryHelper forTesting() {
+        return new CollocateQueryHelper();
+    }
+
+    /** No-arg constructor for test-only instances — index is null. */
+    private CollocateQueryHelper() {
+        this.index = null;
     }
 
     // -------------------------------------------------------------------------
