@@ -1,4 +1,4 @@
-package pl.marcinmilkowski.word_sketch.query;
+package pl.marcinmilkowski.word_sketch.query.spi;
 
 import java.io.IOException;
 import java.util.List;
@@ -9,10 +9,11 @@ import pl.marcinmilkowski.word_sketch.model.sketch.WordSketchResult;
 /**
  * Narrow query port for word-sketch surface-pattern lookups.
  *
- * <p>{@link QueryExecutor} extends this interface, so any {@code QueryExecutor} implementation is
- * automatically a {@code SketchQueryPort}. Handlers that only need surface-pattern collocate
- * extraction (e.g. {@link pl.marcinmilkowski.word_sketch.api.SketchHandlers}) should declare
- * this narrower type to make their dependency surface explicit.</p>
+ * <p>{@link pl.marcinmilkowski.word_sketch.query.QueryExecutor} extends this interface, so any
+ * {@code QueryExecutor} implementation is automatically a {@code SketchQueryPort}. Handlers that
+ * only need surface-pattern collocate extraction (e.g.
+ * {@link pl.marcinmilkowski.word_sketch.api.SketchHandlers}) should declare this narrower type to
+ * make their dependency surface explicit.</p>
  */
 public interface SketchQueryPort {
 

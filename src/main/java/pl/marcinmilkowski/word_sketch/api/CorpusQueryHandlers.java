@@ -6,7 +6,7 @@ import com.sun.net.httpserver.HttpExchange;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import pl.marcinmilkowski.word_sketch.model.sketch.*;
-import pl.marcinmilkowski.word_sketch.query.CollocateQueryPort;
+import pl.marcinmilkowski.word_sketch.query.spi.CollocateQueryPort;
 
 import java.io.IOException;
 import java.util.List;

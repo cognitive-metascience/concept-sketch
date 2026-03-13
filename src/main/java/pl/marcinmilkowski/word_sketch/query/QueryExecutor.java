@@ -7,6 +7,8 @@ import java.util.List;
 import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
 import pl.marcinmilkowski.word_sketch.model.sketch.*;
+import pl.marcinmilkowski.word_sketch.query.spi.CollocateQueryPort;
+import pl.marcinmilkowski.word_sketch.query.spi.SketchQueryPort;
 
 /**
  * Unified query interface for corpus lookups.
