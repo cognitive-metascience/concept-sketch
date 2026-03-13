@@ -1,0 +1,530 @@
+{
+  "assessments": {
+    "high_level_elegance": 81,
+    "convention_outlier": 72,
+    "error_consistency": 80,
+    "naming_quality": 77,
+    "abstraction_fitness": 74,
+    "dependency_health": 88,
+    "low_level_elegance": 75,
+    "mid_level_elegance": 79,
+    "ai_generated_debt": 80,
+    "incomplete_migration": 87,
+    "package_organization": 77.0,
+    "contract_coherence": 72.0,
+    "logic_clarity": 83.0,
+    "type_safety": 80.0,
+    "cross_module_architecture": 86.0,
+    "initialization_coupling": 76,
+    "test_strategy": 65,
+    "api_surface_coherence": 70,
+    "authorization_consistency": 88,
+    "design_coherence": 72
+  },
+  "issues": [
+    {
+      "dimension": "high_level_elegance",
+      "identifier": "grammar_serializer_unreachable_from_production",
+      "summary": "GrammarConfigSerializer is public production code but has no production call site",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/config/GrammarConfigSerializer.java"
+      ],
+      "evidence": [
+        "GrammarConfigSerializer defines GrammarConfigResponse and RelationConfigEntry typed records and a toJson() factory, but grep of src/main/java shows it is only referenced from test code (GrammarConfigLoaderTest, GrammarConfigSerializerTest)",
+        "No API route in WordSketchApiServer exposes a /api/grammar or /api/config endpoint that calls GrammarConfigSerializer.toJson()",
+        "The class sits in the config package alongside GrammarConfigLoader and RelationConfig, giving the impression it participates in a production code path that does not exist"
+      ],
+      "suggestion": "Either add a diagnostic /api/grammar endpoint that uses it, or move GrammarConfigSerializer to the test sources where it is actually used, to keep the config package's public surface honest.",
+      "confidence": "high"
+    },
+    {
+      "dimension": "high_level_elegance",
+      "identifier": "semantic_field_explorer_thin_delegation_layer",
+      "summary": "SemanticFieldExplorer owns no logic; it is a pure exception-translation passthrough for its three inner classes",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/exploration/SemanticFieldExplorer.java"
+      ],
+      "evidence": [
+        "The class Javadoc explicitly labels it 'Thin facade wiring SingleSeedExplorer, MultiSeedExplorer, and CollocateProfileComparator'",
+        "All four service methods follow the identical pattern: validate, delegate, catch IOException, rethrow as ExplorationException \u2014 zero domain logic",
+        "SemanticFieldExplorer's only structural contribution is constructor wiring (e.g., deriving nounCqlPattern from grammarConfig) and exception-type translation at the service boundary"
+      ],
+      "suggestion": "This is a borderline case \u2014 the exception-boundary translation is a real responsibility. However, if the three inner classes were made to throw ExplorationException directly (or IOException were accepted in the ExplorationService contract), SemanticFieldExplorer could be eliminated. At minimum, document in the class Javadoc that exception-boundary translation is its primary responsibility so future engineers do not mistake it for a logic-bearing layer.",
+      "confidence": "medium"
+    },
+    {
+      "dimension": "convention_outlier",
+      "identifier": "snake_case_java_record_component_names_in_corpus_query_handlers",
+      "summary": "Private record components in CorpusQueryHandlers use snake_case Java identifiers instead of camelCase + @JsonProperty",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/api/CorpusQueryHandlers.java"
+      ],
+      "evidence": [
+        "BcqlQueryResponse record declares: int total_results (line 84)",
+        "BcqlResultEntry record declares: int match_start, int match_end, String collocate_lemma, double log_dice (lines 96-100)",
+        "Every other response record in the codebase uses camelCase Java identifiers and @JsonProperty for the JSON-to-Java naming bridge \u2014 e.g. ComparisonResponse: @JsonProperty(\"avg_logdice\") double avgLogDice, @JsonProperty(\"noun_scores\") Map<String, Double> nounScores",
+        "CollocateEntry, RelationEntry, ExploreResponse, SketchResponse, ExamplesResponse all follow the camelCase + @JsonProperty convention"
+      ],
+      "suggestion": "Rename record components to camelCase (totalResults, matchStart, matchEnd, collocateLemma, logDice) and add @JsonProperty annotations matching the current JSON key names to preserve wire compatibility. This aligns CorpusQueryHandlers with the project-wide convention.",
+      "confidence": "high"
+    },
+    {
+      "dimension": "error_consistency",
+      "identifier": "sketch_relation_errors_lose_cause_chain",
+      "summary": "SketchHandlers.executeRelationQueries swallows IOException into a string list, discarding the cause chain from partial-result errors",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/api/SketchHandlers.java"
+      ],
+      "evidence": [
+        "Lines 156-158: catch (IOException e) { logger.warn(..., e); relationErrors.add(e.getMessage()); } \u2014 only the message string is preserved in the response",
+        "The SketchResponse warnings field is List<String>, so callers receive a bare message with no cause, HTTP code or other diagnostic",
+        "By contrast, ExplorationHandlers lets exceptions propagate to wrapWithErrorHandling which logs the full stack trace and sends a structured JSON error body",
+        "The partial-results intent is valid, but e.getMessage() alone gives callers (and operators) insufficient context for diagnosing which index path failed and why"
+      ],
+      "suggestion": "Retain the partial-results semantics but enrich each error entry: store the relation id alongside the message (e.g. a record RelationError(String relationId, String message)) so the client can identify which relation failed. Consider also including the exception class name for operator diagnostics.",
+      "confidence": "medium"
+    },
+    {
+      "dimension": "naming_quality",
+      "identifier": "raw_field_name_vague_in_bcql_result_entry",
+      "summary": "BcqlResultEntry.raw is vague and inconsistent with CollocateResult.rawXml() in the domain model",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/api/CorpusQueryHandlers.java"
+      ],
+      "evidence": [
+        "BcqlResultEntry record has field 'String raw' (line 95)",
+        "toBcqlResultEntry maps it from CollocateResult.rawXml() (line 113), making the domain name rawXml",
+        "ExamplesResponse.ExampleEntry uses the field name 'rawXml' for the same concept (ExploreResponseAssembler line 263: r.rawXml())",
+        "The JSON key 'raw' in the BCQL response body gives API clients no indication that the content is XML"
+      ],
+      "suggestion": "Rename the Java field to rawXml (with @JsonProperty(\"raw_xml\") if changing the JSON wire name is acceptable, or @JsonProperty(\"raw\") to preserve current wire format). This aligns the internal identifier with the domain vocabulary used everywhere else.",
+      "confidence": "high"
+    },
+    {
+      "dimension": "naming_quality",
+      "identifier": "snake_case_java_identifiers_in_corpus_query_handlers_naming",
+      "summary": "Snake_case Java record component names (total_results, match_start, etc.) in CorpusQueryHandlers are non-idiomatic and inconsistent with codebase conventions",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/api/CorpusQueryHandlers.java"
+      ],
+      "evidence": [
+        "BcqlQueryResponse: int total_results (line 84) \u2014 should be totalResults",
+        "BcqlResultEntry: int match_start, int match_end, String collocate_lemma, double log_dice (lines 96-100)",
+        "Every other record in the api/ package and throughout the codebase uses camelCase for Java identifiers",
+        "Jackson uses the identifier as-is when no @JsonProperty is present, so these fields serialize as snake_case by accident rather than by explicit contract"
+      ],
+      "suggestion": "Rename all snake_case components to camelCase and add explicit @JsonProperty annotations to lock the JSON wire format. This is the same fix as convention_outlier/snake_case_java_record_component_names_in_corpus_query_handlers \u2014 the two findings share a root cause.",
+      "confidence": "high"
+    },
+    {
+      "dimension": "naming_quality",
+      "identifier": "collocate_entry_variable_name_mismatch_multi_seed_explorer",
+      "summary": "Loop variable collocateEntry in MultiSeedExplorer has type WordSketchResult, creating a name/type mismatch",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/exploration/MultiSeedExplorer.java"
+      ],
+      "evidence": [
+        "Lines 67, 94, 123, 167: for (WordSketchResult collocateEntry : ...) \u2014 collocateEntry implies a response/DTO type, not a domain result object",
+        "Elsewhere in the exploration layer the variable is called 'r' (in assemblers) or the collection element type is directly clear from the stream API",
+        "The method buildCoreCollocates uses collocateLemma (line 146) and peakLogDice (line 149) as variable names \u2014 consistent and clear \u2014 while the outer loops use the misleading collocateEntry"
+      ],
+      "suggestion": "Rename the loop variable to 'collocate' or 'result' throughout MultiSeedExplorer to match the type (WordSketchResult) and align with usage in CollocateProfileComparator where the analogous variable is named 'r'.",
+      "confidence": "medium"
+    },
+    {
+      "dimension": "abstraction_fitness",
+      "identifier": "semantic_field_explorer_delegation_only_facade",
+      "summary": "SemanticFieldExplorer is a delegation-heavy facade where every method simply forwards to an inner object with a try-catch wrapper, adding no domain logic",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/exploration/SemanticFieldExplorer.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/exploration/spi/ExplorationService.java"
+      ],
+      "evidence": [
+        "exploreByRelation: validates config, calls singleSeedExplorer.explore(), catches IOException, rethrows as ExplorationException \u2014 no logic",
+        "compareCollocateProfiles: calls comparator.compareCollocateProfiles(), catches IOException, rethrows \u2014 no logic",
+        "fetchExamples: builds bcqlQuery, calls executor.executeBcqlQuery(), deduplicates results \u2014 the deduplication is the only non-trivial logic and it arguably belongs in the lower layer",
+        "exploreMultiSeed: calls multiSeedExplorer.findCollocateIntersection(), catches IOException, rethrows \u2014 no logic",
+        "The class has three separate constructors primarily to support test bypassing, which increases surface without adding capability"
+      ],
+      "suggestion": "Either have SingleSeedExplorer, MultiSeedExplorer, and CollocateProfileComparator throw ExplorationException directly (eliminating the wrapping layer), or consolidate the exception-boundary translation into a single helper method so the repetition is not spread across four identical try-catch blocks. The result deduplication in fetchExamples could move to MultiSeedExplorer or a shared utility to give SemanticFieldExplorer a cleaner reason to exist.",
+      "confidence": "high"
+    },
+    {
+      "dimension": "abstraction_fitness",
+      "identifier": "grammar_config_serializer_production_code_without_production_caller",
+      "summary": "GrammarConfigSerializer is a public production-source utility with no production caller \u2014 unused abstraction in main source tree",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/config/GrammarConfigSerializer.java"
+      ],
+      "evidence": [
+        "grep of src/main/java shows GrammarConfigSerializer is only defined, never called, in production code",
+        "All references are in test files: GrammarConfigLoaderTest and GrammarConfigSerializerTest",
+        "The class is public and exposes two public record types (RelationConfigEntry, GrammarConfigResponse), expanding the config package's public API surface unnecessarily"
+      ],
+      "suggestion": "Move GrammarConfigSerializer to src/test/java (test sources) where it is actually used, or add the missing /api/grammar diagnostic endpoint that was presumably its original motivation. Keeping it in main sources signals a planned feature that has not materialised.",
+      "confidence": "high"
+    },
+    {
+      "dimension": "low_level_elegance",
+      "identifier": "anonymous_subclass_null_helper",
+      "summary": "Unnecessary empty anonymous subclass created in BlackLabQueryExecutor test constructor",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/query/BlackLabQueryExecutor.java"
+      ],
+      "evidence": [
+        "Line 70: `this.collocateQueryHelper = index != null ? new CollocateQueryHelper(index) : new CollocateQueryHelper((BlackLabIndex) null) {};`",
+        "The trailing `{}` creates an anonymous subclass with an empty body, which is functionally identical to `new CollocateQueryHelper(null)` but semantically confusing \u2014 it implies a behavioural override that does not exist."
+      ],
+      "suggestion": "Replace `new CollocateQueryHelper((BlackLabIndex) null) {}` with `new CollocateQueryHelper((BlackLabIndex) null)` (plain instantiation). If the intent is to allow test subclasses that override I/O methods, document that via a protected constructor on CollocateQueryHelper rather than an anonymous class at the call site.",
+      "confidence": "high",
+      "impact_scope": "local",
+      "fix_scope": "single_edit"
+    },
+    {
+      "dimension": "low_level_elegance",
+      "identifier": "stale_section_comment_cqlutils",
+      "summary": "Stale migration comment divides CqlUtils into sections after the referenced class no longer exists",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/utils/CqlUtils.java"
+      ],
+      "evidence": [
+        "Line 167: `// BCQL pattern utilities (moved from BcqlPatternUtils in query package)`",
+        "BcqlPatternUtils no longer exists; the migration is complete. The comment now creates a false impression of a structural division inside a single utility class."
+      ],
+      "suggestion": "Remove the `// BCQL pattern utilities (moved from BcqlPatternUtils in query package)` comment. If a logical grouping is still desired, use a blank line separator without the historical note.",
+      "confidence": "high",
+      "impact_scope": "local",
+      "fix_scope": "single_edit"
+    },
+    {
+      "dimension": "low_level_elegance",
+      "identifier": "execute_relation_queries_high_arity",
+      "summary": "executeRelationQueries has 6 parameters including a complex BiFunction callback, obscuring intent",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/api/SketchHandlers.java"
+      ],
+      "evidence": [
+        "Method signature: `executeRelationQueries(RelationType, Predicate<RelationConfig>, String, Map<String,RelationEntry>, List<String>, BiFunction<RelationConfig,ExecutedSketch,RelationEntry>)`",
+        "Callers pass inline lambdas that call either `buildSurfaceRelationEntry` or `buildDepRelationEntry`, which are single-method calls. The abstraction of a shared loop with a builder callback hides that the two callers differ only in the assembler method called."
+      ],
+      "suggestion": "Extract the two call sites into focused private methods (`executeAndCollectSurfaceRelations`, `executeAndCollectDepRelations`), each with the RelationEntry builder inlined. This removes the BiFunction parameter and makes both call paths self-documenting without sharing a six-parameter method.",
+      "confidence": "medium",
+      "impact_scope": "local",
+      "fix_scope": "single_edit"
+    },
+    {
+      "dimension": "mid_level_elegance",
+      "identifier": "exploration_result_dual_mode_seed_method",
+      "summary": "ExplorationResult.seed() returns a comma-joined multi-seed string, making single-seed assembly fragile by convention",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/model/exploration/ExplorationResult.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/api/ExploreResponseAssembler.java"
+      ],
+      "evidence": [
+        "ExplorationResult.seed() returns `String.join(\",\", seeds)` \u2014 correct for single-seed display but produces a comma-joined string like 'theory,model,hypothesis' in multi-seed mode.",
+        "ExploreResponseAssembler.buildSingleSeedExploreResponse passes `result.seed()` as the `seed` field of SingleSeed response; this only works correctly because callers guarantee single-seed mode. Nothing in the type system enforces this.",
+        "If buildSingleSeedExploreResponse were accidentally called with a multi-seed ExplorationResult, it would silently produce a malformed JSON `seed` field containing a comma-joined string."
+      ],
+      "suggestion": "Add a `assertSingleSeed()` guard or replace `result.seed()` with `result.seeds().get(0)` in `buildSingleSeedExploreResponse` to make the single-seed assumption explicit and detectable at runtime. Alternatively, have the factory method `ExplorationResult.of(List<String> seeds, ...)` validate that single-seed responses only carry one seed if the assembler path enforces it.",
+      "confidence": "high",
+      "impact_scope": "module",
+      "fix_scope": "single_edit"
+    },
+    {
+      "dimension": "ai_generated_debt",
+      "identifier": "parameter_echo_trace_logging",
+      "summary": "Method-entry parameter echo logging and method-exit summary logging in exploration classes with no diagnostic value beyond a debugger",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/exploration/CollocateProfileComparator.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/exploration/SingleSeedExplorer.java"
+      ],
+      "evidence": [
+        "CollocateProfileComparator.compareCollocateProfiles lines 62-63: `logger.debug(\"Nouns: {}\", seedNouns); logger.debug(\"Min logDice: {}\", minLogDice);` \u2014 echoes the method's two parameters verbatim.",
+        "SingleSeedExplorer.explore line 81: `logger.debug(\"Exploring semantic field: seed='{}', relation='{}', top={}, minShared={}, minLogDice={}\", ...)` \u2014 echoes all five input parameters.",
+        "SingleSeedExplorer.explore line 108: `logger.debug(\"Exploration complete for '{}': {} nouns discovered, {} core collocates\", ...)` \u2014 echoes outputs to mirror the entry log.",
+        "These logs follow the AI-hallmark entry/exit trace pattern: log all inputs on entry, log all outputs on exit, with no explanation of non-obvious decisions or unexpected conditions."
+      ],
+      "suggestion": "Remove the entry parameter echo logs and the result-count exit log. If observability is required, replace them with a single log at an appropriate level that captures a decision or condition worth noting (e.g., logging when the exploration finds zero collocates for a seed, which already exists at line 88). Parameter values are better inspected via a debugger; trace-level logging of inputs on every invocation creates noise in production logs.",
+      "confidence": "high",
+      "impact_scope": "local",
+      "fix_scope": "single_edit"
+    },
+    {
+      "dimension": "incomplete_migration",
+      "identifier": "stale_migration_comment_cqlutils",
+      "summary": "Stale '(moved from BcqlPatternUtils in query package)' comment documents a completed migration as if it is still in progress",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/utils/CqlUtils.java"
+      ],
+      "evidence": [
+        "CqlUtils.java line 167: `// BCQL pattern utilities (moved from BcqlPatternUtils in query package)`",
+        "BcqlPatternUtils no longer exists anywhere in the repository. The move is complete.",
+        "The comment misleads readers into looking for a BcqlPatternUtils class that has been deleted."
+      ],
+      "suggestion": "Remove the comment. If the methods below it form a logical group, introduce a blank line or a non-historical comment (e.g. `// Pattern string manipulation`) without referencing the deleted source class.",
+      "confidence": "high",
+      "impact_scope": "local",
+      "fix_scope": "single_edit"
+    },
+    {
+      "dimension": "package_organization",
+      "identifier": "ghost_hybrid_indexer_package",
+      "summary": "Empty `indexer/hybrid` directories exist in both main and test source trees with no source files",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/indexer/hybrid",
+        "src/test/java/pl/marcinmilkowski/word_sketch/indexer/hybrid"
+      ],
+      "evidence": [
+        "`ls src/main/java/.../indexer/hybrid/` returns only `.` and `..` \u2014 zero Java files",
+        "`ls src/test/java/.../indexer/hybrid/` likewise empty",
+        "CLAUDE.md mentions `indexer/hybrid` in directory tree, suggesting planned but never completed work"
+      ],
+      "suggestion": "If the hybrid indexer is not planned for the near term, remove both empty directories: `rmdir src/main/java/pl/marcinmilkowski/word_sketch/indexer/hybrid && rmdir src/test/java/pl/marcinmilkowski/word_sketch/indexer/hybrid`. If the work is planned, create a tracking issue and add a `package-info.java` with a TODO comment so the empty package communicates intent instead of confusion.",
+      "confidence": "high",
+      "impact_scope": "local",
+      "fix_scope": "single_edit"
+    },
+    {
+      "dimension": "contract_coherence",
+      "identifier": "exploration_service_seed_validation_gap",
+      "summary": "ExplorationService documents @throws IllegalArgumentException for seeds < 2 but SemanticFieldExplorer does not enforce it",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/exploration/spi/ExplorationService.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/exploration/SemanticFieldExplorer.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/api/ExplorationHandlers.java"
+      ],
+      "evidence": [
+        "`ExplorationService.exploreMultiSeed` Javadoc: `@throws IllegalArgumentException if seeds is empty or fewer than 2 seeds are provided`",
+        "`ExplorationService.compareCollocateProfiles` Javadoc: same contract",
+        "`SemanticFieldExplorer.exploreMultiSeed` body: immediately delegates to `multiSeedExplorer.findCollocateIntersection(seeds, ...)` with no size check",
+        "`SemanticFieldExplorer.compareCollocateProfiles` body: immediately delegates to `comparator.compareCollocateProfiles(seeds, opts)` with no size check",
+        "Validation occurs only in `ExplorationHandlers.requireAtLeastTwoSeeds(seeds, ...)` \u2014 the HTTP handler"
+      ],
+      "suggestion": "Move the guard into `SemanticFieldExplorer` to honour the interface contract at the service boundary. Add to both methods before delegation: `if (seeds == null || seeds.size() < 2) { throw new IllegalArgumentException(\"At least 2 seeds are required; received \" + (seeds == null ? 0 : seeds.size())); }`. The HTTP handler can retain its check as an early-exit optimisation, but the service should be the authoritative enforcer of its own contract so non-HTTP callers receive the documented exception.",
+      "confidence": "high",
+      "impact_scope": "module",
+      "fix_scope": "single_edit"
+    },
+    {
+      "dimension": "logic_clarity",
+      "identifier": "redundant_empty_to_null_conversion_in_executecollocations",
+      "summary": "Lambda in executeCollocations converts empty string to null, but the outer consumer already handles both null and empty",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/query/BlackLabQueryExecutor.java"
+      ],
+      "evidence": [
+        "Lambda in `executeCollocations`: `return collocateLemma.isEmpty() ? null : collocateLemma;`",
+        "`collectFrequenciesAndPosFromGroups` outer guard: `if (lemma == null || lemma.isEmpty()) continue;`",
+        "The empty\u2192null conversion in the lambda is redundant: returning `collocateLemma` directly would have identical runtime behaviour because the outer guard skips empty strings"
+      ],
+      "suggestion": "Simplify the lambda to `return collocateLemma.isEmpty() ? null : collocateLemma` \u2192 `return collocateLemma` (or `return collocateLemma.isBlank() ? null : collocateLemma` if blank trimming is desired). The outer `collectFrequenciesAndPosFromGroups` guard handles both null and empty, so no behaviour change results. Removing the intermediate conversion makes the intent of the lambda \u2014 extract the lemma string \u2014 clearer.",
+      "confidence": "medium",
+      "impact_scope": "local",
+      "fix_scope": "single_edit"
+    },
+    {
+      "dimension": "type_safety",
+      "identifier": "relation_type_enum_uses_name_not_label",
+      "summary": "RelationType serialises via .name() in API responses, the only response-facing enum without a stable custom label, coupling API output to Java constant names",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/config/RelationType.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/api/SketchResponseAssembler.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/api/model/RelationEntry.java"
+      ],
+      "evidence": [
+        "`SketchResponseAssembler.buildSurfaceRelationEntry`: `RelationType.SURFACE.name()` \u2192 serialised as `\"SURFACE\"`",
+        "`SketchResponseAssembler.buildDepRelationEntry`: `RelationType.DEP.name()` \u2192 serialised as `\"DEP\"`",
+        "`SharingCategory`, `PosGroup`, `RelationEdgeType` all define `.label()` for stable serialisation (e.g. `\"fully_shared\"`, `\"adj\"`, `\"seed_adj\"`)",
+        "`RelationType` has no `.label()` method \u2014 it only exposes the Java constant name via `.name()`",
+        "A rename of `RelationType.SURFACE` would silently change the API response shape with no compile-time error"
+      ],
+      "suggestion": "Add a `label` field and `label()` method to `RelationType`, following the existing pattern in `SharingCategory` and `PosGroup`: `SURFACE(\"surface\"), DEP(\"dep\")` with `public String label() { return label; }`. Update `SketchResponseAssembler` to use `RelationType.SURFACE.label()` and `RelationType.DEP.label()`. Optionally add `@JsonValue` on `label()` so direct Jackson serialisation of the enum also emits the stable value.",
+      "confidence": "high",
+      "impact_scope": "module",
+      "fix_scope": "multi_file_refactor"
+    },
+    {
+      "dimension": "initialization_coupling",
+      "identifier": "cors_static_sysprop_snapshot",
+      "summary": "CORS_ALLOW_ORIGIN captured once at class-load from System.getProperty, making per-test overrides ineffective",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/api/HttpApiUtils.java"
+      ],
+      "evidence": [
+        "Line 41-42: `private static final String CORS_ALLOW_ORIGIN = System.getProperty(\"cors.allow.origin\", DEFAULT_CORS_ALLOW_ORIGIN);` \u2014 the value is frozen at class initialization time.",
+        "HttpApiUtilsTest.java has no test for CORS header behaviour; any test that calls System.setProperty after the class is loaded sees a stale snapshot.",
+        "warnIfWildcardCors() re-reads allow.wildcard.cors dynamically (correct), but the origin itself is captured once, creating an asymmetry."
+      ],
+      "suggestion": "Either keep the snapshot but document the class-load-time constraint explicitly (and add a test that sets the system property before class loading), or read the property through a package-private accessor method that can be overridden in tests \u2014 e.g., `static String corsAllowOrigin() { return System.getProperty(...); }` called per-request rather than at class-init.",
+      "confidence": "high",
+      "impact_scope": "module",
+      "fix_scope": "single_edit"
+    },
+    {
+      "dimension": "test_strategy",
+      "identifier": "environment_gated_integration_tests",
+      "summary": "All integration tests that exercise real BlackLab query paths are skipped in CI when a live index is absent",
+      "related_files": [
+        "src/test/java/pl/marcinmilkowski/word_sketch/query/BlackLabQueryExecutorIntegrationTest.java",
+        "src/test/java/pl/marcinmilkowski/word_sketch/query/BlackLabBcqlConcordanceTest.java",
+        "src/test/java/pl/marcinmilkowski/word_sketch/query/CqlParserIntegrationTest.java"
+      ],
+      "evidence": [
+        "BlackLabQueryExecutorIntegrationTest: `Assumptions.assumeTrue(indexDir != null && indexDir.exists(), ...)` \u2014 skips if CONCEPT_SKETCH_TEST_INDEX is absent.",
+        "BlackLabBcqlConcordanceTest and CqlParserIntegrationTest follow the same pattern.",
+        "CI therefore never executes any test that hits the real query-execution path (executeSurfacePattern, executeDependencyPattern), leaving the core corpus query pipeline effectively untested in automated runs."
+      ],
+      "suggestion": "Ship a small deterministic in-memory test corpus (50-200 sentences as a CoNLL-U file) indexed at build time into a temp directory, replacing the live-index assumption. BlackLabIntegrationTest already shows the stub subclass pattern that works without an index; the indexer tests (BlackLabConllUIndexerTest) prove the indexer runs in CI \u2014 combining both would give a real runnable integration path.",
+      "confidence": "high",
+      "impact_scope": "subsystem",
+      "fix_scope": "multi_file_refactor"
+    },
+    {
+      "dimension": "test_strategy",
+      "identifier": "sketch_response_assembler_untested",
+      "summary": "SketchResponseAssembler has no dedicated tests; its data-mapping logic is exercised only indirectly through handler tests with empty stub results",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/api/SketchResponseAssembler.java"
+      ],
+      "evidence": [
+        "No SketchResponseAssemblerTest.java exists.",
+        "buildDepRelationEntry sums WordSketchResult frequencies and sets a derived deprel field \u2014 both are business-critical for the word-sketch API response shape.",
+        "SketchHandlersTest uses a StubQueryExecutor that returns empty lists, so buildSurfaceRelationEntry and buildDepRelationEntry are never called with real data in the test suite."
+      ],
+      "suggestion": "Add a SketchResponseAssemblerTest with a handful of WordSketchResult fixtures, asserting that totalMatches is the sum of frequencies, that deprel is forwarded from the RelationConfig, and that the relation_type field is correctly set to SURFACE vs DEP.",
+      "confidence": "medium",
+      "impact_scope": "local",
+      "fix_scope": "single_edit"
+    },
+    {
+      "dimension": "api_surface_coherence",
+      "identifier": "lemma_param_inconsistency_in_query_executor",
+      "summary": "QueryExecutor methods split into two incompatible conventions for specifying the headword: separate parameter vs. embedded in BCQL pattern string",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/query/QueryExecutor.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/query/BlackLabQueryExecutor.java"
+      ],
+      "evidence": [
+        "executeCollocations(String lemma, String cqlPattern, ...) \u2014 headword is a separate named parameter.",
+        "executeSurfacePattern(String bcqlPattern, ...) \u2014 headword must be embedded inside bcqlPattern; the interface Javadoc says 'The headword lemma must be embedded in bcqlPattern... It is extracted internally to look up the head-word's total corpus frequency for logDice scoring.'",
+        "executeDependencyPattern(String lemma, String deprel, ...) \u2014 back to separate lemma parameter.",
+        "This means callers must know which convention each method uses; a caller that forgets to embed the lemma in the BCQL pattern gets a silent wrong result (extraction returns null or mismatches)."
+      ],
+      "suggestion": "Standardise on the separate-lemma convention for all methods: add `String headLemma` as an explicit parameter to executeSurfacePattern, removing the internal CqlUtils.extractHeadword call. Alternatively, document the embedding requirement on executeSurfacePattern with a `@throws IllegalArgumentException` if no lemma attribute is found, which already occurs but is undocumented in the interface contract.",
+      "confidence": "high",
+      "impact_scope": "subsystem",
+      "fix_scope": "multi_file_refactor"
+    },
+    {
+      "dimension": "api_surface_coherence",
+      "identifier": "cql_vs_bcql_method_naming_opacity",
+      "summary": "executeCqlQuery and executeBcqlQuery names do not communicate that they use different parser backends with different capabilities",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/query/QueryExecutor.java"
+      ],
+      "evidence": [
+        "Javadoc: 'executeCqlQuery \u2014 general concordance retrieval using CQL syntax (ContextualQueryLanguageParser)... executeBcqlQuery \u2014 concordance retrieval using BCQL syntax (CorpusQueryLanguageParser). Handles labeled capture groups and computes per-hit logDice scores. Distinct from executeCqlQuery.'",
+        "The difference (CQL vs BCQL, concordance-only vs logDice, unlabeled vs labeled capture groups) is buried in Javadoc and not visible at the call site.",
+        "New contributors are likely to choose between the two by trial and error rather than by reading the contract."
+      ],
+      "suggestion": "Rename to make the contract visible at the call site: e.g., executeConcordanceQuery (CQL, no scoring) and executeCollocateQuery (BCQL, with capture groups and logDice scoring). Alternatively, add a one-line @implNote to each method summarising the parser backend and capability difference.",
+      "confidence": "medium",
+      "impact_scope": "module",
+      "fix_scope": "multi_file_refactor"
+    },
+    {
+      "dimension": "design_coherence",
+      "identifier": "mutable_accumulator_params_in_execute_relation_queries",
+      "summary": "executeRelationQueries passes two mutable output collections as parameters, hiding the return contract",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/api/SketchHandlers.java"
+      ],
+      "evidence": [
+        "Signature: `void executeRelationQueries(RelationType, Predicate<...>, String, Map<String, RelationEntry>, List<String>, BiFunction<...>)` \u2014 6 parameters, two of which (byRelation, relationErrors) are write-only output accumulators.",
+        "Callers construct empty collections, pass them in, then read results back \u2014 a pattern that obscures what the method produces and forces callers to manage result container lifetimes.",
+        "The method cannot be understood in isolation: you must read both the call site and the method body to understand what is output and what is input."
+      ],
+      "suggestion": "Extract the output into a result record: `record RelationQueryBatch(Map<String, RelationEntry> results, List<String> errors) {}` and return it from executeRelationQueries. This makes the output explicit, removes the need for callers to pre-allocate collections, and enables the method to be tested in isolation.",
+      "confidence": "high",
+      "impact_scope": "local",
+      "fix_scope": "single_edit"
+    },
+    {
+      "dimension": "design_coherence",
+      "identifier": "query_executor_interface_too_broad",
+      "summary": "QueryExecutor aggregates five distinct query paradigms behind a single interface, creating an unnecessarily wide contract for most consumers",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/query/QueryExecutor.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/query/CollocateQueryPort.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/query/SketchQueryPort.java"
+      ],
+      "evidence": [
+        "QueryExecutor extends CollocateQueryPort and SketchQueryPort and additionally declares executeCollocations, executeCqlQuery, getTotalFrequency, executeSurfacePattern, executeDependencyPattern.",
+        "ConcordanceHandlers declares its dependency as CollocateQueryPort (good), but ExplorationHandlers and SemanticFieldExplorer accept the full QueryExecutor \u2014 even though they only call a subset of methods.",
+        "The existing CollocateQueryPort/SketchQueryPort hierarchy starts the right separation but is not fully leveraged: callers that only need executeSurfacePattern or executeCollocations could declare narrower port types."
+      ],
+      "suggestion": "Audit each consumer of QueryExecutor and narrow their declared dependency to the minimal port interface they actually call. If executeSurfacePattern and executeCollocations are the main exploration methods, consider a CollocateLookupPort that groups just those two, allowing test stubs to implement a smaller surface.",
+      "confidence": "medium",
+      "impact_scope": "subsystem",
+      "fix_scope": "multi_file_refactor"
+    },
+    {
+      "dimension": "authorization_consistency",
+      "identifier": "cors_class_load_snapshot_testability",
+      "summary": "CORS_ALLOW_ORIGIN is a static final set at class-load time, making test-time origin override impossible without JVM restart",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/api/HttpApiUtils.java"
+      ],
+      "evidence": [
+        "Line 41-42: `private static final String CORS_ALLOW_ORIGIN = System.getProperty(\"cors.allow.origin\", DEFAULT_CORS_ALLOW_ORIGIN);` \u2014 value is frozen at first classload",
+        "Any test that sets System.setProperty(\"cors.allow.origin\", ...) after the class is loaded will not affect the CORS header emitted by the server"
+      ],
+      "suggestion": "Either pass the CORS origin as a constructor parameter to HttpApiUtils (injected at server startup), or read it lazily per-request (acceptable since it's env-config). The static-final approach prevents safe test overrides.",
+      "confidence": "high",
+      "impact_scope": "local",
+      "fix_scope": "single_edit"
+    },
+    {
+      "dimension": "cross_module_architecture",
+      "identifier": "grammar_config_serializer_unreachable_in_production",
+      "summary": "GrammarConfigSerializer is production code in the config package but has no production caller, creating dead public API surface",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/config/GrammarConfigSerializer.java"
+      ],
+      "evidence": [
+        "GrammarConfigSerializer has public static serialization methods but no call sites in src/main (only test code)",
+        "Its existence in the config package misleads future developers into thinking it is part of the active serialization pipeline"
+      ],
+      "suggestion": "Either move GrammarConfigSerializer to the test source tree (if only used in tests) or delete it. If it is intended for future use, document the intent clearly in a package-info or TODO comment.",
+      "confidence": "medium",
+      "impact_scope": "module",
+      "fix_scope": "single_edit"
+    },
+    {
+      "dimension": "dependency_health",
+      "identifier": "blacklab_not_on_maven_central",
+      "summary": "BlackLab 4.0.0 is not on Maven Central; developers must manually install it locally, blocking reproducible builds",
+      "related_files": [
+        "pom.xml"
+      ],
+      "evidence": [
+        "pom.xml declares `blacklab-engine` and `blacklab-query-parser` at version 4.0.0",
+        "BlackLab 4.x is not published to Maven Central; build fails on a fresh checkout without manual `mvn install` of the local jar",
+        "No local repository configuration or repository URL is declared in pom.xml to resolve this dependency automatically"
+      ],
+      "suggestion": "Add a local file-system repository entry in pom.xml pointing to the checked-in jar (e.g., `<repository><id>local-libs</id><url>file://${project.basedir}/lib</url></repository>`), or bundle the jar under lib/ and declare a system-scope dependency. Document the manual install step clearly in README until an upstream release lands on Central.",
+      "confidence": "high",
+      "impact_scope": "codebase",
+      "fix_scope": "single_edit"
+    }
+  ],
+  "provenance": {
+    "kind": "blind_review_batch_import",
+    "blind": true,
+    "runner": "claude",
+    "session_id": "ext_20260313_040150_a2433edc",
+    "created_at": "2026-03-13T04:17:57+00:00",
+    "packet_path": "/mnt/d/git/word-sketch-lucene/.desloppify/review_packet_blind.json",
+    "packet_sha256": "7b23a481b5d2ed192ba03c27f53ddc1df21630139fece41cb617505e838b5245"
+  }
+}

@@ -164,8 +164,6 @@ public final class CqlUtils {
         sb.append("]");
         return sb.toString();
     }
-    // BCQL pattern utilities (moved from BcqlPatternUtils in query package)
-
     private static final java.util.regex.Pattern LEMMA_ATTR_RELAXED =
             java.util.regex.Pattern.compile("lemma=[\"']([^\"']+)[\"']",
                     java.util.regex.Pattern.CASE_INSENSITIVE);

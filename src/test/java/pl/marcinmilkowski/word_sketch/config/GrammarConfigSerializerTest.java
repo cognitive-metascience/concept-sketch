@@ -43,7 +43,7 @@ class GrammarConfigSerializerTest {
             .findFirst()
             .ifPresent(rel -> {
                 GrammarConfigSerializer.RelationConfigEntry entry = GrammarConfigSerializer.toJson(rel);
-                assertEquals(rel.relationType().get().name(), entry.relationType());
+                assertEquals(rel.relationType().get().label(), entry.relationType());
             });
     }
 

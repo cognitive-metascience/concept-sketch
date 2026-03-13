@@ -1,26 +1,26 @@
 {
   "command": "resolve",
   "patterns": [
-    "null_semantics_boundary_mismatch"
+    "relation_type_enum_uses_name_not_label"
   ],
   "status": "fixed",
   "resolved": [
-    "review::.::holistic::mid_level_elegance::null_semantics_boundary_mismatch"
+    "review::.::holistic::type_safety::relation_type_enum_uses_name_not_label"
   ],
   "count": 1,
   "next_command": "desloppify next",
-  "overall_score": 82.2,
+  "overall_score": 82.3,
   "objective_score": 97.9,
-  "strict_score": 79.7,
+  "strict_score": 79.8,
   "verified_strict_score": 97.1,
-  "prev_overall_score": 82.2,
+  "prev_overall_score": 82.3,
   "prev_objective_score": 97.9,
-  "prev_strict_score": 79.7,
+  "prev_strict_score": 79.8,
   "prev_verified_strict_score": 97.1,
-  "attestation": "I have actually removed the nullable boundary in SemanticFieldExplorer and ExplorationHandlers now sees a consistently non-null constructor and I am not gaming the score by resolving without fixing.",
+  "attestation": "I have actually Added label() method returning lowercase name() with @JsonValue annotation to RelationType; updated SketchResponseAssembler to use .label() instead of .name(); updated GrammarConfigSerializer and test to use .label() and I am not gaming the score.",
   "narrative": {
-    "phase": "middle_grind",
-    "headline": "All T1 and T2 items cleared!",
+    "phase": "stagnation",
+    "headline": "Score plateaued at 79.8 for 5 scans. Duplication (0.0%) is where the breakthrough is. 290 wontfix items may also be worth revisiting. (14 review issues \u2014 run `desloppify show review --status open`)",
     "dimensions": {
       "lowest_dimensions": [
         {
@@ -76,6 +76,11 @@
           "stuck_scans": 5
         },
         {
+          "name": "Security",
+          "strict": 84.2,
+          "stuck_scans": 5
+        },
+        {
           "name": "File health",
           "strict": 93.6,
           "stuck_scans": 5
@@ -83,6 +88,11 @@
         {
           "name": "Duplication",
           "strict": 0.0,
+          "stuck_scans": 5
+        },
+        {
+          "name": "Error consistency",
+          "strict": 80.0,
           "stuck_scans": 5
         },
         {
@@ -125,11 +135,11 @@
         "lane": "refactor_0"
       },
       {
-        "type": "manual_fix",
-        "detector": "stale_wontfix",
-        "count": 4,
-        "description": "4 stale_wontfix issues \u2014 re-evaluate old wontfix decisions \u2014 fix, document, or escalate",
-        "command": "desloppify show stale_wontfix --status open",
+        "type": "refactor",
+        "detector": "review",
+        "count": 14,
+        "description": "14 review issues need investigation \u2014 run `desloppify show review --status open` to see them",
+        "command": "desloppify show review --status open",
         "impact": 0.0,
         "dimension": "Unknown",
         "priority": 2,
@@ -139,7 +149,7 @@
     "strategy": {
       "fixer_leverage": {
         "auto_fixable_count": 0,
-        "total_count": 12,
+        "total_count": 50,
         "coverage": 0.0,
         "impact_ratio": 0.0,
         "recommendation": "none"
@@ -158,14 +168,14 @@
           "actions": [
             2
           ],
-          "file_count": 4,
+          "file_count": 1,
           "total_impact": 0.0,
           "automation": "manual",
           "run_first": false
         }
       },
       "can_parallelize": false,
-      "hint": "Work through actions in priority order. Rescan after each fix to track progress."
+      "hint": "Try a different dimension to break the plateau. Review: 14 issue(s) \u2014 `desloppify show review --status open`."
     },
     "tools": {
       "fixers": [],
@@ -188,17 +198,17 @@
     },
     "debt": {
       "overall_gap": 1.7,
-      "wontfix_count": 284,
+      "wontfix_count": 290,
       "worst_dimension": "Duplication",
       "worst_gap": 30.0,
       "trend": "stable"
     },
-    "milestone": "All T1 and T2 items cleared!",
+    "milestone": null,
     "primary_action": {
       "command": "desloppify show boilerplate_duplication --status open",
       "description": "8 boilerplate_duplication issues \u2014 extract shared boilerplate into reusable helpers or base classes"
     },
-    "why_now": "Work through actions in priority order. Rescan after each fix to track progress.",
+    "why_now": "Try a different dimension to break the plateau. Review: 14 issue(s) \u2014 `desloppify show review --status open`.",
     "verification_step": {
       "command": "desloppify scan",
       "reason": "revalidate after changes"
@@ -207,13 +217,13 @@
       {
         "type": "wontfix_gap",
         "severity": "high",
-        "message": "Strict/lenient gap is 1.7 pts with 284 wontfix issues"
+        "message": "Strict/lenient gap is 1.7 pts with 290 wontfix issues"
       }
     ],
     "strict_target": {
       "target": 95.0,
-      "current": 79.7,
-      "gap": 15.3,
+      "current": 79.8,
+      "gap": 15.2,
       "state": "below",
       "warning": null
     },
@@ -235,7 +245,7 @@
     ],
     "reminder_history": {
       "zone_classification": 3,
-      "report_scores": 68,
+      "report_scores": 71,
       "review_issues_pending": 3,
       "feedback_nudge": 3,
       "wontfix_growing": 3,

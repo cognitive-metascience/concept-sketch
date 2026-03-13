@@ -1,5 +1,6 @@
 package pl.marcinmilkowski.word_sketch.api;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.sun.net.httpserver.HttpExchange;
 import org.slf4j.Logger;
@@ -81,7 +82,7 @@ class CorpusQueryHandlers {
     private record BcqlQueryResponse(
             String status,
             String query,
-            int total_results,
+            @JsonProperty("total_results") int totalResults,
             int top,
             List<BcqlResultEntry> results) {}
 
@@ -93,11 +94,11 @@ class CorpusQueryHandlers {
     private record BcqlResultEntry(
             String sentence,
             String raw,
-            int match_start,
-            int match_end,
-            String collocate_lemma,
+            @JsonProperty("match_start") int matchStart,
+            @JsonProperty("match_end") int matchEnd,
+            @JsonProperty("collocate_lemma") String collocateLemma,
             long frequency,
-            double log_dice) {}
+            @JsonProperty("log_dice") double logDice) {}
 
     /** Build the typed BCQL query response from the parsed request and results. */
     private static BcqlQueryResponse buildBcqlResponse(BcqlRequest req, List<CollocateResult> results) {

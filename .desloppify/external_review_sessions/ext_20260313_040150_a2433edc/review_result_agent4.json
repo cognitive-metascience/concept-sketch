@@ -1,0 +1,132 @@
+{
+  "session": {
+    "id": "ext_20260313_040150_a2433edc",
+    "token": "d8d52820afdeb08b7066d6d6bac95a64"
+  },
+  "assessments": {
+    "initialization_coupling": 76,
+    "test_strategy": 65,
+    "api_surface_coherence": 70,
+    "authorization_consistency": 88,
+    "design_coherence": 72
+  },
+  "findings": [
+    {
+      "dimension": "initialization_coupling",
+      "identifier": "cors_static_sysprop_snapshot",
+      "summary": "CORS_ALLOW_ORIGIN captured once at class-load from System.getProperty, making per-test overrides ineffective",
+      "related_files": ["src/main/java/pl/marcinmilkowski/word_sketch/api/HttpApiUtils.java"],
+      "evidence": [
+        "Line 41-42: `private static final String CORS_ALLOW_ORIGIN = System.getProperty(\"cors.allow.origin\", DEFAULT_CORS_ALLOW_ORIGIN);` — the value is frozen at class initialization time.",
+        "HttpApiUtilsTest.java has no test for CORS header behaviour; any test that calls System.setProperty after the class is loaded sees a stale snapshot.",
+        "warnIfWildcardCors() re-reads allow.wildcard.cors dynamically (correct), but the origin itself is captured once, creating an asymmetry."
+      ],
+      "suggestion": "Either keep the snapshot but document the class-load-time constraint explicitly (and add a test that sets the system property before class loading), or read the property through a package-private accessor method that can be overridden in tests — e.g., `static String corsAllowOrigin() { return System.getProperty(...); }` called per-request rather than at class-init.",
+      "confidence": "high",
+      "impact_scope": "module",
+      "fix_scope": "single_edit"
+    },
+    {
+      "dimension": "test_strategy",
+      "identifier": "environment_gated_integration_tests",
+      "summary": "All integration tests that exercise real BlackLab query paths are skipped in CI when a live index is absent",
+      "related_files": [
+        "src/test/java/pl/marcinmilkowski/word_sketch/query/BlackLabQueryExecutorIntegrationTest.java",
+        "src/test/java/pl/marcinmilkowski/word_sketch/query/BlackLabBcqlConcordanceTest.java",
+        "src/test/java/pl/marcinmilkowski/word_sketch/query/CqlParserIntegrationTest.java"
+      ],
+      "evidence": [
+        "BlackLabQueryExecutorIntegrationTest: `Assumptions.assumeTrue(indexDir != null && indexDir.exists(), ...)` — skips if CONCEPT_SKETCH_TEST_INDEX is absent.",
+        "BlackLabBcqlConcordanceTest and CqlParserIntegrationTest follow the same pattern.",
+        "CI therefore never executes any test that hits the real query-execution path (executeSurfacePattern, executeDependencyPattern), leaving the core corpus query pipeline effectively untested in automated runs."
+      ],
+      "suggestion": "Ship a small deterministic in-memory test corpus (50-200 sentences as a CoNLL-U file) indexed at build time into a temp directory, replacing the live-index assumption. BlackLabIntegrationTest already shows the stub subclass pattern that works without an index; the indexer tests (BlackLabConllUIndexerTest) prove the indexer runs in CI — combining both would give a real runnable integration path.",
+      "confidence": "high",
+      "impact_scope": "subsystem",
+      "fix_scope": "multi_file_refactor"
+    },
+    {
+      "dimension": "test_strategy",
+      "identifier": "sketch_response_assembler_untested",
+      "summary": "SketchResponseAssembler has no dedicated tests; its data-mapping logic is exercised only indirectly through handler tests with empty stub results",
+      "related_files": ["src/main/java/pl/marcinmilkowski/word_sketch/api/SketchResponseAssembler.java"],
+      "evidence": [
+        "No SketchResponseAssemblerTest.java exists.",
+        "buildDepRelationEntry sums WordSketchResult frequencies and sets a derived deprel field — both are business-critical for the word-sketch API response shape.",
+        "SketchHandlersTest uses a StubQueryExecutor that returns empty lists, so buildSurfaceRelationEntry and buildDepRelationEntry are never called with real data in the test suite."
+      ],
+      "suggestion": "Add a SketchResponseAssemblerTest with a handful of WordSketchResult fixtures, asserting that totalMatches is the sum of frequencies, that deprel is forwarded from the RelationConfig, and that the relation_type field is correctly set to SURFACE vs DEP.",
+      "confidence": "medium",
+      "impact_scope": "local",
+      "fix_scope": "single_edit"
+    },
+    {
+      "dimension": "api_surface_coherence",
+      "identifier": "lemma_param_inconsistency_in_query_executor",
+      "summary": "QueryExecutor methods split into two incompatible conventions for specifying the headword: separate parameter vs. embedded in BCQL pattern string",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/query/QueryExecutor.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/query/BlackLabQueryExecutor.java"
+      ],
+      "evidence": [
+        "executeCollocations(String lemma, String cqlPattern, ...) — headword is a separate named parameter.",
+        "executeSurfacePattern(String bcqlPattern, ...) — headword must be embedded inside bcqlPattern; the interface Javadoc says 'The headword lemma must be embedded in bcqlPattern... It is extracted internally to look up the head-word's total corpus frequency for logDice scoring.'",
+        "executeDependencyPattern(String lemma, String deprel, ...) — back to separate lemma parameter.",
+        "This means callers must know which convention each method uses; a caller that forgets to embed the lemma in the BCQL pattern gets a silent wrong result (extraction returns null or mismatches)."
+      ],
+      "suggestion": "Standardise on the separate-lemma convention for all methods: add `String headLemma` as an explicit parameter to executeSurfacePattern, removing the internal CqlUtils.extractHeadword call. Alternatively, document the embedding requirement on executeSurfacePattern with a `@throws IllegalArgumentException` if no lemma attribute is found, which already occurs but is undocumented in the interface contract.",
+      "confidence": "high",
+      "impact_scope": "subsystem",
+      "fix_scope": "multi_file_refactor"
+    },
+    {
+      "dimension": "api_surface_coherence",
+      "identifier": "cql_vs_bcql_method_naming_opacity",
+      "summary": "executeCqlQuery and executeBcqlQuery names do not communicate that they use different parser backends with different capabilities",
+      "related_files": ["src/main/java/pl/marcinmilkowski/word_sketch/query/QueryExecutor.java"],
+      "evidence": [
+        "Javadoc: 'executeCqlQuery — general concordance retrieval using CQL syntax (ContextualQueryLanguageParser)... executeBcqlQuery — concordance retrieval using BCQL syntax (CorpusQueryLanguageParser). Handles labeled capture groups and computes per-hit logDice scores. Distinct from executeCqlQuery.'",
+        "The difference (CQL vs BCQL, concordance-only vs logDice, unlabeled vs labeled capture groups) is buried in Javadoc and not visible at the call site.",
+        "New contributors are likely to choose between the two by trial and error rather than by reading the contract."
+      ],
+      "suggestion": "Rename to make the contract visible at the call site: e.g., executeConcordanceQuery (CQL, no scoring) and executeCollocateQuery (BCQL, with capture groups and logDice scoring). Alternatively, add a one-line @implNote to each method summarising the parser backend and capability difference.",
+      "confidence": "medium",
+      "impact_scope": "module",
+      "fix_scope": "multi_file_refactor"
+    },
+    {
+      "dimension": "design_coherence",
+      "identifier": "mutable_accumulator_params_in_execute_relation_queries",
+      "summary": "executeRelationQueries passes two mutable output collections as parameters, hiding the return contract",
+      "related_files": ["src/main/java/pl/marcinmilkowski/word_sketch/api/SketchHandlers.java"],
+      "evidence": [
+        "Signature: `void executeRelationQueries(RelationType, Predicate<...>, String, Map<String, RelationEntry>, List<String>, BiFunction<...>)` — 6 parameters, two of which (byRelation, relationErrors) are write-only output accumulators.",
+        "Callers construct empty collections, pass them in, then read results back — a pattern that obscures what the method produces and forces callers to manage result container lifetimes.",
+        "The method cannot be understood in isolation: you must read both the call site and the method body to understand what is output and what is input."
+      ],
+      "suggestion": "Extract the output into a result record: `record RelationQueryBatch(Map<String, RelationEntry> results, List<String> errors) {}` and return it from executeRelationQueries. This makes the output explicit, removes the need for callers to pre-allocate collections, and enables the method to be tested in isolation.",
+      "confidence": "high",
+      "impact_scope": "local",
+      "fix_scope": "single_edit"
+    },
+    {
+      "dimension": "design_coherence",
+      "identifier": "query_executor_interface_too_broad",
+      "summary": "QueryExecutor aggregates five distinct query paradigms behind a single interface, creating an unnecessarily wide contract for most consumers",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/query/QueryExecutor.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/query/CollocateQueryPort.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/query/SketchQueryPort.java"
+      ],
+      "evidence": [
+        "QueryExecutor extends CollocateQueryPort and SketchQueryPort and additionally declares executeCollocations, executeCqlQuery, getTotalFrequency, executeSurfacePattern, executeDependencyPattern.",
+        "ConcordanceHandlers declares its dependency as CollocateQueryPort (good), but ExplorationHandlers and SemanticFieldExplorer accept the full QueryExecutor — even though they only call a subset of methods.",
+        "The existing CollocateQueryPort/SketchQueryPort hierarchy starts the right separation but is not fully leveraged: callers that only need executeSurfacePattern or executeCollocations could declare narrower port types."
+      ],
+      "suggestion": "Audit each consumer of QueryExecutor and narrow their declared dependency to the minimal port interface they actually call. If executeSurfacePattern and executeCollocations are the main exploration methods, consider a CollocateLookupPort that groups just those two, allowing test stubs to implement a smaller surface.",
+      "confidence": "medium",
+      "impact_scope": "subsystem",
+      "fix_scope": "multi_file_refactor"
+    }
+  ]
+}

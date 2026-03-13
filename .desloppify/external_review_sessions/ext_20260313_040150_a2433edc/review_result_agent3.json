@@ -1,0 +1,119 @@
+{
+  "session": {
+    "id": "ext_20260313_040150_a2433edc",
+    "token": "d8d52820afdeb08b7066d6d6bac95a64"
+  },
+  "assessments": {
+    "package_organization": 77.0,
+    "contract_coherence": 72.0,
+    "logic_clarity": 83.0,
+    "type_safety": 80.0,
+    "cross_module_architecture": 86.0
+  },
+  "dimension_notes": {
+    "package_organization": {
+      "strengths": "Package structure maps cleanly onto domain concepts: `model.sketch` vs `model.exploration` separates two distinct data domains; `exploration.spi` correctly isolates the public service interface from implementation; `api.model` groups all response DTOs. Handler classes in `api` are focused and each owns one HTTP concern. The `query` package correctly defines narrow port interfaces (`CollocateQueryPort`, `SketchQueryPort`) which handlers consume at the right level of specificity.",
+      "issue_character": "Two empty directories exist — `src/main/java/.../indexer/hybrid/` and `src/test/java/.../indexer/hybrid/` — with no source files. These ghost packages appear in IDE navigation and suggest abandoned or incomplete work. The `viz` package contains only a single file (`RadialPlot.java`) with no package-info and no sub-packages, making its placement feel incidental rather than architectural.",
+      "score_rationale": "Overall layout is coherent and domain-aligned with well-chosen sub-package boundaries. Score is reduced by the empty ghost directories (navigation noise and implied incomplete migration) and the isolated single-file `viz` package that lacks the structural weight to justify its own package."
+    },
+    "contract_coherence": {
+      "strengths": "The `ExplorationService` interface is well-documented with clear method responsibilities and explicit throws clauses. `QueryExecutor` interface documents each method's parameter contracts, extraction assumptions, and behavior differences between `executeCqlQuery`, `executeBcqlQuery`, and `executeSurfacePattern`. `RelationConfig.validate()` makes its invariant explicit. The narrow port interfaces (`CollocateQueryPort`, `SketchQueryPort`) are correctly consumed by handlers that declare the narrowest required type.",
+      "issue_character": "The primary defect is contract advertisement without enforcement: `ExplorationService.exploreMultiSeed` and `compareCollocateProfiles` both document `@throws IllegalArgumentException if seeds is empty or fewer than 2 seeds are provided`, but `SemanticFieldExplorer` — the sole implementation — does not validate this. The check lives in the HTTP handler (`ExplorationHandlers.requireAtLeastTwoSeeds`). A caller invoking the service directly (e.g., in integration tests or future non-HTTP clients) would not receive the documented exception; instead, multi-seed algorithms would silently run with one seed, producing misleading results.",
+      "score_rationale": "Well-documented interfaces and clear method contracts throughout most of the codebase. Score is significantly reduced by the validation gap: a documented invariant (`seeds >= 2`) is promised at the service boundary but enforced only at the HTTP handler layer, creating a lie in the interface contract for all non-HTTP callers."
+    },
+    "logic_clarity": {
+      "strengths": "Algorithm code is organised as explicit numbered phases (single-seed explorer: fetch → reverse-expand → filter → identify core collocates). Short, focused private methods with descriptive names (`buildNounToCollocatesMap`, `filterByMinShared`, `identifyCoreCollocates`). Control flow in `BlackLabQueryExecutor.executeSurfacePattern` is commented clearly where a sentinel value (-1) triggers a fallback path. `collectFrequenciesAndPosFromGroups` uses a `Function` parameter to keep the extraction strategy flexible without duplicating loop logic.",
+      "issue_character": "In `BlackLabQueryExecutor.executeCollocations`, the lambda passed to `collectFrequenciesAndPosFromGroups` contains a redundant empty-string check: it returns `null` when the extracted lemma is empty (`return collocateLemma.isEmpty() ? null : collocateLemma`), but the outer loop in `collectFrequenciesAndPosFromGroups` already handles both `null` and empty via `if (lemma == null || lemma.isEmpty()) continue`. The intermediate null conversion is unnecessary signal-noise: the caller could simply return `collocateLemma` and let the outer guard handle it, making the intent clearer. Also, `collocatePos` in `executeSurfacePattern` is reused with two different indexing semantics (1-based XML attribute position, then 1-based word position) in consecutive fall-through branches, which the comments explain but the variable name obscures.",
+      "score_rationale": "Logic is generally direct and well-structured with clear phase decomposition. Score is modestly reduced by the redundant empty-to-null conversion in the lambda and the dual-semantic integer reuse in `executeSurfacePattern`. Neither is a correctness defect, but both add cognitive overhead when reading the code."
+    },
+    "type_safety": {
+      "strengths": "Pervasive use of JSpecify `@NonNull`/`@Nullable` annotations throughout all public APIs. Enums `SharingCategory`, `PosGroup`, and `RelationEdgeType` all define stable `.label()` methods for JSON serialization, decoupling the Java constant name from the wire format. `CollocateProfile`, `ExplorationResult`, `ComparisonResult` use defensive copies in constructors. `Optional` is used via `RelationConfig.relationType()` wrapper over the nullable backing field, avoiding the Optional-as-field antipattern.",
+      "issue_character": "The `RelationType` enum (`SURFACE`, `DEP`) lacks a `.label()` method, and `SketchResponseAssembler` serialises it to JSON using `.name()` directly: `RelationType.SURFACE.name()` → `\"SURFACE\"`. Every other enum in the codebase that appears in API responses (`SharingCategory`, `PosGroup`, `RelationEdgeType`) defines a stable custom label. The inconsistency means `RelationEntry.relationType` in the API response is coupled to the Java constant name. A rename of `SURFACE` to `SPAN` (for example) would silently break all API clients with no compile-time warning. Additionally, `RelationEntry.collocatePosGroup` and `ComparisonResponse.CollocateProfileEntry.category` are typed as `String` in the response record rather than the corresponding enum type, losing compile-time validation at the assembly site.",
+      "score_rationale": "Strong null safety through JSpecify annotations and mostly consistent enum serialization via custom labels. Score is reduced by the `RelationType` inconsistency — it is the only response-facing enum without a stable label — and by the loss of enum type safety in response model fields that accept the serialized string form."
+    },
+    "cross_module_architecture": {
+      "strengths": "Layering is clean and consistently respected: `model` has no upward dependencies; `query` depends only on `model` and `utils`; `config` depends on `model` and `utils`; `exploration` depends on `query`, `config`, and `model`; `api` depends on `exploration.spi` (not the implementation), `config`, query ports, and `model`. The SPI pattern in `exploration.spi` correctly decouples the HTTP layer from the exploration implementation — `ExplorationHandlers` and `WordSketchApiServer` import only `ExplorationService`, never `SemanticFieldExplorer`. Narrow port interfaces (`CollocateQueryPort`, `SketchQueryPort`) prevent handler classes from acquiring broader query capabilities than needed.",
+      "issue_character": "No systemic architectural violations found. The empty `indexer/hybrid` directory creates a ghost sub-module that could mislead a developer about module boundaries (reported under package_organization as placement). The composition root (`Main.java`) correctly assembles concrete types and is the only place that imports across the `exploration.spi` boundary — this is the intended pattern.",
+      "score_rationale": "Architecture is notably clean for a project of this complexity. The SPI separation, narrow port interfaces, and unidirectional dependency graph are all correctly implemented and consistently applied. Score above 85 reflects genuine architectural soundness."
+    }
+  },
+  "issues": [
+    {
+      "dimension": "package_organization",
+      "identifier": "ghost_hybrid_indexer_package",
+      "summary": "Empty `indexer/hybrid` directories exist in both main and test source trees with no source files",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/indexer/hybrid",
+        "src/test/java/pl/marcinmilkowski/word_sketch/indexer/hybrid"
+      ],
+      "evidence": [
+        "`ls src/main/java/.../indexer/hybrid/` returns only `.` and `..` — zero Java files",
+        "`ls src/test/java/.../indexer/hybrid/` likewise empty",
+        "CLAUDE.md mentions `indexer/hybrid` in directory tree, suggesting planned but never completed work"
+      ],
+      "suggestion": "If the hybrid indexer is not planned for the near term, remove both empty directories: `rmdir src/main/java/pl/marcinmilkowski/word_sketch/indexer/hybrid && rmdir src/test/java/pl/marcinmilkowski/word_sketch/indexer/hybrid`. If the work is planned, create a tracking issue and add a `package-info.java` with a TODO comment so the empty package communicates intent instead of confusion.",
+      "confidence": "high",
+      "impact_scope": "local",
+      "fix_scope": "single_edit"
+    },
+    {
+      "dimension": "contract_coherence",
+      "identifier": "exploration_service_seed_validation_gap",
+      "summary": "ExplorationService documents @throws IllegalArgumentException for seeds < 2 but SemanticFieldExplorer does not enforce it",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/exploration/spi/ExplorationService.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/exploration/SemanticFieldExplorer.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/api/ExplorationHandlers.java"
+      ],
+      "evidence": [
+        "`ExplorationService.exploreMultiSeed` Javadoc: `@throws IllegalArgumentException if seeds is empty or fewer than 2 seeds are provided`",
+        "`ExplorationService.compareCollocateProfiles` Javadoc: same contract",
+        "`SemanticFieldExplorer.exploreMultiSeed` body: immediately delegates to `multiSeedExplorer.findCollocateIntersection(seeds, ...)` with no size check",
+        "`SemanticFieldExplorer.compareCollocateProfiles` body: immediately delegates to `comparator.compareCollocateProfiles(seeds, opts)` with no size check",
+        "Validation occurs only in `ExplorationHandlers.requireAtLeastTwoSeeds(seeds, ...)` — the HTTP handler"
+      ],
+      "suggestion": "Move the guard into `SemanticFieldExplorer` to honour the interface contract at the service boundary. Add to both methods before delegation: `if (seeds == null || seeds.size() < 2) { throw new IllegalArgumentException(\"At least 2 seeds are required; received \" + (seeds == null ? 0 : seeds.size())); }`. The HTTP handler can retain its check as an early-exit optimisation, but the service should be the authoritative enforcer of its own contract so non-HTTP callers receive the documented exception.",
+      "confidence": "high",
+      "impact_scope": "module",
+      "fix_scope": "single_edit"
+    },
+    {
+      "dimension": "logic_clarity",
+      "identifier": "redundant_empty_to_null_conversion_in_executecollocations",
+      "summary": "Lambda in executeCollocations converts empty string to null, but the outer consumer already handles both null and empty",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/query/BlackLabQueryExecutor.java"
+      ],
+      "evidence": [
+        "Lambda in `executeCollocations`: `return collocateLemma.isEmpty() ? null : collocateLemma;`",
+        "`collectFrequenciesAndPosFromGroups` outer guard: `if (lemma == null || lemma.isEmpty()) continue;`",
+        "The empty→null conversion in the lambda is redundant: returning `collocateLemma` directly would have identical runtime behaviour because the outer guard skips empty strings"
+      ],
+      "suggestion": "Simplify the lambda to `return collocateLemma.isEmpty() ? null : collocateLemma` → `return collocateLemma` (or `return collocateLemma.isBlank() ? null : collocateLemma` if blank trimming is desired). The outer `collectFrequenciesAndPosFromGroups` guard handles both null and empty, so no behaviour change results. Removing the intermediate conversion makes the intent of the lambda — extract the lemma string — clearer.",
+      "confidence": "medium",
+      "impact_scope": "local",
+      "fix_scope": "single_edit"
+    },
+    {
+      "dimension": "type_safety",
+      "identifier": "relation_type_enum_uses_name_not_label",
+      "summary": "RelationType serialises via .name() in API responses, the only response-facing enum without a stable custom label, coupling API output to Java constant names",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/config/RelationType.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/api/SketchResponseAssembler.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/api/model/RelationEntry.java"
+      ],
+      "evidence": [
+        "`SketchResponseAssembler.buildSurfaceRelationEntry`: `RelationType.SURFACE.name()` → serialised as `\"SURFACE\"`",
+        "`SketchResponseAssembler.buildDepRelationEntry`: `RelationType.DEP.name()` → serialised as `\"DEP\"`",
+        "`SharingCategory`, `PosGroup`, `RelationEdgeType` all define `.label()` for stable serialisation (e.g. `\"fully_shared\"`, `\"adj\"`, `\"seed_adj\"`)",
+        "`RelationType` has no `.label()` method — it only exposes the Java constant name via `.name()`",
+        "A rename of `RelationType.SURFACE` would silently change the API response shape with no compile-time error"
+      ],
+      "suggestion": "Add a `label` field and `label()` method to `RelationType`, following the existing pattern in `SharingCategory` and `PosGroup`: `SURFACE(\"surface\"), DEP(\"dep\")` with `public String label() { return label; }`. Update `SketchResponseAssembler` to use `RelationType.SURFACE.label()` and `RelationType.DEP.label()`. Optionally add `@JsonValue` on `label()` so direct Jackson serialisation of the enum also emits the stable value.",
+      "confidence": "high",
+      "impact_scope": "module",
+      "fix_scope": "multi_file_refactor"
+    }
+  ]
+}
