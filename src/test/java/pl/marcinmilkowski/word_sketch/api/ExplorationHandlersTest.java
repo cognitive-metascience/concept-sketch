@@ -186,6 +186,30 @@ class ExplorationHandlersTest {
     }
 
     @Test
+    void handleSemanticFieldExplore_withData_seedCollocatesNonEmpty() throws Exception {
+        QueryExecutor executor = collocatingExecutor(Map.of(
+            "house", List.of(wsr("big", 8.5), wsr("old", 7.2))
+        ));
+        GrammarConfig config = GrammarConfigHelper.requireTestConfig();
+        ExplorationService explorer = new SemanticFieldExplorer(executor, config);
+        ExplorationHandlers handlers = new ExplorationHandlers(explorer, config);
+
+        MockExchangeFactory.MockExchange ex = new MockExchangeFactory.MockExchange(
+                "http://localhost/api/semantic-field/explore?seed=house&relation=adj_predicate&top=5&min_shared=1");
+        handlers.handleSemanticFieldExplore(ex);
+
+        assertEquals(200, ex.statusCode);
+        ObjectNode body = HttpApiUtils.mapper().readValue(ex.getResponseBodyAsString(), ObjectNode.class);
+        assertEquals("ok", body.path("status").asText());
+        assertEquals("house", body.path("seed").asText());
+        assertTrue(body.path("seed_collocates").isArray(), "seed_collocates must be an array");
+        assertFalse(body.path("seed_collocates").isEmpty(), "seed_collocates must not be empty");
+        String firstWord = body.path("seed_collocates").get(0).path("word").asText();
+        assertTrue(firstWord.equals("big") || firstWord.equals("old"),
+                "first seed_collocate word should be 'big' or 'old', got: " + firstWord);
+    }
+
+    @Test
     void compare_edgeWeights_abstractHasCorrectWeightToTheory() throws Exception {
         QueryExecutor executor = collocatingExecutor(Map.of(
             "theory", List.of(wsr("abstract", 9.0)),

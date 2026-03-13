@@ -85,11 +85,11 @@ class ExploreResponseAssemblerTest {
                 result, "adj_predicate", 10, 1, 0.0, 20);
 
         assertNotNull(response.seedCollocates(), "should have seed_collocates");
-        assertTrue(response.seedCollocatesCount() >= 0, "should have seed_collocates_count");
+        assertTrue(response.seedCollocates().size() >= 0, "should have seed_collocates_count");
         assertNotNull(response.discoveredNouns(), "should have discovered_nouns");
-        assertTrue(response.discoveredNounsCount() >= 0, "should have discovered_nouns_count");
+        assertTrue(response.discoveredNouns().size() >= 0, "should have discovered_nouns_count");
         assertNotNull(response.coreCollocates(), "should have core_collocates");
-        assertTrue(response.coreCollocatesCount() >= 0, "should have core_collocates_count");
+        assertTrue(response.coreCollocates().size() >= 0, "should have core_collocates_count");
         assertNotNull(response.edges(), "should have edges");
     }
 
@@ -102,7 +102,7 @@ class ExploreResponseAssemblerTest {
                 result, "adj_predicate", 10, 1, 0.0, 20);
 
         assertEquals(2, response.seedCollocates().size());
-        assertEquals(2, response.seedCollocatesCount());
+        assertEquals(2, response.seedCollocates().size());
     }
 
     @Test

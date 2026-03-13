@@ -116,6 +116,7 @@ public class WordSketchApiServer {
      *                               {@link java.io.IOException}
      */
     public void start() {
+        HttpApiUtils.warnIfWildcardCors();
         try {
             this.server = com.sun.net.httpserver.HttpServer.create(
                     new InetSocketAddress(InetAddress.getLoopbackAddress(), port), 0);
@@ -124,7 +125,6 @@ public class WordSketchApiServer {
         }
         registerRoutes();
         server.setExecutor(null);
-        HttpApiUtils.warnIfWildcardCors();
         server.start();
         logger.info("API server started on port {} — see class Javadoc for endpoint listing", port);
         logger.info("Press Ctrl+C to stop.");

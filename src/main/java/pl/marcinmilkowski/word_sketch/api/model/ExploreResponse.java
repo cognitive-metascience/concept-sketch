@@ -50,18 +50,6 @@ public sealed interface ExploreResponse
 
     List<EdgeEntry> edges();
 
-    /** Returns the number of seed collocates; derived from {@link #seedCollocates()}. */
-    default int seedCollocatesCount() { return seedCollocates().size(); }
-
-    /** Returns the number of discovered nouns; derived from {@link #discoveredNouns()}. */
-    default int discoveredNounsCount() { return discoveredNouns().size(); }
-
-    /** Returns the number of core collocates; derived from {@link #coreCollocates()}. */
-    default int coreCollocatesCount() { return coreCollocates().size(); }
-
-    /** Returns the number of edges; derived from {@link #edges()}. */
-    default int edgesCount() { return edges().size(); }
-
     // -------------------------------------------------------------------------
     // Shared nested types
     // -------------------------------------------------------------------------

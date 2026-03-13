@@ -150,6 +150,8 @@ public class BlackLabQueryExecutor implements QueryExecutor {
         } catch (InvalidQuery e) {
             throw new IllegalArgumentException("CQL parse error: " + e.getMessage(), e);
         } catch (RuntimeException e) {
+            // BlackLab's search() can throw undocumented RuntimeExceptions on index corruption
+            // or internal state errors; no more-specific public exception type is available.
             throw new IOException("Unexpected error executing CQL query: " + e.getMessage(), e);
         }
     }

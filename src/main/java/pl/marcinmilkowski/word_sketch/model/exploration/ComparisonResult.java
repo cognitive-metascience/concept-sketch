@@ -17,7 +17,7 @@ public class ComparisonResult {
 
     private ComparisonResult(List<String> nouns, List<CollocateProfile> collocates) {
         this.nouns = List.copyOf(nouns);
-        this.collocates = collocates;
+        this.collocates = List.copyOf(collocates);
     }
 
     /**
