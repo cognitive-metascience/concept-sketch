@@ -86,8 +86,7 @@ class CollocateProfileComparator {
         for (String noun : nounList) {
             List<WordSketchResult> adjectives = executor.executeCollocations(
                 noun, adjCollocatePattern, minLogDice, maxPerNoun);
-            logger.debug("Profiling {}: {} adjectives (top: {})", noun, adjectives.size(),
-                adjectives.subList(0, Math.min(5, adjectives.size())));
+            logger.debug("Profiling {}: {} adjectives", noun, adjectives.size());
             for (WordSketchResult r : adjectives) {
                 collocateProfiles
                     .computeIfAbsent(r.lemma().toLowerCase(), k -> new LinkedHashMap<>())

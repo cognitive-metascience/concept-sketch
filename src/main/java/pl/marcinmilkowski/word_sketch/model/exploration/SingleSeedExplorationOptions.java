@@ -24,10 +24,7 @@ public record SingleSeedExplorationOptions(
         ExplorationOptions base,
         int reverseExpansionLimit) {
 
-    /** @return maximum collocates to retrieve per seed. */
     public int topCollocates()  { return base.topCollocates(); }
-    /** @return minimum logDice threshold for collocate inclusion. */
     public double logDiceThreshold()  { return base.logDiceThreshold(); }
-    /** @return minimum shared-by count for discovered nouns. */
     public int minShared()      { return base.minShared(); }
 }

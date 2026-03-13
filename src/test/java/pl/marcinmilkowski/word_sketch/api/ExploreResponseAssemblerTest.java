@@ -84,12 +84,9 @@ class ExploreResponseAssemblerTest {
         ExploreResponse response = ExploreResponseAssembler.buildSingleSeedExploreResponse(
                 result, "adj_predicate", new SharedExploreParams(10, 1, 0.0), 20);
 
-        assertNotNull(response.seedCollocates(), "should have seed_collocates");
-        assertTrue(response.seedCollocates().size() >= 0, "should have seed_collocates_count");
-        assertNotNull(response.primarySeeds(), "should have discovered_nouns");
-        assertTrue(response.primarySeeds().size() >= 0, "should have discovered_nouns_count");
+        assertFalse(response.seedCollocates().isEmpty(), "should have seed_collocates");
+        assertFalse(response.primarySeeds().isEmpty(), "should have discovered_nouns");
         assertNotNull(response.coreCollocates(), "should have core_collocates");
-        assertTrue(response.coreCollocates().size() >= 0, "should have core_collocates_count");
         assertNotNull(response.edges(), "should have edges");
     }
 
@@ -101,7 +98,6 @@ class ExploreResponseAssemblerTest {
         ExploreResponse response = ExploreResponseAssembler.buildSingleSeedExploreResponse(
                 result, "adj_predicate", new SharedExploreParams(10, 1, 0.0), 20);
 
-        assertEquals(2, response.seedCollocates().size());
         assertEquals(2, response.seedCollocates().size());
     }
 

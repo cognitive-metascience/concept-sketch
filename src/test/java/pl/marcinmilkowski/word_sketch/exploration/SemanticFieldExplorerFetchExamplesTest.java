@@ -51,7 +51,7 @@ class SemanticFieldExplorerFetchExamplesTest {
             }
         };
 
-        SemanticFieldExplorer explorer = new SemanticFieldExplorer(executor, null);
+        SemanticFieldExplorer explorer = new SemanticFieldExplorer(executor, "[xpos=\"NN.*\"]");
         FetchExamplesResult fetched = explorer.fetchExamples(
                 "theory", "important", testRelationConfig(), new FetchExamplesOptions(10));
 
@@ -75,7 +75,7 @@ class SemanticFieldExplorerFetchExamplesTest {
             }
         };
 
-        SemanticFieldExplorer explorer = new SemanticFieldExplorer(executor, null);
+        SemanticFieldExplorer explorer = new SemanticFieldExplorer(executor, "[xpos=\"NN.*\"]");
         FetchExamplesResult fetched = explorer.fetchExamples(
                 "theory", "important", testRelationConfig(), new FetchExamplesOptions(10));
 
@@ -100,7 +100,7 @@ class SemanticFieldExplorerFetchExamplesTest {
             }
         };
 
-        SemanticFieldExplorer explorer = new SemanticFieldExplorer(executor, null);
+        SemanticFieldExplorer explorer = new SemanticFieldExplorer(executor, "[xpos=\"NN.*\"]");
         FetchExamplesResult fetched = explorer.fetchExamples(
                 "theory", "important", testRelationConfig(), new FetchExamplesOptions(3));
 
@@ -118,7 +118,7 @@ class SemanticFieldExplorerFetchExamplesTest {
             }
         };
 
-        SemanticFieldExplorer explorer = new SemanticFieldExplorer(executor, null);
+        SemanticFieldExplorer explorer = new SemanticFieldExplorer(executor, "[xpos=\"NN.*\"]");
 
         ExplorationException thrown = assertThrows(ExplorationException.class,
                 () -> explorer.fetchExamples("theory", "important", testRelationConfig(), new FetchExamplesOptions(10)),

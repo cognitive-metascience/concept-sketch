@@ -87,7 +87,7 @@ class SemanticFieldExplorerInternalTest {
         StubExecutor executor = new StubExecutor(Map.of(
             "theory", List.of(wsr("empirical", 8.0), wsr("scientific", 7.0))
         ));
-        SemanticFieldExplorer explorer = new SemanticFieldExplorer(executor, null);
+        SemanticFieldExplorer explorer = new SemanticFieldExplorer(executor, "[xpos=\"NN.*\"]");
         SingleSeedExplorationOptions opts = new SingleSeedExplorationOptions(new ExplorationOptions(10, 0.0, 1), 5);
         ExplorationResult result = explorer.exploreByRelation("theory", adjRelationConfig(), opts);
         assertNotNull(result, "Result should not be null");
@@ -100,7 +100,7 @@ class SemanticFieldExplorerInternalTest {
         StubExecutor executor = new StubExecutor(Map.of(
             "theory", List.of(wsr("empirical", 8.0), wsr("scientific", 7.0))
         ));
-        SemanticFieldExplorer explorer = new SemanticFieldExplorer(executor, null);
+        SemanticFieldExplorer explorer = new SemanticFieldExplorer(executor, "[xpos=\"NN.*\"]");
         SingleSeedExplorationOptions opts = new SingleSeedExplorationOptions(new ExplorationOptions(10, 0.0, 1), 5);
         ExplorationResult result = explorer.exploreByRelation("theory", adjRelationConfig(), opts);
         assertNotNull(result.seedCollocates(), "Seed collocates map should not be null");
@@ -114,7 +114,7 @@ class SemanticFieldExplorerInternalTest {
             "theory", List.of(wsr("empirical", 8.0))
         ));
         // null GrammarConfig → fallback noun constraint
-        SemanticFieldExplorer explorer = new SemanticFieldExplorer(executor, null);
+        SemanticFieldExplorer explorer = new SemanticFieldExplorer(executor, "[xpos=\"NN.*\"]");
         SingleSeedExplorationOptions opts = new SingleSeedExplorationOptions(new ExplorationOptions(10, 0.0, 5), 1);
 
         explorer.exploreByRelation("theory", adjRelationConfig(), opts);

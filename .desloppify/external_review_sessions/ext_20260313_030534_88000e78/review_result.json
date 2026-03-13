@@ -1,0 +1,460 @@
+{
+  "session": {
+    "id": "ext_20260313_030534_88000e78",
+    "token": "f6b4a0f5bed0b9b04261c7c1bf36db48"
+  },
+  "assessments": {
+    "cross_module_architecture": 87,
+    "contract_coherence": 76,
+    "error_consistency": 80,
+    "api_surface_coherence": 74,
+    "initialization_coupling": 84,
+    "high_level_elegance": 80,
+    "naming_quality": 75,
+    "abstraction_fitness": 79,
+    "convention_outlier": 83,
+    "logic_clarity": 77,
+    "type_safety": 74,
+    "mid_level_elegance": 77,
+    "low_level_elegance": 72,
+    "ai_generated_debt": 67,
+    "test_strategy": 68,
+    "package_organization": 82.0,
+    "authorization_consistency": 90.0,
+    "dependency_health": 77.0,
+    "incomplete_migration": 92.0,
+    "design_coherence": 79.0
+  },
+  "findings": [
+    {
+      "dimension": "cross_module_architecture",
+      "identifier": "explorer_full_executor_dep",
+      "summary": "SemanticFieldExplorer depends on full QueryExecutor rather than a narrow port, over-exposing the exploration layer",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/exploration/SemanticFieldExplorer.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/query/QueryExecutor.java"
+      ],
+      "evidence": [
+        "SemanticFieldExplorer constructor takes QueryExecutor and passes it to MultiSeedExplorer, SingleSeedExplorer, and CollocateProfileComparator",
+        "MultiSeedExplorer only uses executor.executeSurfacePattern (one method from SketchQueryPort); SingleSeedExplorer uses executeSurfacePattern and executeCollocations (two methods from different ports)",
+        "CollocateProfileComparator also only needs executeCollocations, which is in CollocateQueryPort"
+      ],
+      "suggestion": "Introduce a narrow CollocateAndSketchPort (or reuse the existing port hierarchy) that covers the two methods actually needed by the exploration layer. Declare SemanticFieldExplorer constructor parameter as that narrower type. This aligns with the established narrow-port pattern already used by SketchHandlers, ConcordanceHandlers, and CorpusQueryHandlers.",
+      "confidence": "medium"
+    },
+    {
+      "dimension": "contract_coherence",
+      "identifier": "nullable_grammar_config_public_ctor",
+      "summary": "SemanticFieldExplorer's public constructor accepts @Nullable GrammarConfig with a Javadoc that says production callers must supply non-null",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/exploration/SemanticFieldExplorer.java"
+      ],
+      "evidence": [
+        "Constructor signature: public SemanticFieldExplorer(QueryExecutor executor, CollocateProfileComparator comparator, MultiSeedExplorer multiSeedExplorer, @Nullable GrammarConfig grammarConfig)",
+        "Javadoc says: 'null is accepted as a test-only escape hatch... Production callers must always supply a non-null, fully-loaded grammar config'",
+        "The @Nullable annotation contradicts the documented production contract; any caller passing null is not caught at compile time by null-safety tooling"
+      ],
+      "suggestion": "Remove @Nullable from the grammarConfig parameter and enforce non-null with Objects.requireNonNull. Move the null-accepting test path into a dedicated package-private test-only factory method or test subclass, keeping the public contract clean. If the escape hatch is truly needed in tests, annotate with a test-only marker and document separately.",
+      "confidence": "high"
+    },
+    {
+      "dimension": "contract_coherence",
+      "identifier": "dead_grammar_config_field",
+      "summary": "WordSketchApiServer stores grammarConfig as a private final field but never reads it after construction",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/api/WordSketchApiServer.java"
+      ],
+      "evidence": [
+        "Line 47: private final GrammarConfig grammarConfig;",
+        "Line 62: this.grammarConfig = Objects.requireNonNull(grammarConfig, ...);",
+        "grammarConfig is used within the constructor body (passed to handlers, used in validateAliases) but the field is never read in start(), stop(), registerRoutes(), getPort(), or any other method"
+      ],
+      "suggestion": "Remove the grammarConfig field. The grammarConfig local parameter can still be passed directly to the handler constructors and validateAliases without being stored. If future methods genuinely need it, re-add the field with a comment explaining why.",
+      "confidence": "high"
+    },
+    {
+      "dimension": "api_surface_coherence",
+      "identifier": "edge_weight_field_name_inconsistency",
+      "summary": "Sibling exploration endpoints expose edge weight as 'log_dice' (explore/explore-multi) vs 'weight' (compare) in JSON responses",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/api/model/ExploreResponse.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/api/model/ComparisonResponse.java"
+      ],
+      "evidence": [
+        "ExploreResponse.EdgeEntry: record EdgeEntry(String source, String target, @JsonProperty(\"log_dice\") double logDice, RelationEdgeType type) \u2014 JSON key is 'log_dice'",
+        "ComparisonResponse.EdgeEntry: record EdgeEntry(String source, String target, double weight, RelationEdgeType type) \u2014 JSON key is 'weight' (no @JsonProperty rename)",
+        "Both types represent the same logDice association score between two graph nodes, used in semantically related sibling endpoints (/explore, /explore-multi, /compare)"
+      ],
+      "suggestion": "Unify the two EdgeEntry types: replace ComparisonResponse.EdgeEntry with ExploreResponse.EdgeEntry (or a shared type in api.model) and apply @JsonProperty(\"log_dice\") consistently. Update ExploreResponseAssembler.buildComparisonResponse to build ExploreResponse.EdgeEntry instances instead of ComparisonResponse.EdgeEntry. This also eliminates the duplicate type definition.",
+      "confidence": "high"
+    },
+    {
+      "dimension": "api_surface_coherence",
+      "identifier": "duplicate_edge_entry_type",
+      "summary": "ComparisonResponse.EdgeEntry duplicates ExploreResponse.EdgeEntry structure \u2014 same four fields, separate type definitions",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/api/model/ComparisonResponse.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/api/model/ExploreResponse.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/api/ExploreResponseAssembler.java"
+      ],
+      "evidence": [
+        "ComparisonResponse.EdgeEntry: (String source, String target, double weight, RelationEdgeType type)",
+        "ExploreResponse.EdgeEntry: (String source, String target, @JsonProperty(\"log_dice\") double logDice, RelationEdgeType type)",
+        "ExploreResponseAssembler.buildComparisonResponse maps Edge\u2192ComparisonResponse.EdgeEntry; buildEdgeEntries maps Edge\u2192ExploreResponse.EdgeEntry \u2014 two separate mapping paths for the same model object"
+      ],
+      "suggestion": "Remove ComparisonResponse.EdgeEntry. Reuse ExploreResponse.EdgeEntry (or extract a shared EdgeEntry to api.model package). Update ComparisonResponse to hold List<ExploreResponse.EdgeEntry> (or List<shared.EdgeEntry>) for the edges field. This removes one mapping path in ExploreResponseAssembler and aligns the JSON shape.",
+      "confidence": "high"
+    },
+    {
+      "dimension": "initialization_coupling",
+      "identifier": "cors_origin_per_request_system_property",
+      "summary": "CORS allow-origin is read from System.getProperty on every HTTP response rather than captured once at server start",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/api/HttpApiUtils.java"
+      ],
+      "evidence": [
+        "setCorsHeader(HttpExchange exchange) calls System.getProperty(\"cors.allow.origin\", DEFAULT_CORS_ALLOW_ORIGIN) on every response \u2014 every call to sendJsonResponse, sendError, sendOptionsResponse, etc.",
+        "warnIfWildcardCors() also reads the property at start() time, so the validation snapshot and the runtime snapshot can diverge if the property is mutated between start() and request handling"
+      ],
+      "suggestion": "Capture the CORS origin once in warnIfWildcardCors() and return it (or store it in a package-private field on HttpApiUtils initialised at server start). Pass the resolved origin string to setCorsHeader. This eliminates the per-request global mutable read while preserving the test-override capability via System.setProperty before server start.",
+      "confidence": "medium"
+    },
+    {
+      "dimension": "high_level_elegance",
+      "identifier": "thin_facade_stale_javadoc",
+      "summary": "SemanticFieldExplorer class Javadoc claims 'Thin facade' but the class owns non-trivial logic in fetchExamples",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/exploration/SemanticFieldExplorer.java"
+      ],
+      "evidence": [
+        "Line 46: '* <p>Thin facade wiring {@link SingleSeedExplorer}, {@link MultiSeedExplorer}, and' \u2014 but fetchExamples (lines 158\u2013194) implements a deduplication loop, BCQL pattern construction, buffer management, and sentence filtering that are non-trivial and not delegated to any sub-component"
+      ],
+      "suggestion": "Replace 'Thin facade wiring ...' with accurate language such as 'Coordinator class wiring ...' or 'Public entry point that delegates algorithmic work to ... and owns the fetchExamples deduplication logic.' The existing fetchExamples method body is the clearest evidence that the facade claim is wrong.",
+      "confidence": "high"
+    },
+    {
+      "dimension": "naming_quality",
+      "identifier": "discoveredNoun_used_for_seeds",
+      "summary": "DiscoveredNoun model class is reused in multi-seed mode to represent input seed words, inverting its stated semantic role",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/model/exploration/DiscoveredNoun.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/exploration/MultiSeedExplorer.java"
+      ],
+      "evidence": [
+        "DiscoveredNoun Javadoc: 'A noun discovered during exploration \u2014 shares collocates with the seed'",
+        "MultiSeedExplorer.buildDiscoveredNouns (line 115) iterates over `seeds` and constructs a DiscoveredNoun for each seed (e.g. 'theory', 'model') \u2014 these are the input seed words, not nouns discovered by reverse expansion",
+        "The JSON serializer compensates by using 'source_seeds' as the key in MultiSeed responses, but the model type name still says 'DiscoveredNoun'"
+      ],
+      "suggestion": "Introduce a second model type (e.g. `SeedProfile`) that represents per-seed collocate statistics \u2014 shared collocates, counts, scores \u2014 and use it in the multi-seed path. DiscoveredNoun should remain specific to single-seed reverse-expansion results. ExplorationResult could carry `List<DiscoveredNoun> discoveredNouns` (single-seed) and `List<SeedProfile> seedProfiles` (multi-seed) as distinct fields, removing the dual-use ambiguity.",
+      "confidence": "high"
+    },
+    {
+      "dimension": "abstraction_fitness",
+      "identifier": "single_seed_options_delegation",
+      "summary": "SingleSeedExplorationOptions adds three trivial delegation methods that duplicate ExplorationOptions accessors without added policy",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/model/exploration/SingleSeedExplorationOptions.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/model/exploration/ExplorationOptions.java"
+      ],
+      "evidence": [
+        "topCollocates(), logDiceThreshold(), minShared() each contain a single-line return delegating to base(); no validation, transformation, or policy is added",
+        "Callers that already have the base() object (e.g. ExplorationHandlers, which constructs both) could pass it directly; the delegation only saves one .base() call at each downstream call site"
+      ],
+      "suggestion": "Remove the three delegation methods from SingleSeedExplorationOptions and let callers use opts.base().topCollocates() etc., or flatten the record to include all four fields directly (topCollocates, logDiceThreshold, minShared, reverseExpansionLimit) without the nested base() component. Either approach eliminates the parallel accessor surface.",
+      "confidence": "medium"
+    },
+    {
+      "dimension": "logic_clarity",
+      "identifier": "fetch_examples_underfetch_before_dedup",
+      "summary": "fetchExamples fetches exactly maxExamples hits then deduplicates by sentence, silently returning fewer examples when hits share sentences",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/exploration/SemanticFieldExplorer.java"
+      ],
+      "evidence": [
+        "Line 171: `results = executor.executeBcqlQuery(bcqlQuery, maxExamples)` \u2014 fetches at most maxExamples CollocateResult objects",
+        "Lines 176\u2013185: deduplication loop collects unique sentences up to maxExamples, then breaks \u2014 but if the source list is exhausted before reaching maxExamples unique sentences (due to duplicate sentence strings across multiple hits), the result count is silently less than maxExamples",
+        "The `if (deduped.size() == maxExamples) break` guard on line 183 can never fire in the under-supply case because the outer for-loop terminates first"
+      ],
+      "suggestion": "Fetch a larger buffer before deduplicating: replace `executor.executeBcqlQuery(bcqlQuery, maxExamples)` with `executor.executeBcqlQuery(bcqlQuery, maxExamples * 4)` (or a configurable over-fetch multiplier), and keep the dedup loop unchanged. This ensures the deduplication step has enough candidates to fill maxExamples unique sentences in the common case.",
+      "confidence": "high"
+    },
+    {
+      "dimension": "type_safety",
+      "identifier": "nullable_grammar_config_escape",
+      "summary": "Public SemanticFieldExplorer constructor accepts @Nullable GrammarConfig as test escape hatch, weakening production type contract",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/exploration/SemanticFieldExplorer.java"
+      ],
+      "evidence": [
+        "Constructor parameter annotated @Nullable GrammarConfig grammarConfig with Javadoc: 'null is accepted as a test-only escape hatch'",
+        "ExplorationHandlers enforces @NonNull GrammarConfig on its own constructor, creating inconsistent null semantics at adjacent seams",
+        "Tests invoke new SemanticFieldExplorer(executor, null) to bypass grammar config \u2014 exploits the public API weakening"
+      ],
+      "suggestion": "Introduce a package-private or test-only factory (e.g. SemanticFieldExplorer.forTesting(executor)) rather than weakening the public constructor annotation. Keep the public constructor @NonNull.",
+      "confidence": "high"
+    },
+    {
+      "dimension": "mid_level_elegance",
+      "identifier": "null_semantics_boundary_mismatch",
+      "summary": "ExplorationHandlers enforces @NonNull GrammarConfig but SemanticFieldExplorer's public constructor allows @Nullable, creating inconsistent seam contracts",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/api/ExplorationHandlers.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/exploration/SemanticFieldExplorer.java"
+      ],
+      "evidence": [
+        "ExplorationHandlers constructor: Objects.requireNonNull(grammarConfig, ...) \u2014 actively rejects null",
+        "SemanticFieldExplorer public constructor: @Nullable GrammarConfig grammarConfig \u2014 actively accepts null",
+        "Adjacent layers enforce opposite rules on the same value; a developer reading one seam gets misleading information about the other"
+      ],
+      "suggestion": "Align null semantics: make SemanticFieldExplorer's public constructor @NonNull and introduce a package-private test constructor or factory for null-grammar use cases.",
+      "confidence": "high"
+    },
+    {
+      "dimension": "low_level_elegance",
+      "identifier": "double_summary_statistics_overkill",
+      "summary": "buildDiscoveredNouns uses DoubleSummaryStatistics but only needs avg and sum; min/max/count computed and discarded",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/exploration/MultiSeedExplorer.java"
+      ],
+      "evidence": [
+        "java.util.DoubleSummaryStatistics stats = sharedCollocates.values().stream().mapToDouble(Double::doubleValue).summaryStatistics()",
+        "Only stats.getAverage() and stats.getSum() are used; getMin(), getMax(), getCount() are never read",
+        "Could be replaced with two direct stream reductions or a simple loop accumulating sum and count"
+      ],
+      "suggestion": "Replace with explicit sum/count accumulation: double sum = sharedCollocates.values().stream().mapToDouble(Double::doubleValue).sum(); double avg = count == 0 ? 0.0 : sum / count;",
+      "confidence": "high"
+    },
+    {
+      "dimension": "low_level_elegance",
+      "identifier": "manual_comparator_chaining",
+      "summary": "identifyCoreCollocates sorts with a manual two-level lambda rather than Comparator.comparingInt(...).thenComparingDouble(...)",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/exploration/SingleSeedExplorer.java"
+      ],
+      "evidence": [
+        "coreCollocates.sort((a, b) -> { int cmp = Integer.compare(b.sharedByCount(), a.sharedByCount()); return cmp != 0 ? cmp : Double.compare(b.avgLogDice(), a.avgLogDice()); })",
+        "Standard Java Comparator composition (comparingInt.reversed().thenComparingDouble.reversed()) is more readable and consistent"
+      ],
+      "suggestion": "Use Comparator.comparingInt(CoreCollocate::sharedByCount).reversed().thenComparingDouble(CoreCollocate::avgLogDice).reversed() to match standard Java comparator composition style.",
+      "confidence": "medium"
+    },
+    {
+      "dimension": "ai_generated_debt",
+      "identifier": "entry_state_logging_comparator",
+      "summary": "CollocateProfileComparator logs method inputs and per-item object dumps at debug level, a hallmark AI entry-logging pattern",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/exploration/CollocateProfileComparator.java"
+      ],
+      "evidence": [
+        "logger.debug(\"Nouns: {}\", seedNouns) and logger.debug(\"Min logDice: {}\", minLogDice) at top of compareCollocateProfiles \u2014 logs inputs visible at the call site",
+        "logger.debug(\"Profiling {}: {} adjectives (top: {})\", noun, adjectives.size(), adjectives.subList(0, Math.min(5, adjectives.size()))) inside per-noun loop \u2014 object dump at debug level",
+        "debugLogTopProfiles iterates profiles emitting per-item debug lines \u2014 full object dump loop"
+      ],
+      "suggestion": "Collapse to one meaningful progress log per method call. Remove per-item object dumps from inside loops; move to trace level if needed for diagnostics.",
+      "confidence": "high"
+    },
+    {
+      "dimension": "ai_generated_debt",
+      "identifier": "delegation_accessor_javadocs_restate",
+      "summary": "SingleSeedExplorationOptions delegation accessors have one-line Javadocs that restate the accessor name without adding insight",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/model/exploration/SingleSeedExplorationOptions.java"
+      ],
+      "evidence": [
+        "/** @return maximum collocates to retrieve per seed. */ public int topCollocates() { return base.topCollocates(); }",
+        "/** @return minimum logDice threshold for collocate inclusion. */ public double logDiceThreshold() { return base.logDiceThreshold(); }",
+        "Each Javadoc says nothing a developer cannot infer from the method name; delegation is already apparent from the body"
+      ],
+      "suggestion": "Remove the Javadocs on these three delegation accessors, or replace with a single class-level note that they delegate to base() for call-site convenience.",
+      "confidence": "medium"
+    },
+    {
+      "dimension": "test_strategy",
+      "identifier": "tautological_size_assertions",
+      "summary": "Three assertTrue(list.size() >= 0) assertions in ExploreResponseAssemblerTest are always true and test nothing",
+      "related_files": [
+        "src/test/java/pl/marcinmilkowski/word_sketch/api/ExploreResponseAssemblerTest.java"
+      ],
+      "evidence": [
+        "assertTrue(response.seedCollocates().size() >= 0, \"should have seed_collocates_count\") \u2014 List.size() is always >= 0",
+        "assertTrue(response.primarySeeds().size() >= 0, \"should have discovered_nouns_count\") \u2014 same tautology",
+        "assertTrue(response.coreCollocates().size() >= 0, \"should have core_collocates_count\") \u2014 same tautology",
+        "The fixture provides 1 seedCollocate, 1 discoveredNoun, 1 coreCollocate \u2014 asserting specific counts would catch real regressions"
+      ],
+      "suggestion": "Replace with assertEquals(1, response.seedCollocates().size()), assertEquals(1, response.primarySeeds().size()), assertEquals(1, response.coreCollocates().size()) matching the provided fixture values.",
+      "confidence": "high"
+    },
+    {
+      "dimension": "test_strategy",
+      "identifier": "duplicate_assertion_assembler_test",
+      "summary": "assertEquals(2, response.seedCollocates().size()) appears twice consecutively in populateExploreResponse_countsMatchListSizes",
+      "related_files": [
+        "src/test/java/pl/marcinmilkowski/word_sketch/api/ExploreResponseAssemblerTest.java"
+      ],
+      "evidence": [
+        "Line 104: assertEquals(2, response.seedCollocates().size());",
+        "Line 105: assertEquals(2, response.seedCollocates().size()); // exact duplicate",
+        "The second assertion was likely meant to check a different property (e.g. seedCollocatesCount if the record exposed one) but instead repeats the same check"
+      ],
+      "suggestion": "Remove the duplicate assertion. If a count companion field exists on the response, assert it separately: assertEquals(response.seedCollocates().size(), response.seedCollocatesCount()).",
+      "confidence": "high"
+    },
+    {
+      "dimension": "package_organization",
+      "identifier": "query_pkg_mixes_ports_and_adapter",
+      "summary": "query/ mixes interface definitions with BlackLab-specific implementation classes in one flat package",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/query/QueryExecutor.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/query/CollocateQueryPort.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/query/SketchQueryPort.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/query/BlackLabQueryExecutor.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/query/CollocateQueryHelper.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/query/BlackLabSnippetParser.java"
+      ],
+      "evidence": [
+        "query/ contains 3 port interfaces (QueryExecutor, CollocateQueryPort, SketchQueryPort) alongside 3 BlackLab-specific concrete classes (BlackLabQueryExecutor, CollocateQueryHelper, BlackLabSnippetParser) in the same flat package",
+        "The project deliberately created exploration/spi/ as a dedicated sub-package to isolate the ExplorationService interface from its SemanticFieldExplorer implementation \u2014 that same port/adapter separation principle is not applied in query/",
+        "A developer navigating to query/ to 'find the query interface' sees implementation detail mixed with contract definitions without any structural cue to distinguish them"
+      ],
+      "suggestion": "Create a query/blacklab/ sub-package and move BlackLabQueryExecutor, CollocateQueryHelper, and BlackLabSnippetParser into it, keeping query/ for port interfaces only \u2014 mirroring the exploration/spi/ pattern already used elsewhere in the project.",
+      "confidence": "medium"
+    },
+    {
+      "dimension": "package_organization",
+      "identifier": "posgroup_stranded_at_model_root",
+      "summary": "model.PosGroup is the only non-package-info class at model/ root while all peers live in model/exploration/ or model/sketch/",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/model/PosGroup.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/model/exploration/",
+        "src/main/java/pl/marcinmilkowski/word_sketch/model/sketch/"
+      ],
+      "evidence": [
+        "model/ root contains only PosGroup.java and package-info.java; all other model types live in model/exploration/ (10 files) or model/sketch/ (5 files)",
+        "PosGroup is imported by both exploration and sketch layer classes, making it a shared vocabulary type with no obvious home in either sub-package",
+        "A developer browsing model/ would expect either a flat list of types or consistently sub-organized types \u2014 not a single outlier at root with two deep sub-packages alongside it"
+      ],
+      "suggestion": "Either move PosGroup into a model/common/ or model/shared/ sub-package that explicitly groups cross-cutting vocabulary types, or add a comment in model/package-info.java explaining that root-level types are shared across both sub-packages to set developer expectations.",
+      "confidence": "low"
+    },
+    {
+      "dimension": "authorization_consistency",
+      "identifier": "wildcard_cors_bypass_undocumented_in_security_model",
+      "summary": "WordSketchApiServer security model Javadoc omits the wildcard CORS opt-in mechanism that effectively expands the trust boundary",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/api/WordSketchApiServer.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/api/HttpApiUtils.java"
+      ],
+      "evidence": [
+        "WordSketchApiServer class Javadoc documents the loopback-only security model: 'All endpoints are unauthenticated \u2014 access control is provided by the host firewall and the loopback-only bind'",
+        "HttpApiUtils.warnIfWildcardCors() allows CORS origin to be set to '*' via -Dallow.wildcard.cors=true, which permits cross-origin requests from any browser origin and materially expands the effective trust surface beyond loopback",
+        "The security model Javadoc in WordSketchApiServer says 'Any change to the bind address must be accompanied by an authentication layer' but does not mention that CORS origin expansion via system property also alters the trust boundary without changing the bind address"
+      ],
+      "suggestion": "Add a sentence to the WordSketchApiServer security model Javadoc paragraph noting that CORS origin is configurable via -Dcors.allow.origin=<origin> and that the wildcard opt-in (-Dallow.wildcard.cors=true) changes the effective trust surface; cross-reference HttpApiUtils.warnIfWildcardCors().",
+      "confidence": "medium"
+    },
+    {
+      "dimension": "dependency_health",
+      "identifier": "jackson_core_explicit_pin_reveals_transitive_conflict",
+      "summary": "jackson-core is explicitly pinned to work around a transitive version conflict, creating fragile dependency management",
+      "related_files": [
+        "pom.xml"
+      ],
+      "evidence": [
+        "pom.xml explicitly declares jackson-core 2.17.2 with the comment 'Pin jackson-core to match databind; another transitive dep resolves an older version otherwise'",
+        "The jackson-bom is already imported in dependencyManagement to manage Jackson versions consistently, yet jackson-core still requires an explicit pin \u2014 indicating something in the transitive tree (likely BlackLab or a BlackLab transitive dependency) overrides the BOM-managed version",
+        "Without a Maven lock file, a future BlackLab update could silently re-introduce the conflict or make the pin diverge; the conflicting dependency is not identified by name in the comment"
+      ],
+      "suggestion": "Run 'mvn dependency:tree -Dincludes=com.fasterxml.jackson.core:jackson-core' to identify the dependency pulling in the older version, and update the pom.xml comment to name it explicitly. Verify whether the jackson-bom exclusion or a <dependencyManagement> override on that specific transitive dep can replace the direct pin.",
+      "confidence": "medium"
+    },
+    {
+      "dimension": "dependency_health",
+      "identifier": "github_raw_fallback_repo_no_sla",
+      "summary": "blacklab-github-fallback Maven profile registers a raw.githubusercontent.com URL as a repository with no SLA",
+      "related_files": [
+        "pom.xml"
+      ],
+      "evidence": [
+        "The blacklab-github-fallback profile registers https://raw.githubusercontent.com/instituutnederlandsetaal/BlackLab/mvn-repo/ as a Maven repository",
+        "The pom.xml comment itself warns 'The URL has no SLA and may become unavailable (rate-limited, branch deleted, or repo renamed); do NOT rely on it in production CI'",
+        "Despite the warning, the profile remains in pom.xml and could be activated by passing -P blacklab-github-fallback in any CI pipeline without further review"
+      ],
+      "suggestion": "Remove the blacklab-github-fallback profile from pom.xml entirely and document only the install-blacklab.sh local-install path as the supported setup. If a remote fallback is genuinely needed, mirror the JAR to a private registry (Nexus, Artifactory, or GitHub Packages) and update the profile to point there instead.",
+      "confidence": "medium"
+    },
+    {
+      "dimension": "incomplete_migration",
+      "identifier": "httpserver_migration_todo_duplicated",
+      "summary": "The 'migrate to Undertow/Jetty' architectural decision is tracked as a TODO in two separate files, creating ambiguity about which is authoritative",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/api/WordSketchApiServer.java",
+        "pom.xml"
+      ],
+      "evidence": [
+        "WordSketchApiServer.java:55 contains: '// TODO: migrate to Undertow or Jetty if a multi-module build or custom classloader is needed.'",
+        "pom.xml maven-compiler-plugin comment also reads: 'TODO: consider migrating to Undertow or Jetty if a multi-module build, custom classloader environment, or EE-style deployment is ever needed.'",
+        "Both TODOs describe the same conditional architectural decision with slightly different wording; a developer searching for migration context must check both places"
+      ],
+      "suggestion": "Remove the TODO from pom.xml (the build descriptor is not the natural home for a runtime architectural decision) and keep the single authoritative note in WordSketchApiServer.java where it is closest to the affected code. Alternatively, consolidate to an ARCHITECTURE.md decision record and remove both inline TODOs.",
+      "confidence": "low"
+    },
+    {
+      "dimension": "design_coherence",
+      "identifier": "server_constructor_mixes_wiring_with_startup_validation",
+      "summary": "WordSketchApiServer constructor calls RelationUtils.validateAliases() \u2014 a startup side effect \u2014 alongside pure dependency wiring",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/api/WordSketchApiServer.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/config/RelationUtils.java"
+      ],
+      "evidence": [
+        "The constructor comment reads 'Port binding is deferred to start() so that construction and network binding are separated', establishing a clear design principle: construction = pure wiring, start() = side effects",
+        "Despite this stated principle, the constructor calls RelationUtils.validateAliases(grammarConfig) which logs warnings and reads from grammarConfig \u2014 a side-effectful startup validation, not pure wiring",
+        "A test that constructs WordSketchApiServer but never calls start() will still trigger the alias-validation logging side effect, violating the construction/startup separation principle"
+      ],
+      "suggestion": "Move the RelationUtils.validateAliases(grammarConfig) call from the constructor into the start() method, alongside HttpApiUtils.warnIfWildcardCors(), keeping the constructor as pure field assignment and handler construction.",
+      "confidence": "medium"
+    },
+    {
+      "dimension": "design_coherence",
+      "identifier": "nullable_grammarconfig_test_escape_hatch_in_production_constructor",
+      "summary": "SemanticFieldExplorer 4-arg constructor accepts @Nullable GrammarConfig as a test escape hatch, adding conditional branching to the primary production path",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/exploration/SemanticFieldExplorer.java"
+      ],
+      "evidence": [
+        "The 4-arg constructor is documented as the 'Primary constructor' and 'Use this in production wiring code' but accepts @Nullable GrammarConfig with a test-only null escape hatch",
+        "When grammarConfig is null the constructor silently falls back to the hardcoded FALLBACK_NOUN_PATTERN; a production caller passing null by mistake gets no exception, only degraded behavior",
+        "The 2-arg convenience constructor is actually the safer production path (it cannot accept null grammarConfig from a Java caller), yet the Javadoc directs production callers to the nullable 4-arg form"
+      ],
+      "suggestion": "Remove the @Nullable annotation and null-branch from the 4-arg constructor (make grammarConfig @NonNull); for tests that need to bypass grammar config, add a package-private or @VisibleForTesting static factory method SemanticFieldExplorer.withFallbackPattern(executor, comparator, multiSeedExplorer) that sets the hardcoded pattern explicitly, making the test intent visible without contaminating the production API.",
+      "confidence": "medium"
+    },
+    {
+      "dimension": "error_consistency",
+      "identifier": "snippet_parser_null_residual",
+      "summary": "BlackLabSnippetParser has residual null-return strategy mixed with throw strategy, bounded within the package but inconsistent",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/query/BlackLabSnippetParser.java"
+      ],
+      "evidence": [
+        "Some parsing methods return null while others throw IllegalArgumentException for the same class of parse failure"
+      ],
+      "suggestion": "Complete the migration: replace remaining null returns with IllegalArgumentException to fully align with the throw strategy",
+      "confidence": "medium"
+    },
+    {
+      "dimension": "convention_outlier",
+      "identifier": "cors_origin_per_request_read",
+      "summary": "CORS allowed origin is read from System.getProperty per-request rather than captured at startup in WordSketchApiServer.start()",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/api/HttpApiUtils.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/api/WordSketchApiServer.java"
+      ],
+      "evidence": [
+        "CORS origin property read inside sendResponse() on every request instead of being resolved once in start()"
+      ],
+      "suggestion": "Capture CORS origin string in WordSketchApiServer.start() and pass to HttpApiUtils, consistent with how port and other server config is handled",
+      "confidence": "high"
+    }
+  ]
+}

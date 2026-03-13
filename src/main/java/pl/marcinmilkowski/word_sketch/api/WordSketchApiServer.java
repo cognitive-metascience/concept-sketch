@@ -44,7 +44,6 @@ public class WordSketchApiServer {
 
     private static final Logger logger = LoggerFactory.getLogger(WordSketchApiServer.class);
     private final int port;
-    private final GrammarConfig grammarConfig;
     private final SketchHandlers sketchHandlers;
     private final ExplorationHandlers explorationHandlers;
     private final ConcordanceHandlers concordanceHandlers;
@@ -59,7 +58,7 @@ public class WordSketchApiServer {
     public WordSketchApiServer(QueryExecutor executor, ExplorationService explorationService,
                                 int port, GrammarConfig grammarConfig) {
         this.port = port;
-        this.grammarConfig = Objects.requireNonNull(grammarConfig, "grammarConfig must not be null");
+        Objects.requireNonNull(grammarConfig, "grammarConfig must not be null");
         Objects.requireNonNull(executor, "executor must not be null");
         Objects.requireNonNull(explorationService, "explorationService must not be null");
         this.sketchHandlers = new SketchHandlers(executor, grammarConfig);

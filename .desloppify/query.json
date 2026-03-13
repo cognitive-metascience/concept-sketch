@@ -1,26 +1,26 @@
 {
   "command": "resolve",
   "patterns": [
-    "review::.::holistic::convention_outlier::validation_placement_inconsistent_multiseed"
+    "null_semantics_boundary_mismatch"
   ],
   "status": "fixed",
   "resolved": [
-    "review::.::holistic::convention_outlier::validation_placement_inconsistent_multiseed"
+    "review::.::holistic::mid_level_elegance::null_semantics_boundary_mismatch"
   ],
   "count": 1,
   "next_command": "desloppify next",
-  "overall_score": 78.2,
-  "objective_score": 97.8,
-  "strict_score": 75.7,
-  "verified_strict_score": 97.0,
-  "prev_overall_score": 78.2,
-  "prev_objective_score": 97.8,
-  "prev_strict_score": 75.7,
-  "prev_verified_strict_score": 97.0,
-  "attestation": "I have actually Moved Seeds.size() < 2 validation consistently to handler layer; removed from SemanticFieldExplorer and CollocateProfileComparator and I am not gaming the score.",
+  "overall_score": 82.2,
+  "objective_score": 97.9,
+  "strict_score": 79.7,
+  "verified_strict_score": 97.1,
+  "prev_overall_score": 82.2,
+  "prev_objective_score": 97.9,
+  "prev_strict_score": 79.7,
+  "prev_verified_strict_score": 97.1,
+  "attestation": "I have actually removed the nullable boundary in SemanticFieldExplorer and ExplorationHandlers now sees a consistently non-null constructor and I am not gaming the score by resolving without fixing.",
   "narrative": {
-    "phase": "regression",
-    "headline": "All T1 items cleared! (8 review issues \u2014 run `desloppify show review --status open`)",
+    "phase": "middle_grind",
+    "headline": "All T1 and T2 items cleared!",
     "dimensions": {
       "lowest_dimensions": [
         {
@@ -30,16 +30,16 @@
           "impact": 0.0
         },
         {
-          "name": "Dep health",
-          "strict": 48.0,
+          "name": "Stale Migration",
+          "strict": 49.8,
           "failing": 0,
           "impact": 0.0,
           "subjective": true,
           "impact_description": "re-review to improve"
         },
         {
-          "name": "Stale Migration",
-          "strict": 49.8,
+          "name": "Type Discipline",
+          "strict": 58.8,
           "failing": 0,
           "impact": 0.0,
           "subjective": true,
@@ -57,16 +57,16 @@
         {
           "name": "Security",
           "lenient": 100.0,
-          "strict": 83.6,
-          "gap": 16.4,
+          "strict": 84.2,
+          "gap": 15.8,
           "wontfix_count": 4
         },
         {
-          "name": "File health",
+          "name": "Code quality",
           "lenient": 100.0,
-          "strict": 93.3,
-          "gap": 6.7,
-          "wontfix_count": 0
+          "strict": 93.4,
+          "gap": 6.6,
+          "wontfix_count": 5
         }
       ],
       "stagnant_dimensions": [
@@ -76,23 +76,13 @@
           "stuck_scans": 5
         },
         {
-          "name": "Security",
-          "strict": 83.6,
-          "stuck_scans": 5
-        },
-        {
           "name": "File health",
-          "strict": 93.3,
+          "strict": 93.6,
           "stuck_scans": 5
         },
         {
           "name": "Duplication",
           "strict": 0.0,
-          "stuck_scans": 5
-        },
-        {
-          "name": "Abstraction fit",
-          "strict": 72.0,
           "stuck_scans": 5
         },
         {
@@ -135,17 +125,6 @@
         "lane": "refactor_0"
       },
       {
-        "type": "refactor",
-        "detector": "review",
-        "count": 8,
-        "description": "8 review issues need investigation \u2014 run `desloppify show review --status open` to see them",
-        "command": "desloppify show review --status open",
-        "impact": 0.0,
-        "dimension": "Unknown",
-        "priority": 2,
-        "lane": "refactor_1"
-      },
-      {
         "type": "manual_fix",
         "detector": "stale_wontfix",
         "count": 4,
@@ -153,14 +132,14 @@
         "command": "desloppify show stale_wontfix --status open",
         "impact": 0.0,
         "dimension": "Unknown",
-        "priority": 3,
-        "lane": "refactor_2"
+        "priority": 2,
+        "lane": "refactor_1"
       }
     ],
     "strategy": {
       "fixer_leverage": {
         "auto_fixable_count": 0,
-        "total_count": 36,
+        "total_count": 12,
         "coverage": 0.0,
         "impact_ratio": 0.0,
         "recommendation": "none"
@@ -179,15 +158,6 @@
           "actions": [
             2
           ],
-          "file_count": 1,
-          "total_impact": 0.0,
-          "automation": "manual",
-          "run_first": false
-        },
-        "refactor_2": {
-          "actions": [
-            3
-          ],
           "file_count": 4,
           "total_impact": 0.0,
           "automation": "manual",
@@ -195,7 +165,7 @@
         }
       },
       "can_parallelize": false,
-      "hint": "Work through actions in priority order. Rescan after each fix to track progress. Review: 8 issue(s) \u2014 `desloppify show review --status open`."
+      "hint": "Work through actions in priority order. Rescan after each fix to track progress."
     },
     "tools": {
       "fixers": [],
@@ -218,17 +188,17 @@
     },
     "debt": {
       "overall_gap": 1.7,
-      "wontfix_count": 272,
+      "wontfix_count": 284,
       "worst_dimension": "Duplication",
       "worst_gap": 30.0,
       "trend": "stable"
     },
-    "milestone": "All T1 items cleared!",
+    "milestone": "All T1 and T2 items cleared!",
     "primary_action": {
       "command": "desloppify show boilerplate_duplication --status open",
       "description": "8 boilerplate_duplication issues \u2014 extract shared boilerplate into reusable helpers or base classes"
     },
-    "why_now": "Work through actions in priority order. Rescan after each fix to track progress. Review: 8 issue(s) \u2014 `desloppify show review --status open`.",
+    "why_now": "Work through actions in priority order. Rescan after each fix to track progress.",
     "verification_step": {
       "command": "desloppify scan",
       "reason": "revalidate after changes"
@@ -237,13 +207,13 @@
       {
         "type": "wontfix_gap",
         "severity": "high",
-        "message": "Strict/lenient gap is 1.7 pts with 272 wontfix issues"
+        "message": "Strict/lenient gap is 1.7 pts with 284 wontfix issues"
       }
     ],
     "strict_target": {
       "target": 95.0,
-      "current": 75.7,
-      "gap": 19.3,
+      "current": 79.7,
+      "gap": 15.3,
       "state": "below",
       "warning": null
     },
@@ -265,7 +235,7 @@
     ],
     "reminder_history": {
       "zone_classification": 3,
-      "report_scores": 66,
+      "report_scores": 68,
       "review_issues_pending": 3,
       "feedback_nudge": 3,
       "wontfix_growing": 3,

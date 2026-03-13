@@ -73,7 +73,7 @@ class SemanticFieldExplorerTest {
             "hypothesis", List.of(wsr("empirical", 7.0), wsr("new", 6.0), wsr("bold", 5.5))
         ));
 
-        ExplorationService explorer = new SemanticFieldExplorer(executor, null);
+        ExplorationService explorer = new SemanticFieldExplorer(executor, "[xpos=\"NN.*\"]");
         ComparisonResult result =
             explorer.compareCollocateProfiles(Set.of("theory", "model", "hypothesis"), new pl.marcinmilkowski.word_sketch.model.exploration.ExplorationOptions(50, 0.0, 1));
 
@@ -96,7 +96,7 @@ class SemanticFieldExplorerTest {
             "model",   List.of(wsr("mathematical", 7.0))
         ));
 
-        ExplorationService explorer = new SemanticFieldExplorer(executor, null);
+        ExplorationService explorer = new SemanticFieldExplorer(executor, "[xpos=\"NN.*\"]");
         ComparisonResult result =
             explorer.compareCollocateProfiles(Set.of("theory", "model"), new pl.marcinmilkowski.word_sketch.model.exploration.ExplorationOptions(50, 0.0, 1));
 
@@ -118,7 +118,7 @@ class SemanticFieldExplorerTest {
             "model",  Collections.emptyList()   // no collocates
         ));
 
-        ExplorationService explorer = new SemanticFieldExplorer(executor, null);
+        ExplorationService explorer = new SemanticFieldExplorer(executor, "[xpos=\"NN.*\"]");
         ComparisonResult result =
             explorer.compareCollocateProfiles(Set.of("theory", "model"), new pl.marcinmilkowski.word_sketch.model.exploration.ExplorationOptions(50, 0.0, 1));
 
@@ -134,7 +134,7 @@ class SemanticFieldExplorerTest {
     @DisplayName("compare: null seed set throws NullPointerException (violates @NonNull contract)")
     void compare_nullSeedSet() {
         StubExecutor executor = new StubExecutor(Map.of());
-        ExplorationService explorer = new SemanticFieldExplorer(executor, null);
+        ExplorationService explorer = new SemanticFieldExplorer(executor, "[xpos=\"NN.*\"]");
 
         assertThrows(NullPointerException.class,
             () -> explorer.compareCollocateProfiles(null, new pl.marcinmilkowski.word_sketch.model.exploration.ExplorationOptions(50, 0.0, 1)),
@@ -153,7 +153,7 @@ class SemanticFieldExplorerTest {
             "hypothesis", List.of(wsr("empirical", 7.0), wsr("bold", 5.0))
         ));
 
-        ExplorationService explorer = new SemanticFieldExplorer(executor, null);
+        ExplorationService explorer = new SemanticFieldExplorer(executor, "[xpos=\"NN.*\"]");
         ComparisonResult result =
             explorer.compareCollocateProfiles(Set.of("theory", "model", "hypothesis"), new pl.marcinmilkowski.word_sketch.model.exploration.ExplorationOptions(50, 0.0, 1));
 
@@ -177,7 +177,7 @@ class SemanticFieldExplorerTest {
             "model",   List.of(wsr("empirical", 7.5), wsr("theoretical", 6.0))
         ));
 
-        ExplorationService explorer = new SemanticFieldExplorer(executor, null);
+        ExplorationService explorer = new SemanticFieldExplorer(executor, "[xpos=\"NN.*\"]");
 
         ExplorationResult result = explorer.exploreMultiSeed(
             Set.of("theory", "model"),
@@ -215,7 +215,7 @@ class SemanticFieldExplorerTest {
             "model",   List.of(wsr("empirical", 7.5), wsr("formal", 6.0))
         ));
 
-        ExplorationService explorer = new SemanticFieldExplorer(executor, null);
+        ExplorationService explorer = new SemanticFieldExplorer(executor, "[xpos=\"NN.*\"]");
 
         ExplorationResult result = explorer.exploreMultiSeed(
             Set.of("theory", "model"),

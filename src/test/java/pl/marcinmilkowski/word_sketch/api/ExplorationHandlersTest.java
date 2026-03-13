@@ -183,7 +183,7 @@ class ExplorationHandlersTest {
 
     @Test
     void handleSemanticFieldExamples_validParams_returns200() throws Exception {
-        ExplorationService explorer = new SemanticFieldExplorer(emptyExecutor(), null);
+        ExplorationService explorer = new SemanticFieldExplorer(emptyExecutor(), GrammarConfigHelper.requireTestConfig());
         ExplorationHandlers handlers = new ExplorationHandlers(explorer, GrammarConfigHelper.requireTestConfig());
         MockExchangeFactory.MockExchange ex = new MockExchangeFactory.MockExchange(
                 "http://localhost/api/semantic-field/examples?collocate=important&seed=theory&relation=noun_adj_predicates");
@@ -253,7 +253,7 @@ class ExplorationHandlersTest {
             "theory", List.of(wsr("abstract", 9.0)),
             "model",  List.of(wsr("abstract", 6.0))
         ));
-        ExplorationService explorer = new SemanticFieldExplorer(executor, null);
+        ExplorationService explorer = new SemanticFieldExplorer(executor, GrammarConfigHelper.requireTestConfig());
         ComparisonResult result = explorer.compareCollocateProfiles(
                 Set.of("theory", "model"), new ExplorationOptions(50, 0.0, 1));
 
@@ -300,7 +300,7 @@ class ExplorationHandlersTest {
 
     /** Returns a minimal exploration service suitable for validation (parameter-checking) tests only. */
     private static ExplorationService stubService() {
-        return new SemanticFieldExplorer(emptyExecutor(), null);
+        return new SemanticFieldExplorer(emptyExecutor(), GrammarConfigHelper.requireTestConfig());
     }
 
     private static QueryExecutor collocatingExecutor(Map<String, List<WordSketchResult>> map) {

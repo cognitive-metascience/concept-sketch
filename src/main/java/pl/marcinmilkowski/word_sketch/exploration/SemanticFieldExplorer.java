@@ -3,10 +3,10 @@ package pl.marcinmilkowski.word_sketch.exploration;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 
 import org.jspecify.annotations.NonNull;
-import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -57,11 +57,22 @@ public class SemanticFieldExplorer implements ExplorationService {
     private final MultiSeedExplorer multiSeedExplorer;
     private final SingleSeedExplorer singleSeedExplorer;
 
-    public SemanticFieldExplorer(QueryExecutor executor, GrammarConfig grammarConfig) {
+    public SemanticFieldExplorer(@NonNull QueryExecutor executor, @NonNull GrammarConfig grammarConfig) {
         this(executor,
              new CollocateProfileComparator(executor, grammarConfig),
              new MultiSeedExplorer(executor),
              grammarConfig);
+    }
+
+    /**
+     * Package-private test constructor. Accepts a pre-resolved noun CQL pattern directly,
+     * bypassing grammar config loading. Use in unit tests where a real grammar is unavailable.
+     */
+    SemanticFieldExplorer(QueryExecutor executor, String nounCqlPattern) {
+        this.executor = executor;
+        this.comparator = new CollocateProfileComparator(executor, null);
+        this.multiSeedExplorer = new MultiSeedExplorer(executor);
+        this.singleSeedExplorer = new SingleSeedExplorer(executor, nounCqlPattern);
     }
 
     /**
@@ -73,21 +84,20 @@ public class SemanticFieldExplorer implements ExplorationService {
      * @param comparator        collocate profile comparator (multi-seed comparison)
      * @param multiSeedExplorer multi-seed intersection explorer
      * @param grammarConfig     grammar config used to derive the noun CQL constraint;
-     *                          {@code null} is accepted as a <em>test-only escape hatch</em> —
-     *                          it bypasses grammar-derived pattern resolution and falls back to
-     *                          the hardcoded {@link #FALLBACK_NOUN_PATTERN}.  Production callers
-     *                          must always supply a non-null, fully-loaded grammar config.
+     *                          must be non-null — use the package-private test constructor
+     *                          to bypass grammar config in unit tests.
      */
     public SemanticFieldExplorer(
-            QueryExecutor executor,
-            CollocateProfileComparator comparator,
-            MultiSeedExplorer multiSeedExplorer,
-            @Nullable GrammarConfig grammarConfig) {
-        this.executor = executor;
-        this.comparator = comparator;
-        this.multiSeedExplorer = multiSeedExplorer;
+            @NonNull QueryExecutor executor,
+            @NonNull CollocateProfileComparator comparator,
+            @NonNull MultiSeedExplorer multiSeedExplorer,
+            @NonNull GrammarConfig grammarConfig) {
+        this.executor = Objects.requireNonNull(executor, "executor must not be null");
+        this.comparator = Objects.requireNonNull(comparator, "comparator must not be null");
+        this.multiSeedExplorer = Objects.requireNonNull(multiSeedExplorer, "multiSeedExplorer must not be null");
         String nounCqlPattern = RelationUtils.findBestCollocatePattern(
-            grammarConfig, PosGroup.NOUN, FALLBACK_NOUN_PATTERN);
+            Objects.requireNonNull(grammarConfig, "grammarConfig must not be null"),
+            PosGroup.NOUN, FALLBACK_NOUN_PATTERN);
         this.singleSeedExplorer = new SingleSeedExplorer(executor, nounCqlPattern);
     }
 

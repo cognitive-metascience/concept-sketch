@@ -46,5 +46,9 @@ public record ComparisonResponse(
                     com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL) String specificTo) {}
 
     /** Graph edge connecting a collocate to a seed noun. */
-    public record EdgeEntry(String source, String target, double weight, RelationEdgeType type) {}
+    public record EdgeEntry(
+            String source,
+            String target,
+            @JsonProperty("log_dice") double logDice,
+            RelationEdgeType type) {}
 }

@@ -34,6 +34,14 @@ final class HttpApiUtils {
     private static final String DEFAULT_CORS_ALLOW_ORIGIN = "http://localhost:3000";
 
     /**
+     * CORS allow-origin resolved once at class-load time from the {@code cors.allow.origin}
+     * system property. Reading it once avoids per-request {@link System#getProperty} calls
+     * and ensures the origin is immutable for the lifetime of the JVM.
+     */
+    private static final String CORS_ALLOW_ORIGIN =
+            System.getProperty("cors.allow.origin", DEFAULT_CORS_ALLOW_ORIGIN);
+
+    /**
      * Wraps a handler with tiered error handling:
      * <ul>
      *   <li>{@link RequestEntityTooLargeException} → 413</li>
@@ -89,7 +97,7 @@ final class HttpApiUtils {
      *         {@code allow.wildcard.cors=true} is not set
      */
     static void warnIfWildcardCors() {
-        String origin = System.getProperty("cors.allow.origin", DEFAULT_CORS_ALLOW_ORIGIN);
+        String origin = CORS_ALLOW_ORIGIN;
         if ("*".equals(origin)) {
             if ("true".equalsIgnoreCase(System.getProperty("allow.wildcard.cors"))) {
                 logger.warn("CORS allow-origin is set to '*' — all origins permitted. "
@@ -107,10 +115,9 @@ final class HttpApiUtils {
         }
     }
 
-    /** Sets {@code Access-Control-Allow-Origin} from the {@code cors.allow.origin} system property. */
+    /** Sets {@code Access-Control-Allow-Origin} from the value captured at startup. */
     private static void setCorsHeader(HttpExchange exchange) {
-        String origin = System.getProperty("cors.allow.origin", DEFAULT_CORS_ALLOW_ORIGIN);
-        exchange.getResponseHeaders().set("Access-Control-Allow-Origin", origin);
+        exchange.getResponseHeaders().set("Access-Control-Allow-Origin", CORS_ALLOW_ORIGIN);
     }
 
     static void sendJsonResponse(@NonNull HttpExchange exchange, @NonNull Object data) throws IOException {
