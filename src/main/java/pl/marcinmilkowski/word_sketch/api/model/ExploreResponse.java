@@ -69,22 +69,6 @@ public sealed interface ExploreResponse
             /** Present only in single-seed responses; absent in multi-seed responses. */
             @JsonProperty("nouns_per") @Nullable Integer nounsPer) {}
 
-    /** A single discovered-noun entry in the {@code discovered_nouns} array. */
-    record DiscoveredNounEntry(
-            String word,
-            @JsonProperty("shared_count") int sharedCount,
-            @JsonProperty("similarity_score") double similarityScore,
-            @JsonProperty("avg_logdice") double avgLogDice,
-            @JsonProperty("shared_collocates") List<String> sharedCollocates) {}
-
-    /** A single core-collocate entry in the {@code core_collocates} array. */
-    record CoreCollocateEntry(
-            String word,
-            @JsonProperty("shared_by_count") int sharedByCount,
-            @JsonProperty("total_nouns") int totalNouns,
-            double coverage,
-            @JsonProperty("seed_logdice") double seedLogDice) {}
-
     // -------------------------------------------------------------------------
     // Concrete variants
     // -------------------------------------------------------------------------

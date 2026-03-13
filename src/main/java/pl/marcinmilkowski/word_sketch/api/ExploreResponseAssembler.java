@@ -8,6 +8,8 @@ import java.util.List;
 import java.util.Map;
 
 import pl.marcinmilkowski.word_sketch.api.model.ComparisonResponse;
+import pl.marcinmilkowski.word_sketch.api.model.CoreCollocateEntry;
+import pl.marcinmilkowski.word_sketch.api.model.DiscoveredNounEntry;
 import pl.marcinmilkowski.word_sketch.api.model.EdgeEntry;
 import pl.marcinmilkowski.word_sketch.api.model.ExamplesResponse;
 import pl.marcinmilkowski.word_sketch.api.model.ExploreResponse;
@@ -89,8 +91,8 @@ final class ExploreResponseAssembler {
         ExploreResponse.Parameters responseParams = new ExploreResponse.Parameters(
                 relationType, params.topCollocates(), params.minShared(), params.logDiceThreshold(), nounsPerSeed);
         List<SeedCollocateEntry> seedCollocs = buildSeedCollocateEntries(result);
-        List<ExploreResponse.DiscoveredNounEntry> nouns = buildDiscoveredNounEntries(result);
-        List<ExploreResponse.CoreCollocateEntry> core = buildCoreCollocateEntries(result);
+        List<DiscoveredNounEntry> nouns = buildDiscoveredNounEntries(result);
+        List<CoreCollocateEntry> core = buildCoreCollocateEntries(result);
         List<EdgeEntry> edges = buildEdgeEntries(result);
         return new ExploreResponse.SingleSeed(
                 "ok", result.seeds().get(0), responseParams,
@@ -120,8 +122,8 @@ final class ExploreResponseAssembler {
         ExploreResponse.Parameters responseParams = new ExploreResponse.Parameters(
                 relationType, params.topCollocates(), params.minShared(), params.logDiceThreshold(), null);
         List<SeedCollocateEntry> seedCollocs = buildSeedCollocateEntries(result);
-        List<ExploreResponse.DiscoveredNounEntry> nouns = buildDiscoveredNounEntries(result);
-        List<ExploreResponse.CoreCollocateEntry> core = buildCoreCollocateEntries(result);
+        List<DiscoveredNounEntry> nouns = buildDiscoveredNounEntries(result);
+        List<CoreCollocateEntry> core = buildCoreCollocateEntries(result);
         List<EdgeEntry> edges = buildEdgeEntries(result);
         return new ExploreResponse.MultiSeed(
                 "ok", seeds, responseParams,
@@ -145,11 +147,11 @@ final class ExploreResponseAssembler {
         return entries;
     }
 
-    private static @NonNull List<ExploreResponse.DiscoveredNounEntry> buildDiscoveredNounEntries(
+    private static @NonNull List<DiscoveredNounEntry> buildDiscoveredNounEntries(
             @NonNull ExplorationResult result) {
-        List<ExploreResponse.DiscoveredNounEntry> entries = new ArrayList<>();
+        List<DiscoveredNounEntry> entries = new ArrayList<>();
         for (DiscoveredNoun n : result.discoveredNouns()) {
-            entries.add(new ExploreResponse.DiscoveredNounEntry(
+            entries.add(new DiscoveredNounEntry(
                     n.noun(),
                     n.sharedCount(),
                     MathUtils.round2dp(n.combinedRelevanceScore()),
@@ -159,11 +161,11 @@ final class ExploreResponseAssembler {
         return entries;
     }
 
-    private static @NonNull List<ExploreResponse.CoreCollocateEntry> buildCoreCollocateEntries(
+    private static @NonNull List<CoreCollocateEntry> buildCoreCollocateEntries(
             @NonNull ExplorationResult result) {
-        List<ExploreResponse.CoreCollocateEntry> entries = new ArrayList<>();
+        List<CoreCollocateEntry> entries = new ArrayList<>();
         for (CoreCollocate c : result.coreCollocates()) {
-            entries.add(new ExploreResponse.CoreCollocateEntry(
+            entries.add(new CoreCollocateEntry(
                     c.collocate(),
                     c.sharedByCount(),
                     c.totalNouns(),

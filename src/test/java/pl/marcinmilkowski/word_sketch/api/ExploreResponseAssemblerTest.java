@@ -1,6 +1,7 @@
 package pl.marcinmilkowski.word_sketch.api;
 
 import org.junit.jupiter.api.Test;
+import pl.marcinmilkowski.word_sketch.api.model.DiscoveredNounEntry;
 import pl.marcinmilkowski.word_sketch.api.model.ExploreResponse;
 import pl.marcinmilkowski.word_sketch.api.model.SeedCollocateEntry;
 import pl.marcinmilkowski.word_sketch.model.exploration.CoreCollocate;
@@ -127,7 +128,7 @@ class ExploreResponseAssemblerTest {
                 result, "adj_predicate", new ExplorationOptions(10, 0.0, 1), 20);
 
         assertEquals(1, response.primarySeeds().size());
-        ExploreResponse.DiscoveredNounEntry entry = response.primarySeeds().get(0);
+        DiscoveredNounEntry entry = response.primarySeeds().get(0);
         assertEquals("model", entry.word());
         assertEquals(1, entry.sharedCount());
         assertNotNull(entry.similarityScore());
