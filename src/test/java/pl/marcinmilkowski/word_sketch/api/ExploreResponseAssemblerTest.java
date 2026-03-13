@@ -4,6 +4,7 @@ import org.junit.jupiter.api.Test;
 import pl.marcinmilkowski.word_sketch.api.model.ExploreResponse;
 import pl.marcinmilkowski.word_sketch.api.model.SeedCollocateEntry;
 import pl.marcinmilkowski.word_sketch.model.exploration.CoreCollocate;
+import pl.marcinmilkowski.word_sketch.model.exploration.ExplorationOptions;
 import pl.marcinmilkowski.word_sketch.model.exploration.DiscoveredNoun;
 import pl.marcinmilkowski.word_sketch.model.exploration.Edge;
 import pl.marcinmilkowski.word_sketch.model.exploration.ExplorationResult;
@@ -82,7 +83,7 @@ class ExploreResponseAssemblerTest {
         ExplorationResult result = resultWith("theory", collocates, freqs, nouns, core);
 
         ExploreResponse response = ExploreResponseAssembler.buildSingleSeedExploreResponse(
-                result, "adj_predicate", new SharedExploreParams(10, 1, 0.0), 20);
+                result, "adj_predicate", new ExplorationOptions(10, 0.0, 1), 20);
 
         assertFalse(response.seedCollocates().isEmpty(), "should have seed_collocates");
         assertFalse(response.primarySeeds().isEmpty(), "should have discovered_nouns");
@@ -96,7 +97,7 @@ class ExploreResponseAssemblerTest {
         ExplorationResult result = resultWith("theory", collocates, Map.of(), List.of(), List.of());
 
         ExploreResponse response = ExploreResponseAssembler.buildSingleSeedExploreResponse(
-                result, "adj_predicate", new SharedExploreParams(10, 1, 0.0), 20);
+                result, "adj_predicate", new ExplorationOptions(10, 0.0, 1), 20);
 
         assertEquals(2, response.seedCollocates().size());
     }
@@ -108,7 +109,7 @@ class ExploreResponseAssemblerTest {
         ExplorationResult result = resultWith("theory", collocates, freqs, List.of(), List.of());
 
         ExploreResponse response = ExploreResponseAssembler.buildSingleSeedExploreResponse(
-                result, "adj_predicate", new SharedExploreParams(10, 1, 0.0), 20);
+                result, "adj_predicate", new ExplorationOptions(10, 0.0, 1), 20);
 
         assertEquals(1, response.seedCollocates().size());
         SeedCollocateEntry entry = response.seedCollocates().get(0);
@@ -123,7 +124,7 @@ class ExploreResponseAssemblerTest {
         ExplorationResult result = resultWith("theory", Map.of(), Map.of(), List.of(noun), List.of());
 
         ExploreResponse response = ExploreResponseAssembler.buildSingleSeedExploreResponse(
-                result, "adj_predicate", new SharedExploreParams(10, 1, 0.0), 20);
+                result, "adj_predicate", new ExplorationOptions(10, 0.0, 1), 20);
 
         assertEquals(1, response.primarySeeds().size());
         ExploreResponse.DiscoveredNounEntry entry = response.primarySeeds().get(0);

@@ -64,17 +64,15 @@ class ExplorationHandlers {
         Map<String, String> params = HttpApiUtils.parseQueryParams(exchange.getRequestURI().getQuery());
         String seed = HttpApiUtils.requireParam(params, "seed");
         RelationConfig resolvedConfig = resolveRelationConfig(params);
-        SharedExploreParams commonParams = parseSharedExploreParams(params);
+        ExplorationOptions opts = parseExplorationOptions(params);
         int nounsPerSeed = HttpApiUtils.parseIntParam(params, "nouns_per", 30);
 
-        ExplorationOptions base = new ExplorationOptions(
-            commonParams.topCollocates(), commonParams.logDiceThreshold(), commonParams.minShared());
-        SingleSeedExplorationOptions opts = new SingleSeedExplorationOptions(base, nounsPerSeed);
+        SingleSeedExplorationOptions singleSeedOpts = new SingleSeedExplorationOptions(opts, nounsPerSeed);
 
-        ExplorationResult result = explorationService.exploreByRelation(seed, resolvedConfig, opts);
+        ExplorationResult result = explorationService.exploreByRelation(seed, resolvedConfig, singleSeedOpts);
 
         ExploreResponse response = ExploreResponseAssembler.buildSingleSeedExploreResponse(
-                result, resolvedConfig.id(), commonParams, nounsPerSeed);
+                result, resolvedConfig.id(), opts, nounsPerSeed);
 
         HttpApiUtils.sendJsonResponse(exchange, response);
     }
@@ -100,18 +98,16 @@ class ExplorationHandlers {
 
         String seedsParam = HttpApiUtils.requireParam(params, "seeds");
         RelationConfig resolvedConfig = resolveRelationConfig(params);
-        SharedExploreParams commonParams = parseSharedExploreParams(params);
+        ExplorationOptions opts = parseExplorationOptions(params);
 
         Set<String> seeds = parseSeedSet(seedsParam);
 
         requireAtLeastTwoSeeds(seeds, "Multi-seed exploration");
 
-        ExplorationOptions opts = new ExplorationOptions(
-            commonParams.topCollocates(), commonParams.logDiceThreshold(), commonParams.minShared());
         ExplorationResult result = explorationService.exploreMultiSeed(seeds, resolvedConfig, opts);
 
         ExploreResponse response = ExploreResponseAssembler.buildMultiSeedExploreResponse(
-                result, resolvedConfig.id(), commonParams);
+                result, resolvedConfig.id(), opts);
 
         HttpApiUtils.sendJsonResponse(exchange, response);
     }
@@ -133,15 +129,13 @@ class ExplorationHandlers {
         Set<String> seeds = parseSeedSet(seedsParam);
         requireAtLeastTwoSeeds(seeds, "Comparison");
 
-        SharedExploreParams commonParams = parseSharedExploreParams(params);
+        ExplorationOptions opts = parseExplorationOptions(params);
 
-        ExplorationOptions opts = new ExplorationOptions(
-            commonParams.topCollocates(), commonParams.logDiceThreshold(), commonParams.minShared());
         ComparisonResult result = explorationService.compareCollocateProfiles(seeds, opts);
 
         ComparisonResponse response = ExploreResponseAssembler.buildComparisonResponse(
             new ArrayList<>(result.nouns()), CROSS_RELATIONAL,
-            commonParams,
+            opts,
             result);
 
         HttpApiUtils.sendJsonResponse(exchange, response);
@@ -208,11 +202,11 @@ class ExplorationHandlers {
         return relationConfig.get();
     }
 
-    private SharedExploreParams parseSharedExploreParams(Map<String, String> params) {
+    private ExplorationOptions parseExplorationOptions(Map<String, String> params) {
         int top = HttpApiUtils.parseIntParam(params, "top", 10);
         int minShared = HttpApiUtils.parseIntParam(params, "min_shared", 2);
         double minLogDice = HttpApiUtils.parseDoubleParam(params, "min_logdice", 3.0);
-        return new SharedExploreParams(top, minShared, minLogDice);
+        return new ExplorationOptions(top, minLogDice, minShared);
     }
 
     private static void requireAtLeastTwoSeeds(java.util.Collection<String> seeds, String context) {

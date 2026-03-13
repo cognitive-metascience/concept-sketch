@@ -14,6 +14,7 @@ import pl.marcinmilkowski.word_sketch.api.model.ExploreResponse;
 import pl.marcinmilkowski.word_sketch.api.model.SeedCollocateEntry;
 import pl.marcinmilkowski.word_sketch.model.sketch.*;
 import pl.marcinmilkowski.word_sketch.model.exploration.CollocateProfile;
+import pl.marcinmilkowski.word_sketch.model.exploration.ExplorationOptions;
 import pl.marcinmilkowski.word_sketch.utils.MathUtils;
 import pl.marcinmilkowski.word_sketch.model.exploration.ComparisonResult;
 import pl.marcinmilkowski.word_sketch.model.exploration.CoreCollocate;
@@ -83,7 +84,7 @@ final class ExploreResponseAssembler {
     static @NonNull ExploreResponse buildSingleSeedExploreResponse(
             @NonNull ExplorationResult result,
             @NonNull String relationType,
-            @NonNull SharedExploreParams params,
+            @NonNull ExplorationOptions params,
             int nounsPerSeed) {
         ExploreResponse.Parameters responseParams = new ExploreResponse.Parameters(
                 relationType, params.topCollocates(), params.minShared(), params.logDiceThreshold(), nounsPerSeed);
@@ -114,7 +115,7 @@ final class ExploreResponseAssembler {
     static @NonNull ExploreResponse buildMultiSeedExploreResponse(
             @NonNull ExplorationResult result,
             @NonNull String relationType,
-            @NonNull SharedExploreParams params) {
+            @NonNull ExplorationOptions params) {
         List<String> seeds = result.seeds();
         ExploreResponse.Parameters responseParams = new ExploreResponse.Parameters(
                 relationType, params.topCollocates(), params.minShared(), params.logDiceThreshold(), null);
@@ -193,7 +194,7 @@ final class ExploreResponseAssembler {
      */
     static @NonNull ComparisonResponse buildComparisonResponse(
             @NonNull List<String> seeds, @NonNull String relationType,
-            @NonNull SharedExploreParams params,
+            @NonNull ExplorationOptions params,
             @NonNull ComparisonResult result) {
         List<ComparisonResponse.CollocateProfileEntry> collocates = result.collocates().stream()
                 .map(ExploreResponseAssembler::collocateProfileToEntry)
