@@ -109,7 +109,7 @@ public class BlackLabQueryExecutor implements QueryExecutor {
         long headwordFreq = collocateSearch.headwordFreq();
         HitGroups groups = collocateSearch.groups();
 
-        GroupStats stats = collectFrequenciesAndPosFromGroups(groups,
+        CollocateHitStats stats = collectFrequenciesAndPosFromGroups(groups,
                 identity -> BlackLabSnippetParser.extractLemmaWithFallback(identity));
 
         return collocateQueryHelper.buildAndRankCollocates(stats.freqMap(), headwordFreq, minLogDice, maxResults, stats.lemmaPosMap());
@@ -149,6 +149,9 @@ public class BlackLabQueryExecutor implements QueryExecutor {
 
         } catch (InvalidQuery e) {
             throw new IllegalArgumentException("CQL parse error: " + e.getMessage(), e);
+        } catch (NullPointerException e) {
+            // Re-throw NPEs immediately — they are programming bugs, not expected runtime errors.
+            throw e;
         } catch (RuntimeException e) {
             // BlackLab's search() can throw undocumented RuntimeExceptions on index corruption
             // or internal state errors; no more-specific public exception type is available.
@@ -200,7 +203,7 @@ public class BlackLabQueryExecutor implements QueryExecutor {
         long headwordFreq = collocateSearch.headwordFreq();
         HitGroups groups = collocateSearch.groups();
 
-        GroupStats stats = collectFrequenciesAndPosFromGroups(groups,
+        CollocateHitStats stats = collectFrequenciesAndPosFromGroups(groups,
             // Dependency relation identities are plain word-form strings; extractLastLemma
             // picks the dependent token directly without needing a lemma= attribute fallback.
             BlackLabSnippetParser::extractLastLemma);
@@ -209,13 +212,13 @@ public class BlackLabQueryExecutor implements QueryExecutor {
     }
 
     /** Holds the frequency and POS maps produced by {@link #collectFrequenciesAndPosFromGroups}. */
-    private record GroupStats(Map<String, Long> freqMap, Map<String, String> lemmaPosMap) {}
+    private record CollocateHitStats(Map<String, Long> freqMap, Map<String, String> lemmaPosMap) {}
 
     /**
      * Iterates over HitGroups and collects frequency and POS data using the provided lemma extractor.
      * Groups with empty identity or null/empty extracted lemmas are skipped.
      */
-    private GroupStats collectFrequenciesAndPosFromGroups(
+    private CollocateHitStats collectFrequenciesAndPosFromGroups(
             HitGroups groups,
             Function<String, String> lemmaExtractor) {
         Map<String, Long> freqMap = new LinkedHashMap<>();
@@ -230,25 +233,25 @@ public class BlackLabQueryExecutor implements QueryExecutor {
             String pos = BlackLabSnippetParser.extractPosFromMatch(identity);
             if (pos != null) lemmaPosMap.put(key, pos);
         }
-        return new GroupStats(freqMap, lemmaPosMap);
+        return new CollocateHitStats(freqMap, lemmaPosMap);
     }
 
     /**
      * Extracts the collocate lemma from a HitGroup identity string.
      *
-     * <p>When {@code collocatePos} is negative (label {@code "2:"} absent from the pattern),
+     * <p>When {@code collocateLabelIndex} is negative (label {@code "2:"} absent from the pattern),
      * falls back to extracting the last lemma in the identity. Otherwise tries XML first
      * (counting {@code <w lemma="...">} elements by 1-based position), then plain-text
-     * as a fallback — both methods share the same 1-based token-position semantics.</p>
+     * as a fallback — both XML and plain-text positions are equivalent 1-based token indices.</p>
      */
     @Nullable
-    private static String extractCollocateFromIdentity(String identity, int collocatePos) {
-        if (collocatePos < 0) {
+    private static String extractCollocateFromIdentity(String identity, int collocateLabelIndex) {
+        if (collocateLabelIndex < 0) {
             return BlackLabSnippetParser.extractLastLemma(identity);
         }
-        String collocate = BlackLabSnippetParser.extractCollocateFromXmlByPosition(identity, collocatePos);
+        String collocate = BlackLabSnippetParser.extractCollocateFromXmlByPosition(identity, collocateLabelIndex);
         if (collocate == null || collocate.isEmpty()) {
-            collocate = BlackLabSnippetParser.extractPlainTextTokenAt(identity, collocatePos);
+            collocate = BlackLabSnippetParser.extractPlainTextTokenAt(identity, collocateLabelIndex);
         }
         return collocate;
     }
@@ -261,25 +264,25 @@ public class BlackLabQueryExecutor implements QueryExecutor {
      * @throws IllegalArgumentException if the headword lemma cannot be extracted from the pattern
      */
     @Override
-    public List<WordSketchResult> executeSurfacePattern(
+    public List<WordSketchResult> executeSurfaceCollocations(
             String bcqlPattern,
             double minLogDice, int maxResults) throws IOException {
 
         String lemma = CqlUtils.extractHeadword(bcqlPattern);
         if (lemma == null || lemma.isEmpty()) {
             throw new IllegalArgumentException(
-                "executeSurfacePattern: lemma not extractable from pattern — " +
+                "executeSurfaceCollocations: lemma not extractable from pattern — " +
                 "the pattern must contain a labeled head token with a lemma attribute, " +
                 "e.g. 1:[lemma=\"word\"] (got: " + bcqlPattern + ")");
         }
 
-        int collocatePos = CqlUtils.findLabelTokenIndex(bcqlPattern, 2);
+        int collocateLabelIndex = CqlUtils.findLabelTokenIndex(bcqlPattern, 2);
         CollocateQueryHelper.CollocateSearch collocateSearch = collocateQueryHelper.executeCollocateSearch(lemma, bcqlPattern);
         long headwordFreq = collocateSearch.headwordFreq();
         HitGroups groups = collocateSearch.groups();
 
-        GroupStats stats = collectFrequenciesAndPosFromGroups(groups,
-                identity -> extractCollocateFromIdentity(identity, collocatePos));
+        CollocateHitStats stats = collectFrequenciesAndPosFromGroups(groups,
+                identity -> extractCollocateFromIdentity(identity, collocateLabelIndex));
 
         return collocateQueryHelper.buildAndRankCollocates(stats.freqMap(), headwordFreq, minLogDice, maxResults, stats.lemmaPosMap());
     }

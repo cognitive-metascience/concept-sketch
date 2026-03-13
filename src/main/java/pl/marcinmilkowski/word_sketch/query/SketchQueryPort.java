@@ -26,7 +26,7 @@ public interface SketchQueryPort {
      * @return Collocate results ranked by logDice descending
      * @throws IOException if index access or parsing fails
      */
-    @NonNull List<WordSketchResult> executeSurfacePattern(
+    @NonNull List<WordSketchResult> executeSurfaceCollocations(
             @NonNull String bcqlPattern,
             double minLogDice, int maxResults) throws IOException;
 }

@@ -45,7 +45,7 @@ class SingleSeedExplorerTest {
         // phase-2: reverse lookup — "important" → [model, hypothesis], "novel" → [model]
         QueryExecutor executor = new StubQueryExecutor() {
             @Override
-            public List<WordSketchResult> executeSurfacePattern(
+            public List<WordSketchResult> executeSurfaceCollocations(
                     String pattern, double minLogDice, int max) {
                 return List.of(wsr("important", 9.0), wsr("novel", 7.0));
             }
@@ -112,7 +112,7 @@ class SingleSeedExplorerTest {
     void explore_minLogDiceFiltering_excludesBelowThreshold() throws IOException {
         QueryExecutor executor = new StubQueryExecutor() {
             @Override
-            public List<WordSketchResult> executeSurfacePattern(
+            public List<WordSketchResult> executeSurfaceCollocations(
                     String pattern, double minLogDice, int max) {
                 // Simulate executor honouring minLogDice: only return items >= threshold
                 return List.of(wsr("important", 8.0), wsr("obscure", 2.0)).stream()

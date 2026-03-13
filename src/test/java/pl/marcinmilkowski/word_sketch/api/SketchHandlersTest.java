@@ -37,7 +37,7 @@ class SketchHandlersTest {
             @Override
             public long getTotalFrequency(String lemma) { return 10000L; }
             @Override
-            public List<WordSketchResult> executeSurfacePattern(
+            public List<WordSketchResult> executeSurfaceCollocations(
                     String pattern, double minLogDice, int maxResults) { return List.of(stub); }
             @Override
             public List<WordSketchResult> executeDependencyPattern(
@@ -160,7 +160,7 @@ class SketchHandlersTest {
                 return map.getOrDefault(lemma.toLowerCase(), List.of());
             }
             @Override
-            public List<WordSketchResult> executeSurfacePattern(
+            public List<WordSketchResult> executeSurfaceCollocations(
                     String pattern, double minLogDice, int maxResults) {
                 String lemma = StubQueryExecutor.extractLemmaFromPattern(pattern);
                 return map.getOrDefault(lemma.toLowerCase(), List.of());

@@ -311,7 +311,7 @@ class ExplorationHandlersTest {
                 return map.getOrDefault(lemma.toLowerCase(), List.of());
             }
             @Override
-            public List<WordSketchResult> executeSurfacePattern(
+            public List<WordSketchResult> executeSurfaceCollocations(
                     String pattern, double minLogDice, int maxResults) {
                 String lemma = StubQueryExecutor.extractLemmaFromPattern(pattern);
                 return map.getOrDefault(lemma.toLowerCase(), List.of());

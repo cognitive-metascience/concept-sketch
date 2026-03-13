@@ -105,7 +105,7 @@ class CollocateQueryHelper {
     }
 
     // -------------------------------------------------------------------------
-    // Grouped collocate search (shared by executeCollocations, executeSurfacePattern,
+    // Grouped collocate search (shared by executeCollocations, executeSurfaceCollocations,
     // executeDependencyPattern)
     // -------------------------------------------------------------------------
 
@@ -157,7 +157,7 @@ class CollocateQueryHelper {
     }
 
     // -------------------------------------------------------------------------
-    // Collocate ranking (shared by executeCollocations, executeSurfacePattern,
+    // Collocate ranking (shared by executeCollocations, executeSurfaceCollocations,
     // executeDependencyPattern)
     // -------------------------------------------------------------------------
 

@@ -62,7 +62,7 @@ public class StubQueryExecutor implements QueryExecutor {
     }
 
     @Override
-    public List<WordSketchResult> executeSurfacePattern(
+    public List<WordSketchResult> executeSurfaceCollocations(
             String bcqlPattern, double minLogDice, int maxResults) throws IOException {
         return Collections.emptyList();
     }

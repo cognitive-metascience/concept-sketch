@@ -54,7 +54,7 @@ public class BlackLabQueryExecutorIntegrationTest {
 
             for (String p : patterns) {
                     try {
-                        List<WordSketchResult> results = executor.executeSurfacePattern(
+                        List<WordSketchResult> results = executor.executeSurfaceCollocations(
                                 p, 0.0, 10);
                         assertNotNull(results, "Results list should not be null for pattern: " + p);
                         // When the index is available, the pattern should match something in a 74M-sentence corpus.

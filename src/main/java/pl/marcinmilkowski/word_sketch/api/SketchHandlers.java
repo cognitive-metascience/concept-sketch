@@ -179,7 +179,7 @@ class SketchHandlers {
                 "Relation '" + relationId + "' has type " + actualType + "; expected " + relationType.name());
         }
 
-        List<WordSketchResult> results = executor.executeSurfacePattern(
+        List<WordSketchResult> results = executor.executeSurfaceCollocations(
             RelationUtils.buildFullPattern(rel, lemma), 0.0, SINGLE_RELATION_RESULTS);
 
         List<CollocateEntry> collocations = results.stream()
@@ -200,7 +200,7 @@ class SketchHandlers {
      */
     private Optional<ExecutedSketch> buildSketch(String lemma,
             pl.marcinmilkowski.word_sketch.config.RelationConfig rel) throws IOException {
-        List<WordSketchResult> results = executor.executeSurfacePattern(
+        List<WordSketchResult> results = executor.executeSurfaceCollocations(
             RelationUtils.buildFullPattern(rel, lemma), 0.0, DEFAULT_SKETCH_RESULTS);
         if (results.isEmpty()) return Optional.empty();
         List<CollocateEntry> collocations = results.stream()

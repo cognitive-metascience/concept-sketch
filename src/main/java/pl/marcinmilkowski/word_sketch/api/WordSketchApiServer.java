@@ -50,8 +50,9 @@ public class WordSketchApiServer {
     private final CorpusQueryHandlers corpusQueryHandlers;
     private final VisualizationHandlers visualizationHandlers;
     // com.sun.net.httpserver is the public API of the named module jdk.httpserver (stable since
-    // Java 6, fully supported in Java 21). Used intentionally for zero external runtime deps.
-    // TODO: migrate to Undertow or Jetty if a multi-module build or custom classloader is needed.
+    // Java 6, fully supported in Java 21). Deliberate choice: zero external runtime deps for
+    // this loopback-only, single-process deployment. No migration to Undertow/Jetty planned
+    // unless multi-module classloading or production-grade HTTP features become required.
     private com.sun.net.httpserver.HttpServer server;
 
     /** Full constructor accepting an injected {@link ExplorationService}. */

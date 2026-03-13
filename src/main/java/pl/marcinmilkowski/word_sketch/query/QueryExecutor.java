@@ -82,7 +82,7 @@ public interface QueryExecutor extends CollocateQueryPort, SketchQueryPort, Clos
      * @throws IOException if index access or parsing fails
      * @throws IllegalArgumentException if the headword lemma cannot be extracted from {@code bcqlPattern}
      */
-    @NonNull List<WordSketchResult> executeSurfacePattern(
+    @NonNull List<WordSketchResult> executeSurfaceCollocations(
             @NonNull String bcqlPattern,
             double minLogDice, int maxResults) throws IOException;
 

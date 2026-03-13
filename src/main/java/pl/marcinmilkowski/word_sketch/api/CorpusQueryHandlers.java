@@ -18,6 +18,7 @@ import java.util.List;
 class CorpusQueryHandlers {
 
     private static final Logger logger = LoggerFactory.getLogger(CorpusQueryHandlers.class);
+    private static final Logger auditLogger = LoggerFactory.getLogger("audit.bcql");
 
     /** Maximum length (chars) accepted for a BCQL pattern. */
     private static final int MAX_BCQL_PATTERN_LENGTH = 1024;
@@ -39,7 +40,7 @@ class CorpusQueryHandlers {
     void handleCorpusQuery(HttpExchange exchange) throws IOException {
         BcqlRequest req = parseBcqlRequest(exchange);
 
-        logger.info("BCQL audit – src={} len={} query: {}",
+        auditLogger.info("src={} len={} query: {}",
                 exchange.getRemoteAddress(), req.query().length(), req.query());
 
         List<CollocateResult> results = executor.executeBcqlQuery(req.query(), req.top());

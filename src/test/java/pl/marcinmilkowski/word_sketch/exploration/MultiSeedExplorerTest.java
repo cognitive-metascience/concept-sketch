@@ -19,11 +19,11 @@ import static org.junit.jupiter.api.Assertions.*;
 
 class MultiSeedExplorerTest {
 
-    /** Stub executor returning canned results per lemma via executeSurfacePattern. */
+    /** Stub executor returning canned results per lemma via executeSurfaceCollocations. */
     private static QueryExecutor stubExecutor(Map<String, List<WordSketchResult>> data) {
         return new StubQueryExecutor() {
             @Override
-            public List<WordSketchResult> executeSurfacePattern(
+            public List<WordSketchResult> executeSurfaceCollocations(
                     String pattern, double minLogDice, int max) {
                 String lemma = StubQueryExecutor.extractLemmaFromPattern(pattern);
                 return data.getOrDefault(lemma, List.of());

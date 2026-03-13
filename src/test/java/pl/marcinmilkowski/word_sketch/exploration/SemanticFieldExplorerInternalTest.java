@@ -53,7 +53,7 @@ class SemanticFieldExplorerInternalTest {
         }
 
         @Override
-        public List<WordSketchResult> executeSurfacePattern(
+        public List<WordSketchResult> executeSurfaceCollocations(
                 String bcqlPattern,
                 double minLogDice, int maxResults) {
             String lemma = StubQueryExecutor.extractLemmaFromPattern(bcqlPattern);

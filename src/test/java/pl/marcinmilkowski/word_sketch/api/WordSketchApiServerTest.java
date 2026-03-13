@@ -114,7 +114,7 @@ class WordSketchApiServerTest {
             @Override
             public long getTotalFrequency(String lemma) { return 50_000L; }
             @Override
-            public List<WordSketchResult> executeSurfacePattern(
+            public List<WordSketchResult> executeSurfaceCollocations(
                     String pattern, double minLogDice, int maxResults) {
                 return List.of(empirical, scientific);
             }

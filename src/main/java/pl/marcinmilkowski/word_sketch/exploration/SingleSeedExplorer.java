@@ -108,13 +108,13 @@ class SingleSeedExplorer {
 
     /**
      * Phase 1: Fetch seed collocates using the BCQL pattern, with fallback to simplePattern.
-     * Tries {@code executeSurfacePattern} first for grammatical precision; if that returns
+     * Tries {@code executeSurfaceCollocations} first for grammatical precision; if that returns
      * nothing, falls back to {@code executeCollocations} via the dependency index.
      */
     private List<WordSketchResult> fetchSeedCollocates(
             String seed, String bcqlPattern, String simplePattern,
             double minLogDice, int topPredicates) throws IOException {
-        List<WordSketchResult> results = executor.executeSurfacePattern(
+        List<WordSketchResult> results = executor.executeSurfaceCollocations(
             bcqlPattern, minLogDice, topPredicates);
         if (results.isEmpty()) {
             logger.debug("  No results found for seed word. Trying fallback to simple pattern...");

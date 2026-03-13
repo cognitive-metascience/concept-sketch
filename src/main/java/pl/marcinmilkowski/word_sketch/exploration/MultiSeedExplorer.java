@@ -68,7 +68,7 @@ class MultiSeedExplorer {
     }
 
     /**
-     * Fetches collocates for each seed using {@code executeSurfacePattern} with the grammar-derived
+     * Fetches collocates for each seed using {@code executeSurfaceCollocations} with the grammar-derived
      * BCQL pattern. No fallback to {@code executeCollocations} is applied, because multi-seed
      * comparison requires a consistent retrieval method across all seeds for comparable scores.
      */
@@ -80,7 +80,7 @@ class MultiSeedExplorer {
         Map<String, Integer> collocateSharedCount = new LinkedHashMap<>();
         for (String seed : seeds) {
             String bcqlPattern = RelationUtils.buildFullPattern(relationConfig, seed);
-            List<WordSketchResult> collocates = executor.executeSurfacePattern(
+            List<WordSketchResult> collocates = executor.executeSurfaceCollocations(
                 bcqlPattern, minLogDice, topCollocates);
             seedCollocateMap.put(seed, collocates);
             Map<String, Double> collocateMap = new LinkedHashMap<>();
