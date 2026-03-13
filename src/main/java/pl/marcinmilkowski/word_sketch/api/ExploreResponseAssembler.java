@@ -282,6 +282,6 @@ final class ExploreResponseAssembler {
                 .map(ExploreResponseAssembler::collocateResultToExampleEntry)
                 .toList();
         return new ExamplesResponse("ok", ctx.seed(), ctx.collocate(), ctx.relation(),
-                ctx.bcql(), ctx.top(), entries.size(), ctx.fallbackUsed() ? Boolean.TRUE : null, entries);
+                ctx.bcql(), ctx.top(), entries.size(), ctx.fallbackUsed(), entries);
     }
 }
