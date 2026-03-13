@@ -126,6 +126,12 @@ class SketchHandlers {
      * Relations that execute with no results are skipped; errors are collected in the returned
      * {@link RelationQueryBatch} rather than propagated.
      *
+     * <p><b>Intentional asymmetry with exploration handlers:</b> A word sketch is a composite
+     * multi-relation view. Propagating on the first failure would discard all successfully
+     * computed relations. Instead, per-relation failures are collected and returned as a
+     * {@code "partial"} response with a {@code warnings} array so callers receive the
+     * successfully computed data alongside the failure details.</p>
+     *
      * @param relationType the type of relations to process
      * @param extraFilter  additional per-relation predicate (e.g. {@code rel -> rel.deriveDeprel() != null})
      * @param lemma        the head lemma being sketched
