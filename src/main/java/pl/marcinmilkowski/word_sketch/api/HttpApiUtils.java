@@ -73,9 +73,6 @@ final class HttpApiUtils {
             } catch (java.io.IOException e) {
                 logger.error("{} error", description, e);
                 sendError(exchange, 500, description + " failed: " + e.getMessage());
-            } catch (NullPointerException | IllegalStateException e) {
-                logger.error("{} internal error", description, e);
-                sendError(exchange, 500, "Internal server error: " + e.getMessage());
             } catch (Exception e) {
                 logger.error("{} unexpected error", description, e);
                 sendError(exchange, 500, "Unexpected error: " + e.getMessage());
