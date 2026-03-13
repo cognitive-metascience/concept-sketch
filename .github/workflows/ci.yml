@@ -1,0 +1,72 @@
+name: CI
+
+# Triggers on push and pull_request to main and the active health branch.
+on:
+  push:
+    branches: [main, "desloppify/code-health"]
+  pull_request:
+    branches: [main, "desloppify/code-health"]
+
+# ─── Why tests are split into "unit" and "integration" ───────────────────────
+#
+# BlackLab 4.0.0 is NOT published to Maven Central (latest there is 3.0.1).
+# The JARs are distributed as a GitHub release zip and must be installed into
+# the local Maven repository before the project will compile or test.
+# `install-blacklab.sh` handles this automatically by downloading the release
+# zip from GitHub and running `mvn install:install-file` for each module.
+#
+# Integration tests (tagged @Tag("integration")) additionally require a
+# pre-indexed corpus pointed to by the CONCEPT_SKETCH_TEST_INDEX environment
+# variable.  That index is a large binary artefact that we cannot reasonably
+# provision in CI, so those tests are excluded here via
+# `-DexcludedGroups=integration`.
+#
+# To run the full suite locally:
+#   ./install-blacklab.sh            # one-time setup
+#   export CONCEPT_SKETCH_TEST_INDEX=/path/to/corpus/index
+#   JAVA_HOME=/usr/lib/jvm/java-21-openjdk-amd64 mvn test
+# ─────────────────────────────────────────────────────────────────────────────
+
+jobs:
+  build-and-test:
+    name: Build & Unit Tests (Java 21)
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Java 21 (Temurin)
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+
+      # Cache the local Maven repository.
+      # The BlackLab JARs that install-blacklab.sh places under
+      # ~/.m2/repository/nl/inl/blacklab/ are included in this cache, so
+      # subsequent runs skip the download entirely.
+      - name: Cache Maven repository
+        uses: actions/cache@v4
+        with:
+          path: ~/.m2/repository
+          key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
+          restore-keys: |
+            ${{ runner.os }}-maven-
+
+      # Install BlackLab 4.0.0 from GitHub releases into the local Maven
+      # repository.  The cache step above means this only downloads the ~10 MB
+      # zip on cache misses (first run or after pom.xml changes).
+      - name: Install BlackLab 4.0.0 into local Maven repository
+        run: |
+          chmod +x install-blacklab.sh
+          ./install-blacklab.sh
+
+      - name: Compile
+        run: mvn --batch-mode compile
+
+      # Run unit tests only.  Integration tests tagged @Tag("integration")
+      # are excluded because they need CONCEPT_SKETCH_TEST_INDEX set to a
+      # local corpus index that is not available in CI.
+      - name: Unit tests
+        run: mvn --batch-mode test -DexcludedGroups=integration
