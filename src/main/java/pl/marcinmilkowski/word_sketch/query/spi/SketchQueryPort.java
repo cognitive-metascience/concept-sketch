@@ -26,6 +26,7 @@ public interface SketchQueryPort {
      * @param maxResults   Maximum number of results to return
      * @return Collocate results ranked by logDice descending
      * @throws IOException if index access or parsing fails
+     * @throws IllegalArgumentException if the headword lemma cannot be extracted from {@code bcqlPattern}
      */
     @NonNull List<WordSketchResult> executeSurfaceCollocations(
             @NonNull String bcqlPattern,

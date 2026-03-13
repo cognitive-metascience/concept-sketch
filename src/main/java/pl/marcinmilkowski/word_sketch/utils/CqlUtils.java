@@ -196,20 +196,14 @@ public final class CqlUtils {
         if (pattern == null) {
             return -1;
         }
-        String labelStr = label + ":";
-        int labelIndex = pattern.indexOf(labelStr);
-        if (labelIndex < 0) {
-            return -1;
-        }
-        if (labelIndex + labelStr.length() < pattern.length() &&
-            pattern.charAt(labelIndex + labelStr.length()) == '[') {
-            int tokenPos = 0;
-            for (int i = 0; i < pattern.length(); i++) {
-                if (pattern.charAt(i) == '[') {
-                    tokenPos++;
-                    if (i == labelIndex + labelStr.length()) {
-                        return tokenPos;
-                    }
+        String labelStr = label + ":[";
+        int tokenPos = 0;
+        for (int i = 0; i < pattern.length(); i++) {
+            char c = pattern.charAt(i);
+            if (c == '[') {
+                tokenPos++;
+                if (pattern.startsWith(labelStr, i - labelStr.length() + 1)) {
+                    return tokenPos;
                 }
             }
         }

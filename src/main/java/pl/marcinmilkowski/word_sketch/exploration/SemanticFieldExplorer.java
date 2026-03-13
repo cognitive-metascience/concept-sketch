@@ -42,8 +42,11 @@ import pl.marcinmilkowski.word_sketch.query.QueryExecutor;
  * <p>Given multiple seeds, compares collocate profiles to reveal shared (semantic core)
  * and distinctive collocates. See {@link CollocateProfileComparator#compareCollocateProfiles}.</p>
  *
- * <p>Thin facade wiring {@link SingleSeedExplorer}, {@link MultiSeedExplorer}, and
- * {@link CollocateProfileComparator} for the HTTP exploration layer.</p>
+ * <p>Coordinator wiring {@link SingleSeedExplorer}, {@link MultiSeedExplorer}, and
+ * {@link CollocateProfileComparator} for the HTTP exploration layer.
+ * Three of the four public methods delegate entirely to those sub-components;
+ * {@link #fetchExamples} is implemented directly here because it requires only a
+ * single BCQL query and sentence deduplication, with no specialist sub-component needed.</p>
  */
 public class SemanticFieldExplorer implements ExplorationService {
 
@@ -67,8 +70,9 @@ public class SemanticFieldExplorer implements ExplorationService {
      * Package-private test constructor. Accepts a pre-resolved noun CQL pattern directly,
      * bypassing grammar config loading. Use in unit tests where a real grammar is unavailable.
      */
-    SemanticFieldExplorer(QueryExecutor executor, String nounCqlPattern) {
-        this.executor = executor;
+    SemanticFieldExplorer(@NonNull QueryExecutor executor, @NonNull String nounCqlPattern) {
+        this.executor = Objects.requireNonNull(executor, "executor must not be null");
+        Objects.requireNonNull(nounCqlPattern, "nounCqlPattern must not be null");
         this.comparator = new CollocateProfileComparator(executor, null);
         this.multiSeedExplorer = new MultiSeedExplorer(executor);
         this.singleSeedExplorer = new SingleSeedExplorer(executor, nounCqlPattern);

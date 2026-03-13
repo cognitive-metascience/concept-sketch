@@ -296,6 +296,80 @@ class ExplorationHandlersTest {
         assertTrue(hasImportant, "seed_collocates should contain 'important' (shared by both seeds)");
     }
 
+    // ── Error-path tests ─────────────────────────────────────────────────────
+
+    @Test
+    void handleSemanticFieldExplore_explorationException_returns503() throws Exception {
+        GrammarConfig config = GrammarConfigHelper.requireTestConfig();
+        ExplorationService failingService = new ExplorationService() {
+            @Override
+            public pl.marcinmilkowski.word_sketch.model.exploration.ExplorationResult exploreByRelation(
+                    String seed, pl.marcinmilkowski.word_sketch.config.RelationConfig rc,
+                    pl.marcinmilkowski.word_sketch.model.exploration.SingleSeedExplorationOptions opts) {
+                throw new pl.marcinmilkowski.word_sketch.exploration.ExplorationException("index offline");
+            }
+            @Override
+            public pl.marcinmilkowski.word_sketch.model.exploration.ExplorationResult exploreMultiSeed(
+                    java.util.Set<String> seeds, pl.marcinmilkowski.word_sketch.config.RelationConfig rc,
+                    pl.marcinmilkowski.word_sketch.model.exploration.ExplorationOptions opts) {
+                throw new pl.marcinmilkowski.word_sketch.exploration.ExplorationException("index offline");
+            }
+            @Override
+            public pl.marcinmilkowski.word_sketch.model.exploration.ComparisonResult compareCollocateProfiles(
+                    java.util.Set<String> seeds, pl.marcinmilkowski.word_sketch.model.exploration.ExplorationOptions opts) {
+                throw new pl.marcinmilkowski.word_sketch.exploration.ExplorationException("index offline");
+            }
+            @Override
+            public pl.marcinmilkowski.word_sketch.model.exploration.FetchExamplesResult fetchExamples(
+                    String seed, String collocate, pl.marcinmilkowski.word_sketch.config.RelationConfig rc,
+                    pl.marcinmilkowski.word_sketch.model.exploration.FetchExamplesOptions opts) {
+                throw new pl.marcinmilkowski.word_sketch.exploration.ExplorationException("index offline");
+            }
+        };
+        ExplorationHandlers handlers = new ExplorationHandlers(failingService, config);
+
+        MockExchangeFactory.MockExchange ex = new MockExchangeFactory.MockExchange(
+                "http://localhost/api/semantic-field/explore?seed=house&relation=adj_predicate");
+        handlers.handleSemanticFieldExplore(ex);
+        assertEquals(503, ex.statusCode, "ExplorationException should return 503");
+    }
+
+    @Test
+    void handleSemanticFieldExploreMulti_explorationException_returns503() throws Exception {
+        GrammarConfig config = GrammarConfigHelper.requireTestConfig();
+        ExplorationService failingService = new ExplorationService() {
+            @Override
+            public pl.marcinmilkowski.word_sketch.model.exploration.ExplorationResult exploreByRelation(
+                    String seed, pl.marcinmilkowski.word_sketch.config.RelationConfig rc,
+                    pl.marcinmilkowski.word_sketch.model.exploration.SingleSeedExplorationOptions opts) {
+                throw new pl.marcinmilkowski.word_sketch.exploration.ExplorationException("index offline");
+            }
+            @Override
+            public pl.marcinmilkowski.word_sketch.model.exploration.ExplorationResult exploreMultiSeed(
+                    java.util.Set<String> seeds, pl.marcinmilkowski.word_sketch.config.RelationConfig rc,
+                    pl.marcinmilkowski.word_sketch.model.exploration.ExplorationOptions opts) {
+                throw new pl.marcinmilkowski.word_sketch.exploration.ExplorationException("index offline");
+            }
+            @Override
+            public pl.marcinmilkowski.word_sketch.model.exploration.ComparisonResult compareCollocateProfiles(
+                    java.util.Set<String> seeds, pl.marcinmilkowski.word_sketch.model.exploration.ExplorationOptions opts) {
+                throw new pl.marcinmilkowski.word_sketch.exploration.ExplorationException("index offline");
+            }
+            @Override
+            public pl.marcinmilkowski.word_sketch.model.exploration.FetchExamplesResult fetchExamples(
+                    String seed, String collocate, pl.marcinmilkowski.word_sketch.config.RelationConfig rc,
+                    pl.marcinmilkowski.word_sketch.model.exploration.FetchExamplesOptions opts) {
+                throw new pl.marcinmilkowski.word_sketch.exploration.ExplorationException("index offline");
+            }
+        };
+        ExplorationHandlers handlers = new ExplorationHandlers(failingService, config);
+
+        MockExchangeFactory.MockExchange ex = new MockExchangeFactory.MockExchange(
+                "http://localhost/api/semantic-field/explore-multi?seeds=theory,model&relation=adj_predicate");
+        handlers.handleSemanticFieldExploreMulti(ex);
+        assertEquals(503, ex.statusCode, "ExplorationException in multi-seed should return 503");
+    }
+
     // ── Stub helpers ─────────────────────────────────────────────────────────
 
     /** Returns a minimal exploration service suitable for validation (parameter-checking) tests only. */

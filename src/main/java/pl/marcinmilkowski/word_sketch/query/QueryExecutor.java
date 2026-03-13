@@ -67,28 +67,6 @@ public interface QueryExecutor extends CollocateQueryPort, SketchQueryPort, Clos
     long getTotalFrequency(@NonNull String lemma) throws IOException;
 
     /**
-     * Execute a surface pattern query for word sketches using a labeled BCQL pattern.
-     * The collocate position is inferred from the {@code 2:} label in {@code bcqlPattern},
-     * and the headword lemma is extracted from the pattern's {@code lemma=} attribute.
-     *
-     * <p>The headword lemma must be embedded in {@code bcqlPattern} (typically by the caller via
-     * {@link pl.marcinmilkowski.word_sketch.utils.RelationUtils#buildFullPattern}).
-     * It is extracted internally to look up the head-word's total corpus frequency for logDice
-     * scoring, keeping the interface free of redundant parameters.
-     *
-     * @param bcqlPattern       BCQL pattern with labeled positions (1: head, 2: collocate) and
-     *                          an embedded {@code lemma="..."} attribute for the headword
-     * @param minLogDice        Minimum logDice score threshold (0 for no minimum)
-     * @param maxResults        Maximum number of results to return
-     * @return Collocate results ranked by logDice descending
-     * @throws IOException if index access or parsing fails
-     * @throws IllegalArgumentException if the headword lemma cannot be extracted from {@code bcqlPattern}
-     */
-    @NonNull List<WordSketchResult> executeSurfaceCollocations(
-            @NonNull String bcqlPattern,
-            double minLogDice, int maxResults) throws IOException;
-
-    /**
      * Execute a dependency-pattern query without a head POS constraint.
      *
      * @param lemma              The head lemma to search for
