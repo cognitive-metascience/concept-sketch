@@ -5,7 +5,6 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import java.util.List;
 import java.util.Map;
 import pl.marcinmilkowski.word_sketch.api.model.ExploreResponse;
-import pl.marcinmilkowski.word_sketch.model.exploration.RelationEdgeType;
 
 /**
  * Typed response record for the collocate-profile comparison endpoint
@@ -44,11 +43,5 @@ public record ComparisonResponse(
             @JsonProperty("noun_scores") Map<String, Double> nounScores,
             @JsonProperty("specific_to") @com.fasterxml.jackson.annotation.JsonInclude(
                     com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL) String specificTo) {}
-
-    /** Graph edge connecting a collocate to a seed noun. */
-    public record EdgeEntry(
-            String source,
-            String target,
-            @JsonProperty("log_dice") double logDice,
-            RelationEdgeType type) {}
 }
+

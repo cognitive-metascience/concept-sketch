@@ -9,6 +9,7 @@ import java.util.List;
 import java.util.Map;
 
 import pl.marcinmilkowski.word_sketch.api.model.ComparisonResponse;
+import pl.marcinmilkowski.word_sketch.api.model.EdgeEntry;
 import pl.marcinmilkowski.word_sketch.api.model.ExamplesResponse;
 import pl.marcinmilkowski.word_sketch.api.model.ExploreResponse;
 import pl.marcinmilkowski.word_sketch.api.model.SeedCollocateEntry;
@@ -91,7 +92,7 @@ final class ExploreResponseAssembler {
         List<SeedCollocateEntry> seedCollocs = buildSeedCollocateEntries(result);
         List<ExploreResponse.DiscoveredNounEntry> nouns = buildDiscoveredNounEntries(result);
         List<ExploreResponse.CoreCollocateEntry> core = buildCoreCollocateEntries(result);
-        List<ExploreResponse.EdgeEntry> edges = buildEdgeEntries(result);
+        List<EdgeEntry> edges = buildEdgeEntries(result);
         return new ExploreResponse.SingleSeed(
                 "ok", result.seeds().get(0), responseParams,
                 seedCollocs,
@@ -122,7 +123,7 @@ final class ExploreResponseAssembler {
         List<SeedCollocateEntry> seedCollocs = buildSeedCollocateEntries(result);
         List<ExploreResponse.DiscoveredNounEntry> nouns = buildDiscoveredNounEntries(result);
         List<ExploreResponse.CoreCollocateEntry> core = buildCoreCollocateEntries(result);
-        List<ExploreResponse.EdgeEntry> edges = buildEdgeEntries(result);
+        List<EdgeEntry> edges = buildEdgeEntries(result);
         return new ExploreResponse.MultiSeed(
                 "ok", seeds, responseParams,
                 seedCollocs,
@@ -173,10 +174,10 @@ final class ExploreResponseAssembler {
         return entries;
     }
 
-    private static @NonNull List<ExploreResponse.EdgeEntry> buildEdgeEntries(
+    private static @NonNull List<EdgeEntry> buildEdgeEntries(
             @NonNull ExplorationResult result) {
         return buildExplorationEdges(result).stream()
-                .map(e -> new ExploreResponse.EdgeEntry(
+                .map(e -> new EdgeEntry(
                         e.source(), e.target(),
                         MathUtils.round2dp(e.weight()),
                         e.type()))
@@ -200,8 +201,8 @@ final class ExploreResponseAssembler {
                 .map(ExploreResponseAssembler::collocateProfileToEntry)
                 .toList();
         ComparisonResult.SummaryCounts counts = result.summaryCounts();
-        List<ComparisonResponse.EdgeEntry> edges = buildComparisonEdges(result).stream()
-                .map(e -> new ComparisonResponse.EdgeEntry(e.source(), e.target(), e.weight(), e.type()))
+        List<EdgeEntry> edges = buildComparisonEdges(result).stream()
+                .map(e -> new EdgeEntry(e.source(), e.target(), e.weight(), e.type()))
                 .toList();
         return new ComparisonResponse(
                 "ok", seeds, seeds.size(),

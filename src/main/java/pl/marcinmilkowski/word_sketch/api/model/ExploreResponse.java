@@ -6,7 +6,6 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import org.jspecify.annotations.Nullable;
 
 import java.util.List;
-import pl.marcinmilkowski.word_sketch.model.exploration.RelationEdgeType;
 
 /**
  * Sealed interface for single-seed and multi-seed semantic field exploration responses
@@ -58,8 +57,6 @@ public sealed interface ExploreResponse
 
     /**
      * Parameters sub-object embedded in every explore response.
-     *
-     * <p>The {@code nouns_per} field is only meaningful for single-seed responses; it is
      * {@code null} (and therefore omitted from JSON via {@link JsonInclude#NON_NULL}) in
      * multi-seed responses.</p>
      */
@@ -87,13 +84,6 @@ public sealed interface ExploreResponse
             @JsonProperty("total_nouns") int totalNouns,
             double coverage,
             @JsonProperty("seed_logdice") double seedLogDice) {}
-
-    /** A single directed graph edge in the {@code edges} array. */
-    record EdgeEntry(
-            String source,
-            String target,
-            @JsonProperty("log_dice") double logDice,
-            RelationEdgeType type) {}
 
     // -------------------------------------------------------------------------
     // Concrete variants
