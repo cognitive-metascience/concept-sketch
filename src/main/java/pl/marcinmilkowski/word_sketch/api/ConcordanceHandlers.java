@@ -5,9 +5,8 @@ import org.jspecify.annotations.NonNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import pl.marcinmilkowski.word_sketch.config.GrammarConfig;
-import pl.marcinmilkowski.word_sketch.config.RelationPatternUtils;
-import pl.marcinmilkowski.word_sketch.model.sketch.*;
 import pl.marcinmilkowski.word_sketch.config.RelationUtils;
+import pl.marcinmilkowski.word_sketch.model.sketch.*;
 import pl.marcinmilkowski.word_sketch.api.model.ExamplesResponse;
 import pl.marcinmilkowski.word_sketch.query.CollocateQueryPort;
 
@@ -56,7 +55,7 @@ class ConcordanceHandlers {
         boolean fallback = rel.isEmpty();
         String bcqlQuery;
         if (!fallback) {
-            bcqlQuery = RelationPatternUtils.buildFullPattern(rel.get(), req.seed(), req.collocate());
+            bcqlQuery = RelationUtils.buildFullPattern(rel.get(), req.seed(), req.collocate());
         } else {
             bcqlQuery = String.format("\"%s\" []{0,5} \"%s\"", req.seed().toLowerCase(), req.collocate().toLowerCase());
             // Concordance intentionally falls back to proximity pattern for unknown relations — allows freetext CQL queries

@@ -1,0 +1,176 @@
+{
+  "session": {
+    "id": "ext_20260313_053105_fcb04336",
+    "token": "2b677a5425822c4dc3229ec186cc04ad"
+  },
+  "assessments": {
+    "dependency_health": 80,
+    "low_level_elegance": 76,
+    "mid_level_elegance": 78,
+    "ai_generated_debt": 72,
+    "incomplete_migration": 88
+  },
+  "dimension_notes": {
+    "dependency_health": "Dependency list is lean and purposeful. Jackson BOM is imported via dependencyManagement, yet jackson-core is also pinned explicitly at the same version — the BOM should handle this, making the explicit pin redundant (if the BOM scope is correct). The main structural risk is the BlackLab 4.x distribution: the artifact is absent from Maven Central, requiring a local-install script as a mandatory pre-step and a raw-GitHub-URL fallback profile documented as having no SLA. No duplicate libraries for the same purpose are present.",
+    "incomplete_migration": "Almost no migration debt detected. The one active TODO in WordSketchApiServer ('migrate to Undertow or Jetty if a multi-module build…') is a conditional future-state note rather than stale migration code. The executeCqlQuery / executeBcqlQuery split is intentional (different parsers, different return types) and is clearly documented. No @Deprecated symbols called by active code. The SemanticFieldExplorer test constructor that accepts a raw nounCqlPattern string is a test backdoor, not a migration shim."
+  },
+  "issues": [
+    {
+      "dimension": "dependency_health",
+      "identifier": "blacklab_no_central",
+      "summary": "BlackLab 4.x not published to Maven Central; requires manual local-install script and a raw-GitHub-URL fallback with no SLA",
+      "related_files": ["pom.xml"],
+      "evidence": [
+        "pom.xml repositories block: 'BlackLab 4.x is NOT published to Maven Central (latest on Central is 3.0.1). REQUIRED FIRST STEP: run ./install-blacklab.sh'",
+        "blacklab-github-fallback profile uses 'https://raw.githubusercontent.com/…' with checksumPolicy=warn and comment 'DO NOT rely on it in production CI'"
+      ],
+      "suggestion": "Mirror the BlackLab 4.x JARs to a private registry (Nexus, Artifactory, or GitHub Packages) so the build is reproducible without an out-of-band install step and without depending on a raw GitHub URL.",
+      "confidence": "high",
+      "impact_scope": "codebase",
+      "fix_scope": "architectural_change"
+    },
+    {
+      "dimension": "dependency_health",
+      "identifier": "jackson_core_redundant_pin",
+      "summary": "jackson-core pinned explicitly alongside the jackson-bom import, which already manages the version",
+      "related_files": ["pom.xml"],
+      "evidence": [
+        "pom.xml declares jackson-bom 2.17.2 via dependencyManagement import, then also declares jackson-core 2.17.2 as a direct dependency with the same version"
+      ],
+      "suggestion": "Remove the explicit jackson-core dependency declaration; the BOM import already pins all Jackson artifacts to a consistent version. The comment 'Pin jackson-core to match databind; another transitive dep resolves an older version otherwise' suggests this was a workaround — verify whether the transitive conflict still exists with the current BOM.",
+      "confidence": "medium",
+      "impact_scope": "codebase",
+      "fix_scope": "single_edit"
+    },
+    {
+      "dimension": "low_level_elegance",
+      "identifier": "multi_seed_extra_conversion_loop",
+      "summary": "MultiSeedExplorer.findCollocateIntersection performs a redundant extra pass converting List<WordSketchResult> to Map<String,Double> after aggregation is already complete",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/exploration/MultiSeedExplorer.java"
+      ],
+      "evidence": [
+        "Lines after aggregateCollocateStats() build perSeedCollocates by iterating over data.seedCollocateMap() a second time — the same collection already traversed inside fetchCollocatesPerSeed and aggregateCollocateStats",
+        "The conversion (List<WordSketchResult> → Map<String,Double>) discards the WordSketchResult type without any filtering or transformation logic"
+      ],
+      "suggestion": "Build perSeedCollocates inside fetchCollocatesPerSeed as a parallel Map<String,Map<String,Double>>, or return it directly from SeedCollocateData alongside the existing seedCollocateMap, eliminating the post-aggregation loop.",
+      "confidence": "high",
+      "impact_scope": "module",
+      "fix_scope": "multi_file_refactor"
+    },
+    {
+      "dimension": "low_level_elegance",
+      "identifier": "complex_inline_lambda_executeSurfacePattern",
+      "summary": "BlackLabQueryExecutor.executeSurfacePattern passes a long multi-branch inline lambda that requires a sentinel comment to explain the -1 value, making the call-site hard to read",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/query/BlackLabQueryExecutor.java"
+      ],
+      "evidence": [
+        "The lambda passed to collectFrequenciesAndPosFromGroups contains three distinct branches guarded by a 'Uses < 0 to handle any negative sentinel value' comment and two fallback paths (XML parse then plain-text fallback)",
+        "The sentinel -1 meaning ('label 2: absent from pattern') is established in CqlUtils.findLabelTokenIndex but must be remembered at the call site"
+      ],
+      "suggestion": "Extract the lambda body into a named private method (e.g. extractCollocateFromIdentity(identity, collocatePos)) that encapsulates the sentinel check and fallback logic, removing the need for an inline comment explaining the control flow.",
+      "confidence": "high",
+      "impact_scope": "local",
+      "fix_scope": "single_edit"
+    },
+    {
+      "dimension": "mid_level_elegance",
+      "identifier": "explore_response_primary_seeds_key_mismatch",
+      "summary": "ExploreResponse.primarySeeds() interface method serialises under different JSON keys in each variant, making the seam between the interface and its consumers asymmetric",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/api/model/ExploreResponse.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/api/ExploreResponseAssembler.java"
+      ],
+      "evidence": [
+        "ExploreResponse Javadoc: 'Each concrete variant carries its own @JsonProperty annotation; the interface intentionally omits one to avoid inheriting a misleading key name'",
+        "SingleSeed serialises the list as 'discovered_nouns'; MultiSeed serialises it as 'source_seeds' — callers of the interface cannot know which JSON key is used without downcasting"
+      ],
+      "suggestion": "Split the shared payload into two clearly named accessors on the interface (discoveredNouns() and sourceSeeds()) with default implementations returning empty, or model the two variants as fully separate response types rather than implementations of a shared interface, removing the ambiguity at the seam.",
+      "confidence": "high",
+      "impact_scope": "module",
+      "fix_scope": "multi_file_refactor"
+    },
+    {
+      "dimension": "mid_level_elegance",
+      "identifier": "explore_parameters_reused_in_comparison_response",
+      "summary": "ExploreResponse.Parameters is embedded in ComparisonResponse, coupling a type from the explore-endpoint DTO into the compare-endpoint response",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/api/model/ComparisonResponse.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/api/ExploreResponseAssembler.java"
+      ],
+      "evidence": [
+        "ExploreResponseAssembler.buildComparisonResponse creates ExploreResponse.Parameters to embed in ComparisonResponse",
+        "ComparisonResponse is a distinct endpoint response yet its 'parameters' field carries ExploreResponse.Parameters with nouns_per that is null/omitted — the field makes no semantic sense for a comparison response"
+      ],
+      "suggestion": "Define a shared SharedParams record in the api.model package (or a simpler inline record in ComparisonResponse) that contains only the fields relevant to both endpoints (relation, top, min_shared, min_logdice), rather than reusing ExploreResponse.Parameters which carries explore-specific fields.",
+      "confidence": "medium",
+      "impact_scope": "module",
+      "fix_scope": "multi_file_refactor"
+    },
+    {
+      "dimension": "ai_generated_debt",
+      "identifier": "warnifwildcardcors_overlong_javadoc",
+      "summary": "HttpApiUtils.warnIfWildcardCors has a multi-paragraph Javadoc that restates the implementation logic visible a few lines below",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/api/HttpApiUtils.java"
+      ],
+      "evidence": [
+        "Javadoc reads: 'Wildcard CORS must be an explicit opt-in: set the system property allow.wildcard.cors=true to suppress the error and allow all origins. Without that property, a wildcard origin fails fast to prevent accidental exposure in production.'",
+        "The method body (8 lines) performs exactly what the Javadoc describes: checks System.getProperty('allow.wildcard.cors'), branches on true/false, throws with the same error message as in the Javadoc"
+      ],
+      "suggestion": "Trim the Javadoc to a single sentence describing intent ('Fails fast if CORS allow-origin is set to wildcard without explicit opt-in.'), removing the inline re-statement of the branching logic.",
+      "confidence": "high",
+      "impact_scope": "local",
+      "fix_scope": "single_edit"
+    },
+    {
+      "dimension": "ai_generated_debt",
+      "identifier": "collocatehelper_constructor_null_comment_overlong",
+      "summary": "CollocateQueryHelper constructor has a multi-sentence Javadoc explaining null-index semantics that is longer than the constructor implementation itself",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/query/CollocateQueryHelper.java"
+      ],
+      "evidence": [
+        "Constructor body: 1 line (this.index = index). Javadoc: 4 sentences explaining why null is accepted, who may pass null, and which methods must not be called when null — essentially restating the @Nullable annotation already present on the parameter",
+        "The same null semantics are repeated in BlackLabQueryExecutor's package-private constructor Javadoc"
+      ],
+      "suggestion": "Replace with a single-line comment: '// null allowed only in test subclasses that override I/O methods'. The @Nullable annotation already communicates the contract; the prose adds no new information.",
+      "confidence": "medium",
+      "impact_scope": "local",
+      "fix_scope": "single_edit"
+    },
+    {
+      "dimension": "ai_generated_debt",
+      "identifier": "query_executor_interface_docstring_bloat",
+      "summary": "QueryExecutor interface accumulates multi-paragraph implementation notes and 'Consumer interface audit' prose that belongs in architecture documentation, not in an interface Javadoc",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/query/QueryExecutor.java"
+      ],
+      "evidence": [
+        "The interface Javadoc contains a 'Consumer interface audit' section listing which handler class uses which port — this is structural documentation that goes stale when handlers change and is not useful at the call site",
+        "It also contains implementation notes ('BlackLab's search() can throw undocumented RuntimeExceptions…') that belong in BlackLabQueryExecutor, not the interface"
+      ],
+      "suggestion": "Move the consumer audit table to a package-info.java or architecture doc. Restrict the interface Javadoc to the contract (what each method does, pre-/post-conditions, exceptions), not which classes implement or consume it.",
+      "confidence": "medium",
+      "impact_scope": "local",
+      "fix_scope": "single_edit"
+    },
+    {
+      "dimension": "incomplete_migration",
+      "identifier": "undertow_jetty_migration_todo",
+      "summary": "Stale TODO in WordSketchApiServer referencing a potential future migration to Undertow or Jetty with no owner or deadline",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/api/WordSketchApiServer.java"
+      ],
+      "evidence": [
+        "Line 54: '// TODO: migrate to Undertow or Jetty if a multi-module build or custom classloader is needed.'",
+        "Same conditional note also appears as a compiler-plugin comment in pom.xml — two copies of the same future-state reminder"
+      ],
+      "suggestion": "Either track this as a GitHub issue and remove the TODO comment, or rephrase as a decision record explaining the deliberate choice to use jdk.httpserver (zero deps, loopback-only, fits current scope) rather than framing it as an outstanding migration task.",
+      "confidence": "low",
+      "impact_scope": "local",
+      "fix_scope": "single_edit"
+    }
+  ]
+}

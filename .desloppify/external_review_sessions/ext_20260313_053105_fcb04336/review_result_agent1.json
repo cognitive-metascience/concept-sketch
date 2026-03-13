@@ -1,0 +1,200 @@
+{
+  "session": {
+    "id": "ext_20260313_053105_fcb04336",
+    "token": "2b677a5425822c4dc3229ec186cc04ad"
+  },
+  "assessments": {
+    "high_level_elegance": 79,
+    "convention_outlier": 77,
+    "error_consistency": 80,
+    "naming_quality": 79,
+    "abstraction_fitness": 73
+  },
+  "dimension_notes": {
+    "high_level_elegance": "Package decomposition is strong: api/, model/, query/, exploration/, config/ map cleanly to domain capabilities. Handler classes are split by concern (SketchHandlers, ConcordanceHandlers, ExplorationHandlers, CorpusQueryHandlers, VisualizationHandlers). Main.java handles three independent CLI commands via a switch statement, acting as an informal DI container; the structure is clear but not formally organized. SemanticFieldExplorer is documented as a thin facade but holds 4 injected collaborators and 3 constructor overloads, blurring the boundary between facade and orchestrator.",
+    "convention_outlier": "Java camelCase naming is applied consistently. Package organisation follows a single schema. Minor inconsistencies: SeedCollocateEntry is a top-level class in api/model/ while CollocateProfileEntry, EdgeEntry, DiscoveredNounEntry are nested inside their owning response class — mixed nesting strategy across sibling files in the same package. SketchHandlers uses RelationQueryBatch for its private data container while all other handlers use *Request records for internal parsed-parameter objects.",
+    "error_consistency": "The primary HTTP error boundary (HttpApiUtils.wrapWithErrorHandling) is well-designed: tiered catches map exception types to HTTP status codes consistently across all endpoints. The exploration service layer consistently converts IOException to ExplorationException at the service boundary. One intentional divergence: SketchHandlers.executeRelationQueries() catches per-relation IOException and adds it to an errors list (partial failure, HTTP 200 with errors array), while all exploration handlers propagate to the wrapper. This is documented but means two different failure modes exist in the same handler layer.",
+    "naming_quality": "Most names are precise and domain-aligned. executeCollocations, executeSurfacePattern, executeDependencyPattern, executeBcqlQuery are specific. Class names like CollocateProfileComparator, SingleSeedExplorer, MultiSeedExplorer communicate intent clearly. Minor inconsistencies reduce the score from a higher baseline."
+  },
+  "issues": [
+    {
+      "dimension": "high_level_elegance",
+      "identifier": "explore_response_assembler_placement",
+      "summary": "ExploreResponseAssembler sits in api/ but has no HTTP state — it is a pure model-to-DTO translator with only static methods, and would be better organized in api/model/ or a dedicated assembler sub-package",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/api/ExploreResponseAssembler.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/api/model/"
+      ],
+      "evidence": [
+        "ExploreResponseAssembler is final with all static methods and no HttpExchange reference; it has no reason to share a package with ConcordanceHandlers or SketchHandlers",
+        "The class constructs api/model/*.java response objects from model/exploration/*.java domain objects — it belongs with the model it produces"
+      ],
+      "suggestion": "Move ExploreResponseAssembler to api/model/ (or api/assembler/) to keep the api/ package focused on HTTP concerns (handlers, routing, error handling). Update package declaration and imports.",
+      "confidence": "medium",
+      "impact_scope": "module",
+      "fix_scope": "multi_file_refactor"
+    },
+    {
+      "dimension": "convention_outlier",
+      "identifier": "edge_entry_duplicate_nested_records",
+      "summary": "ComparisonResponse.EdgeEntry and ExploreResponse.EdgeEntry are parallel nested records representing the same graph-edge concept with identical fields (source, target, log_dice, type), defined redundantly in two sibling response classes",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/api/model/ComparisonResponse.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/api/model/ExploreResponse.java"
+      ],
+      "evidence": [
+        "ComparisonResponse.EdgeEntry: source, target, log_dice (double), type (RelationEdgeType)",
+        "ExploreResponse.EdgeEntry: source, target, log_dice (double), type (RelationEdgeType)",
+        "Both records appear in JSON responses with identical field shapes and the same RelationEdgeType enum values"
+      ],
+      "suggestion": "Extract a shared EdgeEntry record into api/model/ (or reuse the domain model Edge class) and reference it from both ComparisonResponse and ExploreResponse. Alternatively keep the duplication and document the intentional divergence.",
+      "confidence": "high",
+      "impact_scope": "module",
+      "fix_scope": "multi_file_refactor"
+    },
+    {
+      "dimension": "convention_outlier",
+      "identifier": "response_model_inconsistent_nesting",
+      "summary": "SeedCollocateEntry is a top-level public record in api/model/ while CollocateProfileEntry, CoreCollocateEntry, DiscoveredNounEntry and EdgeEntry are nested private records inside their owning response class — inconsistent nesting strategy across sibling files",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/api/model/SeedCollocateEntry.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/api/model/ExploreResponse.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/api/model/ComparisonResponse.java"
+      ],
+      "evidence": [
+        "SeedCollocateEntry is a standalone public record in api/model/",
+        "DiscoveredNounEntry, CoreCollocateEntry, EdgeEntry, Parameters are all nested inside ExploreResponse",
+        "CollocateProfileEntry and EdgeEntry are nested inside ComparisonResponse",
+        "SeedCollocateEntry is imported from api/model.ExploreResponse.java as a top-level type while sibling entry types are nested"
+      ],
+      "suggestion": "Decide one strategy: either make all sub-entry records nested (private) inside their owning response class, or promote all of them to top-level records in api/model/. The nested approach is more common in Java record-based response models.",
+      "confidence": "high",
+      "impact_scope": "module",
+      "fix_scope": "multi_file_refactor"
+    },
+    {
+      "dimension": "error_consistency",
+      "identifier": "sketch_handlers_partial_failure_vs_full_propagation",
+      "summary": "SketchHandlers.executeRelationQueries() silently collects per-relation IOExceptions into an errors array and returns HTTP 200, while all exploration handlers propagate any IOException to HttpApiUtils.wrapWithErrorHandling — two different failure strategies within the same HTTP handler layer",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/api/SketchHandlers.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/api/ExplorationHandlers.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/api/HttpApiUtils.java"
+      ],
+      "evidence": [
+        "SketchHandlers line ~148: catch (IOException e) { logger.warn(...); relationErrors.add(...); } — error is swallowed into the result",
+        "ExplorationHandlers handlers all declare throws IOException and let HttpApiUtils.wrapWithErrorHandling map it to 500",
+        "A client calling /api/sketch/{lemma} receives HTTP 200 with an errors field on partial failure; a client calling /api/semantic-field/explore receives HTTP 500 on any failure"
+      ],
+      "suggestion": "Document the intentional difference explicitly in both SketchHandlers and ExplorationHandlers so future contributors understand why the two strategies coexist. Consider whether exploration endpoints should also support partial failure semantics if individual relations can be independently retried.",
+      "confidence": "medium",
+      "impact_scope": "subsystem",
+      "fix_scope": "multi_file_refactor"
+    },
+    {
+      "dimension": "error_consistency",
+      "identifier": "npe_caught_as_application_error",
+      "summary": "HttpApiUtils.wrapWithErrorHandling explicitly catches NullPointerException and maps it to HTTP 500, conflating programming errors with recoverable application failures and masking potential bugs",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/api/HttpApiUtils.java"
+      ],
+      "evidence": [
+        "} catch (NullPointerException | IllegalStateException e) { logger.error(...); sendError(exchange, 500, ...) }",
+        "NullPointerException is a programming error in Java; catching it at an HTTP boundary hides the bug rather than surfacing it"
+      ],
+      "suggestion": "Remove NullPointerException from the catch block and let it propagate to the outermost catch (Exception e) handler, or fix the underlying null-safety issues using @NonNull annotations and NullAway/JSpecify enforcement. Catching NPE as a first-class error type is a sign that null safety is not enforced by the type system.",
+      "confidence": "medium",
+      "impact_scope": "subsystem",
+      "fix_scope": "single_edit"
+    },
+    {
+      "dimension": "naming_quality",
+      "identifier": "execute_collocations_vs_execute_surface_pattern",
+      "summary": "executeCollocations and executeSurfacePattern are parallel collocate-lookup methods on QueryExecutor but use inconsistent naming grammar — one is verb+noun-plural, the other is verb+noun-phrase",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/query/QueryExecutor.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/query/BlackLabQueryExecutor.java"
+      ],
+      "evidence": [
+        "QueryExecutor declares: executeCollocations(lemma, cqlPattern, minLogDice, maxResults) and executeSurfacePattern(bcqlPattern, minLogDice, maxResults)",
+        "Both return List<WordSketchResult> ranked by logDice",
+        "The plural 'Collocations' implies multiple operations or a result set; 'SurfacePattern' describes the mechanism, not the output"
+      ],
+      "suggestion": "Rename to align grammar: either executeCollocations / executeSurfacePatternCollocations, or executeSimpleCollocates / executeSurfacePatternCollocates. The key is that both names should indicate they return ranked collocates and hint at the lookup mechanism.",
+      "confidence": "medium",
+      "impact_scope": "subsystem",
+      "fix_scope": "multi_file_refactor"
+    },
+    {
+      "dimension": "naming_quality",
+      "identifier": "group_stats_generic_name",
+      "summary": "GroupStats (inner record in BlackLabQueryExecutor) is a generic name that does not communicate what is being grouped or what statistics it holds",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/query/BlackLabQueryExecutor.java"
+      ],
+      "evidence": [
+        "private record GroupStats(Map<String,Long> freqMap, Map<String,String> lemmaPosMap) — name does not describe that these are collocate-frequency and collocate-pos mappings derived from BlackLab hit groups",
+        "Contrast with SeedCollocateData, AggregatedCollocateStats in MultiSeedExplorer — those names communicate what the records contain"
+      ],
+      "suggestion": "Rename to CollocateFrequencyData or HitGroupStats to communicate that this holds collocate-frequency and POS mappings aggregated from BlackLab hit groups.",
+      "confidence": "medium",
+      "impact_scope": "local",
+      "fix_scope": "single_edit"
+    },
+    {
+      "dimension": "abstraction_fitness",
+      "identifier": "explore_response_assembler_utility_dumping_ground",
+      "summary": "ExploreResponseAssembler is a final class with only static methods that perform single-hop property mapping from domain objects to DTO records — it is a utility dumping ground that encapsulates no policy, enforces no invariants, and reduces no meaningful duplication",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/api/ExploreResponseAssembler.java"
+      ],
+      "evidence": [
+        "All 10+ methods are static. The class has a private constructor and no state.",
+        "Methods like buildDiscoveredNounEntries, buildCoreCollocateEntries, buildEdgeEntries each iterate a list and call a constructor — they are one-to-one mappings",
+        "No method enforces shared invariants (e.g. sorting order, field truncation, normalization) that would justify centralizing the logic"
+      ],
+      "suggestion": "Evaluate whether the translation methods provide enough value to justify a dedicated class. If the handlers called the DTO constructors directly (or the domain model objects were directly serializable via Jackson), this class would not be needed. At minimum, consider replacing it with a static factory method on each response record, keeping the mapping logic adjacent to the type it constructs.",
+      "confidence": "medium",
+      "impact_scope": "module",
+      "fix_scope": "multi_file_refactor"
+    },
+    {
+      "dimension": "abstraction_fitness",
+      "identifier": "shared_explore_params_duplicates_exploration_options",
+      "summary": "SharedExploreParams (package-private record in api/) carries the same three fields as ExplorationOptions (domain model) with identical semantics, creating a permanent translation layer between the two with no additional policy",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/api/SharedExploreParams.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/model/exploration/ExplorationOptions.java"
+      ],
+      "evidence": [
+        "SharedExploreParams: topCollocates, minShared, logDiceThreshold",
+        "ExplorationOptions: topCollocates, minShared, logDiceThreshold — identical field names and semantics",
+        "ExplorationHandlers parses HTTP params into SharedExploreParams, then constructs ExplorationOptions from it — two objects are created that carry the same data"
+      ],
+      "suggestion": "Consider whether SharedExploreParams can be eliminated by having the HTTP parsing code directly construct ExplorationOptions. If HTTP-layer concerns (e.g. default values, parameter name aliases) require separation, document the rationale so the duplication is intentional.",
+      "confidence": "high",
+      "impact_scope": "module",
+      "fix_scope": "multi_file_refactor"
+    },
+    {
+      "dimension": "abstraction_fitness",
+      "identifier": "relation_utils_split_utilities",
+      "summary": "RelationUtils and RelationPatternUtils are two separate static-utility classes in config/ with no instances or state; their methods operate on the same RelationConfig type and could be merged or moved onto RelationConfig itself",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/config/RelationUtils.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/config/RelationPatternUtils.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/config/RelationConfig.java"
+      ],
+      "evidence": [
+        "RelationUtils: resolveRelationAlias, validateAliases, findBestCollocatePattern — all take GrammarConfig or String arguments",
+        "RelationPatternUtils: buildFullPattern, buildCollocateReversePattern, computeCollocatePosGroup — all take RelationConfig arguments",
+        "Both classes are final with private constructors and only static methods",
+        "Callers must import both classes when working with relations, with no clear rule about which class to consult first"
+      ],
+      "suggestion": "Merge RelationPatternUtils into RelationConfig as instance methods (since all methods already receive a RelationConfig as their first argument), and keep only cross-config utilities in RelationUtils. This reduces the number of utility classes and makes RelationConfig a richer value object.",
+      "confidence": "medium",
+      "impact_scope": "module",
+      "fix_scope": "multi_file_refactor"
+    }
+  ]
+}

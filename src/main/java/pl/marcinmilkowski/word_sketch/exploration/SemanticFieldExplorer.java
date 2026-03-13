@@ -14,7 +14,6 @@ import pl.marcinmilkowski.word_sketch.config.GrammarConfig;
 import pl.marcinmilkowski.word_sketch.exploration.spi.ExplorationException;
 import pl.marcinmilkowski.word_sketch.exploration.spi.ExplorationService;
 import pl.marcinmilkowski.word_sketch.config.RelationConfig;
-import pl.marcinmilkowski.word_sketch.config.RelationPatternUtils;
 import pl.marcinmilkowski.word_sketch.config.RelationUtils;
 import pl.marcinmilkowski.word_sketch.model.exploration.ComparisonResult;
 import pl.marcinmilkowski.word_sketch.model.exploration.ExplorationOptions;
@@ -121,8 +120,8 @@ public class SemanticFieldExplorer implements ExplorationService {
             return singleSeedExplorer.explore(
                 seed,
                 relationConfig.name(),
-                RelationPatternUtils.buildFullPattern(relationConfig, seed),
-                RelationPatternUtils.buildCollocateReversePattern(relationConfig),
+                RelationUtils.buildFullPattern(relationConfig, seed),
+                RelationUtils.buildCollocateReversePattern(relationConfig),
                 opts);
         } catch (java.io.IOException e) {
             throw new ExplorationException("Failed to explore relation '" + relationConfig.id() +
@@ -168,7 +167,7 @@ public class SemanticFieldExplorer implements ExplorationService {
             throws ExplorationException {
         relationConfig.validate();
         int maxExamples = opts.maxExamples();
-        String bcqlQuery = RelationPatternUtils.buildFullPattern(relationConfig, seed.toLowerCase(), collocate.toLowerCase());
+        String bcqlQuery = RelationUtils.buildFullPattern(relationConfig, seed.toLowerCase(), collocate.toLowerCase());
 
         List<CollocateResult> results;
         try {

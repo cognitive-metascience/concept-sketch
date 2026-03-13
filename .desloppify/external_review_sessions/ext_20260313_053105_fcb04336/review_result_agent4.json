@@ -1,0 +1,107 @@
+{
+  "session": {
+    "id": "ext_20260313_053105_fcb04336",
+    "token": "2b677a5425822c4dc3229ec186cc04ad"
+  },
+  "assessments": {
+    "initialization_coupling": 87,
+    "test_strategy": 57,
+    "api_surface_coherence": 77,
+    "authorization_consistency": 84,
+    "design_coherence": 79
+  },
+  "dimension_notes": {
+    "initialization_coupling": "No mutable static globals found (confirmed by mechanical scan and code inspection). HttpApiUtils.corsAllowOrigin() intentionally reads System.getProperty on each call rather than at class load time, supporting test overrides. Port binding is explicitly deferred to start(). SemanticFieldExplorer test constructor passes null grammarConfig to CollocateProfileComparator, but RelationUtils.findBestCollocatePattern is @Nullable-safe and falls back cleanly. The main minor ordering issue is in Main.handleBlackLabServerCommand: the QueryExecutor (an open disk resource) is constructed before the shutdown hook is registered, creating a narrow window where a JVM shutdown signal between those two lines would leave the index unclosed. This is an edge case, not a systemic pattern.",
+    "test_strategy": "No CI pipeline exists — the .github/workflows/ directory is absent. Tests run manually only. Test quality is good where present: StubQueryExecutor enables clean unit tests, WordSketchApiServerTest starts the server on an ephemeral port and exercises real HTTP, and integration tests use JUnit Assumptions to skip gracefully without a real index. The absence of automated test execution on commits is the dominant issue; code quality in existing tests is solid.",
+    "api_surface_coherence": "Parameter names are consistent across all HTTP endpoints (seed, collocate, relation, top, min_logdice, min_shared). The internal ExplorationService interface has a mild shape asymmetry: exploreByRelation and exploreMultiSeed both take a RelationConfig, but compareCollocateProfiles does not (it aggregates across all relations). Additionally, exploreByRelation takes SingleSeedExplorationOptions while exploreMultiSeed takes the base ExplorationOptions, creating two parallel option types for sibling operations without clear reason. The POST-only /api/bcql endpoint is intentional and documented. No overloaded methods, no mixed sync/async.",
+    "authorization_consistency": "The tool is explicitly designed as a localhost-only unauthenticated service — the security model is documented in WordSketchApiServer's class Javadoc. Input validation guards (MAX_PARAM_LENGTH=200, MAX_REQUEST_BODY_BYTES=65536, MAX_BCQL_PATTERN_LENGTH=1024, MAX_BCQL_BRACKET_DEPTH=20) are consistently applied across all endpoints. The warnIfWildcardCors mechanism provides a startup guard against accidental exposure. The BCQL audit log uses slf4j INFO level rather than a dedicated audit appender, but this is acceptable given the loopback-only bind. The chosen no-auth model is internally consistent.",
+    "design_coherence": "Handler decomposition is well-executed: SketchHandlers, ExplorationHandlers, ConcordanceHandlers, CorpusQueryHandlers, and VisualizationHandlers each own a single concern. The RelationQueryBatch record and RelationEntryBuilder functional interface inside SketchHandlers eliminate duplication between the surface-sketch and dependency-sketch paths. SemanticFieldExplorer as a facade over SingleSeedExplorer, MultiSeedExplorer, and CollocateProfileComparator is clean. The main design concern is ExploreResponseAssembler.ExamplesContext: a 6-field record used at a single call site, with a @Nullable Boolean fallback field acting as a tri-state flag. Nullable Boolean as a conditional flag is a design smell — it should be an Optional<Boolean> or eliminated by overloading. Signal-density hotspots from the mechanical scan were empty, confirming no files accumulate multi-dimensional issues."
+  },
+  "issues": [
+    {
+      "identifier": "no_ci_pipeline",
+      "dimension": "test_strategy",
+      "summary": "No CI pipeline: tests only run manually, no automated execution on commits",
+      "related_files": [],
+      "evidence": [
+        "The .github/workflows/ directory does not exist — confirmed by filesystem check",
+        "39 test files covering core logic, API handlers, integration, and exploration exist but are never automatically triggered",
+        "Integration tests requiring a real index (BlackLabQueryExecutorIntegrationTest, BlackLabConllUIndexerTest) use Assumptions.assumeTrue but are never run in any automated context"
+      ],
+      "suggestion": "Add a GitHub Actions workflow (.github/workflows/ci.yml) that runs 'mvn test' on push and pull_request. For integration tests requiring a real index, either add a small sample index as a test fixture or keep them in a separate Maven profile that CI skips.",
+      "confidence": "high",
+      "impact_scope": "codebase",
+      "fix_scope": "single_edit"
+    },
+    {
+      "identifier": "exploration_service_option_type_asymmetry",
+      "dimension": "api_surface_coherence",
+      "summary": "Sibling ExplorationService methods use different options types (SingleSeedExplorationOptions vs ExplorationOptions) without documented rationale",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/exploration/spi/ExplorationService.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/model/exploration/SingleSeedExplorationOptions.java"
+      ],
+      "evidence": [
+        "exploreByRelation takes SingleSeedExplorationOptions while exploreMultiSeed takes the base ExplorationOptions",
+        "SingleSeedExplorationOptions adds a nounsPerSeed field over the base ExplorationOptions, but this difference is not explained at the interface level",
+        "A caller inspecting the interface must understand the class hierarchy to know which options type to construct for which method"
+      ],
+      "suggestion": "Document at the ExplorationService interface level why exploreByRelation requires SingleSeedExplorationOptions (the extra nounsPerSeed field only applies to single-seed mode). Alternatively, add a factory method or builder that makes the distinction visible at the call site.",
+      "confidence": "medium",
+      "impact_scope": "module",
+      "fix_scope": "single_edit"
+    },
+    {
+      "identifier": "examples_context_nullable_boolean_flag",
+      "dimension": "design_coherence",
+      "summary": "ExploreResponseAssembler.ExamplesContext uses a @Nullable Boolean as a tri-state fallback flag",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/api/ExploreResponseAssembler.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/api/ConcordanceHandlers.java"
+      ],
+      "evidence": [
+        "ExamplesContext record has field: @Nullable Boolean fallback — null means 'not a fallback', true means 'fallback was used'",
+        "Call site in ConcordanceHandlers passes fallback ? Boolean.TRUE : null, which is semantically Optional<Boolean>",
+        "This pattern forces callers to box a primitive boolean and treat null as a meaningful third value"
+      ],
+      "suggestion": "Replace @Nullable Boolean fallback with boolean fallback (primitive, defaults to false) or with Optional<String> fallbackReason if the reason matters to callers. This eliminates the null-as-false semantic and makes the intent explicit.",
+      "confidence": "high",
+      "impact_scope": "local",
+      "fix_scope": "single_edit"
+    },
+    {
+      "identifier": "executor_created_before_shutdown_hook",
+      "dimension": "initialization_coupling",
+      "summary": "QueryExecutor (open disk resource) is constructed before its shutdown hook is registered in Main",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/Main.java"
+      ],
+      "evidence": [
+        "Line: QueryExecutor executor = new BlackLabQueryExecutor(indexPath); — opens the index",
+        "Several lines later: Runtime.getRuntime().addShutdownHook(new Thread(() -> { ... executor.close(); ... }));",
+        "If a SIGTERM arrives in the window between executor construction and hook registration, the index is left unclosed"
+      ],
+      "suggestion": "Register the shutdown hook immediately after executor construction and before any further initialization that could fail. Alternatively, use a try-with-resources block or a single AtomicReference<QueryExecutor> with a hook registered at startup that closes whatever is currently held.",
+      "confidence": "medium",
+      "impact_scope": "local",
+      "fix_scope": "single_edit"
+    },
+    {
+      "identifier": "bcql_audit_not_structured",
+      "dimension": "authorization_consistency",
+      "summary": "BCQL endpoint audit log is SLF4J INFO, not a structured or dedicated audit trail",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/api/CorpusQueryHandlers.java"
+      ],
+      "evidence": [
+        "logger.info(\"BCQL audit – src={} len={} query: {}\", ...) — uses the application logger at INFO level",
+        "Audit entries intermix with ordinary application logs; no structured format, no dedicated appender",
+        "The /api/bcql endpoint accepts arbitrary corpus queries — if the loopback restriction were ever relaxed, audit trail quality would be inadequate"
+      ],
+      "suggestion": "Use a named Logger (e.g., LoggerFactory.getLogger(\"audit.bcql\")) so that audit entries can be independently routed in logback.xml. Add a comment noting that the loopback-only bind is the primary access control and the audit log is a secondary observability aid.",
+      "confidence": "low",
+      "impact_scope": "local",
+      "fix_scope": "single_edit"
+    }
+  ]
+}

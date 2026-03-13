@@ -8,7 +8,7 @@ import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import pl.marcinmilkowski.word_sketch.utils.CqlUtils;
-import pl.marcinmilkowski.word_sketch.config.RelationPatternUtils;
+import pl.marcinmilkowski.word_sketch.config.RelationUtils;
 import pl.marcinmilkowski.word_sketch.config.RelationType;
 
 import java.io.IOException;
@@ -203,7 +203,7 @@ public final class GrammarConfigLoader {
             isDual,
             relObj.path("default_slop").asInt(10),
             parseRelationType(relObj.path("relation_type").textValue()),
-            RelationPatternUtils.computeCollocatePosGroup(pattern)
+            RelationUtils.computeCollocatePosGroup(pattern)
         );
     }
 

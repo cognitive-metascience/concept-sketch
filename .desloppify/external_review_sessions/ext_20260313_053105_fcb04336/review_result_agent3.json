@@ -1,0 +1,138 @@
+{
+  "session": {
+    "id": "ext_20260313_053105_fcb04336",
+    "token": "2b677a5425822c4dc3229ec186cc04ad"
+  },
+  "assessments": {
+    "package_organization": 83,
+    "contract_coherence": 76,
+    "logic_clarity": 78,
+    "type_safety": 75,
+    "cross_module_architecture": 82
+  },
+  "dimension_notes": {
+    "package_organization": "Structure is domain-aligned and navigable. Response-assembler classes (ExploreResponseAssembler, SketchResponseAssembler) share the api package with HTTP handlers, mixing two distinct responsibilities without further subdivision. The viz package is positioned at the top level yet is consumed only by api.VisualizationHandlers; it would fit naturally under api.",
+    "cross_module_architecture": "Dependency direction is clean with no cycles found. The exploration layer correctly holds QueryExecutor (not a narrower port) because it needs executeCollocations and executeSurfacePattern which span both sub-interfaces. The main concern is HttpApiUtils importing ExplorationException from exploration.spi to drive HTTP 503 mapping — that exception-to-status mapping belongs in the handler layer, not in the shared utility."
+  },
+  "issues": [
+    {
+      "identifier": "nonnull_seeds_null_check",
+      "dimension": "contract_coherence",
+      "summary": "@NonNull seeds parameter in exploreMultiSeed() contradicted by explicit null-check in body",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/exploration/SemanticFieldExplorer.java"
+      ],
+      "evidence": [
+        "Method signature: public @NonNull ExplorationResult exploreMultiSeed(@NonNull Set<String> seeds, ...)",
+        "Line 207: if (seeds == null || seeds.size() < 2) — null branch can never execute under the declared contract, creating dead-code confusion"
+      ],
+      "suggestion": "Remove the null branch and keep only the size check: if (seeds.size() < 2). If null input is a real concern, drop the @NonNull annotation and document the null behaviour.",
+      "confidence": "high",
+      "impact_scope": "local",
+      "fix_scope": "single_edit"
+    },
+    {
+      "identifier": "nullable_index_verbal_contract",
+      "dimension": "contract_coherence",
+      "summary": "CollocateQueryHelper accepts null index with a verbal-only behavioural contract that the type system cannot enforce",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/query/CollocateQueryHelper.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/query/BlackLabQueryExecutor.java"
+      ],
+      "evidence": [
+        "Constructor: CollocateQueryHelper(@Nullable BlackLabIndex index) — Javadoc says 'Callers must not invoke any method that delegates to blackLabIndex when those are null'",
+        "BlackLabQueryExecutor test constructor uses @SuppressWarnings(\"NullAway\") to silence the resulting warning",
+        "getTotalFrequency, performCollocateSearch all dereference index unconditionally after accepting it as @Nullable"
+      ],
+      "suggestion": "Replace the nullable-index test pattern with a dedicated test subclass or a mock that overrides I/O methods. The production constructor should take a non-null index and the @Nullable annotation should be removed.",
+      "confidence": "high",
+      "impact_scope": "module",
+      "fix_scope": "multi_file_refactor"
+    },
+    {
+      "identifier": "collocate_pos_dual_meaning",
+      "dimension": "logic_clarity",
+      "summary": "collocatePos integer used as both an XML attribute-count index and a plain-text word index in executeSurfacePattern, with non-obvious equivalence",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/query/BlackLabQueryExecutor.java"
+      ],
+      "evidence": [
+        "Line 256: int collocatePos = CqlUtils.findLabelTokenIndex(bcqlPattern, 2)",
+        "Line 269: extractCollocateFromXmlByPosition(identity, collocatePos) — used as 1-based lemma-attribute index in XML",
+        "Line 273: extractPlainTextTokenAt(identity, collocatePos) — same integer reused as 1-based word index in plain text",
+        "Comment says 'collocatePos is reused as a 1-based word index (same integer value, different counting scheme)'"
+      ],
+      "suggestion": "Introduce separate variables (e.g. collocateAttrIndex vs collocateTokenIndex) or a wrapper that encodes both interpretations, making the dual counting schemes explicit rather than relying on accidental numeric equivalence.",
+      "confidence": "medium",
+      "impact_scope": "local",
+      "fix_scope": "single_edit"
+    },
+    {
+      "identifier": "broad_runtime_exception_wrap",
+      "dimension": "logic_clarity",
+      "summary": "executeCqlQuery() wraps all RuntimeException as IOException, potentially masking NullPointerException and other programming errors as infrastructure failures",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/query/BlackLabQueryExecutor.java"
+      ],
+      "evidence": [
+        "catch (RuntimeException e) { throw new IOException(\"Unexpected error executing CQL query: \" + e.getMessage(), e); }",
+        "Comment: 'BlackLab's search() can throw undocumented RuntimeExceptions on index corruption' — but the catch is not scoped to corruption signals; it catches everything including NPE"
+      ],
+      "suggestion": "Catch a narrower type if BlackLab exposes one, or at minimum re-throw NullPointerException and other clearly-programming-error exceptions before the catch-all, so genuine bugs surface immediately rather than being swallowed as I/O errors.",
+      "confidence": "medium",
+      "impact_scope": "local",
+      "fix_scope": "single_edit"
+    },
+    {
+      "identifier": "nonnull_annotation_implementation_mismatch",
+      "dimension": "type_safety",
+      "summary": "@NonNull annotation on exploreMultiSeed seeds parameter is contradicted by null-defensive body, making the nullability contract unreliable",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/exploration/SemanticFieldExplorer.java"
+      ],
+      "evidence": [
+        "Parameter declaration: @NonNull Set<String> seeds",
+        "Body line 207: if (seeds == null || seeds.size() < 2) — null branch violates the declared annotation",
+        "ExplorationService interface also declares @NonNull seeds — the implementation weakens the contract silently"
+      ],
+      "suggestion": "Align annotation and implementation: either remove @NonNull and document null behaviour, or remove the null branch and trust the annotation. NullAway or similar tooling should enforce consistency.",
+      "confidence": "high",
+      "impact_scope": "local",
+      "fix_scope": "single_edit"
+    },
+    {
+      "identifier": "wordsketchresult_missing_nullability",
+      "dimension": "type_safety",
+      "summary": "WordSketchResult record fields lemma and pos carry no nullability annotations; pos has a documented UNKNOWN_POS sentinel suggesting null is possible but not annotated",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/model/sketch/WordSketchResult.java"
+      ],
+      "evidence": [
+        "public record WordSketchResult(String lemma, String pos, long frequency, double logDice, double relativeFrequency, List<String> examples)",
+        "public static final String UNKNOWN_POS = \"unknown\" — sentinel implies pos can be absent, but no @Nullable annotation to signal this to callers or tools"
+      ],
+      "suggestion": "Annotate lemma and pos with @NonNull or @Nullable as appropriate. If UNKNOWN_POS is used as a stand-in for missing data, @NonNull is correct and the Javadoc should state it. If null is also possible, add @Nullable.",
+      "confidence": "medium",
+      "impact_scope": "local",
+      "fix_scope": "single_edit"
+    },
+    {
+      "identifier": "httputils_exploration_exception_coupling",
+      "dimension": "cross_module_architecture",
+      "summary": "HttpApiUtils imports ExplorationException from exploration.spi to drive HTTP 503 mapping, coupling a general-purpose utility to a specific subsystem",
+      "related_files": [
+        "src/main/java/pl/marcinmilkowski/word_sketch/api/HttpApiUtils.java",
+        "src/main/java/pl/marcinmilkowski/word_sketch/exploration/spi/ExplorationException.java"
+      ],
+      "evidence": [
+        "import pl.marcinmilkowski.word_sketch.exploration.spi.ExplorationException; in HttpApiUtils.java",
+        "wrapWithErrorHandling() catches ExplorationException and maps to 503 — this is the only exploration-layer import in the api utilities package",
+        "HttpApiUtils is otherwise a generic HTTP utility with no other domain dependencies"
+      ],
+      "suggestion": "Move the ExplorationException → 503 mapping to ExplorationHandlers.wrapWithErrorHandling or a dedicated handler wrapper, keeping HttpApiUtils free of exploration-layer imports. Alternatively, introduce a marker interface (e.g. ServiceUnavailableException) in the api layer that ExplorationException can extend.",
+      "confidence": "medium",
+      "impact_scope": "module",
+      "fix_scope": "multi_file_refactor"
+    }
+  ]
+}

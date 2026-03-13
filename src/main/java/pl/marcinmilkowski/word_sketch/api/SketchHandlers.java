@@ -10,7 +10,7 @@ import pl.marcinmilkowski.word_sketch.api.model.RelationListEntry;
 import pl.marcinmilkowski.word_sketch.api.model.RelationListResponse;
 import pl.marcinmilkowski.word_sketch.api.model.SketchResponse;
 import pl.marcinmilkowski.word_sketch.config.GrammarConfig;
-import pl.marcinmilkowski.word_sketch.config.RelationPatternUtils;
+import pl.marcinmilkowski.word_sketch.config.RelationUtils;
 import pl.marcinmilkowski.word_sketch.config.RelationType;
 import pl.marcinmilkowski.word_sketch.query.SketchQueryPort;
 import pl.marcinmilkowski.word_sketch.model.sketch.*;
@@ -174,7 +174,7 @@ class SketchHandlers {
         }
 
         List<WordSketchResult> results = executor.executeSurfacePattern(
-            RelationPatternUtils.buildFullPattern(rel, lemma), 0.0, SINGLE_RELATION_RESULTS);
+            RelationUtils.buildFullPattern(rel, lemma), 0.0, SINGLE_RELATION_RESULTS);
 
         List<CollocateEntry> collocations = results.stream()
                 .map(SketchResponseAssembler::toCollocateEntry)
@@ -195,7 +195,7 @@ class SketchHandlers {
     private Optional<ExecutedSketch> buildSketch(String lemma,
             pl.marcinmilkowski.word_sketch.config.RelationConfig rel) throws IOException {
         List<WordSketchResult> results = executor.executeSurfacePattern(
-            RelationPatternUtils.buildFullPattern(rel, lemma), 0.0, DEFAULT_SKETCH_RESULTS);
+            RelationUtils.buildFullPattern(rel, lemma), 0.0, DEFAULT_SKETCH_RESULTS);
         if (results.isEmpty()) return Optional.empty();
         List<CollocateEntry> collocations = results.stream()
                 .map(SketchResponseAssembler::toCollocateEntry)
