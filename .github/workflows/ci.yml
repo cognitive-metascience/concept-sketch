@@ -1,11 +1,11 @@
 name: CI
 
-# Triggers on push and pull_request to main and the active health branch.
+# Triggers on push and pull_request to main.
 on:
   push:
-    branches: [main, "desloppify/code-health"]
+    branches: [main]
   pull_request:
-    branches: [main, "desloppify/code-health"]
+    branches: [main]
 
 # ─── Why tests are split into "unit" and "integration" ───────────────────────
 #

@@ -2,8 +2,7 @@
 
 ## `ci.yml` — Build & Unit Tests
 
-Triggers on every push and pull request targeting `main` or
-`desloppify/code-health`.
+Triggers on every push and pull request targeting `main`.
 
 ### What it does
 
