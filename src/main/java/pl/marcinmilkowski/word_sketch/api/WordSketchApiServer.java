@@ -169,6 +169,7 @@ public class WordSketchApiServer {
     public void stop() {
         if (server != null) {
             server.stop(0);
+            sketchHandlers.close();
             logger.info("API server stopped");
         }
     }

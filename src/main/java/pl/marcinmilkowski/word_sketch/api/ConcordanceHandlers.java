@@ -37,8 +37,8 @@ class ConcordanceHandlers {
      *
      * <p>Parameters:
      * <ul>
-     *   <li>{@code seed} — headword (required); formerly {@code word1}</li>
-     *   <li>{@code collocate} — the collocate word form to look up (required); formerly {@code word2}</li>
+     *   <li>{@code seed} — headword (required)</li>
+     *   <li>{@code collocate} — the collocate word form to look up (required)</li>
      *   <li>{@code relation} — grammar relation ID (default: noun_adj_predicates)</li>
      *   <li>{@code top} — max results (default: 10)</li>
      * </ul>

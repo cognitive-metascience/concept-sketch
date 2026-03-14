@@ -1,10 +1,13 @@
 package pl.marcinmilkowski.word_sketch.query;
 
+import nl.inl.blacklab.resultproperty.PropertyValueMultiple;
+import nl.inl.blacklab.resultproperty.PropertyValueString;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Assumptions;
+import pl.marcinmilkowski.word_sketch.model.sketch.WordSketchResult;
 import java.nio.file.Path;
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -61,6 +64,19 @@ class BlackLabQueryExecutorTest {
     void buildBcql_nullPattern_throwsIAE() {
         assertThrows(IllegalArgumentException.class, () ->
             BlackLabQueryExecutor.buildBcqlWithLemmaPrepended(null, "house"));
+    }
+
+    @Test
+    @DisplayName("parseGroupedCollocateIdentity: multi-property capture values expose lemma and POS")
+    void parseGroupedCollocateIdentity_multiPropertyValue_extractsLemmaAndPos() {
+        var identity = new PropertyValueMultiple(
+                new PropertyValueString("different"),
+                new PropertyValueString("JJ"));
+
+        var parsed = BlackLabQueryExecutor.parseGroupedCollocateIdentity(identity);
+
+        assertEquals("different", parsed.lemma());
+        assertEquals("JJ", parsed.pos());
     }
 
     // ── Guard-clause tests (no index required, always run in CI) ─────────────
@@ -131,6 +147,25 @@ class BlackLabQueryExecutorTest {
             try (BlackLabQueryExecutor executor = new BlackLabQueryExecutor(INDEX_PATH)) {
                 long freq = executor.getTotalFrequency("theory");
                 assertTrue(freq > 0, "Frequency of a common lemma should be positive");
+            }
+        }
+
+        @Test
+        void executeSurfaceCollocations_labeledPattern_returnsTaggedResults() throws Exception {
+            String pattern =
+                    "1:[lemma=\"theory\" & xpos=\"NN.*\"] " +
+                    "[lemma=\"be|appear|seem|look|sound|feel|smell|taste|remain|become|get|grow|turn|prove\"] " +
+                    "2:[xpos=\"JJ.*\"]";
+            try (BlackLabQueryExecutor executor = new BlackLabQueryExecutor(INDEX_PATH)) {
+                var results = executor.executeSurfaceCollocations(pattern, 0.0, 10);
+                assertFalse(results.isEmpty(), "Expected at least one surface collocate for 'theory'");
+                for (var result : results) {
+                    assertNotNull(result.lemma(), "Surface result lemma must not be null");
+                    assertFalse(result.lemma().isBlank(), "Surface result lemma must not be blank");
+                    assertNotNull(result.pos(), "Surface result POS must not be null");
+                    assertNotEquals(WordSketchResult.UNKNOWN_POS, result.pos(),
+                            "Surface capture-group grouping should preserve collocate POS");
+                }
             }
         }
     }

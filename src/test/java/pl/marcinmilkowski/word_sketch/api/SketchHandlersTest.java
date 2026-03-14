@@ -10,8 +10,11 @@ import pl.marcinmilkowski.word_sketch.query.QueryExecutor;
 import pl.marcinmilkowski.word_sketch.query.StubQueryExecutor;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.locks.LockSupport;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -148,6 +151,102 @@ class SketchHandlersTest {
                 "http://localhost/api/sketch/theory?lemma=theory");
         handlers.routeSketchRequest(ex);
         assertEquals(200, ex.statusCode);
+    }
+
+    @Test
+    void handleSketchRequest_posFilter_prunesSurfaceRelationsByCollocateGroup() throws Exception {
+        MockExchangeFactory.MockExchange allEx = new MockExchangeFactory.MockExchange("http://localhost/api/sketch/theory");
+        handlers().routeSketchRequest(allEx);
+        ObjectNode allBody = HttpApiUtils.mapper().readValue(allEx.getResponseBodyAsString(), ObjectNode.class);
+        ObjectNode allPatterns = (ObjectNode) allBody.get("patterns");
+
+        MockExchangeFactory.MockExchange filteredEx = new MockExchangeFactory.MockExchange("http://localhost/api/sketch/theory?pos=adj");
+        handlers().routeSketchRequest(filteredEx);
+        assertEquals(200, filteredEx.statusCode);
+
+        ObjectNode filteredBody = HttpApiUtils.mapper().readValue(filteredEx.getResponseBodyAsString(), ObjectNode.class);
+        ObjectNode filteredPatterns = (ObjectNode) filteredBody.get("patterns");
+        assertNotNull(filteredPatterns, "Filtered sketch should contain a patterns map");
+        assertFalse(filteredPatterns.isEmpty(), "Adj filter should keep adjective relations");
+        assertTrue(filteredPatterns.size() < allPatterns.size(), "POS filter should reduce relation count");
+        filteredPatterns.fields().forEachRemaining(entry ->
+                assertEquals("adj", entry.getValue().path("collocate_pos_group").asText(),
+                        "Filtered relation " + entry.getKey() + " must target adjective collocates"));
+    }
+
+    @Test
+    void handleSketchRequest_invalidPosFilter_returns400() throws Exception {
+        SketchHandlers handlers = new SketchHandlers(stubExecutor(), GrammarConfigHelper.requireTestConfig());
+        MockExchangeFactory.MockExchange ex = new MockExchangeFactory.MockExchange(
+                "http://localhost/api/sketch/theory?pos=banana");
+        HttpApiUtils.wrapWithErrorHandling(handlers::routeSketchRequest, "test").handle(ex);
+        assertEquals(400, ex.statusCode);
+    }
+
+    @Test
+    void handleSketchRequest_fullSketch_executesSurfaceRelationsConcurrently() throws Exception {
+        AtomicInteger currentQueries = new AtomicInteger();
+        AtomicInteger maxConcurrentQueries = new AtomicInteger();
+        QueryExecutor executor = new StubQueryExecutor() {
+            @Override
+            public List<WordSketchResult> executeSurfaceCollocations(
+                    String pattern, double minLogDice, int maxResults) {
+                int active = currentQueries.incrementAndGet();
+                maxConcurrentQueries.accumulateAndGet(active, Math::max);
+                try {
+                    LockSupport.parkNanos(25_000_000L);
+                    return List.of(wsr("important", 7.5));
+                } finally {
+                    currentQueries.decrementAndGet();
+                }
+            }
+        };
+
+        SketchHandlers handlers = new SketchHandlers(executor, GrammarConfigHelper.requireTestConfig());
+        try {
+            MockExchangeFactory.MockExchange ex = new MockExchangeFactory.MockExchange("http://localhost/api/sketch/theory");
+            handlers.routeSketchRequest(ex);
+            assertEquals(200, ex.statusCode);
+        } finally {
+            handlers.close();
+        }
+
+        assertTrue(maxConcurrentQueries.get() > 1,
+                "Full sketch queries should overlap relation lookups, but max concurrency was " + maxConcurrentQueries.get());
+    }
+
+    @Test
+    void handleSketchRequest_fullSketch_preservesSurfaceRelationOrder() throws Exception {
+        GrammarConfig config = GrammarConfigHelper.requireTestConfig();
+        List<String> expectedOrder = config.relations().stream()
+                .filter(rel -> rel.relationType().orElse(null) == RelationType.SURFACE)
+                .map(pl.marcinmilkowski.word_sketch.config.RelationConfig::id)
+                .toList();
+
+        QueryExecutor executor = new StubQueryExecutor() {
+            @Override
+            public List<WordSketchResult> executeSurfaceCollocations(
+                    String pattern, double minLogDice, int maxResults) {
+                int delayBucket = Math.floorMod(pattern.hashCode(), 7);
+                LockSupport.parkNanos((long) (7 - delayBucket) * 5_000_000L);
+                return List.of(wsr("important", 7.5));
+            }
+        };
+
+        SketchHandlers handlers = new SketchHandlers(executor, config);
+        try {
+            MockExchangeFactory.MockExchange ex = new MockExchangeFactory.MockExchange("http://localhost/api/sketch/theory");
+            handlers.routeSketchRequest(ex);
+            assertEquals(200, ex.statusCode);
+
+            ObjectNode body = HttpApiUtils.mapper().readValue(ex.getResponseBodyAsString(), ObjectNode.class);
+            ObjectNode relations = (ObjectNode) body.get("patterns");
+            List<String> actualOrder = new ArrayList<>();
+            relations.fieldNames().forEachRemaining(actualOrder::add);
+            assertEquals(expectedOrder, actualOrder);
+        } finally {
+            handlers.close();
+        }
     }
 
     // ── Stub helpers ─────────────────────────────────────────────────────────

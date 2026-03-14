@@ -30,9 +30,27 @@
       "relation_type": "SURFACE"
     },
     {
+      "id": "subject_of",
+      "name": "Subjects",
+      "description": "Subject of verbs",
+      "pattern": "[xpos=\"NN.*\"] [xpos=\"VB.*\"]",
+      "head_position": 1,
+      "collocate_position": 2,
+      "relation_type": "SURFACE"
+    },
+    {
       "id": "verb_nouns",
       "name": "Object nouns",
       "description": "Nouns that are objects of verbs",
+      "pattern": "[xpos=\"VB.*\"] [xpos=\"NN.*\"]",
+      "head_position": 2,
+      "collocate_position": 1,
+      "relation_type": "SURFACE"
+    },
+    {
+      "id": "object_of",
+      "name": "Objects",
+      "description": "Direct objects of verbs",
       "pattern": "[xpos=\"VB.*\"] [xpos=\"NN.*\"]",
       "head_position": 2,
       "collocate_position": 1,

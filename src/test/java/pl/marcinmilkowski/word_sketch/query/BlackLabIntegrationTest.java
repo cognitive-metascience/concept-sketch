@@ -48,12 +48,12 @@ class BlackLabIntegrationTest {
 
         @SuppressWarnings({"NullAway", "ConstantConditions"})
         StubCollocateHelper(Map<String, Long> corpusFreqs) {
-            super((BlackLabIndex) null); // null index is safe: getTotalFrequency is overridden
+            super((BlackLabIndex) null); // null index is safe: loadTotalFrequency is overridden
             this.corpusFreqs = corpusFreqs;
         }
 
         @Override
-        long getTotalFrequency(String lemma) {
+        long loadTotalFrequency(String lemma) {
             return corpusFreqs.getOrDefault(lemma.toLowerCase(), 0L);
         }
     }

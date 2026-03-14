@@ -48,10 +48,10 @@ public final class RelationUtils {
     /**
      * Canonical short-alias → grammar-config-ID mappings.
      *
-     * <p>Valid keys (case-insensitive): {@code adj_modifier}, {@code modifier},
-     * {@code adj_predicate}, {@code predicate}, {@code subject_of}, {@code subject},
-     * {@code object_of}, {@code object}. Any key not listed here is passed through
-     * unchanged (assumed to already be a canonical grammar-config ID).
+     * <p>Valid shorthand aliases (case-insensitive): {@code adj_modifier},
+     * {@code modifier}, {@code adj_predicate}, {@code predicate},
+     * {@code subject}, {@code object}. Canonical grammar IDs such as
+     * {@code subject_of} and {@code object_of} pass through unchanged.
      *
      * <p>If new relations are added to the grammar config, register their aliases here.
      */
@@ -60,10 +60,8 @@ public final class RelationUtils {
         "modifier",     "noun_modifiers",
         "adj_predicate","noun_adj_predicates",
         "predicate",    "noun_adj_predicates",
-        "subject_of",   "noun_verbs",
-        "subject",      "noun_verbs",
-        "object_of",    "verb_nouns",
-        "object",       "verb_nouns"
+        "subject",      "subject_of",
+        "object",       "object_of"
     );
 
     /**

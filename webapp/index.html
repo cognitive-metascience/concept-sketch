@@ -591,12 +591,17 @@
         populateRelationDropdowns();
 
         // Fetch examples for semantic field exploration
-        async function fetchSemanticFieldExamples(adj, noun, max = 10) {
+        async function fetchSemanticFieldExamples(seed, collocate, relation = null, max = EXAMPLE_FETCH_LIMIT) {
             const apiUrl = document.getElementById('apiUrl').value.trim();
             const detailsDiv = document.getElementById('semanticDetails');
+            const resolvedRelation = relation
+                || document.getElementById('exploreRelation')?.value
+                || getSemanticRelationId(currentSemanticData);
 
             // Show loading in a modal or inline
-            const examplesId = 'semantic-examples-' + adj + '-' + noun;
+            const examplesId = 'semantic-examples-' + [seed, collocate, resolvedRelation || '']
+                .map(value => encodeURIComponent(value))
+                .join('-');
             let examplesDiv = document.getElementById(examplesId);
             if (examplesDiv) {
                 // Toggle visibility if already loaded
@@ -604,25 +609,20 @@
                 return;
             }
 
-            detailsDiv.insertAdjacentHTML('beforeend', `<div id="${examplesId}" class="examples" style="margin-top:20px; padding:15px; background:#f9f9f9; border-radius:8px;"><div class="loading">Fetching examples for "${adj} ${noun}"...</div></div>`);
+            detailsDiv.insertAdjacentHTML('beforeend', `<div id="${examplesId}" class="examples" style="margin-top:20px; padding:15px; background:#f9f9f9; border-radius:8px;"><div class="loading">Fetching examples for "${seed}" + "${collocate}"...</div></div>`);
             examplesDiv = document.getElementById(examplesId);
 
             try {
-                const response = await fetch(`${apiUrl}/api/semantic-field/examples?adjective=${encodeURIComponent(adj)}&noun=${encodeURIComponent(noun)}&max=${max}`);
+                const relationParam = resolvedRelation ? `&relation=${encodeURIComponent(resolvedRelation)}` : '';
+                const response = await fetch(`${apiUrl}/api/semantic-field/examples?seed=${encodeURIComponent(seed)}&collocate=${encodeURIComponent(collocate)}&top=${max}${relationParam}`);
                 const data = await response.json();
 
                 if (data.examples && data.examples.length > 0) {
-                    let html = `<h4 style="margin-top:0;">Examples: "${adj} ${noun}"</h4>`;
-                    data.examples.forEach((ex, i) => {
-                        // Highlight the adjective and noun in the sentence
-                        const highlighted = ex
-                            .replace(new RegExp(`\\b${adj}\\b`, 'gi'), '<strong style="color:#e74c3c;">$&</strong>')
-                            .replace(new RegExp(`\\b${noun}\\b`, 'gi'), '<strong style="color:#3498db;">$&</strong>');
-                        html += `<div class="example">${highlighted}</div>`;
-                    });
+                    let html = `<h4 style="margin-top:0;">Examples: "${seed}" + "${collocate}"</h4>`;
+                    html += renderExampleSentences(data.examples, [seed, collocate]);
                     examplesDiv.innerHTML = html;
                 } else {
-                    examplesDiv.innerHTML = `<div style="color:#888;">No examples found for "${adj} ${noun}".</div>`;
+                    examplesDiv.innerHTML = `<div style="color:#888;">No examples found for "${seed}" + "${collocate}".</div>`;
                 }
             } catch (e) {
                 examplesDiv.innerHTML = `<div class="error">Failed to fetch examples: ${e.message}</div>`;
@@ -640,16 +640,93 @@
         function mapRelationToApi(relationId) {
             const mapping = {
                 'adj_predicate': 'noun_adj_predicates',
-                'adj_modifier': 'noun_modifiers',
-                'subject_of': 'noun_verbs',
-                'object_of': 'verb_nouns'
+                'adj_modifier': 'noun_modifiers'
             };
             return mapping[relationId] || relationId;
         }
 
+        const EXAMPLE_FETCH_LIMIT = 10;
+
         let currentSketchData = null;
         let currentSemanticData = null;
         let currentSemanticAdjMap = {};
+
+        function getSemanticRelationId(data, fallback = '') {
+            return data?.parameters?.relation || data?.relation_type || fallback;
+        }
+
+        function isVerbRelation(relationId) {
+            return relationId === 'subject_of'
+                || relationId === 'object_of'
+                || relationId === 'noun_verbs'
+                || relationId === 'verb_nouns';
+        }
+
+        function getRelationDisplayLabel(relationId) {
+            const relationLabels = {
+                'adj_predicate': 'X is ADJ',
+                'noun_adj_predicates': 'X is ADJ',
+                'adj_modifier': 'ADJ X',
+                'noun_modifiers': 'ADJ X',
+                'subject_of': 'X VERBs',
+                'noun_verbs': 'X VERBs',
+                'object_of': 'VERB X',
+                'verb_nouns': 'VERB X',
+                'cross_relational': 'Cross-relational'
+            };
+            return relationLabels[relationId] || relationId;
+        }
+
+        function getLogDiceValue(item) {
+            return item?.logDice
+                ?? item?.log_dice
+                ?? item?.seed_logdice
+                ?? item?.avg_logdice
+                ?? item?.max_logdice
+                ?? 0;
+        }
+
+        function getExampleSentence(example) {
+            if (!example) return '';
+            if (typeof example === 'string') return example;
+            return example.sentence || example.highlighted || example.raw || '';
+        }
+
+        function highlightExampleTerms(text, terms) {
+            let html = escapeHtml(text);
+            terms.filter(Boolean).forEach(term => {
+                html = html.replace(
+                    new RegExp(`\\b${escapeRegExp(String(term))}\\b`, 'gi'),
+                    '<mark style="background: #ffeb3b; padding: 1px 2px;">$&</mark>'
+                );
+            });
+            return html;
+        }
+
+        function renderExampleSentences(examples, terms = []) {
+            return (examples || []).map(example => {
+                const sentence = getExampleSentence(example);
+                const content = terms.length
+                    ? highlightExampleTerms(sentence, terms)
+                    : escapeHtml(sentence);
+                return `<div style="margin: 6px 0; padding: 6px; background: white; border-radius: 3px; font-family: monospace; font-size: 12px; line-height: 1.4;">${content}</div>`;
+            }).join('');
+        }
+
+        function normalizeSemanticComparisonData(data) {
+            return {
+                ...data,
+                nouns: data.nouns || data.seeds || [],
+                adjectives: data.adjectives || data.collocates || [],
+                fully_shared: data.fully_shared ?? data.fully_shared_count ?? 0,
+                partially_shared: data.partially_shared ?? data.partially_shared_count ?? 0,
+                specific: data.specific ?? data.specific_count ?? 0,
+                edges: (data.edges || []).map(edge => ({
+                    ...edge,
+                    logDice: edge.logDice ?? edge.log_dice ?? 0
+                }))
+            };
+        }
 
         function renderResults(data) {
             const resultsDiv = document.getElementById('results');
@@ -666,7 +743,6 @@
             }
 
             let html = '';
-            let allAutoFetchData = [];
 
             // Process patterns from the API
             const patterns = data.patterns;
@@ -698,26 +774,12 @@
                         <div class="collocation-list">
                 `;
                 
-                // Auto-fetch examples for top 3 collocations
-                const topCollocs = collocations.slice(0, 3);
-                topCollocs.forEach((c, idx) => {
-                    allAutoFetchData.push({
-                        id: `example-${patternId}-${idx}`,
-                        word1: currentWord,
-                        word2: c.lemma,
-                        relation: mapRelationToApi(patternId),
-                        pos: c.pos || ''
-                    });
-                });
-
                 collocations.slice(0, 20).forEach((c, idx) => {
                     const score = c.logDice ? c.logDice.toFixed(2) : '-';
                     const freq = c.frequency || '-';
                     const word = c.lemma || '-';
                     const uniqueId = `example-${patternId}-${idx}`;
                     const apiRelation = mapRelationToApi(patternId);
-                    // Show examples by default for top 3
-                    const showByDefault = idx < 3;
                     html += `
                         <div style="margin-bottom: 10px;">
                             <div class="collocation" style="cursor: pointer; display: flex; justify-content: space-between; align-items: center; padding: 10px; background: #f9f9f9; border-radius: 4px; border: 1px solid #ddd;">
@@ -727,7 +789,7 @@
                                     <span class="freq">(${freq})</span>
                                 </span>
                             </div>
-                            <div id="${uniqueId}" style="display: ${showByDefault ? 'block' : 'none'}; margin-top: 8px; margin-left: 10px; padding: 10px; background: #fef5e7; border-left: 3px solid #e74c3c; border-radius: 4px;"><div class="loading">Loading examples...</div></div>
+                            <div id="${uniqueId}" data-loaded="false" style="display: none; margin-top: 8px; margin-left: 10px; padding: 10px; background: #fef5e7; border-left: 3px solid #e74c3c; border-radius: 4px;"></div>
                         </div>
                     `;
                 });
@@ -740,7 +802,7 @@
                     html += '<div class="examples"><h4>Examples</h4>';
                     firstWithExamples.examples.slice(0, 5).forEach(ex => {
                         // Handle both string examples and object examples (API returns objects)
-                        const exampleText = (typeof ex === 'string') ? ex : (ex.highlighted || ex.raw || ex.sentence || '');
+                        const exampleText = (typeof ex === 'string') ? ex : (ex.highlighted || ex.sentence || ex.raw || '');
                         const highlighted = escapeHtml(exampleText).replace(
                             new RegExp(escapeRegExp(currentWord), 'gi'),
                             '<span class="highlight">$&</span>'
@@ -758,15 +820,6 @@
             }
 
             resultsDiv.innerHTML = html;
-
-            // Auto-fetch examples for top collocations
-            if (allAutoFetchData && allAutoFetchData.length > 0) {
-                allAutoFetchData.forEach((item, idx) => {
-                    setTimeout(() => {
-                        fetchSketchExamples(item.id, item.word1, item.word2, item.relation, item.pos);
-                    }, idx * 200); // Stagger requests to avoid overwhelming the API
-                });
-            }
         }
 
         function escapeHtml(str) {
@@ -984,7 +1037,7 @@
 
         async function runExplore() {
             const seed = document.getElementById('exploreSeed').value.trim();
-            const relation = document.getElementById('exploreRelation')?.value || 'adj_predicate';
+            const relation = document.getElementById('exploreRelation')?.value || 'noun_adj_predicates';
             const topAdj = document.getElementById('exploreTopAdj')?.value || 15;
             const minShared = document.getElementById('exploreMinShared')?.value || 2;
             const minLogDice = document.getElementById('exploreMinLogDice')?.value || 2;
@@ -997,13 +1050,7 @@
             
             console.log('Exploring:', {seed, relation, topAdj, minShared, minLogDice});
             
-            const relationLabels = {
-                'adj_predicate': 'X is ADJ',
-                'adj_modifier': 'ADJ X',
-                'subject_of': 'X VERBs',
-                'object_of': 'VERB X'
-            };
-            const relLabel = relationLabels[relation] || relation;
+            const relLabel = getRelationDisplayLabel(relation);
             document.getElementById('semanticGraph').innerHTML = '<div class="loading">Exploring semantic field from "' + seed + '" (' + relLabel + ')...</div>';
             document.getElementById('semanticDetails').innerHTML = '';
             
@@ -1018,14 +1065,14 @@
                 const data = await response.json();
                 
                 // Update stat labels based on relation type
-                const collocateLabel = (relation === 'subject_of' || relation === 'object_of') ? 'Verbs' : 'Adjectives';
+                const collocateLabel = isVerbRelation(relation) ? 'Verbs' : 'Adjectives';
                 document.getElementById('statLabel1').textContent = `Seed ${collocateLabel}`;
                 document.getElementById('statLabel3').textContent = `Core ${collocateLabel}`;
                 
                 // Update stats
-                document.getElementById('statFullyShared').textContent = data.seed_collocates_count || data.seed_adjectives_count || 0;
-                document.getElementById('statPartiallyShared').textContent = data.discovered_nouns_count || 0;
-                document.getElementById('statSpecific').textContent = data.core_collocates_count || data.core_adjectives_count || 0;
+                document.getElementById('statFullyShared').textContent = (data.seed_collocates || data.seed_adjectives || []).length;
+                document.getElementById('statPartiallyShared').textContent = (data.discovered_nouns || []).length;
+                document.getElementById('statSpecific').textContent = (data.core_collocates || data.core_adjectives || []).length;
                 
                 // Visualize exploration results
                 visualizeExploration(data, relation);
@@ -1048,7 +1095,7 @@
 
         async function runMultiExplore() {
             const seedsInput = document.getElementById('multiExploreSeed').value.trim();
-            const relation = document.getElementById('multiExploreRelation')?.value || 'adj_predicate';
+            const relation = document.getElementById('multiExploreRelation')?.value || 'noun_adj_predicates';
             const topAdj = document.getElementById('multiExploreTopAdj')?.value || 15;
             const minShared = document.getElementById('multiExploreMinShared')?.value || 2;
             const minLogDice = document.getElementById('multiExploreMinLogDice')?.value || 2;
@@ -1067,13 +1114,7 @@
             
             console.log('Multi-exploring:', {seeds, relation, topAdj, minShared, minLogDice});
             
-            const relationLabels = {
-                'adj_predicate': 'X is ADJ',
-                'adj_modifier': 'ADJ X',
-                'subject_of': 'X VERBs',
-                'object_of': 'VERB X'
-            };
-            const relLabel = relationLabels[relation] || relation;
+            const relLabel = getRelationDisplayLabel(relation);
             document.getElementById('semanticGraph').innerHTML = '<div class="loading">Exploring semantic field from ' + seeds.length + ' seeds (' + relLabel + ')...</div>';
             document.getElementById('semanticDetails').innerHTML = '';
             
@@ -1089,14 +1130,15 @@
                 const data = await response.json();
                 
                 // Update stat labels based on relation type
-                const collocateLabel = (relation === 'subject_of' || relation === 'object_of') ? 'Verbs' : 'Adjectives';
-                document.getElementById('statLabel1').textContent = `Seed ${collocateLabel}`;
-                document.getElementById('statLabel3').textContent = `Core ${collocateLabel}`;
+                const collocateLabel = isVerbRelation(relation) ? 'Verbs' : 'Adjectives';
+                document.getElementById('statLabel1').textContent = `Shared ${collocateLabel}`;
+                document.getElementById('statLabel2').textContent = 'Input Seeds';
+                document.getElementById('statLabel3').textContent = `All ${collocateLabel}`;
                 
                 // Update stats
-                document.getElementById('statFullyShared').textContent = data.common_collocates_count || 0;
-                document.getElementById('statPartiallyShared').textContent = data.seed_collocates_count || 0;
-                document.getElementById('statSpecific').textContent = data.discovered_nouns_count || 0;
+                document.getElementById('statFullyShared').textContent = (data.core_collocates || []).length;
+                document.getElementById('statPartiallyShared').textContent = (data.source_seeds || []).length || seeds.length;
+                document.getElementById('statSpecific').textContent = (data.seed_collocates || []).length;
                 
                 // Visualize multi-seed results
                 visualizeMultiExploration(data, relation, seeds);
@@ -1119,7 +1161,7 @@
 
         function visualizeExploration(data, relation) {
             const graphDiv = document.getElementById('semanticGraph');
-            const isVerb = relation === 'subject_of' || relation === 'object_of';
+            const isVerb = isVerbRelation(relation);
             const collocateType = isVerb ? 'verb' : 'adjective';
             
             // Build nodes and links for force-directed graph
@@ -1135,10 +1177,11 @@
             // Collocate nodes (from seed) - use seed_collocates or fallback to seed_adjectives
             const seedCollocates = data.seed_collocates || data.seed_adjectives || [];
             seedCollocates.slice(0, 12).forEach((coll, i) => {
-                const node = { id: coll.word, type: collocateType, group: 1, logDice: coll.logDice };
+                const logDice = getLogDiceValue(coll);
+                const node = { id: coll.word, type: collocateType, group: 1, logDice: logDice };
                 nodes.push(node);
                 nodeMap[coll.word] = node;
-                links.push({ source: data.seed, target: coll.word, weight: Math.log(coll.logDice) / 5 });
+                links.push({ source: data.seed, target: coll.word, weight: Math.log(logDice + 1) / 5 });
             });
             
             // Discovered noun nodes
@@ -1252,8 +1295,8 @@
 
         function renderExplorationDetails(data) {
             const detailsDiv = document.getElementById('semanticDetails');
-            const relation = data.relation_type || 'ADJ_PREDICATE';
-            const isVerb = relation === 'SUBJECT_OF' || relation === 'OBJECT_OF';
+            const relation = getSemanticRelationId(data, document.getElementById('exploreRelation')?.value || 'noun_adj_predicates');
+            const isVerb = isVerbRelation(relation);
             const collocateLabel = isVerb ? 'verbs' : 'adjectives';
             const collocateLabelCap = isVerb ? 'Verbs' : 'Adjectives';
             const collocateLabelSingular = isVerb ? 'verb' : 'adjective';
@@ -1261,28 +1304,21 @@
             // Get collocates - use generic keys or fallback to adjective-specific keys
             const seedCollocates = data.seed_collocates || data.seed_adjectives || [];
             const coreCollocates = data.core_collocates || data.core_adjectives || [];
-            const seedCount = data.seed_collocates_count || data.seed_adjectives_count || 0;
-            const coreCount = data.core_collocates_count || data.core_adjectives_count || 0;
-            
-            const relationLabels = {
-                'ADJ_PREDICATE': 'X is ADJ',
-                'ADJ_MODIFIER': 'ADJ X',
-                'SUBJECT_OF': 'X VERBs',
-                'OBJECT_OF': 'VERB X'
-            };
-            const relLabel = relationLabels[relation] || relation;
+            const seedCount = seedCollocates.length;
+            const coreCount = coreCollocates.length;
+            const relLabel = getRelationDisplayLabel(relation);
             
             let html = `
                 <div class="sketch-section">
                     <h3>🔍 Exploration from "${data.seed}" <span style="font-size:12px; color:#666; font-weight:normal;">(${relLabel})</span></h3>
                     <p style="color:#666; margin-bottom:15px;">
-                        Found <strong>${data.discovered_nouns_count}</strong> similar nouns using 
+                        Found <strong>${(data.discovered_nouns || []).length}</strong> similar nouns using 
                         <strong>${seedCount}</strong> ${collocateLabel}.
                         <strong>${coreCount}</strong> ${collocateLabel} define the semantic class.
                     </p>
                     
                     <h4 style="margin-top:20px;">Discovered Semantic Class</h4>
-                    <p style="color:#888; font-size:13px;">Nouns that share ${collocateLabelSingular} ${relation === 'ADJ_PREDICATE' ? 'predicates' : 'collocations'} with "${data.seed}"</p>
+                    <p style="color:#888; font-size:13px;">Nouns that share ${collocateLabelSingular} ${relation === 'adj_predicate' || relation === 'noun_adj_predicates' ? 'predicates' : 'collocations'} with "${data.seed}"</p>
                     <table style="width:100%; border-collapse:collapse; margin-top:10px;">
                         <tr style="background:#f0f0f0;">
                             <th style="text-align:left; padding:8px;">Noun</th>
@@ -1294,7 +1330,6 @@
             
             (data.discovered_nouns || []).slice(0, 20).forEach(noun => {
                 const sharedCollocates = noun.shared_collocates || noun.shared_adjectives || [];
-                const firstColloc = sharedCollocates[0] || '';
                 html += `
                     <tr class="collocation">
                         <td style="padding:8px; font-weight:500; cursor:pointer;" onclick="document.getElementById('exploreSeed').value='${noun.word}'; runExplore();">${noun.word}</td>
@@ -1303,7 +1338,7 @@
                         </td>
                         <td style="text-align:right; padding:8px; color:#666;">${noun.similarity_score.toFixed(1)}</td>
                         <td style="padding:8px; font-size:12px; color:#888;">${sharedCollocates.slice(0, 5).map(c =>
-                            `<span style="cursor:pointer; color:#27ae60;" onclick="event.stopPropagation(); fetchSemanticFieldExamples('${c}', '${noun.word}')">${c}</span>`
+                            `<span style="cursor:pointer; color:#27ae60;" onclick="event.stopPropagation(); fetchSemanticFieldExamples('${noun.word}', '${c}', '${relation}')">${c}</span>`
                         ).join(', ')}${sharedCollocates.length > 5 ? '...' : ''}</td>
                     </tr>
                 `;
@@ -1321,7 +1356,7 @@
             coreCollocates.forEach(coll => {
                 const coverage = Math.round(coll.coverage * 100);
                 html += `
-                    <div style="background:#e8f8f5; border:1px solid #27ae60; border-radius:20px; padding:6px 12px; font-size:13px; cursor:pointer;" onclick="fetchSemanticFieldExamples('${coll.word}', '${data.seed}')">
+                    <div style="background:#e8f8f5; border:1px solid #27ae60; border-radius:20px; padding:6px 12px; font-size:13px; cursor:pointer;" onclick="fetchSemanticFieldExamples('${data.seed}', '${coll.word}', '${relation}')">
                         <strong>${coll.word}</strong>
                         <span style="color:#27ae60; margin-left:5px;">${coverage}%</span>
                     </div>
@@ -1352,7 +1387,7 @@
 
         function visualizeMultiExploration(data, relation, seeds) {
             const graphDiv = document.getElementById('semanticGraph');
-            const isVerb = relation === 'subject_of' || relation === 'object_of';
+            const isVerb = isVerbRelation(relation);
             const collocateType = isVerb ? 'verb' : 'adjective';
             
             // Build nodes and links for force-directed graph
@@ -1379,7 +1414,7 @@
                     links.push({
                         source: edge.source,
                         target: edge.target,
-                        value: edge.weight,
+                        value: edge.weight ?? edge.log_dice ?? edge.logDice ?? 0,
                         type: edge.type
                     });
                 });
@@ -1466,26 +1501,20 @@
 
         function renderMultiExplorationDetails(data, seeds) {
             const detailsDiv = document.getElementById('semanticDetails');
-            const relation = data.relation_type || 'ADJ_PREDICATE';
-            const isVerb = relation === 'SUBJECT_OF' || relation === 'OBJECT_OF';
+            const relation = getSemanticRelationId(data, document.getElementById('multiExploreRelation')?.value || 'noun_adj_predicates');
+            const isVerb = isVerbRelation(relation);
             const collocateLabel = isVerb ? 'verbs' : 'adjectives';
             const collocateLabelCap = isVerb ? 'Verbs' : 'Adjectives';
-            
-            const relationLabels = {
-                'ADJ_PREDICATE': 'X is ADJ',
-                'ADJ_MODIFIER': 'ADJ X',
-                'SUBJECT_OF': 'X VERBs',
-                'OBJECT_OF': 'VERB X'
-            };
-            const relLabel = relationLabels[relation] || relation;
+            const relLabel = getRelationDisplayLabel(relation);
+            const coreCollocates = data.core_collocates || [];
             
             let html = `
                 <div class="sketch-section">
                     <h3>🔍 Multi-Seed Exploration <span style="font-size:12px; color:#666; font-weight:normal;">(${relLabel})</span></h3>
                     <p style="color:#666; margin-bottom:15px;">
                         <strong>Seeds:</strong> ${seeds.join(', ')} <br>
-                        <strong>${collocateLabelCap} found:</strong> ${data.seed_collocates_count || 0} | 
-                        <strong>Common across all:</strong> ${data.common_collocates_count || 0}
+                        <strong>${collocateLabelCap} found:</strong> ${(data.seed_collocates || []).length} | 
+                        <strong>Shared by threshold:</strong> ${coreCollocates.length}
                     </p>
             `;
             
@@ -1496,9 +1525,10 @@
                     <div>`;
                 
                 data.seed_collocates.forEach(item => {
+                    const logDice = getLogDiceValue(item);
                     html += `<div class="collocation">
                         <strong>${item.word}</strong>
-                        <span style="color: #666; font-size: 12px;">logDice: ${item.logDice?.toFixed(2) || 'N/A'}</span>
+                        <span style="color: #666; font-size: 12px;">logDice: ${logDice.toFixed(2)}</span>
                     </div>`;
                 });
                 
@@ -1506,14 +1536,16 @@
             }
             
             // List common collocates if any
-            if (data.common_collocates && data.common_collocates.length > 0) {
+            if (coreCollocates.length > 0) {
                 html += `<div style="margin-bottom: 15px; background: #f0f8ff; padding: 10px; border-radius: 6px; border-left: 4px solid #4a90d9;">
                     <h4 style="margin: 0 0 10px 0; color: #4a90d9;">Common ${collocateLabelCap} (shared by all seeds):</h4>
                     <div>`;
                 
-                data.common_collocates.forEach(word => {
+                coreCollocates.forEach(item => {
+                    const coverage = Math.round((item.coverage || 0) * 100);
                     html += `<div class="collocation" style="background: white; margin-bottom: 5px; border-radius: 3px;">
-                        <strong>${word}</strong>
+                        <strong>${item.word}</strong>
+                        <span style="color: #666; font-size: 12px;">coverage: ${coverage}%</span>
                     </div>`;
                 });
                 
@@ -1548,7 +1580,7 @@
                     throw new Error(`API returned ${response.status}`);
                 }
                 
-                const data = await response.json();
+                const data = normalizeSemanticComparisonData(await response.json());
                 
                 // Update stats
                 document.getElementById('statFullyShared').textContent = data.fully_shared || 0;
@@ -1686,8 +1718,13 @@
                 container.style.display = 'none';
                 return;
             }
-            
-            // Show loading
+
+            if (container.dataset.loaded === 'true') {
+                container.style.display = 'block';
+                return;
+            }
+
+            // Show loading on first expansion only
             container.innerHTML = '<div class="loading">Fetching examples...</div>';
             container.style.display = 'block';
             
@@ -1703,8 +1740,7 @@
             
             try {
                 const relationParam = relation ? `&relation=${encodeURIComponent(relation)}` : '';
-                const posParam = collocatePos ? `&collocate_pos=${encodeURIComponent(collocatePos)}` : '';
-                const url = `${apiUrl}/api/concordance/examples?word1=${encodeURIComponent(word1)}&word2=${encodeURIComponent(word2)}&limit=10${relationParam}${posParam}`;
+                const url = `${apiUrl}/api/concordance/examples?seed=${encodeURIComponent(word1)}&collocate=${encodeURIComponent(word2)}&top=${EXAMPLE_FETCH_LIMIT}${relationParam}`;
                 const response = await fetch(url);
                 
                 if (!response.ok) {
@@ -1712,27 +1748,22 @@
                 }
                 
                 const data = await response.json();
+                const totalCount = data.total_results ?? data.examples?.length ?? 0;
                 
                 if (data.examples && data.examples.length > 0) {
-                    let html = `<div style="font-size: 12px; color: #555; margin-bottom: 8px;"><strong>${data.count} examples found</strong></div>`;
-                    html += data.examples.map((ex, i) => {
-                        const displayText = ex.highlighted || ex.raw || ex.sentence;
-                        return `<div style="margin: 6px 0; padding: 6px; background: white; border-radius: 3px; font-family: monospace; font-size: 12px; line-height: 1.4;">
-                            ${displayText}
-                        </div>`;
-                    }).join('');
-                    
-                    if (data.count >= 10) {
-                        html += `<div style="margin-top: 8px; padding-top: 8px; border-top: 1px solid #ddd;">
-                            <button onclick="alert('Load more not yet implemented')" style="width: 100%; padding: 6px; font-size: 12px;">Load More (${data.count} total)</button>
-                        </div>`;
+                    let html = `<div style="font-size: 12px; color: #555; margin-bottom: 8px;"><strong>Example sentences</strong></div>`;
+                    html += renderExampleSentences(data.examples, [word1, word2]);
+                    if (totalCount > data.examples.length) {
+                        html += `<div style="font-size: 11px; color: #777; margin-top: 8px;">Showing ${data.examples.length} of ${totalCount} examples.</div>`;
                     }
                     container.innerHTML = html;
                 } else {
                     container.innerHTML = '<div style="color: #999; font-size: 12px;">No examples found for this combination.</div>';
                 }
+                container.dataset.loaded = 'true';
                 
             } catch (error) {
+                container.dataset.loaded = 'false';
                 container.innerHTML = `<div class="error" style="font-size: 12px;">Failed to fetch examples: ${error.message}</div>`;
             }
         }
@@ -1741,6 +1772,7 @@
             // Ensure we have valid words (not objects)
             const w1 = typeof word1 === 'object' ? word1.id : word1;
             const w2 = typeof word2 === 'object' ? word2.id : word2;
+            const apiUrl = document.getElementById('apiUrl').value.trim();
             
             // Hide panel during loading
             const panel = document.getElementById('examplesPanel');
@@ -1753,7 +1785,7 @@
             
             try {
                 // Try concordance endpoint first (general case)
-                const url = `${apiUrl}/api/concordance/examples?word1=${encodeURIComponent(w1)}&word2=${encodeURIComponent(w2)}&limit=10`;
+                const url = `${apiUrl}/api/concordance/examples?seed=${encodeURIComponent(w1)}&collocate=${encodeURIComponent(w2)}&top=${EXAMPLE_FETCH_LIMIT}`;
                 const response = await fetch(url);
                 
                 if (!response.ok) {
@@ -1761,28 +1793,14 @@
                 }
                 
                 const data = await response.json();
+                const totalCount = data.total_results ?? data.examples?.length ?? 0;
                 
                 // Update title
-                titleEl.textContent = `Concordance: "${w1}" + "${w2}" (${data.count} found)`;
+                titleEl.textContent = `Concordance: "${w1}" + "${w2}"`;
                 
                 // Display examples
                 if (data.examples && data.examples.length > 0) {
-                    listEl.innerHTML = data.examples.map((ex, i) => {
-                        // Use highlighted version if available, otherwise use raw sentence
-                        const displayText = ex.highlighted || ex.raw || ex.sentence;
-                        return `<div style="margin: 8px 0; padding: 8px; background: #f8f9fa; border-radius: 4px; font-family: monospace; font-size: 13px; line-height: 1.5;">
-                            <strong>${i + 1}.</strong> <span style="margin-left: 6px;">${displayText}</span>
-                        </div>`;
-                    }).join('');
-                    
-                    // Add "Load more" button if there are more examples available
-                    if (data.count >= 10) {
-                        listEl.innerHTML += `<div style="margin-top: 10px; padding-top: 10px; border-top: 1px solid #ddd;">
-                            <button onclick="fetchExamples('${w1}', '${w2}'); document.getElementById('examplesList').setAttribute('data-limit', '20');" style="width: 100%; padding: 8px;">
-                                Load More Examples
-                            </button>
-                        </div>`;
-                    }
+                    listEl.innerHTML = renderExampleSentences(data.examples, [w1, w2]);
                 } else {
                     listEl.innerHTML = '<div style="color: #999;">No examples found for this combination.</div>';
                 }
@@ -1869,7 +1887,7 @@
                 .attr('cursor', 'pointer')
                 .on('click', function(event, d) {
                     // Fetch examples when clicking on an edge
-                    fetchExamples(d.source.id, d.target.id);
+                    fetchExamples(d.target.id, d.source.id);
                 });
             
             // Draw nodes - color by category
@@ -1983,7 +2001,7 @@
                 const response = await fetch(`${apiUrl}/api/bcql`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ query: bcql, limit: limit })
+                    body: JSON.stringify({ query: bcql, top: limit })
                 });
                 if (!response.ok) {
                     throw new Error(`HTTP ${response.status}: ${response.statusText}`);
@@ -2173,14 +2191,15 @@
 
         function renderDependencyResults(data) {
             const resultsDiv = document.getElementById('depResults');
+            const relations = data.patterns || data.relations || {};
 
-            if (!data.relations || Object.keys(data.relations).length === 0) {
+            if (Object.keys(relations).length === 0) {
                 resultsDiv.innerHTML = '<div class="error">No dependency relations found</div>';
                 return;
             }
 
             let html = '';
-            for (const [relId, relData] of Object.entries(data.relations)) {
+            for (const [relId, relData] of Object.entries(relations)) {
                 // Check if this relation is filtered - use relation ID as the filter key
                 if (!activeDepFilters[relId]) continue;
 
@@ -2262,16 +2281,14 @@
             try {
                 // Pass the relation parameter so the backend uses the correct BCQL pattern
                 const response = await fetch(
-                    `${apiUrl}/api/concordance/examples?word1=${encodeURIComponent(headword)}&word2=${encodeURIComponent(collocate)}&relation=${encodeURIComponent(relationId)}&limit=10`
+                    `${apiUrl}/api/concordance/examples?seed=${encodeURIComponent(headword)}&collocate=${encodeURIComponent(collocate)}&relation=${encodeURIComponent(relationId)}&top=${EXAMPLE_FETCH_LIMIT}`
                 );
                 const data = await response.json();
 
                 if (data.examples && data.examples.length > 0) {
                     const deprel = extractDeprelFromId(relationId);
-                    let html = `<h4 style="margin-top:0;">Examples: "${headword}" → "${collocate}" <span style="color:#666;font-weight:normal;font-size:13px;">(${deprel})</span></h4>`;
-                    for (const ex of data.examples) {
-                        html += `<div class="example">${ex.highlighted}</div>`;
-                    }
+                    let html = `<h4 style="margin-top:0;">Example sentences: "${headword}" → "${collocate}" <span style="color:#666;font-weight:normal;font-size:13px;">(${deprel})</span></h4>`;
+                    html += renderExampleSentences(data.examples, [headword, collocate]);
                     examplesDiv.innerHTML = html;
                 } else {
                     examplesDiv.innerHTML = '<div style="color:#888;">No examples found in corpus</div>';
@@ -2324,7 +2341,8 @@
             fetch(`${apiUrl}/api/sketch/${encodeURIComponent(lemma)}/dep/${relationId}`)
                 .then(res => res.json())
                 .then(data => {
-                    const collocates = data.collocations || [];
+                    const relationData = data.patterns?.[relationId] || data.relations?.[relationId] || data;
+                    const collocates = relationData.collocations || [];
                     if (collocates.length === 0) {
                         svgContainer.innerHTML = '<div style="color:#666;">No data available for radial plot</div>';
                         return;

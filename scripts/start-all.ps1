@@ -14,62 +14,98 @@ param(
 $scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 $projectRoot = Split-Path -Parent $scriptDir
 
+# Log file setup
+$logDir = Join-Path $projectRoot "logs"
+if (-not (Test-Path $logDir)) { New-Item -ItemType Directory -Path $logDir | Out-Null }
+$logFile = Join-Path $logDir "start-all_$(Get-Date -Format 'yyyyMMdd_HHmmss').log"
+
+function Write-Log {
+    param([string]$Message, [string]$Color = '', [string]$Prefix = '')
+    $line = "[$(Get-Date -Format 'HH:mm:ss')] $Prefix$Message"
+    Add-Content -Path $logFile -Value $line
+    if ($Color) {
+        Write-Host $Message -ForegroundColor $Color
+    } else {
+        Write-Host $Message
+    }
+}
+
 # Check dependencies
 $jarFile = Join-Path $projectRoot "target\concept-sketch-1.5.0-shaded.jar"
 if (-not (Test-Path $jarFile)) {
-    Write-Error "JAR file not found: $jarFile"
-    Write-Host "Please build with: mvn clean package"
+    Write-Log "JAR file not found: $jarFile" -Color Red
+    Write-Log "Please build with: mvn clean package"
     exit 1
 }
 
 if (-not (Test-Path $Index)) {
-    Write-Error "Index directory not found: $Index"
+    Write-Log "Index directory not found: $Index" -Color Red
     exit 1
 }
 
 # collocations_v2.bin and associated switching logic are no longer used
 
-Write-Host ""
-Write-Host "================================" -ForegroundColor Cyan
-Write-Host 'ConceptSketch - Full Stack' -ForegroundColor Cyan
-Write-Host "================================" -ForegroundColor Cyan
-Write-Host ""
-Write-Host 'Configuration:' -ForegroundColor Green
-Write-Host "  API Port:  $Port"
-Write-Host "  Web Port:  $WebPort"
-Write-Host "  Index path: $Index"
-Write-Host ""
-Write-Host "Starting API Server (port $Port)..." -ForegroundColor Green
-Write-Host "Starting Web Server (port $WebPort)..." -ForegroundColor Green
-Write-Host ""
+Write-Log ""
+Write-Log "================================" -Color Cyan
+Write-Log "ConceptSketch - Full Stack" -Color Cyan
+Write-Log "================================" -Color Cyan
+Write-Log ""
+Write-Log "Configuration:" -Color Green
+Write-Log "  API Port:  $Port"
+Write-Log "  Web Port:  $WebPort"
+Write-Log "  Index path: $Index"
+Write-Log "  Log file:  $logFile"
+Write-Log ""
+Write-Log "Starting API Server (port $Port)..." -Color Green
+Write-Log "Starting Web Server (port $WebPort)..." -Color Green
+Write-Log ""
 
-# Start API server in background (collocations argument removed)
+# Start API server in background from project root so grammars/relations.json is found
 $apiJob = Start-Job -ScriptBlock {
-    param($jar, $idx, $p)
-    & java -jar $jar server --index $idx --port $p
-} -ArgumentList $jarFile, $Index, $Port
+    param($root, $jar, $idx, $p, $log)
+    Set-Location $root
+    & java -jar $jar server --index $idx --port $p *>&1 | ForEach-Object {
+        Add-Content -Path $log -Value "[$(Get-Date -Format 'HH:mm:ss')] [API] $_"
+        $_
+    }
+} -ArgumentList $projectRoot, $jarFile, $Index, $Port, $logFile
 
 # Give server time to start
 Start-Sleep -Seconds 3
 
-# Start web server in background
+# Start web server in background; pipe output into the log file
+$webDir = Join-Path $projectRoot "webapp"
 $webJob = Start-Job -ScriptBlock {
-    param($path, $p)
-    Push-Location $path
-    python -m http.server $p
-} -ArgumentList (Join-Path $projectRoot "webapp"), $WebPort
+    param($webPath, $p, $log)
+    Push-Location $webPath
+    python -m http.server $p *>&1 | ForEach-Object {
+        Add-Content -Path $log -Value "[$(Get-Date -Format 'HH:mm:ss')] [WEB] $_"
+        $_
+    }
+} -ArgumentList $webDir, $WebPort, $logFile
 
-Write-Host ""
-Write-Host 'Services started successfully!' -ForegroundColor Green
-Write-Host ""
-Write-Host 'API Server:' -ForegroundColor Cyan
-Write-Host "  http://localhost:$Port/health"
-Write-Host ""
-Write-Host 'Web Interface:' -ForegroundColor Cyan
-Write-Host "  http://localhost:$WebPort" -ForegroundColor Yellow
-Write-Host ""
-Write-Host 'Press Ctrl+C to stop all services...'
-Write-Host ""
+Write-Log ""
+Write-Log "Services started successfully!" -Color Green
+Write-Log ""
+Write-Log "API Server:" -Color Cyan
+Write-Log "  http://localhost:$Port/health"
+Write-Log ""
+Write-Log "Web Interface:" -Color Cyan
+Write-Log "  http://localhost:$WebPort" -Color Yellow
+Write-Log ""
+Write-Log "Log file: $logFile" -Color Cyan
+Write-Log ""
+Write-Log "Press Ctrl+C to stop all services..."
+Write-Log ""
 
-# Wait for jobs
-Wait-Job $apiJob, $webJob
+# Relay job output to console; stop cleanly on Ctrl+C
+try {
+    while ($apiJob.State -eq 'Running' -or $webJob.State -eq 'Running') {
+        Start-Sleep -Seconds 2
+        Receive-Job $apiJob, $webJob | ForEach-Object { Write-Host $_ }
+    }
+} finally {
+    Stop-Job $apiJob, $webJob -ErrorAction SilentlyContinue
+    Remove-Job $apiJob, $webJob -ErrorAction SilentlyContinue
+    Write-Log "Services stopped." -Color Yellow
+}

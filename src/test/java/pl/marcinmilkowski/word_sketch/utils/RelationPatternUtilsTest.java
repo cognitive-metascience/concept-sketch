@@ -90,6 +90,32 @@ class RelationPatternUtilsTest {
     }
 
     @Test
+    @DisplayName("buildFullPattern preserves labels and gap quantifiers when substituting headword")
+    void buildFullPattern_preservesLabelsAndGapQuantifiers() {
+        RelationConfig config = headConfig(
+                "1:[xpos=\"NN.*\"] []{0,3} 2:[xpos=\"VB.*\"]", 1, 3, PosGroup.VERB);
+
+        String result = RelationUtils.buildFullPattern(config, "theory");
+
+        assertEquals(
+                "1:[lemma=\"theory\" & xpos=\"NN.*\"] []{0,3} 2:[xpos=\"VB.*\"]",
+                result);
+    }
+
+    @Test
+    @DisplayName("buildFullPattern preserves labels and literals when substituting both positions")
+    void buildFullPattern_preservesStructureForHeadAndCollocateSubstitution() {
+        RelationConfig config = headConfig(
+                "1:[xpos=\"NN.*\"] [lemma=\"be\"] 2:[xpos=\"JJ.*\"]", 1, 3, PosGroup.ADJ);
+
+        String result = RelationUtils.buildFullPattern(config, "theory", "correct");
+
+        assertEquals(
+                "1:[lemma=\"theory\" & xpos=\"NN.*\"] [lemma=\"be\"] 2:[lemma=\"correct\" & xpos=\"JJ.*\"]",
+                result);
+    }
+
+    @Test
     @DisplayName("buildFullPattern with null collocateLemma falls back to 2-arg overload")
     void buildFullPattern_nullCollocateLemma_fallsBackToTwoArgOverload() {
         RelationConfig config = headConfig(

@@ -10,6 +10,7 @@ import java.io.IOException;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -21,7 +22,7 @@ class CollocateQueryHelperTest {
     private static CollocateQueryHelper stubHelper(Map<String, Long> frequencies) {
         return new CollocateQueryHelper((BlackLabIndex) null) {
             @Override
-            long getTotalFrequency(String lemma) throws IOException {
+            long loadTotalFrequency(String lemma) throws IOException {
                 return frequencies.getOrDefault(lemma.toLowerCase(), 0L);
             }
         };
@@ -32,7 +33,7 @@ class CollocateQueryHelperTest {
     private static CollocateQueryHelper defaultStub() {
         return new CollocateQueryHelper((BlackLabIndex) null) {
             @Override
-            long getTotalFrequency(String lemma) throws IOException {
+            long loadTotalFrequency(String lemma) throws IOException {
                 return switch (lemma.toLowerCase()) {
                     case "beautiful" -> 50000L;
                     case "important" -> 80000L;
@@ -177,5 +178,22 @@ class CollocateQueryHelperTest {
         assertEquals(expected, logDice, 0.0001, "logDice should match LogDiceUtils.compute()");
         assertTrue(logDice >= 0.0 && logDice <= 14.0,
             "logDice should be in [0, 14] range, was: " + logDice);
+    }
+
+    @Test
+    @DisplayName("getTotalFrequency: caches repeated lemma lookups case-insensitively")
+    void getTotalFrequency_cachesRepeatedLookups() throws IOException {
+        AtomicInteger lookups = new AtomicInteger();
+        CollocateQueryHelper helper = new CollocateQueryHelper((BlackLabIndex) null) {
+            @Override
+            long loadTotalFrequency(String lemma) {
+                lookups.incrementAndGet();
+                return 123L;
+            }
+        };
+
+        assertEquals(123L, helper.getTotalFrequency("Theory"));
+        assertEquals(123L, helper.getTotalFrequency("theory"));
+        assertEquals(1, lookups.get(), "Repeated lookups for the same lemma should hit the cache");
     }
 }

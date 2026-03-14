@@ -1,10 +1,17 @@
 package pl.marcinmilkowski.word_sketch.query;
 
+import nl.inl.blacklab.resultproperty.HitProperty;
+import nl.inl.blacklab.resultproperty.HitPropertyCaptureGroup;
+import nl.inl.blacklab.resultproperty.HitPropertyMultiple;
+import nl.inl.blacklab.resultproperty.PropertyValue;
 import nl.inl.blacklab.search.BlackLab;
 import nl.inl.blacklab.search.BlackLabIndex;
 import nl.inl.blacklab.search.Concordance;
 import nl.inl.blacklab.search.ConcordanceType;
+import nl.inl.blacklab.search.indexmetadata.Annotation;
+import nl.inl.blacklab.search.indexmetadata.MatchSensitivity;
 import nl.inl.blacklab.search.lucene.BLSpanQuery;
+import nl.inl.blacklab.search.lucene.RelationInfo;
 import nl.inl.blacklab.search.results.Concordances;
 import nl.inl.blacklab.search.results.ContextSize;
 import nl.inl.blacklab.search.results.Hit;
@@ -106,7 +113,8 @@ public class BlackLabQueryExecutor implements QueryExecutor {
 
         String bcql = buildBcqlWithLemmaPrepended(cqlPattern, lemma);
 
-        CollocateQueryHelper.CollocateSearch collocateSearch = collocateQueryHelper.executeCollocateSearch(lemma, bcql, true);
+        CollocateQueryHelper.CollocateSearch collocateSearch =
+                collocateQueryHelper.executeCollocateSearch(lemma, bcql, false);
         long headwordFreq = collocateSearch.headwordFreq();
         HitGroups groups = collocateSearch.groups();
 
@@ -198,7 +206,8 @@ public class BlackLabQueryExecutor implements QueryExecutor {
 
     private List<WordSketchResult> queryAndRankDepCollocates(
             String bcql, String lemma, double minLogDice, int maxResults) throws IOException {
-        CollocateQueryHelper.CollocateSearch collocateSearch = collocateQueryHelper.executeCollocateSearch(lemma, bcql, true);
+        CollocateQueryHelper.CollocateSearch collocateSearch =
+                collocateQueryHelper.executeCollocateSearch(lemma, bcql, false);
         long headwordFreq = collocateSearch.headwordFreq();
         HitGroups groups = collocateSearch.groups();
 
@@ -212,6 +221,7 @@ public class BlackLabQueryExecutor implements QueryExecutor {
 
     /** Holds the frequency and POS maps produced by {@link #collectFrequenciesAndPosFromGroups}. */
     private record CollocateHitStats(Map<String, Long> freqMap, Map<String, String> lemmaPosMap) {}
+    static record ParsedGroupIdentity(@Nullable String lemma, @Nullable String pos) {}
 
     /**
      * Iterates over HitGroups and collects frequency and POS data using the provided lemma extractor.
@@ -233,6 +243,40 @@ public class BlackLabQueryExecutor implements QueryExecutor {
             if (pos != null) lemmaPosMap.put(key, pos);
         }
         return new CollocateHitStats(freqMap, lemmaPosMap);
+    }
+
+    /**
+     * Iterates over HitGroups whose identities are grouped by collocate capture properties
+     * (lemma or lemma+xpos) rather than full hit text.
+     */
+    private CollocateHitStats collectFrequenciesAndPosFromPropertyGroups(HitGroups groups) {
+        Map<String, Long> freqMap = new LinkedHashMap<>();
+        Map<String, String> lemmaPosMap = new HashMap<>();
+        for (HitGroup group : groups) {
+            ParsedGroupIdentity parsed = parseGroupedCollocateIdentity(group.identity());
+            String lemma = parsed.lemma();
+            if (lemma == null || lemma.isBlank()) continue;
+            String key = lemma.toLowerCase();
+            freqMap.merge(key, group.size(), Long::sum);
+            String pos = parsed.pos();
+            if (pos != null && !pos.isBlank()) {
+                lemmaPosMap.put(key, pos);
+            }
+        }
+        return new CollocateHitStats(freqMap, lemmaPosMap);
+    }
+
+    static ParsedGroupIdentity parseGroupedCollocateIdentity(PropertyValue identity) {
+        List<PropertyValue> values = identity.valuesList();
+        if (values.isEmpty()) {
+            return new ParsedGroupIdentity(null, null);
+        }
+        String lemma = values.get(0).toString();
+        if (lemma == null || lemma.isBlank()) {
+            return new ParsedGroupIdentity(null, null);
+        }
+        String pos = values.size() > 1 ? values.get(1).toString() : null;
+        return new ParsedGroupIdentity(lemma, pos);
     }
 
     /**
@@ -276,14 +320,47 @@ public class BlackLabQueryExecutor implements QueryExecutor {
         }
 
         int collocateLabelIndex = CqlUtils.findLabelTokenIndex(bcqlPattern, 2);
-        CollocateQueryHelper.CollocateSearch collocateSearch = collocateQueryHelper.executeCollocateSearch(lemma, bcqlPattern, false);
+        HitProperty groupBy = collocateLabelIndex >= 0 ? createSurfaceCollocateGroupProperty() : null;
+        CollocateQueryHelper.CollocateSearch collocateSearch = groupBy != null
+                ? collocateQueryHelper.executeCollocateSearch(lemma, bcqlPattern, groupBy, false)
+                : collocateQueryHelper.executeCollocateSearch(lemma, bcqlPattern, false);
         long headwordFreq = collocateSearch.headwordFreq();
         HitGroups groups = collocateSearch.groups();
 
-        CollocateHitStats stats = collectFrequenciesAndPosFromGroups(groups,
-                identity -> extractCollocateFromIdentity(identity, collocateLabelIndex));
+        CollocateHitStats stats = groupBy != null
+                ? collectFrequenciesAndPosFromPropertyGroups(groups)
+                : collectFrequenciesAndPosFromGroups(groups,
+                        identity -> extractCollocateFromIdentity(identity, collocateLabelIndex));
 
         return collocateQueryHelper.buildAndRankCollocates(stats.freqMap(), headwordFreq, minLogDice, maxResults, stats.lemmaPosMap());
+    }
+
+    @Nullable
+    private HitProperty createSurfaceCollocateGroupProperty() {
+        Annotation lemmaAnnotation = blackLabIndex.mainAnnotatedField().annotation("lemma");
+        if (lemmaAnnotation == null) {
+            logger.debug("Surface collocate capture grouping unavailable: lemma annotation is missing");
+            return null;
+        }
+        HitProperty lemmaCapture = new HitPropertyCaptureGroup(
+                blackLabIndex,
+                lemmaAnnotation,
+                MatchSensitivity.INSENSITIVE,
+                "2",
+                RelationInfo.SpanMode.FULL_SPAN);
+
+        Annotation xposAnnotation = blackLabIndex.mainAnnotatedField().annotation("xpos");
+        if (xposAnnotation == null) {
+            return lemmaCapture;
+        }
+
+        HitProperty xposCapture = new HitPropertyCaptureGroup(
+                blackLabIndex,
+                xposAnnotation,
+                MatchSensitivity.SENSITIVE,
+                "2",
+                RelationInfo.SpanMode.FULL_SPAN);
+        return new HitPropertyMultiple(lemmaCapture, xposCapture);
     }
 
     @Override

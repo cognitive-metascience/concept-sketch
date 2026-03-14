@@ -31,22 +31,22 @@ class RelationUtilsTest {
 
     @Test
     void subjectOfAlias_resolvesToCanonical() {
-        assertEquals("noun_verbs", RelationUtils.resolveRelationAlias("subject_of"));
+        assertEquals("subject_of", RelationUtils.resolveRelationAlias("subject_of"));
     }
 
     @Test
     void subjectAlias_resolvesToCanonical() {
-        assertEquals("noun_verbs", RelationUtils.resolveRelationAlias("subject"));
+        assertEquals("subject_of", RelationUtils.resolveRelationAlias("subject"));
     }
 
     @Test
     void objectOfAlias_resolvesToCanonical() {
-        assertEquals("verb_nouns", RelationUtils.resolveRelationAlias("object_of"));
+        assertEquals("object_of", RelationUtils.resolveRelationAlias("object_of"));
     }
 
     @Test
     void objectAlias_resolvesToCanonical() {
-        assertEquals("verb_nouns", RelationUtils.resolveRelationAlias("object"));
+        assertEquals("object_of", RelationUtils.resolveRelationAlias("object"));
     }
 
     @Test
@@ -55,6 +55,8 @@ class RelationUtilsTest {
         assertEquals("noun_modifiers", RelationUtils.resolveRelationAlias("noun_modifiers"));
         assertEquals("noun_verbs", RelationUtils.resolveRelationAlias("noun_verbs"));
         assertEquals("verb_nouns", RelationUtils.resolveRelationAlias("verb_nouns"));
+        assertEquals("subject_of", RelationUtils.resolveRelationAlias("subject_of"));
+        assertEquals("object_of", RelationUtils.resolveRelationAlias("object_of"));
     }
 
     @Test
@@ -62,8 +64,8 @@ class RelationUtilsTest {
         assertEquals("noun_adj_predicates", RelationUtils.resolveRelationAlias("ADJ_PREDICATE"));
         assertEquals("noun_adj_predicates", RelationUtils.resolveRelationAlias("Adj_Predicate"));
         assertEquals("noun_modifiers", RelationUtils.resolveRelationAlias("MODIFIER"));
-        assertEquals("noun_verbs", RelationUtils.resolveRelationAlias("Subject_Of"));
-        assertEquals("verb_nouns", RelationUtils.resolveRelationAlias("OBJECT_OF"));
+        assertEquals("subject_of", RelationUtils.resolveRelationAlias("Subject_Of"));
+        assertEquals("object_of", RelationUtils.resolveRelationAlias("OBJECT_OF"));
     }
 
     @Test

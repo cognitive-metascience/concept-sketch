@@ -134,12 +134,14 @@ public final class CqlUtils {
         if (pattern == null || lemma == null || lemma.isBlank() || position < 1) {
             return pattern;
         }
-        List<String> tokens = splitCqlTokens(pattern);
-        if (position > tokens.size()) {
+        List<int[]> tokenRanges = findTopLevelTokenRanges(pattern);
+        if (position > tokenRanges.size()) {
             return pattern;
         }
-        tokens.set(position - 1, injectLemmaConstraint(tokens.get(position - 1), lemma));
-        return String.join(" ", tokens);
+        int[] range = tokenRanges.get(position - 1);
+        String existingConstraint = pattern.substring(range[0], range[1]);
+        String replacement = injectLemmaConstraint(existingConstraint, lemma);
+        return pattern.substring(0, range[0]) + replacement + pattern.substring(range[1]);
     }
 
     /**
@@ -164,6 +166,52 @@ public final class CqlUtils {
         sb.append("]");
         return sb.toString();
     }
+
+    private static List<int[]> findTopLevelTokenRanges(String pattern) {
+        List<int[]> ranges = new ArrayList<>();
+        if (pattern == null || pattern.isBlank()) {
+            return ranges;
+        }
+        int i = 0;
+        while (i < pattern.length()) {
+            char c = pattern.charAt(i);
+            if (c == '[') {
+                int start = i;
+                int depth = 0;
+                while (i < pattern.length()) {
+                    char ch = pattern.charAt(i);
+                    if (ch == '"') {
+                        i++;
+                        while (i < pattern.length() && pattern.charAt(i) != '"') {
+                            if (pattern.charAt(i) == '\\') i++;
+                            i++;
+                        }
+                    } else if (ch == '[') {
+                        depth++;
+                    } else if (ch == ']') {
+                        depth--;
+                        if (depth == 0) {
+                            ranges.add(new int[]{start, i + 1});
+                            i++;
+                            break;
+                        }
+                    }
+                    i++;
+                }
+            } else if (c == '"') {
+                i++;
+                while (i < pattern.length() && pattern.charAt(i) != '"') {
+                    if (pattern.charAt(i) == '\\') i++;
+                    i++;
+                }
+                i++;
+            } else {
+                i++;
+            }
+        }
+        return ranges;
+    }
+
     private static final java.util.regex.Pattern LEMMA_ATTR_RELAXED =
             java.util.regex.Pattern.compile("lemma=[\"']([^\"']+)[\"']",
                     java.util.regex.Pattern.CASE_INSENSITIVE);

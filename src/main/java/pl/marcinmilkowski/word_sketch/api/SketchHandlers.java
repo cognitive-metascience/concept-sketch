@@ -11,6 +11,7 @@ import pl.marcinmilkowski.word_sketch.api.model.RelationListResponse;
 import pl.marcinmilkowski.word_sketch.api.model.SketchResponse;
 import pl.marcinmilkowski.word_sketch.config.GrammarConfig;
 import pl.marcinmilkowski.word_sketch.config.RelationUtils;
+import pl.marcinmilkowski.word_sketch.model.PosGroup;
 import pl.marcinmilkowski.word_sketch.model.RelationType;
 import pl.marcinmilkowski.word_sketch.query.spi.SketchQueryPort;
 import pl.marcinmilkowski.word_sketch.model.sketch.*;
@@ -19,9 +20,15 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.function.Predicate;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * HTTP handlers for word sketch endpoints.
@@ -34,17 +41,27 @@ class SketchHandlers {
     private static final int DEFAULT_SKETCH_RESULTS = 20;
     /** Higher limit for single-relation queries where the caller has already narrowed to one relation. */
     private static final int SINGLE_RELATION_RESULTS = 50;
+    /**
+     * Bounded worker pool for full-sketch relation batches. A small shared pool is enough to overlap
+     * independent BlackLab relation queries without flooding the index with dozens of parallel searches.
+     */
+    private static final int RELATION_QUERY_THREADS =
+            Math.max(2, Math.min(6, Runtime.getRuntime().availableProcessors()));
+    private static final AtomicInteger RELATION_QUERY_THREAD_IDS = new AtomicInteger();
 
     private final SketchQueryPort executor;
     private final GrammarConfig grammarConfig;
+    private final ExecutorService relationQueryExecutor;
 
     SketchHandlers(SketchQueryPort executor, @NonNull GrammarConfig grammarConfig) {
         this.executor = executor;
         this.grammarConfig = grammarConfig;
+        this.relationQueryExecutor = createRelationQueryExecutor();
     }
 
     void routeSketchRequest(HttpExchange exchange) throws IOException {
         String path = exchange.getRequestURI().getPath();
+        Map<String, String> params = HttpApiUtils.parseQueryParams(exchange.getRequestURI().getQuery());
         String[] parts = path.substring("/api/sketch/".length()).split("/");
 
         if (parts.length == 0 || parts[0].isEmpty()) {
@@ -75,7 +92,11 @@ class SketchHandlers {
         if (relation != null && !relation.isEmpty()) {
             handleRelationQueryById(exchange, lemma, relation, RelationType.SURFACE);
         } else {
-            handleFullSketchForType(exchange, lemma, RelationType.SURFACE);
+            handleFullSketchForType(
+                    exchange,
+                    lemma,
+                    RelationType.SURFACE,
+                    surfaceRelationFilter(parseSurfacePosFilter(params)));
         }
     }
 
@@ -95,12 +116,40 @@ class SketchHandlers {
         HttpApiUtils.sendJsonResponse(exchange, new RelationListResponse("ok", relationsArray));
     }
 
-    private void handleFullSketchForType(HttpExchange exchange, String lemma, RelationType relationType) throws IOException {
-        RelationQueryBatch batch = executeRelationQueries(relationType, rel -> true, lemma,
+    private void handleFullSketchForType(
+            HttpExchange exchange,
+            String lemma,
+            RelationType relationType,
+            Predicate<pl.marcinmilkowski.word_sketch.config.RelationConfig> extraFilter) throws IOException {
+        RelationQueryBatch batch = executeRelationQueries(relationType, extraFilter, lemma,
             (rel, sketch) -> SketchResponseAssembler.buildSurfaceRelationEntry(rel, sketch.collocations(),
                 sketch.results().stream().mapToLong(WordSketchResult::frequency).sum()));
 
         HttpApiUtils.sendJsonResponse(exchange, buildSketchResponse(lemma, null, batch.results(), batch.errors()));
+    }
+
+    private static Predicate<pl.marcinmilkowski.word_sketch.config.RelationConfig> surfaceRelationFilter(
+            Optional<PosGroup> collocatePosFilter) {
+        return rel -> collocatePosFilter.map(pos -> rel.collocatePosGroup() == pos).orElse(true);
+    }
+
+    private static Optional<PosGroup> parseSurfacePosFilter(Map<String, String> params) {
+        String raw = params.get("pos");
+        if (raw == null || raw.isBlank()) {
+            return Optional.empty();
+        }
+        if (raw.length() > HttpApiUtils.MAX_PARAM_LENGTH) {
+            throw new IllegalArgumentException(
+                    "Parameter 'pos' exceeds maximum length of " + HttpApiUtils.MAX_PARAM_LENGTH + " characters");
+        }
+        return switch (raw.trim().toLowerCase(Locale.ROOT)) {
+            case "noun" -> Optional.of(PosGroup.NOUN);
+            case "verb" -> Optional.of(PosGroup.VERB);
+            case "adj" -> Optional.of(PosGroup.ADJ);
+            case "adv" -> Optional.of(PosGroup.ADV);
+            default -> throw new IllegalArgumentException(
+                    "Invalid pos parameter: " + raw + " (expected noun, verb, adj, adv)");
+        };
     }
 
     /**
@@ -147,24 +196,85 @@ class SketchHandlers {
             Predicate<pl.marcinmilkowski.word_sketch.config.RelationConfig> extraFilter,
             String lemma,
             RelationEntryBuilder builder) {
+        List<pl.marcinmilkowski.word_sketch.config.RelationConfig> selectedRelations = grammarConfig.relations().stream()
+                .filter(rel -> rel.relationType().orElse(null) == relationType)
+                .filter(extraFilter)
+                .toList();
         Map<String, RelationEntry> byRelation = new LinkedHashMap<>();
         List<String> relationErrors = new ArrayList<>();
-        for (var rel : grammarConfig.relations()) {
-            if (rel.relationType().orElse(null) != relationType) continue;
-            if (!extraFilter.test(rel)) continue;
+
+        List<CompletableFuture<RelationTaskResult>> futures = selectedRelations.stream()
+                .map(rel -> CompletableFuture.supplyAsync(
+                        () -> executeRelationQueryTask(lemma, rel), relationQueryExecutor))
+                .toList();
+
+        for (int i = 0; i < selectedRelations.size(); i++) {
+            var rel = selectedRelations.get(i);
+            RelationTaskResult taskResult = awaitRelationTask(rel, lemma, futures.get(i));
+            if (taskResult.error() != null) {
+                relationErrors.add(taskResult.error());
+                continue;
+            }
             try {
-                Optional<ExecutedSketch> sketchOpt = buildSketch(lemma, rel);
-                sketchOpt.ifPresent(sketch -> byRelation.put(rel.id(), builder.build(rel, sketch)));
-            } catch (IOException | RuntimeException e) {
-                logger.warn("Relation {} failed for lemma {}: {}", rel.id(), lemma, e.getMessage(), e);
-                relationErrors.add(rel.id() + ": " + e.getMessage());
+                taskResult.sketch().ifPresent(sketch -> byRelation.put(rel.id(), builder.build(rel, sketch)));
+            } catch (RuntimeException e) {
+                logger.warn("Relation {} failed for lemma {} during response assembly: {}", rel.id(), lemma,
+                        e.getMessage(), e);
+                relationErrors.add(formatRelationError(rel, e));
             }
         }
         return new RelationQueryBatch(byRelation, relationErrors);
     }
 
+    private RelationTaskResult executeRelationQueryTask(
+            String lemma,
+            pl.marcinmilkowski.word_sketch.config.RelationConfig rel) {
+        try {
+            return new RelationTaskResult(buildSketch(lemma, rel), null);
+        } catch (IOException | RuntimeException e) {
+            logger.warn("Relation {} failed for lemma {}: {}", rel.id(), lemma, e.getMessage(), e);
+            return new RelationTaskResult(Optional.empty(), formatRelationError(rel, e));
+        }
+    }
+
+    private static RelationTaskResult awaitRelationTask(
+            pl.marcinmilkowski.word_sketch.config.RelationConfig rel,
+            String lemma,
+            CompletableFuture<RelationTaskResult> future) {
+        try {
+            return future.join();
+        } catch (CompletionException e) {
+            Throwable cause = e.getCause() != null ? e.getCause() : e;
+            logger.warn("Relation {} failed for lemma {}: {}", rel.id(), lemma, cause.getMessage(), cause);
+            return new RelationTaskResult(Optional.empty(), formatRelationError(rel, cause));
+        }
+    }
+
+    private static String formatRelationError(
+            pl.marcinmilkowski.word_sketch.config.RelationConfig rel,
+            Throwable error) {
+        String message = error.getMessage();
+        return rel.id() + ": " + ((message == null || message.isBlank())
+                ? error.getClass().getSimpleName()
+                : message);
+    }
+
+    private static ExecutorService createRelationQueryExecutor() {
+        return Executors.newFixedThreadPool(RELATION_QUERY_THREADS, runnable -> {
+            Thread thread = new Thread(runnable,
+                    "sketch-relations-" + RELATION_QUERY_THREAD_IDS.incrementAndGet());
+            thread.setDaemon(true);
+            return thread;
+        });
+    }
+
+    void close() {
+        relationQueryExecutor.shutdown();
+    }
+
     /** Holds the per-relation results and any error messages from a batch of relation queries. */
     private record RelationQueryBatch(Map<String, RelationEntry> results, List<String> errors) {}
+    private record RelationTaskResult(Optional<ExecutedSketch> sketch, String error) {}
 
     /** Builds a {@link RelationEntry} from a relation config and its executed sketch. */
     @FunctionalInterface

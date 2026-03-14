@@ -66,7 +66,18 @@ class ConcordanceHandlersTest {
         assertEquals("ok", body.path("status").asText());
         assertEquals("house", body.path("seed").asText());
         assertEquals("big", body.path("collocate").asText());
+        assertEquals(1, body.path("total_results").asInt());
+        assertEquals(10, body.path("top").asInt());
         assertTrue(body.has("examples"), "Response must contain 'examples' key");
+    }
+
+    @Test
+    void handleConcordanceExamples_legacyParams_return400() throws Exception {
+        ConcordanceHandlers handlers = new ConcordanceHandlers(null, GrammarConfigHelper.requireTestConfig());
+        MockExchangeFactory.MockExchange ex = new MockExchangeFactory.MockExchange(
+                "http://localhost/api/concordance/examples?word1=house&word2=big&relation=noun_adj_predicates&limit=5");
+        HttpApiUtils.wrapWithErrorHandling(handlers::handleConcordanceExamples, "test").handle(ex);
+        assertEquals(400, ex.statusCode);
     }
 
     /**

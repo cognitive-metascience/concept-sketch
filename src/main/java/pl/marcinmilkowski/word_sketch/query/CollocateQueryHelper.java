@@ -40,6 +40,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -50,6 +51,7 @@ import java.util.Set;
  */
 class CollocateQueryHelper {
     private static final Logger logger = LoggerFactory.getLogger(CollocateQueryHelper.class);
+    private static final int MAX_TOTAL_FREQUENCY_CACHE_ENTRIES = 20_000;
 
     /** Over-fetching factor: compensates for collocates eliminated by post-ranking filters.
      *  Ensures enough candidates remain after frequency/logDice filtering. */
@@ -57,10 +59,12 @@ class CollocateQueryHelper {
 
     @Nullable
     private final BlackLabIndex index;
+    private final Map<String, Long> totalFrequencyCache;
 
     /** Creates a helper bound to the given BlackLab index. */
     CollocateQueryHelper(@NonNull BlackLabIndex index) {
         this.index = index;
+        this.totalFrequencyCache = createTotalFrequencyCache();
     }
 
     /**
@@ -75,6 +79,7 @@ class CollocateQueryHelper {
     /** No-arg constructor for test-only instances — index is null. */
     private CollocateQueryHelper() {
         this.index = null;
+        this.totalFrequencyCache = createTotalFrequencyCache();
     }
 
     /**
@@ -101,6 +106,25 @@ class CollocateQueryHelper {
      * @throws IOException wrapping any RuntimeException thrown by the BlackLab index
      */
     long getTotalFrequency(String lemma) throws IOException {
+        String normalizedLemma = lemma.toLowerCase();
+        synchronized (totalFrequencyCache) {
+            Long cached = totalFrequencyCache.get(normalizedLemma);
+            if (cached != null) {
+                return cached;
+            }
+        }
+        long frequency = loadTotalFrequency(normalizedLemma);
+        synchronized (totalFrequencyCache) {
+            totalFrequencyCache.put(normalizedLemma, frequency);
+        }
+        return frequency;
+    }
+
+    /**
+     * Loads total token frequency for the given lemma from the BlackLab index without consulting
+     * the process-level cache. Tests override this method to supply deterministic corpus frequencies.
+     */
+    long loadTotalFrequency(String lemma) throws IOException {
         assertIndexAvailable();
         try {
             BlackLabIndex idx = this.index;
@@ -115,6 +139,15 @@ class CollocateQueryHelper {
         } catch (RuntimeException e) {
             throw new IOException("Unexpected failure retrieving frequency for lemma '" + lemma + "'", e);
         }
+    }
+
+    private static Map<String, Long> createTotalFrequencyCache() {
+        return Collections.synchronizedMap(new LinkedHashMap<>(256, 0.75f, true) {
+            @Override
+            protected boolean removeEldestEntry(Map.Entry<String, Long> eldest) {
+                return size() > MAX_TOTAL_FREQUENCY_CACHE_ENTRIES;
+            }
+        });
     }
 
     // -------------------------------------------------------------------------
@@ -133,15 +166,37 @@ class CollocateQueryHelper {
      * @param bcqlPattern     the BCQL pattern to search
      * @param withStoredHits  {@code true} to request stored XML hit fields (needed when
      *                        callers read per-hit XML content); {@code false} for the
-     *                        lighter group-only variant
+     *                        lighter group-stats variant
      */
     CollocateSearch executeCollocateSearch(String lemma, String bcqlPattern, boolean withStoredHits)
             throws IOException {
-        return performCollocateSearch(lemma, bcqlPattern, withStoredHits);
+        assertIndexAvailable();
+        return executeCollocateSearch(
+                lemma,
+                bcqlPattern,
+                new HitPropertyHitText(this.index, MatchSensitivity.INSENSITIVE),
+                withStoredHits);
     }
 
-    private CollocateSearch performCollocateSearch(String lemma, String bcqlPattern, boolean withStoredHits)
-            throws IOException {
+    /**
+     * Executes a grouped collocate search using the provided grouping property.
+     *
+     * <p>Callers that only need grouped counts should pass {@code withStoredHits = false},
+     * which uses BlackLab's stats-only grouping path and avoids materializing grouped hits.</p>
+     */
+    CollocateSearch executeCollocateSearch(
+            String lemma,
+            String bcqlPattern,
+            HitProperty groupBy,
+            boolean withStoredHits) throws IOException {
+        return performCollocateSearch(lemma, bcqlPattern, groupBy, withStoredHits);
+    }
+
+    private CollocateSearch performCollocateSearch(
+            String lemma,
+            String bcqlPattern,
+            HitProperty groupBy,
+            boolean withStoredHits) throws IOException {
         assertIndexAvailable();
         try {
             BlackLabIndex idx = this.index;
@@ -150,10 +205,9 @@ class CollocateQueryHelper {
             BLSpanQuery query = pattern.toQuery(QueryInfo.create(idx));
             long headwordFreq = getTotalFrequency(lemma);
             SearchHits searchHits = idx.search().find(query);
-            HitProperty groupBy = new HitPropertyHitText(idx, MatchSensitivity.INSENSITIVE);
             HitGroups groups = withStoredHits
                     ? searchHits.groupWithStoredHits(groupBy, Results.NO_LIMIT).execute()
-                    : searchHits.group(groupBy, Results.NO_LIMIT).execute();
+                    : searchHits.groupStats(groupBy, Results.NO_LIMIT).execute();
             return new CollocateSearch(headwordFreq, groups);
         } catch (InvalidQuery e) {
             throw new IllegalArgumentException("BCQL parse error: " + e.getMessage(), e);
