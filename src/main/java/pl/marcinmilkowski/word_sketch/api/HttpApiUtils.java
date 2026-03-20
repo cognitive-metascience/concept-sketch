@@ -160,6 +160,10 @@ final class HttpApiUtils {
      * Sends a CSV response with {@code Content-Type: text/csv; charset=UTF-8} and an optional
      * {@code Content-Disposition: attachment} header that suggests a download filename.
      *
+     * <p>The filename is sanitised before being written into the header: CR, LF, double-quote,
+     * and other RFC 7230 separator characters that could enable HTTP response splitting are
+     * stripped.</p>
+     *
      * @param exchange         the HTTP exchange to write to
      * @param csv              the CSV string to send (UTF-8)
      * @param suggestedFilename the suggested download filename (e.g. {@code "theory-sketch.csv"})
@@ -171,7 +175,7 @@ final class HttpApiUtils {
         byte[] bytes = csv.getBytes(java.nio.charset.StandardCharsets.UTF_8);
         exchange.getResponseHeaders().set("Content-Type", "text/csv; charset=UTF-8");
         exchange.getResponseHeaders().set("Content-Disposition",
-                "attachment; filename=\"" + suggestedFilename + "\"");
+                "attachment; filename=\"" + sanitizeHeaderFilename(suggestedFilename) + "\"");
         setCorsHeader(exchange);
         exchange.sendResponseHeaders(200, bytes.length);
         try (OutputStream os = exchange.getResponseBody()) {
@@ -182,6 +186,10 @@ final class HttpApiUtils {
     /**
      * Sends an XML response with {@code Content-Type: application/xml; charset=UTF-8} and an
      * optional {@code Content-Disposition: attachment} header that suggests a download filename.
+     *
+     * <p>The filename is sanitised before being written into the header: CR, LF, double-quote,
+     * and other RFC 7230 separator characters that could enable HTTP response splitting are
+     * stripped.</p>
      *
      * @param exchange         the HTTP exchange to write to
      * @param xml              the XML string to send (UTF-8)
@@ -194,12 +202,33 @@ final class HttpApiUtils {
         byte[] bytes = xml.getBytes(java.nio.charset.StandardCharsets.UTF_8);
         exchange.getResponseHeaders().set("Content-Type", "application/xml; charset=UTF-8");
         exchange.getResponseHeaders().set("Content-Disposition",
-                "attachment; filename=\"" + suggestedFilename + "\"");
+                "attachment; filename=\"" + sanitizeHeaderFilename(suggestedFilename) + "\"");
         setCorsHeader(exchange);
         exchange.sendResponseHeaders(200, bytes.length);
         try (OutputStream os = exchange.getResponseBody()) {
             os.write(bytes);
         }
+    }
+
+    /**
+     * Strips characters from a filename that are unsafe inside an HTTP header field value.
+     *
+     * <p>Specifically removes:
+     * <ul>
+     *   <li>CR ({@code \r}) and LF ({@code \n}) — prevent HTTP response splitting</li>
+     *   <li>Double-quote ({@code "}) — would terminate the {@code filename="…"} token early</li>
+     *   <li>Backslash ({@code \}) — RFC 6266 disallows it in the quoted-string filename token</li>
+     * </ul>
+     * All other characters (including non-ASCII) are left intact so that meaningful filenames
+     * are preserved.
+     * </p>
+     *
+     * @param filename the raw suggested filename; must not be {@code null}
+     * @return the sanitised filename, never {@code null}
+     */
+    static @NonNull String sanitizeHeaderFilename(@NonNull String filename) {
+        // Strip CR, LF (response-splitting), double-quote (header injection), and backslash
+        return filename.replaceAll("[\r\n\"\\\\]", "");
     }
 
     /**

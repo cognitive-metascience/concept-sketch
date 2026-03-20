@@ -250,6 +250,39 @@ class ExportEndpointTest {
         assertEquals(400, response.statusCode());
     }
 
+    // ── sanitizeHeaderFilename integration ────────────────────────────────────
+
+    @Test
+    @DisplayName("Content-Disposition filename contains no CR or LF characters (response-splitting guard)")
+    void sketchCsv_contentDispositionFilename_noNewlines() throws Exception {
+        // Verify that even if a caller somehow passes a crafted lemma, the header is safe.
+        // We test the sanitiseHeaderFilename directly via a mock exchange to avoid needing
+        // the server to accept arbitrary lemmas.
+        MockExchangeFactory.MockExchange ex = new MockExchangeFactory.MockExchange(
+                "http://localhost/api");
+        HttpApiUtils.sendCsvResponse(ex, "a,b\n1,2\n", "evil\r\nInjected-Header: x.csv");
+        String cd = ex.getResponseHeaders().getFirst("Content-Disposition");
+        assertNotNull(cd, "Content-Disposition must be set");
+        assertFalse(cd.contains("\r"), "CR must be stripped from Content-Disposition filename");
+        assertFalse(cd.contains("\n"), "LF must be stripped from Content-Disposition filename");
+    }
+
+    @Test
+    @DisplayName("Content-Disposition filename contains no double-quote characters (header token guard)")
+    void xmlResponse_contentDispositionFilename_noDoubleQuotes() throws Exception {
+        MockExchangeFactory.MockExchange ex = new MockExchangeFactory.MockExchange(
+                "http://localhost/api");
+        HttpApiUtils.sendXmlResponse(ex, "<?xml version=\"1.0\"?><r/>", "fi\"le.xml");
+        String cd = ex.getResponseHeaders().getFirst("Content-Disposition");
+        assertNotNull(cd, "Content-Disposition must be set");
+        // The outer enclosing quotes are fine; internal quotes inside the filename must be stripped.
+        // Strip the surrounding `filename="..."` wrapper to inspect just the filename value:
+        int start = cd.indexOf("filename=\"") + "filename=\"".length();
+        int end = cd.lastIndexOf('"');
+        String filenameValue = cd.substring(start, end);
+        assertFalse(filenameValue.contains("\""), "double-quote must be absent from the filename value");
+    }
+
     // ── Helpers ───────────────────────────────────────────────────────────────
 
     private HttpResponse<String> get(String path) throws IOException, InterruptedException {
