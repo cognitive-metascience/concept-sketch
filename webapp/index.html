@@ -317,6 +317,52 @@
         }
         .adj-row { cursor: pointer; }
         .adj-row:hover { background: #f7fbff; }
+        /* ── Export bar ─────────────────────────────────────────────── */
+        .export-bar {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-top: 16px;
+            padding: 10px 14px;
+            background: #f0f5ff;
+            border: 1px solid #cfe0ff;
+            border-radius: 8px;
+            font-size: 13px;
+            color: #555;
+            flex-wrap: wrap;
+        }
+        .export-bar span { font-weight: 600; margin-right: 4px; }
+        .export-btn {
+            padding: 6px 14px;
+            font-size: 13px;
+            border: 1px solid #4a90d9;
+            border-radius: 6px;
+            background: white;
+            color: #4a90d9;
+            cursor: pointer;
+            transition: background 0.15s;
+        }
+        .export-btn:hover { background: #e8f4fd; }
+        .export-btn.pdf { border-color: #e67e22; color: #e67e22; }
+        .export-btn.pdf:hover { background: #fff3e0; }
+        .export-limit-input {
+            width: 70px;
+            padding: 5px 8px;
+            font-size: 13px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+        }
+        /* ── Print styles for PDF export ─────────────────────────────── */
+        @media print {
+            .api-config, .tabs, .search-box, .pos-filters, .snowball-controls,
+            .export-bar, .radial-button, .radial-modal, button, select,
+            #sketchTab .search-box, #dependencyTab .search-box,
+            #depRelFilters, #semanticGraph svg { display: none !important; }
+            body { max-width: none; padding: 0; background: white; }
+            .tab-content { display: block !important; }
+            .tab-content:not(.active) { display: none !important; }
+            .sketch-section { box-shadow: none; border: 1px solid #ddd; page-break-inside: avoid; }
+        }
     </style>
 </head>
 <body>
@@ -358,6 +404,13 @@
         </div>
 
         <div id="results" class="results"></div>
+        <div id="sketchExportBar" class="export-bar" style="display:none;">
+            <span>Export:</span>
+            <button class="export-btn" onclick="exportSketch('csv')">⬇ CSV</button>
+            <button class="export-btn" onclick="exportSketch('xml')">⬇ XML</button>
+            <button class="export-btn pdf" onclick="printCurrentTab()">🖨 Print / PDF</button>
+            <label style="margin-left:8px;">Limit: <input class="export-limit-input" id="sketchExportLimit" type="number" min="0" value="0" title="0 = no limit"></label>
+        </div>
     </div>
 
     <div id="semanticTab" class="tab-content">
@@ -424,6 +477,13 @@
         </div>
         
         <div id="semanticDetails" class="results" style="margin-top: 20px;"></div>
+        <div id="semanticExportBar" class="export-bar" style="display:none;">
+            <span>Export:</span>
+            <button class="export-btn" onclick="exportSemantic('csv')">⬇ CSV</button>
+            <button class="export-btn" onclick="exportSemantic('xml')">⬇ XML</button>
+            <button class="export-btn pdf" onclick="printCurrentTab()">🖨 Print / PDF</button>
+            <label style="margin-left:8px;">Limit: <input class="export-limit-input" id="semanticExportLimit" type="number" min="0" value="0" title="0 = no limit"></label>
+        </div>
     </div>
 
     <!-- Dependency Sketch Tab -->
@@ -440,6 +500,13 @@
 
         <!-- Results container -->
         <div id="depResults" class="results"></div>
+        <div id="depExportBar" class="export-bar" style="display:none;">
+            <span>Export:</span>
+            <button class="export-btn" onclick="exportDependency('csv')">⬇ CSV</button>
+            <button class="export-btn" onclick="exportDependency('xml')">⬇ XML</button>
+            <button class="export-btn pdf" onclick="printCurrentTab()">🖨 Print / PDF</button>
+            <label style="margin-left:8px;">Limit: <input class="export-limit-input" id="depExportLimit" type="number" min="0" value="0" title="0 = no limit"></label>
+        </div>
     </div>
 
     <!-- BCQL Query Tab -->
@@ -491,6 +558,13 @@
         let activeFilters = { noun: true, verb: true, adj: true, adv: true, prep: true, part: true, other: true };
         let currentWord = '';
         let currentTab = 'sketch';
+        // Export state: base URLs (without format/limit) for the last successful query in each tab
+        let lastSketchUrl = null;
+        let lastDepUrl = null;
+        let lastSemanticUrl = null;
+        // Lemma/context labels for use in suggested export filenames
+        let lastSketchLemma = 'sketch';
+        let lastDepLemma = 'dep-sketch';
 
         async function search() {
             const word = document.getElementById('wordInput').value.trim();
@@ -544,6 +618,11 @@
                         </div>
                     `;
                 } else {
+                    // Track the base URL for export, using the word that was actually fetched
+                    const fetchedLemma = data.lemma || word;
+                    lastSketchUrl = `${apiUrl}/api/sketch/${encodeURIComponent(fetchedLemma)}${posParam}`;
+                    lastSketchLemma = fetchedLemma;
+                    document.getElementById('sketchExportBar').style.display = 'flex';
                     renderResults(data);
                 }
             } catch (e) {
@@ -1002,6 +1081,65 @@
             document.getElementById('radialModal').classList.remove('active');
         }
 
+        // ── Export functions ──────────────────────────────────────────────────
+
+        /**
+         * Downloads a file by fetching the given URL with format and limit parameters appended.
+         */
+        async function triggerExportDownload(baseUrl, format, limitValue, defaultFilename) {
+            if (!baseUrl) {
+                alert('No results to export. Please perform a search first.');
+                return;
+            }
+            const limit = Math.max(0, parseInt(limitValue, 10) || 0);
+            const sep = baseUrl.includes('?') ? '&' : '?';
+            const url = `${baseUrl}${sep}format=${format}&export_limit=${limit}`;
+            try {
+                const response = await fetch(url);
+                if (!response.ok) {
+                    alert(`Export failed: server returned ${response.status}`);
+                    return;
+                }
+                const blob = await response.blob();
+                const disposition = response.headers.get('Content-Disposition') || '';
+                const match = disposition.match(/filename="([^"]+)"/);
+                const filename = match ? match[1] : defaultFilename;
+                const objectUrl = URL.createObjectURL(blob);
+                const link = document.createElement('a');
+                link.href = objectUrl;
+                link.download = filename;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                setTimeout(() => URL.revokeObjectURL(objectUrl), 10000);
+            } catch (e) {
+                alert('Export failed: ' + e.message);
+            }
+        }
+
+        function exportSketch(format) {
+            const limit = document.getElementById('sketchExportLimit')?.value || '0';
+            triggerExportDownload(lastSketchUrl, format, limit, `${lastSketchLemma}-sketch.${format}`);
+        }
+
+        function exportDependency(format) {
+            const limit = document.getElementById('depExportLimit')?.value || '0';
+            triggerExportDownload(lastDepUrl, format, limit, `${lastDepLemma}-dep-sketch.${format}`);
+        }
+
+        function exportSemantic(format) {
+            const limit = document.getElementById('semanticExportLimit')?.value || '0';
+            triggerExportDownload(lastSemanticUrl, format, limit, `semantic-export.${format}`);
+        }
+
+        /**
+         * Opens the browser's print dialog so the user can save the current page as PDF.
+         * The @media print CSS rules hide navigation and show only the active tab.
+         */
+        function printCurrentTab() {
+            window.print();
+        }
+
         function switchTab(tabName) {
             currentTab = tabName;
             
@@ -1063,6 +1201,10 @@
                 }
                 
                 const data = await response.json();
+                
+                // Track base URL for export
+                lastSemanticUrl = url;
+                document.getElementById('semanticExportBar').style.display = 'flex';
                 
                 // Update stat labels based on relation type
                 const collocateLabel = isVerbRelation(relation) ? 'Verbs' : 'Adjectives';
@@ -1129,8 +1271,11 @@
                 
                 const data = await response.json();
                 
+                // Track base URL for export
+                lastSemanticUrl = url;
+                document.getElementById('semanticExportBar').style.display = 'flex';
+                
                 // Update stat labels based on relation type
-                const collocateLabel = isVerbRelation(relation) ? 'Verbs' : 'Adjectives';
                 document.getElementById('statLabel1').textContent = `Shared ${collocateLabel}`;
                 document.getElementById('statLabel2').textContent = 'Input Seeds';
                 document.getElementById('statLabel3').textContent = `All ${collocateLabel}`;
@@ -1581,6 +1726,10 @@
                 }
                 
                 const data = normalizeSemanticComparisonData(await response.json());
+                
+                // Track base URL for export
+                lastSemanticUrl = url;
+                document.getElementById('semanticExportBar').style.display = 'flex';
                 
                 // Update stats
                 document.getElementById('statFullyShared').textContent = data.fully_shared || 0;
@@ -2176,11 +2325,14 @@
             resultsDiv.innerHTML = '<div class="loading">Analyzing dependency relations for "' + word + '"...</div>';
 
             try {
-                const response = await fetch(`${apiUrl}/api/sketch/${word}/dep`);
+                const response = await fetch(`${apiUrl}/api/sketch/${encodeURIComponent(word)}/dep`);
                 if (!response.ok) {
                     throw new Error(`API returned ${response.status}`);
                 }
                 const data = await response.json();
+                lastDepUrl = `${apiUrl}/api/sketch/${encodeURIComponent(data.lemma || word)}/dep`;
+                lastDepLemma = data.lemma || word;
+                document.getElementById('depExportBar').style.display = 'flex';
                 renderDependencyResults(data);
             } catch (e) {
                 resultsDiv.innerHTML = `<div class="error">Error: ${e.message}</div>`;

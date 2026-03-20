@@ -69,7 +69,18 @@ class ConcordanceHandlers {
                         req.top(), fallback),
                 results);
 
-        HttpApiUtils.sendJsonResponse(exchange, response);
+        String format = ExportUtils.parseFormat(params);
+        int exportLimit = ExportUtils.parseExportLimit(params);
+        String context = req.seed() + "-" + req.collocate() + "-concordance";
+        switch (format) {
+            case "csv" -> HttpApiUtils.sendCsvResponse(exchange,
+                    ExportUtils.examplesToCsv(response, exportLimit),
+                    ExportUtils.downloadFilename(context, "csv"));
+            case "xml" -> HttpApiUtils.sendXmlResponse(exchange,
+                    ExportUtils.examplesToXml(response, exportLimit),
+                    ExportUtils.downloadFilename(context, "xml"));
+            default -> HttpApiUtils.sendJsonResponse(exchange, response);
+        }
     }
 
     /**

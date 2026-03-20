@@ -79,4 +79,60 @@ class HttpApiUtilsTest {
         Map<String, String> result = HttpApiUtils.parseQueryParams("expr=a%3Db");
         assertEquals("a=b", result.get("expr"));
     }
+
+    // ── sanitizeHeaderFilename ────────────────────────────────────────────────
+
+    @Test
+    @DisplayName("sanitizeHeaderFilename — safe filename returned unchanged")
+    void sanitizeHeaderFilename_safe_unchanged() {
+        assertEquals("theory-sketch.csv", HttpApiUtils.sanitizeHeaderFilename("theory-sketch.csv"));
+    }
+
+    @Test
+    @DisplayName("sanitizeHeaderFilename — CR stripped to prevent response splitting")
+    void sanitizeHeaderFilename_crStripped() {
+        assertEquals("badfile.csv", HttpApiUtils.sanitizeHeaderFilename("bad\rfile.csv"));
+    }
+
+    @Test
+    @DisplayName("sanitizeHeaderFilename — LF stripped to prevent response splitting")
+    void sanitizeHeaderFilename_lfStripped() {
+        assertEquals("badfile.csv", HttpApiUtils.sanitizeHeaderFilename("bad\nfile.csv"));
+    }
+
+    @Test
+    @DisplayName("sanitizeHeaderFilename — CRLF pair stripped")
+    void sanitizeHeaderFilename_crlfStripped() {
+        assertEquals("Injected-Header: evil.csv", HttpApiUtils.sanitizeHeaderFilename("Injected-Header: evil\r\n.csv"));
+    }
+
+    @Test
+    @DisplayName("sanitizeHeaderFilename — double-quote stripped to prevent header token break")
+    void sanitizeHeaderFilename_doubleQuoteStripped() {
+        assertEquals("file.csv", HttpApiUtils.sanitizeHeaderFilename("fi\"le.csv"));
+    }
+
+    @Test
+    @DisplayName("sanitizeHeaderFilename — backslash stripped")
+    void sanitizeHeaderFilename_backslashStripped() {
+        assertEquals("file.csv", HttpApiUtils.sanitizeHeaderFilename("fi\\le.csv"));
+    }
+
+    @Test
+    @DisplayName("sanitizeHeaderFilename — mixed unsafe characters all stripped")
+    void sanitizeHeaderFilename_mixedUnsafe_allStripped() {
+        String result = HttpApiUtils.sanitizeHeaderFilename("a\r\nb\"c\\d.csv");
+        assertFalse(result.contains("\r"), "CR must be stripped");
+        assertFalse(result.contains("\n"), "LF must be stripped");
+        assertFalse(result.contains("\""), "double-quote must be stripped");
+        assertFalse(result.contains("\\"), "backslash must be stripped");
+        assertEquals("abcd.csv", result);
+    }
+
+    @Test
+    @DisplayName("sanitizeHeaderFilename — non-ASCII characters preserved")
+    void sanitizeHeaderFilename_nonAscii_preserved() {
+        String result = HttpApiUtils.sanitizeHeaderFilename("théorie.csv");
+        assertEquals("théorie.csv", result, "Non-ASCII characters should be preserved");
+    }
 }
