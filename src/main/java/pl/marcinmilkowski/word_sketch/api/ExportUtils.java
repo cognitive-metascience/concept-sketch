@@ -123,7 +123,12 @@ final class ExportUtils {
             int count = 0;
             for (ExampleEntry e : response.examples()) {
                 if (isLimitExceeded(limit, count)) break;
-                sb.append("  <example><![CDATA[").append(e.sentence()).append("]]></example>\n");
+                String sentence = e.sentence();
+                if (sentence != null) {
+                    // Ensure CDATA terminator does not appear inside the CDATA section
+                    sentence = sentence.replace("]]>", "]]]]><![CDATA[>");
+                }
+                sb.append("  <example><![CDATA[").append(sentence).append("]]></example>\n");
                 count++;
             }
         }
