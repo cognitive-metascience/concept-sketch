@@ -82,6 +82,7 @@ class VisualizationHandlers {
                         "items array contains non-object element at index " + i);
                 }
                 String word = it.path("word").textValue();
+                if (word == null) word = it.path("label").textValue();
                 if (word != null && word.length() > HttpApiUtils.MAX_PARAM_LENGTH) {
                     throw new IllegalArgumentException(
                         "items[" + i + "].word exceeds maximum length of "

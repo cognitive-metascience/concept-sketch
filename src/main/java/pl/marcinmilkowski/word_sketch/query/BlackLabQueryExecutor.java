@@ -321,13 +321,28 @@ public class BlackLabQueryExecutor implements QueryExecutor {
 
         int collocateLabelIndex = CqlUtils.findLabelTokenIndex(bcqlPattern, 2);
         HitProperty groupBy = collocateLabelIndex >= 0 ? createSurfaceCollocateGroupProperty() : null;
-        CollocateQueryHelper.CollocateSearch collocateSearch = groupBy != null
-                ? collocateQueryHelper.executeCollocateSearch(lemma, bcqlPattern, groupBy, false)
-                : collocateQueryHelper.executeCollocateSearch(lemma, bcqlPattern, false);
+
+        CollocateQueryHelper.CollocateSearch collocateSearch;
+        HitProperty effectiveGroupBy = groupBy;
+        if (groupBy != null) {
+            try {
+                collocateSearch = collocateQueryHelper.executeCollocateSearch(lemma, bcqlPattern, groupBy, false);
+            } catch (IllegalArgumentException e) {
+                // Capture group '2' not registered for this pattern (e.g. POS tag absent from
+                // index vocabulary causing an empty query with no registered match infos).
+                // Fall back to full-hit-text grouping with identity-based collocate extraction.
+                logger.debug("Capture group grouping unavailable for pattern '{}', falling back: {}",
+                        bcqlPattern, e.getMessage());
+                effectiveGroupBy = null;
+                collocateSearch = collocateQueryHelper.executeCollocateSearch(lemma, bcqlPattern, false);
+            }
+        } else {
+            collocateSearch = collocateQueryHelper.executeCollocateSearch(lemma, bcqlPattern, false);
+        }
         long headwordFreq = collocateSearch.headwordFreq();
         HitGroups groups = collocateSearch.groups();
 
-        CollocateHitStats stats = groupBy != null
+        CollocateHitStats stats = effectiveGroupBy != null
                 ? collectFrequenciesAndPosFromPropertyGroups(groups)
                 : collectFrequenciesAndPosFromGroups(groups,
                         identity -> extractCollocateFromIdentity(identity, collocateLabelIndex));

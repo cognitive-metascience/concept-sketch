@@ -910,7 +910,7 @@
                 const countInput = document.getElementById('radialCount');
                 const maxItems = Math.max(5, Math.min(100, parseInt(countInput?.value || '20', 10)));
                 // Use smaller dimensions to fit dialog better
-                const payload = { center: centerLabel || '', width: 640, height: 420, items: items.slice(0, maxItems) };
+                const payload = { center: centerLabel || '', width: 840, height: 560, items: items.slice(0, maxItems) };
                 if (mode) payload.mode = mode;
                 const response = await fetch(`${apiUrl}/api/visual/radial`, {
                     method: 'POST',
@@ -2351,7 +2351,7 @@
                     // Prepare items for radial plot
                     const count = parseInt(radialCount.value) || 20;
                     const items = collocates.slice(0, count).map(c => ({
-                        label: c.lemma,
+                        word: c.lemma,
                         score: c.logDice
                     }));
 
@@ -2378,11 +2378,10 @@
         function renderDepRadialPlot(apiUrl, lemma, items) {
             const svgContainer = document.getElementById('radialSvgContainer');
 
-            // Use smaller dimensions to fit dialog better
             const radialBody = JSON.stringify({
                 center: lemma,
-                width: 640,
-                height: 420,
+                width: 840,
+                height: 560,
                 items: items,
                 mode: 'signed'
             });

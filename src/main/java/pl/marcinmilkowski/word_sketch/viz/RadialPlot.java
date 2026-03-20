@@ -19,25 +19,27 @@ public class RadialPlot {
 
     // Baseline canvas size (px) used to derive all spiral/layout constants.
     // All pixel values are multiplied by scale = min(width, height) / BASELINE_CANVAS_SIZE.
-    private static final double BASELINE_CANVAS_SIZE = 800.0;
+    private static final double BASELINE_CANVAS_SIZE = 560.0;
 
-    // Spiral layout parameters (at baseline 800px canvas)
-    private static final double SPIRAL_START_RADIUS  = 120.0; // first collocate distance from center
-    private static final double SPIRAL_RADIUS_STEP   = 7.93;  // outward step per item; keeps 30 items within ~350px radius
-    private static final double CENTER_CIRCLE_RADIUS = 40.0;  // keyword circle radius
-    private static final double MIN_COLLOCATE_RADIUS = 8.0;   // minimum collocate circle radius
+    // Spiral layout parameters (at baseline 560px canvas)
+    private static final double SPIRAL_START_RADIUS  = 110.0; // first collocate distance from center
+    private static final double SPIRAL_RADIUS_STEP   = 5.5;   // outward step per item; keeps 30 items within ~270px radius
+    // Golden angle (radians): maximises 2-D separation between consecutive items (sunflower packing)
+    private static final double SPIRAL_ANGLE_STEP    = 2.3999; // ≈ 137.5°
+    private static final double CENTER_CIRCLE_RADIUS = 52.0;  // keyword circle radius (fits ~10-char word at 15px)
+    private static final double MIN_COLLOCATE_RADIUS = 7.0;   // minimum collocate circle radius
     // Guide circle radii
-    private static final double GUIDE_RADIUS_1 = 100.0;
-    private static final double GUIDE_RADIUS_2 = 200.0;
-    private static final double GUIDE_RADIUS_3 = 300.0;
+    private static final double GUIDE_RADIUS_1 =  85.0;
+    private static final double GUIDE_RADIUS_2 = 165.0;
+    private static final double GUIDE_RADIUS_3 = 245.0;
 
     // Stroke-width and font-size values (at baseline 800px canvas)
     private static final double GUIDE_STROKE_WIDTH     = 0.5;
     private static final double CONNECTOR_STROKE_WIDTH = 0.8;
     private static final double CENTER_STROKE_WIDTH    = 2.0;
     private static final double COLLOCATE_STROKE_WIDTH = 1.5;
-    private static final double LABEL_FONT_SIZE        = 11.0;
-    private static final double CENTER_FONT_SIZE       = 14.0;
+    private static final double LABEL_FONT_SIZE        = 13.0;
+    private static final double CENTER_FONT_SIZE       = 16.0;
     // Label offset from collocate circle edge (above/below center)
     private static final double LABEL_ABOVE_OFFSET     = 5.0;
     private static final double LABEL_BELOW_OFFSET     = 12.0;
@@ -112,24 +114,21 @@ public class RadialPlot {
             collocates.subList(30, collocates.size()).clear();
         }
 
-        // Calculate positions: spiral pattern
+        // Calculate positions: golden-angle Archimedean spiral
+        // Each consecutive item advances by ~137.5° and steps outward, giving
+        // maximum 2-D separation (sunflower packing); no even-angle crowding.
         if (!collocates.isEmpty()) {
             int n = collocates.size();
 
-            // Spiral parameters scaled to canvas size (baseline: 800px reference)
             double startRadius = SPIRAL_START_RADIUS * scale;
-            double radiusStep = SPIRAL_RADIUS_STEP * scale;
+            double radiusStep  = SPIRAL_RADIUS_STEP  * scale;
 
             for (int i = 0; i < n; i++) {
                 Collocate c = collocates.get(i);
 
-                // Spiral: radius increases by fixed step per item
                 c.orbitRadius = startRadius + (i * radiusStep);
+                c.angle       = i * SPIRAL_ANGLE_STEP; // golden angle, not scaled
 
-                // Evenly distribute around circle, starting from right (angle 0)
-                c.angle = i * (2 * Math.PI / n);
-
-                // Compute position
                 c.x = centerX + c.orbitRadius * Math.cos(c.angle);
                 c.y = centerY + c.orbitRadius * Math.sin(c.angle);
 
@@ -160,8 +159,8 @@ public class RadialPlot {
         svg.append(String.format("    .connector { stroke: #888; stroke-width: %s; opacity: 0.4; }\n", fmt(CONNECTOR_STROKE_WIDTH * scale)));
         svg.append(String.format("    .center-circle { fill: #2C3E50; stroke: white; stroke-width: %s; }\n", fmt(CENTER_STROKE_WIDTH * scale)));
         svg.append(String.format("    .collocate-circle { stroke: white; stroke-width: %s; opacity: 0.9; }\n", fmt(COLLOCATE_STROKE_WIDTH * scale)));
-        svg.append(String.format("    .label { font-family: Arial, sans-serif; font-size: %spx; fill: #333; }\n", fmt(LABEL_FONT_SIZE * scale)));
-        svg.append(String.format("    .center-label { font-family: Arial, sans-serif; font-size: %spx; font-weight: bold; fill: white; }\n", fmt(CENTER_FONT_SIZE * scale)));
+        svg.append(String.format("    .label { font-family: Arial, sans-serif; font-size: %spx; fill: #333; }\n", fmt(Math.max(12.0, LABEL_FONT_SIZE * scale))));
+        svg.append(String.format("    .center-label { font-family: Arial, sans-serif; font-size: %spx; font-weight: bold; fill: white; }\n", fmt(Math.max(15.0, CENTER_FONT_SIZE * scale))));
         svg.append("  </style>\n");
 
         // Background

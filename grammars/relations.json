@@ -64,8 +64,8 @@
     {
       "id": "noun_possessives",
       "name": "Possessive nouns",
-      "description": "Possessive forms (e.g., 'house's')",
-      "pattern": "2:[xpos=\"NN.*Z\"] 1:[xpos=\"NN.*\"]",
+      "description": "Possessive forms (e.g., \"John's house\") — collocate noun, 's marker, head noun",
+      "pattern": "2:[xpos=\"NN.*\"] [xpos=\"POS\"] 1:[xpos=\"NN.*\"]",
       "default_slop": 1,
       "relation_type": "SURFACE"
     },
@@ -120,8 +120,8 @@
     {
       "id": "possessor",
       "name": "Possessors",
-      "description": "Possessive nouns (e.g., 'John's house', 'government's policy')",
-      "pattern": "2:[xpos=\"NN.*Z\"] 1:[xpos=\"NN.*\"]",
+      "description": "Possessive nouns (e.g., \"John's house\", \"government's policy\") — collocate noun, 's marker, head noun",
+      "pattern": "2:[xpos=\"NN.*\"] [xpos=\"POS\"] 1:[xpos=\"NN.*\"]",
       "default_slop": 1,
       "relation_type": "SURFACE"
     },
@@ -129,7 +129,8 @@
       "id": "pro_possessor",
       "name": "Pronominal possessors",
       "description": "Possessive pronouns (e.g., 'my house', 'their policy')",
-      "pattern": "2:[xpos=\"PP$\"] 1:[xpos=\"NN.*\"]",
+      "pattern": "2:[xpos=\"PRP$\"] 1:[xpos=\"NN.*\"]",
+
       "default_slop": 1,
       "relation_type": "SURFACE"
     },
