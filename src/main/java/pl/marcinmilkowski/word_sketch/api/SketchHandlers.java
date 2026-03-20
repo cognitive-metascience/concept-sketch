@@ -73,6 +73,9 @@ class SketchHandlers {
             throw new IllegalArgumentException("Lemma exceeds maximum length of " + HttpApiUtils.MAX_PARAM_LENGTH + " characters");
         }
 
+        String format = ExportUtils.parseFormat(params);
+        int exportLimit = ExportUtils.parseExportLimit(params);
+
         if (parts.length > 1 && RelationType.DEP.label().equals(parts[1])) {
             // NOTE: "dep" is a reserved URL path segment that acts as a sketch-type
             // discriminator. It must never be assigned as a grammar relation ID to avoid
@@ -80,23 +83,25 @@ class SketchHandlers {
             // not a surface relation named "dep".
             String specificDeprel = parts.length > 2 ? parts[2] : null;
             if (specificDeprel != null) {
-                handleRelationQueryById(exchange, lemma, specificDeprel, RelationType.DEP);
+                handleRelationQueryById(exchange, lemma, specificDeprel, RelationType.DEP, format, exportLimit);
             } else {
                 // Full dependency sketch — all DEP-type relations
-                handleDependencySketch(exchange, lemma);
+                handleDependencySketch(exchange, lemma, format, exportLimit);
             }
             return;
         }
 
         String relation = parts.length > 1 ? parts[1] : null;
         if (relation != null && !relation.isEmpty()) {
-            handleRelationQueryById(exchange, lemma, relation, RelationType.SURFACE);
+            handleRelationQueryById(exchange, lemma, relation, RelationType.SURFACE, format, exportLimit);
         } else {
             handleFullSketchForType(
                     exchange,
                     lemma,
                     RelationType.SURFACE,
-                    surfaceRelationFilter(parseSurfacePosFilter(params)));
+                    surfaceRelationFilter(parseSurfacePosFilter(params)),
+                    format,
+                    exportLimit);
         }
     }
 
@@ -120,12 +125,15 @@ class SketchHandlers {
             HttpExchange exchange,
             String lemma,
             RelationType relationType,
-            Predicate<pl.marcinmilkowski.word_sketch.config.RelationConfig> extraFilter) throws IOException {
+            Predicate<pl.marcinmilkowski.word_sketch.config.RelationConfig> extraFilter,
+            String format,
+            int exportLimit) throws IOException {
         RelationQueryBatch batch = executeRelationQueries(relationType, extraFilter, lemma,
             (rel, sketch) -> SketchResponseAssembler.buildSurfaceRelationEntry(rel, sketch.collocations(),
                 sketch.results().stream().mapToLong(WordSketchResult::frequency).sum()));
 
-        HttpApiUtils.sendJsonResponse(exchange, buildSketchResponse(lemma, null, batch.results(), batch.errors()));
+        SketchResponse response = buildSketchResponse(lemma, null, batch.results(), batch.errors());
+        sendSketchResponse(exchange, response, format, exportLimit, lemma + "-sketch");
     }
 
     private static Predicate<pl.marcinmilkowski.word_sketch.config.RelationConfig> surfaceRelationFilter(
@@ -156,11 +164,12 @@ class SketchHandlers {
      * Full dependency sketch — dispatches DEP-type relations, each carrying a
      * {@code "type": "dependency"} field in the response.
      */
-    private void handleDependencySketch(HttpExchange exchange, String lemma) throws IOException {
+    private void handleDependencySketch(HttpExchange exchange, String lemma, String format, int exportLimit) throws IOException {
         RelationQueryBatch batch = executeRelationQueries(RelationType.DEP, rel -> rel.deriveDeprel() != null, lemma,
             (rel, sketch) -> SketchResponseAssembler.buildDepRelationEntry(rel, sketch.results(), sketch.collocations()));
 
-        HttpApiUtils.sendJsonResponse(exchange, buildSketchResponse(lemma, "dependency", batch.results(), batch.errors()));
+        SketchResponse response = buildSketchResponse(lemma, "dependency", batch.results(), batch.errors());
+        sendSketchResponse(exchange, response, format, exportLimit, lemma + "-dep-sketch");
     }
 
     /** Builds a typed {@link SketchResponse}; {@code type} is {@code null} for surface-sketch responses. */
@@ -282,7 +291,7 @@ class SketchHandlers {
         RelationEntry build(pl.marcinmilkowski.word_sketch.config.RelationConfig rel, ExecutedSketch sketch);
     }
 
-    private void handleRelationQueryById(HttpExchange exchange, String lemma, String relationId, RelationType relationType) throws IOException {
+    private void handleRelationQueryById(HttpExchange exchange, String lemma, String relationId, RelationType relationType, String format, int exportLimit) throws IOException {
         var rel = grammarConfig.relation(relationId).orElse(null);
         if (rel == null) {
             throw new IllegalArgumentException("Unknown relation: " + relationId);
@@ -304,8 +313,8 @@ class SketchHandlers {
         RelationEntry relEntry = SketchResponseAssembler.buildSurfaceRelationEntry(rel, collocations, totalMatches);
         Map<String, RelationEntry> relationsMap = Map.of(rel.id(), relEntry);
 
-        HttpApiUtils.sendJsonResponse(exchange,
-                new SketchResponse("ok", lemma, null, relationsMap, null));
+        SketchResponse response = new SketchResponse("ok", lemma, null, relationsMap, null);
+        sendSketchResponse(exchange, response, format, exportLimit, lemma + "-" + relationId);
     }
 
     /**
@@ -321,6 +330,20 @@ class SketchHandlers {
                 .map(SketchResponseAssembler::toCollocateEntry)
                 .toList();
         return Optional.of(new ExecutedSketch(results, collocations));
+    }
+
+    private static void sendSketchResponse(
+            HttpExchange exchange, SketchResponse response,
+            String format, int exportLimit, String context) throws IOException {
+        switch (format) {
+            case "csv" -> HttpApiUtils.sendCsvResponse(exchange,
+                    ExportUtils.sketchToCsv(response, exportLimit),
+                    ExportUtils.downloadFilename(context, "csv"));
+            case "xml" -> HttpApiUtils.sendXmlResponse(exchange,
+                    ExportUtils.sketchToXml(response, exportLimit),
+                    ExportUtils.downloadFilename(context, "xml"));
+            default -> HttpApiUtils.sendJsonResponse(exchange, response);
+        }
     }
 
     private record ExecutedSketch(

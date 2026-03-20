@@ -68,6 +68,8 @@ class ExplorationHandlers {
             RelationConfig resolvedConfig = resolveRelationConfig(params);
             ExplorationOptions opts = parseExplorationOptions(params);
             int nounsPerSeed = HttpApiUtils.parseIntParam(params, "nouns_per", 30);
+            String format = ExportUtils.parseFormat(params);
+            int exportLimit = ExportUtils.parseExportLimit(params);
 
             SingleSeedExplorationOptions singleSeedOpts = new SingleSeedExplorationOptions(opts, nounsPerSeed);
 
@@ -76,7 +78,7 @@ class ExplorationHandlers {
             ExploreResponse response = ExploreResponseAssembler.buildSingleSeedExploreResponse(
                     result, resolvedConfig.id(), opts, nounsPerSeed);
 
-            HttpApiUtils.sendJsonResponse(exchange, response);
+            sendExploreResponse(exchange, response, format, exportLimit, seed + "-explore");
         } catch (ExplorationException e) {
             sendExplorationError(exchange, "Semantic field explore", e);
         }
@@ -105,6 +107,8 @@ class ExplorationHandlers {
             String seedsParam = HttpApiUtils.requireParam(params, "seeds");
             RelationConfig resolvedConfig = resolveRelationConfig(params);
             ExplorationOptions opts = parseExplorationOptions(params);
+            String format = ExportUtils.parseFormat(params);
+            int exportLimit = ExportUtils.parseExportLimit(params);
 
             Set<String> seeds = parseSeedSet(seedsParam);
 
@@ -115,7 +119,7 @@ class ExplorationHandlers {
             ExploreResponse response = ExploreResponseAssembler.buildMultiSeedExploreResponse(
                     result, resolvedConfig.id(), opts);
 
-            HttpApiUtils.sendJsonResponse(exchange, response);
+            sendExploreResponse(exchange, response, format, exportLimit, "multi-explore");
         } catch (ExplorationException e) {
             sendExplorationError(exchange, "Multi-seed exploration", e);
         }
@@ -140,6 +144,8 @@ class ExplorationHandlers {
             requireAtLeastTwoSeeds(seeds, "Comparison");
 
             ExplorationOptions opts = parseExplorationOptions(params);
+            String format = ExportUtils.parseFormat(params);
+            int exportLimit = ExportUtils.parseExportLimit(params);
 
             ComparisonResult result = explorationService.compareCollocateProfiles(seeds, opts);
 
@@ -148,7 +154,16 @@ class ExplorationHandlers {
                 opts,
                 result);
 
-            HttpApiUtils.sendJsonResponse(exchange, response);
+            String context = "compare-" + String.join("-", seeds);
+            switch (format) {
+                case "csv" -> HttpApiUtils.sendCsvResponse(exchange,
+                        ExportUtils.comparisonToCsv(response, exportLimit),
+                        ExportUtils.downloadFilename(context, "csv"));
+                case "xml" -> HttpApiUtils.sendXmlResponse(exchange,
+                        ExportUtils.comparisonToXml(response, exportLimit),
+                        ExportUtils.downloadFilename(context, "xml"));
+                default -> HttpApiUtils.sendJsonResponse(exchange, response);
+            }
         } catch (ExplorationException e) {
             sendExplorationError(exchange, "Semantic field comparison", e);
         }
@@ -179,6 +194,9 @@ class ExplorationHandlers {
             RelationConfig resolvedConfig = resolveRelationConfig(params);
 
             int top = HttpApiUtils.parseIntParam(params, "top", 10);
+            String format = ExportUtils.parseFormat(params);
+            int exportLimit = ExportUtils.parseExportLimit(params);
+
             FetchExamplesResult fetched = explorationService.fetchExamples(
                     seed, collocate, resolvedConfig, new FetchExamplesOptions(top));
 
@@ -187,7 +205,16 @@ class ExplorationHandlers {
                             seed, collocate, resolvedConfig.id(), fetched.bcqlPattern(), top, false),
                     fetched.examples());
 
-            HttpApiUtils.sendJsonResponse(exchange, response);
+            String context = seed + "-" + collocate + "-examples";
+            switch (format) {
+                case "csv" -> HttpApiUtils.sendCsvResponse(exchange,
+                        ExportUtils.examplesToCsv(response, exportLimit),
+                        ExportUtils.downloadFilename(context, "csv"));
+                case "xml" -> HttpApiUtils.sendXmlResponse(exchange,
+                        ExportUtils.examplesToXml(response, exportLimit),
+                        ExportUtils.downloadFilename(context, "xml"));
+                default -> HttpApiUtils.sendJsonResponse(exchange, response);
+            }
         } catch (ExplorationException e) {
             sendExplorationError(exchange, "Semantic field examples", e);
         }
@@ -198,6 +225,21 @@ class ExplorationHandlers {
             ExplorationException e) throws IOException {
         logger.error("{} exploration error", description, e);
         HttpApiUtils.sendError(exchange, 503, "Service unavailable: " + e.getMessage());
+    }
+
+    /** Dispatches an {@link ExploreResponse} to the appropriate serialiser based on {@code format}. */
+    private static void sendExploreResponse(
+            HttpExchange exchange, ExploreResponse response,
+            String format, int exportLimit, String context) throws IOException {
+        switch (format) {
+            case "csv" -> HttpApiUtils.sendCsvResponse(exchange,
+                    ExportUtils.exploreToCsv(response, exportLimit),
+                    ExportUtils.downloadFilename(context, "csv"));
+            case "xml" -> HttpApiUtils.sendXmlResponse(exchange,
+                    ExportUtils.exploreToXml(response, exportLimit),
+                    ExportUtils.downloadFilename(context, "xml"));
+            default -> HttpApiUtils.sendJsonResponse(exchange, response);
+        }
     }
 
     /** Parses a comma-separated seeds parameter into a cleaned, lowercased ordered set. */

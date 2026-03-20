@@ -157,6 +157,52 @@ final class HttpApiUtils {
     }
 
     /**
+     * Sends a CSV response with {@code Content-Type: text/csv; charset=UTF-8} and an optional
+     * {@code Content-Disposition: attachment} header that suggests a download filename.
+     *
+     * @param exchange         the HTTP exchange to write to
+     * @param csv              the CSV string to send (UTF-8)
+     * @param suggestedFilename the suggested download filename (e.g. {@code "theory-sketch.csv"})
+     * @throws IOException if writing fails
+     */
+    static void sendCsvResponse(@NonNull HttpExchange exchange,
+                                 @NonNull String csv,
+                                 @NonNull String suggestedFilename) throws IOException {
+        byte[] bytes = csv.getBytes(java.nio.charset.StandardCharsets.UTF_8);
+        exchange.getResponseHeaders().set("Content-Type", "text/csv; charset=UTF-8");
+        exchange.getResponseHeaders().set("Content-Disposition",
+                "attachment; filename=\"" + suggestedFilename + "\"");
+        setCorsHeader(exchange);
+        exchange.sendResponseHeaders(200, bytes.length);
+        try (OutputStream os = exchange.getResponseBody()) {
+            os.write(bytes);
+        }
+    }
+
+    /**
+     * Sends an XML response with {@code Content-Type: application/xml; charset=UTF-8} and an
+     * optional {@code Content-Disposition: attachment} header that suggests a download filename.
+     *
+     * @param exchange         the HTTP exchange to write to
+     * @param xml              the XML string to send (UTF-8)
+     * @param suggestedFilename the suggested download filename (e.g. {@code "theory-sketch.xml"})
+     * @throws IOException if writing fails
+     */
+    static void sendXmlResponse(@NonNull HttpExchange exchange,
+                                 @NonNull String xml,
+                                 @NonNull String suggestedFilename) throws IOException {
+        byte[] bytes = xml.getBytes(java.nio.charset.StandardCharsets.UTF_8);
+        exchange.getResponseHeaders().set("Content-Type", "application/xml; charset=UTF-8");
+        exchange.getResponseHeaders().set("Content-Disposition",
+                "attachment; filename=\"" + suggestedFilename + "\"");
+        setCorsHeader(exchange);
+        exchange.sendResponseHeaders(200, bytes.length);
+        try (OutputStream os = exchange.getResponseBody()) {
+            os.write(bytes);
+        }
+    }
+
+    /**
      * Sends a binary response with the given content type (e.g., image/svg+xml) and CORS header.
      */
     static void sendBinaryResponse(@NonNull HttpExchange exchange, @NonNull String contentType, @NonNull byte[] bytes) throws IOException {
