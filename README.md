@@ -2,7 +2,7 @@
 
 A high-performance corpus-based collocation analysis tool built on [BlackLab](https://blacklab.ivdnt.org/) corpus search software (which relies on Apache Lucene). This project implements word and dependecy sketch functionality (grammatical relations and collocations), semantic field exploration, and conceptual mining for corpus linguistics research and NLP applications.
 
-**Current Status:** ✅ **Functional Release v1.5** - See [Limitations](#limitations) section.
+**Current Status:** ✅ **Functional Release v1.6** - See [Limitations](#limitations) section.
 
 ## Features
 
