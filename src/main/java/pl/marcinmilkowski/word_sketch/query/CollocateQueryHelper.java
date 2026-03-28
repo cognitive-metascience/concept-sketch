@@ -312,16 +312,17 @@ class CollocateQueryHelper {
             String headword = CqlUtils.extractHeadword(bcqlPattern);
             long headwordFreq = headword != null ? getTotalFrequency(headword) : 0L;
             int collocatePos = CqlUtils.findLabelTokenIndex(bcqlPattern, 2);
-            int sampleSize = (int) Math.min(hits.size(), (long) maxResults * OVER_FETCH_FACTOR); // safe: min ensures result ≤ maxResults * OVER_FETCH_FACTOR
+            // When maxResults == -1 collect every hit; otherwise over-fetch to allow post-filter churn.
+            int sampleSize = (maxResults == -1)
+                    ? (int) hits.size()
+                    : (int) Math.min(hits.size(), (long) maxResults * OVER_FETCH_FACTOR);
 
             Map<String, Long> collocateFreqMap = new HashMap<>();
             List<HitRecord> hitRecords = collectHits(hits, sampleSize, collocatePos);
             buildCollocateFrequencyMap(hitRecords, collocateFreqMap);
             List<CollocateResult> scored = scoreHits(hitRecords, collocateFreqMap, headwordFreq);
-            return scored.stream()
-                    .sorted(Comparator.comparingDouble(CollocateResult::logDice).reversed())
-                    .limit(maxResults)
-                    .toList();
+            var stream = scored.stream().sorted(Comparator.comparingDouble(CollocateResult::logDice).reversed());
+            return (maxResults == -1 ? stream : stream.limit(maxResults)).toList();
 
         } catch (InvalidQuery e) {
             throw new IllegalArgumentException("BCQL parse error: " + e.getMessage(), e);

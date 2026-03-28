@@ -301,6 +301,26 @@
             border: 1px solid #ddd;
             border-radius: 4px;
         }
+        .bcql-pagination {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 8px 0;
+            font-size: 0.88em;
+            color: #555;
+        }
+        .bcql-pagination button {
+            padding: 3px 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            background: #f5f7fa;
+            color: #333;
+            cursor: pointer;
+            font-size: 0.9em;
+        }
+        .bcql-pagination button:hover:not(:disabled) { background: #e8ecf2; color: #333; }
+        .bcql-pagination button:disabled { background: #f5f7fa; color: #aaa; opacity: 0.6; cursor: default; }
+        .bcql-pagination .page-info { padding: 0 4px; }
         .bcql-help {
             margin-top: 15px;
             padding: 10px;
@@ -962,7 +982,16 @@
             </div>
             <div class="flex-row-center">
                 <label for="bcqlLimit">Max results:</label>
-                <input type="number" id="bcqlLimit" class="bcql-limit-input" value="20" min="1" max="100" onkeydown="if(event.key==='Enter') runBcqlQuery()">
+                <input type="number" id="bcqlLimit" class="bcql-limit-input" value="20" min="-1"
+                    title="Max hits to fetch (-1 = unlimited)"
+                    onkeydown="if(event.key==='Enter') runBcqlQuery()">
+                <label for="bcqlPageSize">Per page:</label>
+                <select id="bcqlPageSize" onchange="setBcqlPageSize(this.value)">
+                    <option value="20">20</option>
+                    <option value="50" selected>50</option>
+                    <option value="100">100</option>
+                    <option value="-1">All</option>
+                </select>
                 <button type="button" onclick="runBcqlQuery()">Execute</button>
             </div>
             <div class="bcql-help">
@@ -970,6 +999,7 @@
             </div>
         </div>
         <div id="bcqlResults" class="results"></div>
+        <div id="bcqlPagination"></div>
         <div id="bcqlExportBar" class="export-bar hidden">
             <span>Export:</span>
             <button type="button" class="export-btn" onclick="exportBcql('csv')">⬇ CSV</button>
@@ -1016,6 +1046,8 @@
         let lastBcqlQuery = '';
         let bcqlSortKey = null;
         let bcqlSortAsc = true;
+        let bcqlPage = 1;
+        let bcqlPageSize = 50;
         // Lemma/context labels for use in suggested export filenames
         let lastSketchLemma = 'sketch';
         let lastDepLemma = 'dep-sketch';
@@ -2814,6 +2846,7 @@
                 // Render results as KWIC table
                 bcqlSortKey = null;
                 bcqlSortAsc = true;
+                bcqlPage = 1;
                 renderBcqlResults(data.results);
                 document.getElementById('bcqlExportBar').style.display = 'flex';
 
@@ -2864,14 +2897,17 @@
                 <th class="kwic-right" onclick="setBcqlSort('right')">Right context${arrowFor('right')}</th>
               </tr></thead><tbody>`;
 
-            sorted.forEach((r, idx) => {
+            const pageItems = bcqlPageSize === -1 ? sorted : sorted.slice((bcqlPage - 1) * bcqlPageSize, bcqlPage * bcqlPageSize);
+
+            pageItems.forEach((r, idx) => {
+                const rowNum = bcqlPageSize === -1 ? idx + 1 : (bcqlPage - 1) * bcqlPageSize + idx + 1;
                 const left  = escapeHtml(decodeHtmlEntities(r.leftText  || ''));
                 const match = escapeHtml(decodeHtmlEntities(r.matchText || ''));
                 const right = escapeHtml(decodeHtmlEntities(r.rightText || ''));
                 const hasXml = r.raw && r.raw.trim().length > 0;
-                const xmlId = `bcql-xml-${idx}`;
+                const xmlId = `bcql-xml-${rowNum}`;
                 html += `<tr>
-                  <td class="kwic-num">${idx + 1}${hasXml ? ` <button class="xml-toggle-btn" onclick="toggleBcqlXml('${xmlId}')" title="Show/hide raw XML">&#8249;/&#8250;</button>` : ''}</td>
+                  <td class="kwic-num">${rowNum}${hasXml ? ` <button class="xml-toggle-btn" onclick="toggleBcqlXml('${xmlId}')" title="Show/hide raw XML">&#8249;/&#8250;</button>` : ''}</td>
                   <td class="kwic-left">${left}</td>
                   <td class="kwic-match">${match}</td>
                   <td class="kwic-right">${right}</td>
@@ -2886,6 +2922,31 @@
 
             html += '</tbody></table>';
             resultsDiv.innerHTML = html;
+            renderBcqlPagination(sorted.length);
+        }
+
+        function renderBcqlPagination(total) {
+            const bar = document.getElementById('bcqlPagination');
+            if (!bar) return;
+            if (bcqlPageSize === -1 || total <= bcqlPageSize) { bar.innerHTML = ''; return; }
+            const pages = Math.ceil(total / bcqlPageSize);
+            bar.innerHTML = `<div class="bcql-pagination">
+                <button onclick="goToBcqlPage(${bcqlPage - 1})" ${bcqlPage <= 1 ? 'disabled' : ''}>&#8249; Prev</button>
+                <span class="page-info">Page ${bcqlPage} of ${pages} &nbsp;(${total} results)</span>
+                <button onclick="goToBcqlPage(${bcqlPage + 1})" ${bcqlPage >= pages ? 'disabled' : ''}>Next &#8250;</button>
+            </div>`;
+        }
+
+        function goToBcqlPage(n) {
+            if (!lastBcqlData) return;
+            bcqlPage = n;
+            renderBcqlResults(lastBcqlData.results);
+        }
+
+        function setBcqlPageSize(val) {
+            bcqlPageSize = parseInt(val);
+            bcqlPage = 1;
+            if (lastBcqlData) renderBcqlResults(lastBcqlData.results);
         }
 
         function toggleBcqlXml(id) {
@@ -2900,6 +2961,7 @@
                 bcqlSortKey = key;
                 bcqlSortAsc = true;
             }
+            bcqlPage = 1;
             if (lastBcqlData) renderBcqlResults(lastBcqlData.results);
         }
 

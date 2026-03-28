@@ -72,9 +72,14 @@ class CorpusQueryHandlers {
                     "Pattern too complex: " + bracketCount + " token constraints (max " + MAX_BCQL_BRACKET_DEPTH + ")");
         }
         com.fasterxml.jackson.databind.JsonNode topNode = obj.path("top");
-        int resolvedTop = (!topNode.isMissingNode() && !topNode.isNull() && topNode.asInt() > 0)
-                ? topNode.asInt()
-                : 10;
+        int resolvedTop;
+        if (!topNode.isMissingNode() && !topNode.isNull() && topNode.asInt() == -1) {
+            resolvedTop = -1; // -1 means unlimited
+        } else if (!topNode.isMissingNode() && !topNode.isNull() && topNode.asInt() > 0) {
+            resolvedTop = topNode.asInt();
+        } else {
+            resolvedTop = 10;
+        }
         return new BcqlRequest(bcqlQuery, resolvedTop);
     }
 
