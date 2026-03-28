@@ -6,7 +6,7 @@
 
     <groupId>pl.marcinmilkowski</groupId>
     <artifactId>concept-sketch</artifactId>
-    <version>1.5.0</version>
+    <version>1.6.0</version>
     <packaging>jar</packaging>
 
     <name>ConceptSketch</name>
@@ -212,8 +212,8 @@
                             <goal>shade</goal>
                         </goals>
                         <configuration>
-                            <!-- Always produce concept-sketch-1.5.0-shaded.jar as a separate
-                                 attached artifact, leaving concept-sketch-1.5.0.jar as the
+                               <!-- Always produce concept-sketch-1.6.0-shaded.jar as a separate
+                                   attached artifact, leaving concept-sketch-1.6.0.jar as the
                                  thin jar. Without this, the shade plugin replaces the main jar
                                  on the first run but creates a -shaded.jar on subsequent runs
                                  (because original-*.jar already exists), causing inconsistent

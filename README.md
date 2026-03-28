@@ -89,7 +89,7 @@ The shaded JAR bundles BlackLab's `IndexTool`. Run it from the project root
 (so `--format-dir .` can find `conllu-sentences.blf.yaml`):
 
 ```bash
-java -cp target/concept-sketch-1.5.0-shaded.jar \
+java -cp target/concept-sketch-1.6.0-shaded.jar \
   nl.inl.blacklab.tools.IndexTool create \
   --format-dir . \
   my_index/ input_dir/ conllu-sentences
@@ -106,14 +106,14 @@ java -cp target/concept-sketch-1.5.0-shaded.jar \
 
 ```bash
 # Terminal 1
-java -jar target/concept-sketch-1.5.0-shaded.jar server --index my_index/ --port 8080
+java -jar target/concept-sketch-1.6.0-shaded.jar server --index my_index/ --port 8080
 ```
 
 > **CORS configuration**: By default the API allows requests from `http://localhost:3000`.
 > To allow a different origin, pass the `cors.allow.origin` JVM system property:
 > ```bash
 > java -Dcors.allow.origin=https://myapp.example.com \
->      -jar target/concept-sketch-1.5.0-shaded.jar server --index my_index/ --port 8080
+>      -jar target/concept-sketch-1.6.0-shaded.jar server --index my_index/ --port 8080
 > ```
 
 Server startup output:
@@ -177,7 +177,7 @@ curl "http://localhost:8080/api/semantic-field/explore-multi?seeds=theory,model,
 #### Prerequisites
 - A corpus in **CoNLL-U format** (columns: ID, FORM, LEMMA, UPOS, XPOS, FEATS, HEAD, DEPREL, DEPS, MISC)
 - The project's `conllu-sentences.blf.yaml` format file (in the project root)
-- Java 21+ and the shaded JAR (`target/concept-sketch-1.5.0-shaded.jar`)
+- Java 21+ and the shaded JAR (`target/concept-sketch-1.6.0-shaded.jar`)
 
 #### Step 1 — Preprocess CoNLL-U: add sentence markers
 
@@ -201,7 +201,7 @@ mkdir input_dir
 cp corpus_s.conllu input_dir/
 
 # Run from the project root (so --format-dir finds conllu-sentences.blf.yaml)
-java -cp target/concept-sketch-1.5.0-shaded.jar \
+java -cp target/concept-sketch-1.6.0-shaded.jar \
   nl.inl.blacklab.tools.IndexTool create \
   --format-dir . \
   my_index/ input_dir/ conllu-sentences
@@ -210,7 +210,7 @@ java -cp target/concept-sketch-1.5.0-shaded.jar \
 To add more documents to an existing index later:
 
 ```bash
-java -cp target/concept-sketch-1.5.0-shaded.jar \
+java -cp target/concept-sketch-1.6.0-shaded.jar \
   nl.inl.blacklab.tools.IndexTool add \
   --format-dir . \
   my_index/ more_input_dir/ conllu-sentences
@@ -233,14 +233,14 @@ java -cp target/concept-sketch-1.5.0-shaded.jar \
 
 ```bash
 # Find all collocations for "theory"
-java -jar target/concept-sketch-1.5.0-shaded.jar \
+java -jar target/concept-sketch-1.6.0-shaded.jar \
   blacklab-query --index my_index/ --lemma theory
 
 # Find adjectival modifiers of "theory" (deprel=amod)
-java -jar target/concept-sketch-1.5.0-shaded.jar \
+java -jar target/concept-sketch-1.6.0-shaded.jar \
   blacklab-query --index my_index/ --lemma theory --deprel amod
 # Increase result count and filter by logDice
-java -jar target/concept-sketch-1.5.0-shaded.jar \
+java -jar target/concept-sketch-1.6.0-shaded.jar \
   blacklab-query --index my_index/ --lemma theory \
   --deprel nsubj --limit 50 --min-logdice 4.0
 ```
@@ -486,7 +486,7 @@ The `webapp/` directory contains an interactive web interface built with D3.js.
 
 ```bash
 # Terminal 1: API Server
-java -jar target/concept-sketch-1.5.0-shaded.jar server --index <corpus_path> --port 8080
+java -jar target/concept-sketch-1.6.0-shaded.jar server --index <corpus_path> --port 8080
 
 # Terminal 2: Web Server
 python -m http.server 3000 --directory webapp
@@ -497,7 +497,7 @@ python -m http.server 3000 --directory webapp
 To configure a non-default CORS origin (e.g., for production), use the `cors.allow.origin` JVM property:
 ```bash
 java -Dcors.allow.origin=https://myapp.example.com \
-     -jar target/concept-sketch-1.5.0-shaded.jar server --index <corpus_path> --port 8080
+    -jar target/concept-sketch-1.6.0-shaded.jar server --index <corpus_path> --port 8080
 ```
 
 ---

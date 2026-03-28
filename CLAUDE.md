@@ -4,7 +4,7 @@ This file documents the ConceptSketch project for future development.
 
 ## Current Status
 
-✅ **v1.5 Functional Release**
+✅ **v1.6 Functional Release**
 
 ### What Works
 - Corpus indexing with CoNLL-U format (POS tagging via UDPipe)
@@ -42,7 +42,7 @@ mvn clean package
 ### Deploy (3 services)
 ```bash
 # Terminal 1: API Server
-java -jar target/concept-sketch-1.5.0-shaded.jar server --index d:\corpus_74m\index-hybrid --port 8080
+java -jar target/concept-sketch-1.6.0-shaded.jar server --index d:\corpus_74m\index-hybrid --port 8080
 
 # Terminal 2: Web UI (static server)
 python -m http.server 3000 --directory webapp

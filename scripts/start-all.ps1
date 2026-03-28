@@ -31,7 +31,7 @@ function Write-Log {
 }
 
 # Check dependencies
-$jarFile = Join-Path $projectRoot "target\concept-sketch-1.5.0-shaded.jar"
+$jarFile = Join-Path $projectRoot "target\concept-sketch-1.6.0-shaded.jar"
 if (-not (Test-Path $jarFile)) {
     Write-Log "JAR file not found: $jarFile" -Color Red
     Write-Log "Please build with: mvn clean package"
