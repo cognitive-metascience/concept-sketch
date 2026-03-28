@@ -55,7 +55,7 @@ class ExportEndpointTest {
             public long getTotalFrequency(String lemma) { return 50_000L; }
             @Override
             public List<CollocateResult> executeBcqlQuery(String bcqlPattern, int maxResults) {
-                return List.of(new CollocateResult("Empirical theory is important", null, 1, 9, "d1", "empirical", 0, 8.3));
+                return List.of(new CollocateResult("Empirical theory is important", null, "", "Empirical", "theory is important", 1, 9, "d1", "empirical", 0, 8.3));
             }
         };
     }

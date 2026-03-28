@@ -414,8 +414,15 @@ class CollocateQueryHelper {
             String plainText = BlackLabSnippetParser.trimToSentence(
                     rec.leftText(), rec.matchText(), rec.rightText());
 
+            String trimmedLeft  = BlackLabSnippetParser.trimLeftAtSentenceBoundary(rec.leftText());
+            String trimmedRight = BlackLabSnippetParser.trimRightAtSentenceBoundary(rec.rightText());
+            String plainLeft  = BlackLabSnippetParser.detokenize(trimmedLeft);
+            String plainMatch = BlackLabSnippetParser.detokenize(rec.matchText());
+            String plainRight = BlackLabSnippetParser.detokenize(trimmedRight);
+
             results.add(new CollocateResult(
                     plainText, rec.xmlSnippet(),
+                    plainLeft, plainMatch, plainRight,
                     rec.start(), rec.end(), String.valueOf(rec.docId()),
                     collocateLemma, jointFreq, logDice));
         }

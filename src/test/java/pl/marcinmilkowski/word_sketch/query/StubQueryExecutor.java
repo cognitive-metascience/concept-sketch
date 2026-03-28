@@ -17,7 +17,7 @@ import java.util.List;
  * QueryExecutor stub = new StubQueryExecutor() {
  *     @Override
  *     public List<CollocateResult> executeBcqlQuery(String p, int m) {
- *         return List.of(new CollocateResult("a sentence", null, 0, 5, "d1", "word", 1, 7.0));
+ *         return List.of(new CollocateResult("a sentence", null, "", "a sentence", "", 0, 5, "d1", "word", 1, 7.0));
  *     }
  * };
  * }</pre>

@@ -94,6 +94,9 @@ class CorpusQueryHandlers {
     private record BcqlResultEntry(
             String sentence,
             String raw,
+            String leftText,
+            String matchText,
+            String rightText,
             int matchStart,
             int matchEnd,
             String collocateLemma,
@@ -114,6 +117,9 @@ class CorpusQueryHandlers {
         return new BcqlResultEntry(
                 r.sentence(),
                 r.rawXml() != null ? r.rawXml() : "",
+                r.leftText(),
+                r.matchText(),
+                r.rightText(),
                 r.startOffset(),
                 r.endOffset(),
                 r.collocateLemma() != null ? r.collocateLemma() : "",

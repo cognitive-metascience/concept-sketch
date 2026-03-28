@@ -34,7 +34,7 @@ class SemanticFieldExplorerFetchExamplesTest {
     }
 
     private static CollocateResult collocateResult(String sentence) {
-        return new CollocateResult(sentence, null, 0, 5, "d1", "important", 1, 7.0);
+        return new CollocateResult(sentence, null, "", "important", "", 0, 5, "d1", "important", 1, 7.0);
     }
 
     @Test

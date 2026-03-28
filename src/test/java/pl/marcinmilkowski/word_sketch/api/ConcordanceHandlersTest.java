@@ -21,7 +21,7 @@ class ConcordanceHandlersTest {
         return new StubQueryExecutor() {
             @Override
             public List<CollocateResult> executeBcqlQuery(String bcqlPattern, int maxResults) {
-                return List.of(new CollocateResult("The big house", null, 4, 7, "d1", "big", 1, 7.5));
+                return List.of(new CollocateResult("The big house", null, "The", "big", "house", 4, 7, "d1", "big", 1, 7.5));
             }
         };
     }

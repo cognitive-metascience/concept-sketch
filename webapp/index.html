@@ -436,78 +436,35 @@
             background: #e8f5e9;
             border-radius: 6px;
         }
-        .bcql-result-card {
-            margin-bottom: 15px;
-            padding: 12px;
-            background: white;
-            border-radius: 6px;
-            border-left: 4px solid #4caf50;
-        }
-        .bcql-result-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 8px;
-        }
-        .bcql-result-title {
-            font-weight: bold;
-            font-size: 16px;
-            color: #2e7d32;
-        }
-        .bcql-badge {
-            background: #e8f5e9;
-            padding: 4px 8px;
-            border-radius: 4px;
-            font-size: 12px;
-        }
-        .bcql-meta {
-            color: #666;
-            font-size: 12px;
-            margin-bottom: 8px;
-        }
-        .bcql-sentence {
-            font-family: monospace;
-            font-size: 13px;
-            color: #333;
-            padding: 8px;
-            background: #f5f5f5;
-            border-radius: 4px;
-        }
-        .raw-xml-details { margin-top: 8px; }
-        .raw-xml-summary {
+        .kwic-table { width: 100%; border-collapse: collapse; font-size: 0.91em; }
+        .kwic-table th {
             cursor: pointer;
-            font-size: 11px;
-            color: #999;
-            -webkit-user-select: none;
             user-select: none;
+            padding: 6px 10px;
+            background: #f5f7fa;
+            border-bottom: 2px solid #dde2e8;
+            white-space: nowrap;
+            font-weight: 600;
         }
+        .kwic-table th:hover { background: #e8ecf2; }
+        .kwic-table th .sort-arrow { margin-left: 4px; color: #888; font-size: 0.8em; }
+        .kwic-table td { padding: 4px 10px; border-bottom: 1px solid #eee; vertical-align: middle; }
+        .kwic-table tr:hover td { background: #f9fbff; }
+        .kwic-num  { color: #aaa; font-size: 0.82em; text-align: right; white-space: nowrap; }
+        .xml-toggle-btn {
+            background: none; border: none; cursor: pointer; color: #aaa;
+            font-size: 0.85em; padding: 0 2px; vertical-align: middle;
+        }
+        .xml-toggle-btn:hover { color: #555; }
         .raw-xml-pre {
-            margin: 6px 0 0;
-            padding: 8px;
-            background: #fafafa;
-            border: 1px solid #e0e0e0;
-            border-radius: 4px;
-            font-size: 11px;
-            overflow-x: auto;
-            white-space: pre-wrap;
-            word-break: break-all;
-            color: #555;
+            margin: 4px 0; padding: 8px; background: #fafafa;
+            border: 1px solid #e0e0e0; border-radius: 4px;
+            font-size: 11px; overflow-x: auto;
+            white-space: pre-wrap; word-break: break-all; color: #555;
         }
-        .bcql-concordance-card {
-            margin-bottom: 10px;
-            padding: 10px;
-            background: white;
-            border-radius: 6px;
-            border-left: 3px solid #4a90d9;
-            font-family: monospace;
-            font-size: 13px;
-            line-height: 1.5;
-        }
-        .bcql-concordance-index {
-            color: #666;
-            font-size: 11px;
-            margin-bottom: 5px;
-        }
+        .kwic-left  { text-align: right; color: #444; word-break: break-word; }
+        .kwic-match { text-align: center; font-weight: 700; color: #1a6b3c; white-space: nowrap; padding: 4px 14px; }
+        .kwic-right { text-align: left;  color: #444; word-break: break-word; }
         .section-heading-meta {
             font-size: 12px;
             color: #666;
@@ -1057,6 +1014,8 @@
         let lastSemanticUrl = null;
         let lastBcqlData = null;
         let lastBcqlQuery = '';
+        let bcqlSortKey = null;
+        let bcqlSortAsc = true;
         // Lemma/context labels for use in suggested export filenames
         let lastSketchLemma = 'sketch';
         let lastDepLemma = 'dep-sketch';
@@ -1738,18 +1697,14 @@
                 return;
             }
             const results = lastBcqlData.results || [];
-            const hasCollocate = results.length > 0 &&
-                results[0].collocateLemma && results[0].collocateLemma !== 'unknown';
             let content, mimeType;
             if (format === 'csv') {
-                const headers = hasCollocate
-                    ? ['collocate', 'frequency', 'logDice', 'sentence']
-                    : ['#', 'sentence'];
-                const rows = [headers.join(',')];
+                const rows = [['#', 'left', 'match', 'right', 'sentence'].join(',')];
                 results.forEach((r, idx) => {
-                    const cells = hasCollocate
-                        ? [r.collocateLemma || '', r.frequency || 0, r.logDice || 0, r.sentence || '']
-                        : [idx + 1, r.sentence || ''];
+                    const s = r.sentence || '';
+                    const ms = r.matchStart || 0;
+                    const me = r.matchEnd || s.length;
+                    const cells = [idx + 1, s.substring(0, ms), s.substring(ms, me), s.substring(me), s];
                     rows.push(cells.map(c => `"${String(c).replace(/"/g, '""')}"`).join(','));
                 });
                 content = rows.join('\n');
@@ -1759,21 +1714,17 @@
                     `  <query>${escapeHtml(lastBcqlQuery)}</query>`,
                     `  <hits>${results.length}</hits>`, '  <results>'];
                 results.forEach((r, idx) => {
-                    if (hasCollocate) {
-                        lines.push(
-                            `    <result>`,
-                            `      <collocate>${escapeHtml(r.collocateLemma || '')}</collocate>`,
-                            `      <frequency>${r.frequency || 0}</frequency>`,
-                            `      <logDice>${r.logDice || 0}</logDice>`,
-                            `      <sentence>${escapeHtml(r.sentence || '')}</sentence>`,
-                            `    </result>`);
-                    } else {
-                        lines.push(
-                            `    <result>`,
-                            `      <n>${idx + 1}</n>`,
-                            `      <sentence>${escapeHtml(r.sentence || '')}</sentence>`,
-                            `    </result>`);
-                    }
+                    const s = r.sentence || '';
+                    const ms = r.matchStart || 0;
+                    const me = r.matchEnd || s.length;
+                    lines.push(
+                        `    <result>`,
+                        `      <n>${idx + 1}</n>`,
+                        `      <left>${escapeHtml(s.substring(0, ms))}</left>`,
+                        `      <match>${escapeHtml(s.substring(ms, me))}</match>`,
+                        `      <right>${escapeHtml(s.substring(me))}</right>`,
+                        `      <sentence>${escapeHtml(s)}</sentence>`,
+                        `    </result>`);
                 });
                 lines.push('  </results>', '</bcql>');
                 content = lines.join('\n');
@@ -2860,74 +2811,96 @@
                 lastBcqlData = data;
                 lastBcqlQuery = bcql;
 
-                // Render results - grouped collocations with logDice
-                let html = `<div class="status-panel-success">
-                    <strong>${data.hits || 0}</strong> hits found
-                </div>`;
-
-                if (data.results && data.results.length > 0) {
-                    // Check if this is grouped results (has collocateLemma) or raw concordances
-                    const hasCollocate = data.results[0] && data.results[0].collocateLemma &&
-                                         data.results[0].collocateLemma !== 'unknown';
-
-                    if (hasCollocate) {
-                        // Grouped results with logDice
-                        data.results.forEach((result, idx) => {
-                            const collocate = result.collocateLemma || '';
-                            const freq = result.frequency || 0;
-                            const logDice = result.logDice || 0;
-                            const sentence = result.sentence || '';
-
-                            const rawXml = result.raw || '';
-                            html += `<div class="bcql-result-card">
-                                <div class="bcql-result-header">
-                                    <span class="bcql-result-title">${escapeHtml(collocate)}</span>
-                                    <span class="bcql-badge">
-                                        logDice: <strong>${logDice.toFixed(2)}</strong>
-                                    </span>
-                                </div>
-                                <div class="bcql-meta">
-                                    Frequency: ${freq}
-                                </div>
-                                ${sentence ? `<div class="bcql-sentence">${escapeHtml(decodeHtmlEntities(sentence))}</div>` : ''}
-                                ${rawXml ? `<details class="raw-xml-details"><summary class="raw-xml-summary">Raw XML</summary><pre class="raw-xml-pre">${escapeHtml(rawXml)}</pre></details>` : ''}
-                            </div>`;
-                        });
-                    } else {
-                        // Raw concordances (legacy format)
-                        data.results.forEach((result, idx) => {
-                            const sentence = result.sentence || '';
-                            const matchStart = result.matchStart || 0;
-                            const matchEnd = result.matchEnd || 0;
-
-                            // Highlight the match
-                            let highlighted = '';
-                            if (matchStart >= 0 && matchEnd > matchStart) {
-                                highlighted = escapeHtml(sentence.substring(0, matchStart)) +
-                                    '<mark class="highlight-generic">' +
-                                    escapeHtml(sentence.substring(matchStart, matchEnd)) +
-                                    '</mark>' +
-                                    escapeHtml(sentence.substring(matchEnd));
-                            } else {
-                                highlighted = escapeHtml(sentence);
-                            }
-
-                            html += `<div class="bcql-concordance-card">
-                                <div class="bcql-concordance-index">#${idx + 1}</div>
-                                ${highlighted}
-                            </div>`;
-                        });
-                    }
-                } else {
-                    html += '<div class="empty-state-text">No matches found.</div>';
-                }
-
-                resultsDiv.innerHTML = html;
+                // Render results as KWIC table
+                bcqlSortKey = null;
+                bcqlSortAsc = true;
+                renderBcqlResults(data.results);
                 document.getElementById('bcqlExportBar').style.display = 'flex';
 
             } catch (error) {
                 resultsDiv.innerHTML = `<div class="error">Error: ${error.message}</div>`;
             }
+        }
+
+        function renderBcqlResults(results) {
+            const resultsDiv = document.getElementById('bcqlResults');
+            const totalHits = lastBcqlData ? (lastBcqlData.hits || 0) : 0;
+            let html = `<div class="status-panel-success"><strong>${totalHits}</strong> hits found</div>`;
+
+            if (!results || results.length === 0) {
+                html += '<div class="empty-state-text">No matches found.</div>';
+                resultsDiv.innerHTML = html;
+                return;
+            }
+
+            const sorted = results.slice();
+            if (bcqlSortKey) {
+                sorted.sort((a, b) => {
+                    let va, vb;
+                    if (bcqlSortKey === 'left') {
+                        va = (a.leftText || '').split(/\s+/).pop() || '';
+                        vb = (b.leftText || '').split(/\s+/).pop() || '';
+                    } else if (bcqlSortKey === 'match') {
+                        va = a.matchText || '';
+                        vb = b.matchText || '';
+                    } else { // right
+                        va = (a.rightText || '').split(/\s+/).shift() || '';
+                        vb = (b.rightText || '').split(/\s+/).shift() || '';
+                    }
+                    const cmp = va.localeCompare(vb, undefined, { sensitivity: 'base' });
+                    return bcqlSortAsc ? cmp : -cmp;
+                });
+            }
+
+            const arrowFor = key => bcqlSortKey === key
+                ? (bcqlSortAsc ? ' <span class="sort-arrow">&#9650;</span>' : ' <span class="sort-arrow">&#9660;</span>')
+                : ' <span class="sort-arrow" style="opacity:0.25">&#9650;</span>';
+
+            html += `<table class="kwic-table">
+              <thead><tr>
+                <th class="kwic-num">#</th>
+                <th class="kwic-left" onclick="setBcqlSort('left')">Left context${arrowFor('left')}</th>
+                <th class="kwic-match" onclick="setBcqlSort('match')">Match${arrowFor('match')}</th>
+                <th class="kwic-right" onclick="setBcqlSort('right')">Right context${arrowFor('right')}</th>
+              </tr></thead><tbody>`;
+
+            sorted.forEach((r, idx) => {
+                const left  = escapeHtml(decodeHtmlEntities(r.leftText  || ''));
+                const match = escapeHtml(decodeHtmlEntities(r.matchText || ''));
+                const right = escapeHtml(decodeHtmlEntities(r.rightText || ''));
+                const hasXml = r.raw && r.raw.trim().length > 0;
+                const xmlId = `bcql-xml-${idx}`;
+                html += `<tr>
+                  <td class="kwic-num">${idx + 1}${hasXml ? ` <button class="xml-toggle-btn" onclick="toggleBcqlXml('${xmlId}')" title="Show/hide raw XML">&#8249;/&#8250;</button>` : ''}</td>
+                  <td class="kwic-left">${left}</td>
+                  <td class="kwic-match">${match}</td>
+                  <td class="kwic-right">${right}</td>
+                </tr>`;
+                if (hasXml) {
+                    html += `<tr id="${xmlId}" style="display:none">
+                      <td></td>
+                      <td colspan="3"><pre class="raw-xml-pre">${escapeHtml(r.raw)}</pre></td>
+                    </tr>`;
+                }
+            });
+
+            html += '</tbody></table>';
+            resultsDiv.innerHTML = html;
+        }
+
+        function toggleBcqlXml(id) {
+            const row = document.getElementById(id);
+            if (row) row.style.display = row.style.display === 'none' ? '' : 'none';
+        }
+
+        function setBcqlSort(key) {
+            if (bcqlSortKey === key) {
+                bcqlSortAsc = !bcqlSortAsc;
+            } else {
+                bcqlSortKey = key;
+                bcqlSortAsc = true;
+            }
+            if (lastBcqlData) renderBcqlResults(lastBcqlData.results);
         }
 
         // Enter key for BCQL query

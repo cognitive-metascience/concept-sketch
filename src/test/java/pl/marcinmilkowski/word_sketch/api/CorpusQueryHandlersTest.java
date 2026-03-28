@@ -29,7 +29,7 @@ class CorpusQueryHandlersTest {
         QueryExecutor stub = new StubQueryExecutor() {
             @Override
             public List<CollocateResult> executeBcqlQuery(String bcqlPattern, int maxResults) {
-                return List.of(new CollocateResult("a theory emerged", null, 2, 8, "d1", "theory", 1, 7.0));
+                return List.of(new CollocateResult("a theory emerged", null, "a", "theory", "emerged", 2, 8, "d1", "theory", 1, 7.0));
             }
         };
         return new CorpusQueryHandlers(stub);
