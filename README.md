@@ -5,11 +5,11 @@ A high-performance corpus-based collocation analysis tool built on [BlackLab](ht
 ## Features
 
 - **Fast Collocation Analysis**: O(1) instant lookup with precomputed collocations
-- **CQL Support**: Full Corpus Query Language with distance modifiers and constraints
+- **BCQL Grammar**: 40+ grammatical relations defined as BCQL numbered-label patterns (`1:`, `2:`), covering surface patterns and dependency relations
 - **logDice Scoring**: Association strength metric (0-14 scale)
-- **Multiple Grammatical Relations**: ADJ_PREDICATE, ADJ_MODIFIER, SUBJECT_OF, OBJECT_OF
+- **Dependency Sketches**: 20 dependency-based relations (nsubj, obj, amod, obl, conj, etc.) leveraging CoNLL-U dependency parses
 - **Concordance Examples**: View real corpus sentences for any word pair with highlighting
-- **REST API**: HTTP server with semantic field exploration endpoints
+- **REST API**: HTTP server with 14+ endpoints for sketches, semantic field exploration, concordance, and visualization
 - **Web Interface**: Interactive Semantic Field Explorer with D3.js visualization
 - **Multi-Seed Exploration**: Explore semantic fields using multiple seed words
 
@@ -116,19 +116,22 @@ java -jar target/concept-sketch-1.6.0-shaded.jar server --index my_index/ --port
 
 Server startup output:
 ```
-API server started on http://localhost:8080
-Algorithm: PRECOMPUTED (O(1) instant lookup)
+API server started on port 8080
 Endpoints:
-  GET /health
-  GET /api/sketch/{lemma}
-  GET /api/relations
-  GET /api/relations/dep
-  GET /api/semantic-field/explore
-  GET /api/semantic-field/explore-multi
-  GET /api/semantic-field/examples
-  GET /api/concordance/examples
-  GET /api/visual/radial
-  GET /api/bcql (POST)
+  GET  /health
+  GET  /api/sketch/{lemma}
+  GET  /api/sketch/{lemma}/{relation}
+  GET  /api/sketch/{lemma}/dep
+  GET  /api/sketch/{lemma}/dep/{deprel}
+  GET  /api/relations
+  GET  /api/relations/dep
+  GET  /api/semantic-field/explore
+  GET  /api/semantic-field/explore-multi
+  GET  /api/semantic-field/compare
+  GET  /api/semantic-field/examples
+  GET  /api/concordance/examples
+  POST /api/visual/radial
+  POST /api/bcql
 ```
 
 ### 4. Start Web Interface
@@ -159,7 +162,7 @@ curl "http://localhost:8080/api/sketch/house"
 # Get example sentences for "house" + "big"
 curl "http://localhost:8080/api/concordance/examples?seed=house&collocate=big&top=5"
 
-# Explore semantic field from "theory" (ADJ_PREDICATE relation)
+# Explore semantic field from "theory" (noun_adj_predicates, alias "adj_predicate")
 curl "http://localhost:8080/api/semantic-field/explore?seed=theory&relation=adj_predicate"
 
 # Multi-seed exploration
@@ -245,25 +248,39 @@ java -jar target/concept-sketch-1.6.0-shaded.jar \
 
 ### Grammar Configuration
 
-The grammar configuration (relations, copulas, CQL patterns) is externalized in JSON:
+The grammar configuration is externalized in JSON. Relations use **BCQL numbered-label patterns**
+where `1:` marks the head word and `2:` marks the collocate.
 
-**Config file:** `grammars/relations.json`
+**Config file:** `grammars/relations.json` (version 2.0)
 
 ```json
 {
-  "version": "1.0",
-  "copulas": ["be", "appear", "seem", "become", ...],
+  "version": "2.0",
+  "description": "BCQL grammar — positions derived from numbered labels (1: = head, 2: = collocate)",
+  "bcql": true,
   "relations": [
     {
       "id": "noun_adj_predicates",
       "name": "Adjectives (predicative)",
-      "head_pos": "noun",
-      "collocate_pos": "adj",
-      "cql_pattern": "[tag=jj.*]",
-      "uses_copula": true,
-      "default_slop": 8,
-      "relation_type": "ADJ_PREDICATE",
-      "exploration_enabled": true
+      "description": "Adjective predicates with copula (e.g., 'hypothesis is valid')",
+      "pattern": "1:[xpos=\"NN.*\"] [lemma=\"be|appear|seem|...\"] 2:[xpos=\"JJ.*\"]",
+      "relation_type": "SURFACE",
+      "dual": false
+    },
+    {
+      "id": "noun_modifiers",
+      "name": "Modifiers (adjectives)",
+      "description": "Adjectives modifying nouns (e.g., 'big house')",
+      "pattern": "2:[xpos=\"JJ.*\"] 1:[xpos=\"NN.*\"]",
+      "relation_type": "SURFACE",
+      "dual": false
+    },
+    {
+      "id": "dep_nsubj",
+      "name": "Dependency: nominal subject",
+      "description": "Verb with its nominal subject (e.g., 'theory explains')",
+      "pattern": "2:[xpos=\"NN.*\" & deprel=\"nsubj\"] 1:[xpos=\"VB.*\"]",
+      "relation_type": "DEP"
     },
     ...
   ]
@@ -271,19 +288,24 @@ The grammar configuration (relations, copulas, CQL patterns) is externalized in 
 ```
 
 **Fields:**
-- `id` - Unique relation identifier
-- `name` - Human-readable name
-- `head_pos` - POS group of the head word (noun, verb, adj)
-- `collocate_pos` - POS group of the collocate
-- `cql_pattern` - CQL pattern to match
-- `uses_copula` - Whether this relation uses copula verbs
-- `default_slop` - Default distance window
-- `relation_type` - Semantic relation type
-- `exploration_enabled` - Whether usable for semantic field exploration
+| Field | Description |
+|-------|-------------|
+| `id` | Unique relation identifier (used in API queries) |
+| `name` | Human-readable display name |
+| `description` | Natural-language explanation of the relation |
+| `pattern` | BCQL pattern with `1:` (head) and `2:` (collocate) positional labels |
+| `relation_type` | `SURFACE` or `DEP` (dependency-based) |
+| `dual` | (optional) `true` for head/collocate-symmetric relations |
+
+**Pattern syntax:**
+- `1:[xpos="NN.*"]` — head word must be a noun (XPOS tag)
+- `2:[xpos="JJ.*"]` — collocate must be an adjective
+- `[lemma="be|appear|..."]` — intervening copula (positional label omitted = not counted as head or collocate)
+- `[xpos="NN.*" & deprel="nsubj"]` — constraints combined with `&`
 
 **API endpoint:**
 
-To view active relations, use `GET /api/relations`.
+To view active relations, use `GET /api/relations` (surface) and `GET /api/relations/dep` (dependency).
 
 To modify relations or add new ones, edit `grammars/relations.json` and restart the server.
 
@@ -299,10 +321,11 @@ curl http://localhost:8080/health
 curl "http://localhost:8080/api/sketch/house"
 ```
 
-To limit full sketches to relations whose head is a specific POS group:
+To filter a full sketch to relations whose head is a specific POS group, use query parameters:
 
 ```bash
-curl "http://localhost:8080/api/sketch/predict?head_pos=verb"
+# Only show relations where the head is a verb
+curl "http://localhost:8080/api/sketch/theory?head_pos=verb"
 ```
 
 Accepted values: `noun`, `verb`, `adj`, `adv`.
@@ -314,8 +337,8 @@ Response:
   "lemma": "house",
   "patterns": {
     "noun_modifiers": {
-      "name": "Adjectives modifying (ADJ X)",
-      "cql": "[tag=jj.*]~{0,3}",
+      "name": "Modifiers (adjectives)",
+      "cql": "2:[xpos=\"JJ.*\"] 1:[xpos=\"NN.*\"]",
       "total_matches": 3421,
       "collocations": [
         {
@@ -335,14 +358,18 @@ Response:
 curl "http://localhost:8080/api/semantic-field/explore?seed=theory&relation=adj_predicate&top=15&min_logdice=2"
 ```
 
-**Relations:**
-- `adj_predicate`: "X is ADJ" (e.g., "theory is correct")
-- `adj_modifier`: "ADJ X" (e.g., "correct theory")  
-- `subject_of`: subject verbs for noun-head sketches, strict local pattern (e.g., "theory suggests")
-- `noun_verbs`: nearby verbs for noun-head sketches, looser window than `subject_of`
-- `verb_subjects`: subject nouns for verb-head sketches (e.g., "theory predicts")
-- `object_of`: object nouns for verb-head sketches, strict local pattern (e.g., "develop theory")
-- `verb_nouns`: nearby nouns for verb-head sketches, looser window than `object_of`
+**Common relation IDs for noun-head exploration:**
+| Relation ID | Pattern | Example |
+|-------------|---------|---------|
+| `noun_adj_predicates` | "X is ADJ" (copula) | "theory is correct" |
+| `noun_modifiers` | "ADJ X" | "correct theory" |
+| `subject_of` | "X VERB" (strict local) | "theory suggests" |
+| `noun_verbs` | "X ... VERB" (looser window) | verbs near "theory" |
+| `object_of` | "VERB X" (strict local) | "develop theory" |
+| `noun_compounds` | "X NOUN" | "theory development" |
+| `noun_prepositions` | "X PREP" | "theory of" |
+
+Any relation from `GET /api/relations` can be used. For dependency-based relations (e.g., `dep_amod`, `dep_nsubj`), use `GET /api/sketch/{lemma}/dep/{deprel}` instead.
 
 **Response:**
 ```json
@@ -474,7 +501,7 @@ The `webapp/` directory contains an interactive web interface built with D3.js.
    - Discover semantically similar words
    - Force-directed graph visualization
 
-3. **Multi-Seed Exploration** (NEW)
+3. **Multi-Seed Exploration**
    - Explore from multiple seeds at once
    - See all collocates per seed
    - Identify common patterns
@@ -551,28 +578,33 @@ java -Dcors.allow.origin=https://myapp.example.com \
 ```
 User Input
     ↓
-CQL Pattern Parser (CQLParser.java)
+Grammar Config (grammars/relations.json)
     ↓
-Lucene SpanQuery Compiler (CQLToLuceneCompiler.java)
+BCQL Pattern → BlackLab CQL Parser (library)
     ↓
-Index Lookup (Lucene)
+Lucene SpanQuery Compiler (BlackLab library)
     ↓
-logDice Scorer (LogDiceCalculator.java)
+Index Lookup (Lucene — BlackLab-managed)
     ↓
-Response (JSON/HTML)
+logDice Scorer (LogDiceUtils.java)
+    ↓
+Response (JSON via SketchResponseAssembler / ExploreResponseAssembler)
 ```
 
-### Index Structure
+### Index Structure (BlackLab Annotations)
 
-| Field | Type | Purpose |
-|-------|------|---------|
-| `doc_id` | Numeric, stored | Sentence ID |
-| `position` | Numeric, stored | Word position |
-| `word` | Stored | Raw word form |
-| `lemma` | Indexed | Lemma for search |
-| `tag` | Keyword, indexed | POS tag (NN, JJ, VB, etc.) |
-| `pos_group` | Keyword | Broad category (noun/verb/adj/adv) |
-| `sentence` | Stored | Full sentence |
+BlackLab manages the index; annotations are derived from CoNLL-U columns:
+
+| Annotation | Source column | Forward index | Purpose |
+|------------|--------------|---------------|---------|
+| `word`     | FORM (col 2) | ✓ | Raw word form |
+| `lemma`    | LEMMA (col 3) | ✓ | Lemma for search |
+| `pos`      | UPOS (col 4) | ✓ | Universal POS tag |
+| `xpos`     | XPOS (col 5) | ✓ | Language-specific POS tag (used in grammar patterns) |
+| `deprel`   | DEPREL (col 8) | ✓ | Dependency relation label (used in DEP relations) |
+| `wordnum`  | ID (col 1) | — | Token position in sentence |
+| `feats`    | FEATS (col 6) | — | Morphological features |
+| `head`     | HEAD (col 7) | — | Dependency head ID |
 
 ### Collocation Computation
 
@@ -627,54 +659,83 @@ concept-sketch/
 ├── src/main/java/pl/marcinmilkowski/word_sketch/
 │   ├── Main.java                    # CLI entry point
 │   ├── api/
-│   │   ├── WordSketchApiServer.java          # REST API server (14 endpoints)
+│   │   ├── WordSketchApiServer.java          # REST API server (14+ endpoints)
+│   │   ├── ComparisonResponseAssembler.java   # Builds JSON responses for comparison results
 │   │   ├── ConcordanceHandlers.java          # Handlers for concordance/examples endpoints
 │   │   ├── CorpusQueryHandlers.java          # Handler for BCQL corpus query endpoint
 │   │   ├── ExplorationHandlers.java          # Handlers for semantic field exploration endpoints
 │   │   ├── ExploreResponseAssembler.java     # Builds JSON response maps for exploration results
-│   │   ├── GrammarConfigSerializer.java      # Serializes GrammarConfig/RelationConfig to JSON
-│   │   ├── HttpApiUtils.java                 # HTTP utilities: sendJsonResponse, parseQueryParams
+│   │   ├── ExportUtils.java                  # CSV/TSV export utilities
+│   │   ├── HttpApiUtils.java                 # HTTP utilities: sendJsonResponse, CORS, method enforcement
 │   │   ├── RequestEntityTooLargeException.java  # RuntimeException for HTTP 413 responses
 │   │   ├── SketchHandlers.java               # Handlers for word sketch endpoints
-│   │   └── VisualizationHandlers.java        # Handler for radial plot endpoint
+│   │   ├── SketchResponseAssembler.java      # Builds JSON responses for word sketch results
+│   │   ├── VisualizationHandlers.java        # Handler for radial plot endpoint (POST)
+│   │   └── model/                            # API-specific DTOs
+│   │       ├── CollocateEntry.java
+│   │       ├── CollocateProfileEntry.java
+│   │       ├── ComparisonResponse.java
+│   │       ├── CoreCollocateEntry.java
+│   │       ├── DiscoveredNounEntry.java
+│   │       ├── EdgeEntry.java
+│   │       ├── ExampleEntry.java
+│   │       ├── ExamplesResponse.java
+│   │       ├── ExploreResponse.java
+│   │       ├── RelationEntry.java
+│   │       ├── RelationListEntry.java
+│   │       ├── RelationListResponse.java
+│   │       ├── SeedCollocateEntry.java
+│   │       └── SketchResponse.java
 │   ├── config/
 │   │   ├── GrammarConfig.java                # Immutable grammar configuration (relations, version)
 │   │   ├── GrammarConfigLoader.java          # Loads grammar config from JSON
-│   │   ├── RelationConfig.java               # Single relation: pattern, deprel derivation
-│   │   ├── RelationPatternBuilder.java       # Builds CQL patterns for relations
-│   │   └── RelationUtils.java               # Utility: relation type checks
+│   │   ├── RelationConfig.java               # Single relation: pattern, relation_type
+│   │   └── RelationUtils.java               # Relation validation, alias resolution
 │   ├── exploration/
 │   │   ├── CollocateProfileComparator.java   # Compares adjective profiles across seed nouns
-│   │   ├── ExplorationService.java           # Interface for exploration operations
+│   │   ├── ExplorationException.java         # Unchecked exception for corpus access failures
 │   │   ├── MultiSeedExplorer.java            # Multi-seed semantic field exploration
-│   │   └── SemanticFieldExplorer.java        # Coordination facade for SEF (single + multi seed)
+│   │   ├── SemanticFieldExplorer.java        # Coordination facade for SEF (single + multi seed)
+│   │   ├── SingleSeedExplorer.java           # Core single-seed exploration algorithm
+│   │   └── spi/
+│   │       └── ExplorationService.java       # Public SPI interface for all exploration operations
 │   ├── indexer/
 │   │   └── blacklab/
 │   │       ├── BlackLabConllUIndexer.java    # CoNLL-U corpus indexer for BlackLab
 │   │       └── ConlluConverter.java          # Converts CoNLL-U to WPL chunk format
 │   ├── model/
-│   │   ├── FetchExamplesOptions.java         # Options for fetchExamples
 │   │   ├── PosGroup.java                     # POS group enum: NOUN, VERB, ADJ, ADV, OTHER
-│   │   ├── QueryResults.java                 # Result DTOs: WordSketchResult, ConcordanceResult
 │   │   ├── RelationType.java                 # Enum: SURFACE | DEP
-│   │   └── exploration/
-│   │       ├── CollocateProfile.java         # Adjective collocate profile for SEF comparison
-│   │       ├── ComparisonResult.java         # Result DTO for compareCollocateProfiles()
-│   │       ├── CoreCollocate.java            # High-coverage shared collocate
-│   │       ├── DiscoveredNoun.java           # Noun discovered via shared adjectives
-│   │       ├── Edge.java                     # Graph edge for D3.js visualization
-│   │       ├── ExplorationOptions.java       # Base options for SEF exploration
-│   │       ├── ExplorationResult.java        # Top-level result DTO for SEF exploration
-│   │       ├── RelationEdgeType.java         # Enum for edge types in exploration graphs
-│   │       ├── SharingCategory.java          # Enum: FULLY_SHARED, PARTIALLY_SHARED, SPECIFIC
-│   │       └── SingleSeedExplorationOptions.java  # Options for single-seed exploration
+│   │   ├── exploration/
+│   │   │   ├── CollocateProfile.java         # Adjective collocate profile for SEF comparison
+│   │   │   ├── ComparisonResult.java         # Result DTO for compareCollocateProfiles()
+│   │   │   ├── CoreCollocate.java            # High-coverage shared collocate
+│   │   │   ├── DiscoveredNoun.java           # Noun discovered via shared adjectives
+│   │   │   ├── Edge.java                     # Graph edge for D3.js visualization
+│   │   │   ├── ExplorationOptions.java       # Base options for SEF exploration
+│   │   │   ├── ExplorationResult.java        # Top-level result DTO for SEF exploration
+│   │   │   ├── FetchExamplesOptions.java     # Options for fetchExamples
+│   │   │   ├── FetchExamplesResult.java      # Result DTO for fetchExamples()
+│   │   │   ├── RelationEdgeType.java         # Enum for edge types in exploration graphs
+│   │   │   ├── SharingCategory.java          # Enum: FULLY_SHARED, PARTIALLY_SHARED, SPECIFIC
+│   │   │   └── SingleSeedExplorationOptions.java  # Options for single-seed exploration
+│   │   └── sketch/
+│   │       ├── BcqlPage.java                 # Paginated BCQL query result
+│   │       ├── CollocateResult.java          # A single collocate hit with sentence context
+│   │       ├── ConcordanceHit.java           # A concordance hit for a word pair
+│   │       ├── ConcordanceResult.java        # A concordance (KWIC) result entry
+│   │       └── WordSketchResult.java         # Top-level word sketch result with logDice score
 │   ├── query/
 │   │   ├── BlackLabQueryExecutor.java        # BlackLab-backed query executor
 │   │   ├── BlackLabSnippetParser.java        # Parses BlackLab XML snippets
 │   │   ├── CollocateQueryHelper.java         # Low-level collocate frequency/example lookup
-│   │   └── QueryExecutor.java               # Query executor interface
+│   │   ├── QueryExecutor.java               # Wide query executor interface (extends SPI ports)
+│   │   └── spi/
+│   │       ├── CollocateQueryPort.java       # Narrow SPI: collocate-frequency-focused queries
+│   │       └── SketchQueryPort.java          # Narrow SPI: word-sketch-pattern queries
 │   ├── utils/
 │   │   ├── CqlUtils.java                    # CQL parsing: splitCqlTokens, escapeForRegex
+│   │   ├── JsonUtils.java                   # JSON serialization helpers
 │   │   ├── LogDiceUtils.java                # logDice scoring
 │   │   └── MathUtils.java                   # Math utilities: round2dp
 │   └── viz/
@@ -682,7 +743,11 @@ concept-sketch/
 ├── webapp/
 │   ├── index.html                   # Web UI (D3.js visualization)
 │   └── assets/                      # CSS, D3.js
-├── src/test/java/                   # Unit tests
+├── grammars/
+│   └── relations.json               # BCQL grammar config (40+ relations)
+├── scripts/
+│   └── conllu_to_wpl.py             # CoNLL-U to WPL preprocessor
+├── src/test/java/                   # 40+ unit tests
 ├── pom.xml                          # Maven config
 └── README.md                        # This file
 ```
@@ -753,9 +818,7 @@ For each token:
 
 Varint encoding saves space for common cases (positions < 128 = 1 byte).
 
-## Examples
-
-correct (logDice: 4.21)
+---
 
 ## Dependency Sketches
 
@@ -763,12 +826,35 @@ correct (logDice: 4.21)
 Dependency sketches are visual or data-driven representations of how words relate to each other based on syntactic dependencies in the corpus. They help users understand grammatical and semantic relationships beyond simple collocations, leveraging dependency parsing to reveal patterns such as subject, object, modifier, and predicate relations.
 
 ### Usage
-Dependency sketches are generated from parsed corpora (e.g., CoNLL-U format) and can be explored via the API and web UI. They provide insights into grammatical structures and are useful for linguistic analysis, semantic field exploration, and advanced querying.
+Dependency sketches are generated from parsed corpora (e.g., CoNLL-U format) and can be explored via the API and web UI. They provide insights into grammatical structures and are useful for linguistic analysis, semantic field exploration, and advanced querying. Dependency relations are defined in `grammars/relations.json` with `"relation_type": "DEP"` and constrain collocates by `deprel` annotation.
 
-### Example
-For the noun "theory", a dependency sketch might show its typical subjects, objects, and modifiers, visualized as a graph or listed in ranked tables.
+### API Endpoints
+```bash
+# Full dependency sketch for a lemma
+curl "http://localhost:8080/api/sketch/theory/dep"
+
+# Specific dependency relation
+curl "http://localhost:8080/api/sketch/theory/dep/dep_nsubj"
+
+# List available dependency relations
+curl "http://localhost:8080/api/relations/dep"
+```
 
 See also: [MULTI_SEED_EXPLORATION.md](MULTI_SEED_EXPLORATION.md) for advanced semantic field features.
+
+---
+
+## Usage Examples
+
+### Example 1: Adjectives Describing "Theory"
+
+```bash
+curl "http://localhost:8080/api/sketch/theory"
+```
+
+**Result:** Top collocates for "theory"
+```
+correct (logDice: 4.21)
 practical (logDice: 3.73)
 wrong (logDice: 3.58)
 mathematical (logDice: 3.47)
@@ -827,11 +913,13 @@ See `plans/` directory for:
 ### Code Quality
 
 Tests cover:
-- CQL parsing (50+ patterns)
-- Lucene query compilation
+- Grammar config loading and validation
+- BCQL pattern construction and alias resolution
 - logDice calculation
-- API endpoints
-- Multi-seed exploration
+- API endpoints (sketch, exploration, concordance, visualization)
+- Multi-seed and single-seed exploration
+- Concordance retrieval and snippet parsing
+- Indexer (CoNLL-U conversion and BlackLab indexing)
 
 ---
 
